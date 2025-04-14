@@ -91,9 +91,9 @@ namespace mbLBM
                     return std::stoul(std::string(s[1].begin(), s[1].end() - 1));
                 }
             }
-
-            // Otherwise return 0
-            // Should theoretically never get to this point because we have checked already that the string exists
+            // some bullshit
+            //  Otherwise return 0
+            //  Should theoretically never get to this point because we have checked already that the string exists
             exceptions::program_exit(-1, "Parameter " + std::string(name) + " not found");
             return 0;
         }

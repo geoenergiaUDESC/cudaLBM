@@ -1,7 +1,7 @@
-/*
+/**
 Filename: strings.cuh
 Contents: Functions employed throughout the source code to manipulate strings
-*/
+**/
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
@@ -18,7 +18,7 @@ namespace mbLBM
          * @brief Checks that the input string is numeric
          * @param s The string_view object which is to be checked
          * @return True if s is numeric, false otherwise
-         */
+         **/
         [[nodiscard]] bool is_number(const std::string_view &s) noexcept
         {
             std::string_view::const_iterator it = s.begin();
@@ -36,7 +36,7 @@ namespace mbLBM
          * @param removeWhitespace Controls the removal of whitespace; removes blank spaces from the return value if true (default true)
          * @return A std::vector of std::string_view objects split from s by delim
          * @note This function can be used to, for example, split a string by commas, spaces, etc
-         */
+         **/
         [[nodiscard]] std::vector<std::string> split(const std::string_view &s, const char delim, const bool removeWhitespace = true) noexcept
         {
             std::vector<std::string> result;
@@ -70,7 +70,7 @@ namespace mbLBM
          * @return The value of the variable expressed as a std::size_t
          * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
-         */
+         **/
         [[nodiscard]] std::size_t extractParameter(const std::vector<std::string> &S, const std::string_view &name) noexcept
         {
             // Loop over S
@@ -128,7 +128,7 @@ namespace mbLBM
          * @param argv Second argument passed to main
          * @return A vector of integral type T
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
-         */
+         **/
         template <typename T>
         [[nodiscard]] std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name) noexcept
         {

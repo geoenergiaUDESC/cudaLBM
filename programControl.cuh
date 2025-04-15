@@ -33,13 +33,29 @@ namespace mbLBM
             std::cout << "//                                                                         //" << std::endl;
             std::cout << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //" << std::endl;
             std::cout << std::endl;
-            std::cout << std::endl;
-            std::cout << "Executing on devices ";
-            for (std::size_t i = 0; i < deviceList().size() - 1; i++)
+
+            // Print the device info
+            std::cout << "Hardware info:" << std::endl;
+            if (deviceList().size() > 1)
             {
-                std::cout << deviceList()[i] << ", ";
+                std::cout << "Executing on device numbers ";
+                for (std::size_t i = 0; i < deviceList().size() - 1; i++)
+                {
+                    std::cout << deviceList()[i] << ", ";
+                }
+                std::cout << deviceList()[deviceList().size() - 1] << std::endl;
             }
-            std::cout << deviceList()[deviceList().size() - 1] << std::endl;
+            else
+            {
+                std::cout << "Executing on device number " << deviceList()[0] << std::endl;
+            }
+
+            // Print the domain info
+            std::cout << std::endl;
+            std::cout << "Domain info:" << std::endl;
+            std::cout << "nx = " << nx_ << std::endl;
+            std::cout << "ny = " << ny_ << std::endl;
+            std::cout << "nz = " << nz_ << std::endl;
         };
 
         /**

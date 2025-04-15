@@ -24,6 +24,7 @@ install:
 	$(NVCXX) $(NVCXXFLAGS) mbLBM.cu -o mbLBM
 	rm -rf bin/mbLBM
 	cp -rf mbLBM bin/mbLBM
+	rm -rf mbLBM
 
 clean:
 	rm -rf mbLBM

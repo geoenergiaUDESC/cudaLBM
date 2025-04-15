@@ -113,10 +113,12 @@ namespace mbLBM
                     // Otherwise it is out of bounds: the supplied argument is the last argument and no value pair has been supplied
                     else
                     {
+                        exceptions::program_exit(-1, "Input argument " + std::string(name) + std::string(" has not been supplied with a value; the correct syntax is -GPU 0,1 for example"));
                         return "";
                     }
                 }
             }
+            exceptions::program_exit(-1, "Input argument " + std::string(name) + std::string(" has not been supplied"));
             return "";
         }
 

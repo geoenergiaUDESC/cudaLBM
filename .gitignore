@@ -32,6 +32,6 @@
 *.app
 
 # Additional files
-bashrc
 .vscode
 bin
+mbLBM

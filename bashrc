@@ -1,0 +1,1 @@
+export PATH=/home/rf511/cudaLBM/bin:$PATH

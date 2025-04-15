@@ -1,1 +1,1 @@
-export PATH=/home/rf511/cudaLBM/bin:$PATH
+export PATH=$(HOME)/cudaLBM/bin:$PATH

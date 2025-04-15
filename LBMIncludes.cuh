@@ -1,7 +1,7 @@
-/*
+/**
 Filename: LBMIncludes.cuh
 Contents: A list of header files necessary for compilation
-*/
+**/
 
 #ifndef __MBLBM_INCLUDES_CUH
 #define __MBLBM_INCLUDES_CUH
@@ -17,7 +17,7 @@ Contents: A list of header files necessary for compilation
 #include <sstream>
 #include <atomic>
 #include <cstring>
-
+#include <mpi.h>
 #include <iomanip>
 #include <iostream>
 #include <string>

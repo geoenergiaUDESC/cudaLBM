@@ -17,14 +17,14 @@ namespace mbLBM
         /**
          * @brief Constructor for the inputControl class
          **/
-        [[nodiscard]] inputControl(int argc, char *argv[])
+        [[nodiscard]] inputControl(int argc, char *argv[]) noexcept
             : nArgs_(nArgsCheck(argc, argv)),
               deviceList_(string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU")) {};
 
         /**
          * @brief Destructor for the inputControl class
          **/
-        ~inputControl() {};
+        ~inputControl() noexcept {};
 
         /**
          * @brief Returns the array of device indices

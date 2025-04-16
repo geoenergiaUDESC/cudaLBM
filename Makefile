@@ -12,11 +12,11 @@ CXX_MFLAGS = -march=native -mtune=native
 CXX_WFLAGS = -Wall -Wextra -Wpedantic -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings
 CXX_DFLAGS = -DSCALAR_PRECISION_64 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19
 
-MPI_INCLUDE_DIR = $(HOME)/opt/openMPI/include
-MPI_LIB_DIR = $(HOME)/opt/openMPI/lib
+MPI_INCLUDE_DIR = $(MPI_DIR)/include
+MPI_LIB_DIR = $(MPI_DIR)/lib
 
-CUDA_INCLUDE_DIR = /usr/local/cuda/include
-CUDA_LIB_DIR = /usr/local/cuda/lib
+CUDA_INCLUDE_DIR = $(CUDA_DIR)/include
+CUDA_LIB_DIR = $(CUDA_DIR)/lib
 
 NVCXX_FLAGS = $(NVCXX_STANDARD) $(NVCXX_OPTFLAGS) $(NVCXX_MFLAGS) $(NVCXX_WFLAGS) $(NVCXX_DFLAGS)
 CXX_FLAGS = $(CXX_STANDARD) $(CXX_OPTFLAGS) $(CXX_MFLAGS) $(CXX_WFLAGS) $(CXX_DFLAGS)
@@ -28,12 +28,11 @@ default:
 install:
 	make clean
 	$(NVCXX) $(NVCXX_FLAGS) mbLBM.cu -o mbLBM -L$(CUDA_LIB_DIR) -L$(MPI_LIB_DIR) -lmpi -lm
-	rm -rf bin/mbLBM
-	cp -rf mbLBM bin/mbLBM
+	cp -rf mbLBM build/bin/mbLBM
 	rm -rf mbLBM
 
 clean:
 	rm -rf mbLBM
 
 uninstall:
-	rm -rf bin/mbLBM
+	rm -rf $(PROJECT_DIR)/opt/mbLBM/bin/mbLBM

@@ -20,11 +20,16 @@ namespace mbLBM
         /**
          * @brief Constructor for the programControl class
          **/
-        [[nodiscard]] programControl(int argc, char *argv[])
+        [[nodiscard]] programControl(int argc, char *argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              nx_(string::extractParameter(readCaseDirectory("caseInfo"), "nx")),
-              ny_(string::extractParameter(readCaseDirectory("caseInfo"), "ny")),
-              nz_(string::extractParameter(readCaseDirectory("caseInfo"), "nz"))
+              nx_(string::extractParameter<label_t>(readCaseDirectory("caseInfo"), "nx")),
+              ny_(string::extractParameter<label_t>(readCaseDirectory("caseInfo"), "ny")),
+              nz_(string::extractParameter<label_t>(readCaseDirectory("caseInfo"), "nz")),
+              Re_(string::extractParameter<scalar_t>(readCaseDirectory("caseInfo"), "Re")),
+              Lx_(string::extractParameter<scalar_t>(readCaseDirectory("caseInfo"), "Lx")),
+              Ly_(string::extractParameter<scalar_t>(readCaseDirectory("caseInfo"), "Ly")),
+              Lz_(string::extractParameter<scalar_t>(readCaseDirectory("caseInfo"), "Lz")),
+              nTimeSteps_(string::extractParameter<label_t>(readCaseDirectory("caseInfo"), "nTimeSteps"))
         {
             std::cout << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //" << std::endl;
             std::cout << "//                                                                         //" << std::endl;
@@ -34,8 +39,15 @@ namespace mbLBM
             std::cout << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //" << std::endl;
             std::cout << std::endl;
             std::cout << std::endl;
-            std::cout << "Executing on devices ";
-            for (std::size_t i = 0; i < deviceList().size() - 1; i++)
+            if (deviceList().size() > 1)
+            {
+                std::cout << "Executing on devices ";
+            }
+            else
+            {
+                std::cout << "Executing on device ";
+            }
+            for (label_t i = 0; i < deviceList().size() - 1; i++)
             {
                 std::cout << deviceList()[i] << ", ";
             }
@@ -45,20 +57,20 @@ namespace mbLBM
         /**
          * @brief Destructor for the programControl class
          **/
-        ~programControl() {};
+        ~programControl() noexcept {};
 
         /**
          * @brief Returns the number of lattices in the x, y and z directions
          **/
-        [[nodiscard]] inline constexpr std::size_t nx() const noexcept
+        [[nodiscard]] inline constexpr label_t nx() const noexcept
         {
             return nx_;
         }
-        [[nodiscard]] inline constexpr std::size_t ny() const noexcept
+        [[nodiscard]] inline constexpr label_t ny() const noexcept
         {
             return ny_;
         }
-        [[nodiscard]] inline constexpr std::size_t nz() const noexcept
+        [[nodiscard]] inline constexpr label_t nz() const noexcept
         {
             return nz_;
         }
@@ -81,9 +93,26 @@ namespace mbLBM
         /**
          * @brief The number of lattices in the x, y and z directions
          **/
-        const std::size_t nx_;
-        const std::size_t ny_;
-        const std::size_t nz_;
+        const label_t nx_;
+        const label_t ny_;
+        const label_t nz_;
+
+        /**
+         * @brief The Reynolds number
+         **/
+        const scalar_t Re_;
+
+        /**
+         * @brief Characteristic domain length in the x, y and z directions
+         **/
+        const scalar_t Lx_;
+        const scalar_t Ly_;
+        const scalar_t Lz_;
+
+        /**
+         * @brief Total number of simulation time steps
+         **/
+        const label_t nTimeSteps_;
 
         /**
          * @brief Reads the caseInfo file in the current directory into a vector of strings
@@ -104,7 +133,7 @@ namespace mbLBM
             std::string s;
 
             // Count the number of lines
-            std::size_t nLines = 0;
+            label_t nLines = 0;
 
             // Count the number of lines
             while (std::getline(caseInfo, s))

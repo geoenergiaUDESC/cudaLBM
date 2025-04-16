@@ -19,9 +19,9 @@ namespace mbLBM
          * @param s The string_view object which is to be checked
          * @return True if s is numeric, false otherwise
          **/
-        [[nodiscard]] bool is_number(const std::string_view &s) noexcept
+        [[nodiscard]] bool is_number(const std::string &s) noexcept
         {
-            std::string_view::const_iterator it = s.begin();
+            std::string::const_iterator it = s.begin();
             while (it != s.end() && std::isdigit(*it))
             {
                 ++it;
@@ -65,19 +65,20 @@ namespace mbLBM
 
         /**
          * @brief Searches for an entry corresponding to variableName within the vector of strings S
+         * @param T The type of variable returned
          * @param S The vector of strings which is searched
-         * @param name The name of the variable which is to be found
+         * @param name The name of the variable which is to be found and returned as type T
          * @return The value of the variable expressed as a std::size_t
          * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
-        [[nodiscard]] std::size_t extractParameter(const std::vector<std::string> &S, const std::string_view &name) noexcept
+        template <typename T>
+        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name) noexcept
         {
             // Loop over S
             for (std::size_t i = 0; i < S.size(); i++)
             {
                 // Check if S[i] contains a substring of name
-                // std::cout << "Checking for name " << name << " in line " << S[i] << std::endl;
                 if (S[i].find(name) != std::string_view::npos)
                 {
                     // Split by space and remove whitespace
@@ -86,9 +87,29 @@ namespace mbLBM
                     // Check that the last char is ;
                     // Perform the exit here if the above string is not equal to ;
 
-                    // std::cout << s[1] << std::endl;
-
-                    return std::stoul(std::string(s[1].begin(), s[1].end() - 1));
+                    const std::string toReturn = std::string(s[1].begin(), s[1].end() - 1);
+                    if (is_number(toReturn))
+                    {
+                        // Check if T is integral type
+                        if constexpr (std::is_integral_v<T>)
+                        {
+                            // Check if T is an unsigned integral type
+                            if constexpr (std::is_unsigned_v<T>)
+                            {
+                                return std::stoul(toReturn);
+                            }
+                            // T must be a signed integral type
+                            else
+                            {
+                                return std::stoi(toReturn);
+                            }
+                        }
+                        // Otherwise T must be a scalar type
+                        else
+                        {
+                            return static_cast<T>(std::stold(toReturn));
+                        }
+                    }
                 }
             }
             // Otherwise return 0

@@ -17,7 +17,7 @@ namespace mbLBM
     class cudaCommunicator
     {
     public:
-        [[nodiscard]] cudaCommunicator()
+        [[nodiscard]] cudaCommunicator() noexcept
             : myRank_(myRankInitialise()),
               totalRank_(totalRankInitialise())
         {
@@ -25,7 +25,7 @@ namespace mbLBM
             std::cout << "Total rank: " << totalRank_ << std::endl;
         };
 
-        ~cudaCommunicator() {};
+        ~cudaCommunicator() noexcept {};
 
         /**
          * @brief Returns the process MPI rank

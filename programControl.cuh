@@ -74,6 +74,10 @@ namespace mbLBM
         {
             return nz_;
         }
+        [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+        {
+            return nx_ * ny_ * nz_;
+        }
 
         /**
          * @brief Returns the array of device indices

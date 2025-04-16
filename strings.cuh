@@ -88,10 +88,10 @@ namespace mbLBM
                     // Perform the exit here if the above string is not equal to ;
 
                     const std::string toReturn = std::string(s[1].begin(), s[1].end() - 1);
-                    if (is_number(toReturn))
+                    // Check if T is integral type
+                    if constexpr (std::is_integral_v<T>)
                     {
-                        // Check if T is integral type
-                        if constexpr (std::is_integral_v<T>)
+                        if (is_number(toReturn))
                         {
                             // Check if T is an unsigned integral type
                             if constexpr (std::is_unsigned_v<T>)
@@ -104,11 +104,11 @@ namespace mbLBM
                                 return std::stoi(toReturn);
                             }
                         }
-                        // Otherwise T must be a scalar type
-                        else
-                        {
-                            return static_cast<T>(std::stold(toReturn));
-                        }
+                    }
+                    // Otherwise T must be a scalar type
+                    else
+                    {
+                        return static_cast<T>(std::stold(toReturn));
                     }
                 }
             }

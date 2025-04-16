@@ -22,6 +22,11 @@ namespace mbLBM
     typedef double scalar_t;
 #endif
 
+    /**
+     * @brief Type used for arrays of scalars
+     **/
+    typedef std::vector<scalar_t> scalarArray_t;
+
 /**
  * @brief Label type used for scalar types
  * @note Types are either 32 bit or 64 bit unsigned integers
@@ -32,6 +37,11 @@ namespace mbLBM
 #elif LABEL_SIZE_64
     typedef std::size_t label_t;
 #endif
+
+    /**
+     * @brief Type used for arrays of labels
+     **/
+    typedef std::vector<label_t> labelArray_t;
 
     /**
      * @brief Label type used for GPU indices
@@ -129,7 +139,6 @@ namespace mbLBM
         ERR_SESSION = 78,               // Invalid session
         ERR_LASTCODE = 93               // Last error code.
     } mpiError_t;
-
 }
 
 #endif

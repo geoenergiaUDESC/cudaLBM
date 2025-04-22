@@ -15,6 +15,39 @@ namespace mbLBM
     namespace string
     {
         /**
+         * @brief Reads the caseInfo file in the current directory into a vector of strings
+         * @return A std::vector of std::string_view objects contained within the caseInfo file
+         * @note This function will cause the program to exit if caseInfo is not found in the launch directory
+         **/
+        [[nodiscard]] std::vector<std::string> readCaseDirectory(const std::string_view &fileName) noexcept
+        {
+            // Does the file even exist?
+            if (!std::filesystem::exists(fileName))
+            {
+                exceptions::program_exit(-1, std::string(fileName) + std::string(" file not opened"));
+            }
+
+            // Read the caseInfo file contained within the directory
+            std::ifstream caseInfo(std::string(fileName).c_str());
+            std::vector<std::string> S;
+            std::string s;
+
+            // Count the number of lines
+            label_t nLines = 0;
+
+            // Count the number of lines
+            while (std::getline(caseInfo, s))
+            {
+                S.push_back(s);
+                nLines = nLines + 1;
+            }
+
+            S.resize(nLines);
+
+            return S;
+        }
+
+        /**
          * @brief Checks that the input string is numeric
          * @param s The string_view object which is to be checked
          * @return True if s is numeric, false otherwise
@@ -118,6 +151,12 @@ namespace mbLBM
             return 0;
         }
 
+        /**
+         * @brief Parses a name-value pair
+         * @param args The list of arguments to be searched
+         * @param name The argument to be searched for
+         * @return A std::string_view of the value argument corresponding to name
+         **/
         [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name) noexcept
         {
             // Loop over the input arguments and search for name

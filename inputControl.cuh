@@ -16,10 +16,12 @@ namespace mbLBM
     public:
         /**
          * @brief Constructor for the inputControl class
+         * @param argc First argument passed to main
+         * @param argv Second argument passed to main
          **/
         [[nodiscard]] inputControl(int argc, char *argv[]) noexcept
             : nArgs_(nArgsCheck(argc, argv)),
-              deviceList_(string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU")) {};
+              deviceList_(initialiseDeviceList(argc, argv)) {};
 
         /**
          * @brief Destructor for the inputControl class
@@ -66,6 +68,32 @@ namespace mbLBM
          * @note Must be int since cudaSetDevice works on int
          **/
         const std::vector<deviceIndex_t> deviceList_;
+
+        /**
+         * @brief Parses the command line for the -GPU argument, checking for valid inputs and converting to deviceList
+         * @return An std::vector of deviceIndex_t representing the indices of the devices
+         * @note Checks that the number of GPUs supplied on the command line is valid
+         **/
+        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const noexcept
+        {
+            const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
+            if (deviceList.size() > nAvailableDevices() | nAvailableDevices() < 1)
+            {
+                exceptions::program_exit(-1, "Number of GPUs requested is greater than the number available");
+            }
+            return deviceList;
+        }
+
+        /**
+         * @brief Checks the number of available CUDA devices
+         * @return The number of avaiable CUDA devices
+         **/
+        [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
+        {
+            deviceIndex_t deviceCount = -1;
+            cudaGetDeviceCount(&deviceCount);
+            return deviceCount;
+        }
 
         /**
          * @brief Return a vector of string views of the arguments passed to the solver at the command line

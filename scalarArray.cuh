@@ -10,6 +10,8 @@ partition the mesh prior to distribution to the devices
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "latticeMesh.cuh"
+#include "labelArray.cuh"
 
 namespace mbLBM
 {
@@ -19,12 +21,14 @@ namespace mbLBM
         {
         public:
             /**
-             * @brief Constructs a scalar solution variable from a number of lattice points
+             * @brief Constructs a scalar solution variable from a latticeMesh object
              * @return A scalar solution variable
-             * @param nPoints Total number of lattice points
+             * @param mesh The lattice mesh
              * @note This constructor zero-initialises everything
              **/
-            [[nodiscard]] scalarArray(const label_t nPoints) : nPoints_(nPoints), arr_(scalarArray_t(nPoints, 0)) {};
+            [[nodiscard]] scalarArray(const latticeMesh &mesh) noexcept
+                : mesh_(mesh),
+                  arr_(scalarArray_t(mesh.nPoints(), 0)) {};
 
             /**
              * @brief Constructs a scalar solution variable from another scalarArray and a partition list
@@ -33,12 +37,29 @@ namespace mbLBM
              * @param partitionIndices A list of unsigned integers corresponding to indices of originalArray
              * @note This constructor copies the elements corresponding to the partition points into the new object
              **/
-            [[nodiscard]] scalarArray(const scalarArray &originalArray, const labelArray_t &partitionIndices) : nPoints_(partitionIndices.size()), arr_(partitionOriginal(originalArray, partitionIndices)) {};
+            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalarArray &originalArray, const labelArray &partitionIndices) noexcept
+                : mesh_(mesh),
+                  arr_(partitionOriginal(originalArray, partitionIndices)) {};
+
+            [[nodiscard]] scalarArray(const latticeMesh &mesh,
+                                      const scalarArray &originalArray) noexcept
+                : mesh_(mesh),
+                  arr_(foo(mesh, originalArray)) {};
+
+            [[nodiscard]] scalarArray_t foo(const latticeMesh &mesh, const scalarArray &originalArray) const noexcept
+            {
+                scalarArray_t f(mesh.nPoints());
+                for (label_t i = 0; i < mesh.nPoints(); i++)
+                {
+                    f[i] = originalArray.arrRef()[i + mesh.globalOffset()];
+                }
+                return f;
+            }
 
             /**
              * @brief Destructor
              **/
-            ~scalarArray() {};
+            ~scalarArray() noexcept {};
 
             /**
              * @brief Returns immutable access to the underlying array
@@ -48,17 +69,75 @@ namespace mbLBM
             {
                 return arr_;
             }
+            [[nodiscard]] inline scalarArray_t &arrSet() noexcept
+            {
+                return arr_;
+            }
+
+            /**
+             * @brief Total number of lattice points contained within the array
+             * @return Total number of lattice points
+             * @note This may not be equivalent to the total number of global lattice
+             * points since scalarArray can be constructed from a partition
+             **/
+            [[nodiscard]] inline label_t nPoints() const noexcept
+            {
+                return arr_.size();
+            }
+
+            /**
+             * @brief Prints the solution variable to the terminal in sequential z planes
+             **/
+            void print(const std::string &name) const noexcept
+            {
+                std::cout << name << std::endl;
+                std::cout << "nx = " << mesh_.nx() << std::endl;
+                std::cout << "ny = " << mesh_.ny() << std::endl;
+                std::cout << "nz = " << mesh_.nz() << std::endl;
+                std::cout << std::endl;
+                for (label_t k = 0; k < mesh_.nz(); k++)
+                {
+                    for (label_t j = 0; j < mesh_.ny(); j++)
+                    {
+                        for (label_t i = 0; i < mesh_.nx(); i++)
+                        {
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                        }
+                        std::cout << "\n";
+                    }
+                    std::cout << "\n";
+                }
+            }
+            void print() const noexcept
+            {
+                std::cout << "nx = " << mesh_.nx() << std::endl;
+                std::cout << "ny = " << mesh_.ny() << std::endl;
+                std::cout << "nz = " << mesh_.nz() << std::endl;
+                std::cout << std::endl;
+                for (label_t k = 0; k < mesh_.nz(); k++)
+                {
+                    for (label_t j = 0; j < mesh_.ny(); j++)
+                    {
+                        for (label_t i = 0; i < mesh_.nx(); i++)
+                        {
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                        }
+                        std::cout << "\n";
+                    }
+                    std::cout << "\n";
+                }
+            }
 
         private:
             /**
-             * @brief Total number of lattice points
+             * @brief An immutable reference to the solution mesh
              **/
-            const label_t nPoints_;
+            const latticeMesh mesh_;
 
             /**
              * @brief The underlying solution array
              **/
-            const scalarArray_t arr_;
+            scalarArray_t arr_;
 
             /**
              * @brief Used to partition an original array by an arbitrary list of partition indices
@@ -68,16 +147,96 @@ namespace mbLBM
              **/
             [[nodiscard]] scalarArray_t partitionOriginal(
                 const scalarArray &originalArray,
-                const labelArray_t &partitionIndices)
+                const labelArray &partitionIndices) const noexcept
             {
                 // Create an appropriately sized array
-                scalarArray_t partitionedArray(partitionIndices.size());
-                for (std::size_t i = 0; i < partitionIndices.size(); i++)
+                scalarArray_t partitionedArray(partitionIndices.nPoints());
+                for (std::size_t i = 0; i < partitionIndices.nPoints(); i++)
                 {
-                    partitionedArray[i] = originalArray.arrRef()[partitionIndices[i]];
+                    partitionedArray[i] = originalArray.arrRef()[partitionIndices.arrRef()[i]];
                 }
                 return partitionedArray;
             }
+        };
+    }
+
+    namespace device
+    {
+        /**
+         * @brief Templated typedef for the deleter to a pointer to a scalar variable
+         **/
+        template <typename Deleter>
+        using scalarPtr_t = std::unique_ptr<scalar_t[], Deleter>;
+
+        /**
+         * @brief Allocates a block of memory on the device and returns its pointer
+         * @return A raw pointer to a block of memory
+         * @param size The amount of memory to be allocated
+         **/
+        template <typename T>
+        [[nodiscard]] T *deviceMalloc(const std::size_t size) noexcept
+        {
+            T *ptr;
+            const cudaError_t i = cudaMalloc(static_cast<T **>(&ptr), size);
+
+            if (i != cudaSuccess)
+            {
+                exceptions::program_exit(i, "Unable to allocate array");
+            }
+
+            return ptr;
+        }
+
+        /**
+         * @brief Frees a block of memory pointed to by ptr
+         * @return A std::vector of std::string_view objects contained within the caseInfo file
+         * @param ptr The pointer to be freed
+         **/
+        auto deleter = [](scalar_t *ptr) noexcept
+        {
+            cudaFree(ptr);
+        };
+
+        /**
+         * @brief Allocates a scalar array on the device
+         * @return A scalarPtr_t object pointing to a block of memory on the GPU
+         * @param f The pre-existing array on the host to be copied to the GPU
+         **/
+        [[nodiscard]] scalarPtr_t<decltype(deleter)> allocateDeviceScalarArray(const host::scalarArray &f) noexcept
+        {
+            scalarPtr_t<decltype(deleter)> ptr(deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t)), deleter);
+
+            const cudaError_t i = cudaMemcpy(ptr.get(), &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
+
+            if (i != cudaSuccess)
+            {
+                exceptions::program_exit(i, "Unable to copy array");
+            }
+
+            return ptr;
+        }
+
+        class scalarArray
+        {
+        public:
+            /**
+             * @brief Constructs a scalar array on the device
+             * @return A scalarArray object copied from f
+             * @param f The pre-existing array on the host to be copied to the GPU
+             **/
+            [[nodiscard]] scalarArray(const host::scalarArray &f) noexcept
+                : ptr_(allocateDeviceScalarArray(f)) {};
+
+            /**
+             * @brief Destructor
+             **/
+            ~scalarArray() noexcept {};
+
+        private:
+            /**
+             * @brief Pointer to the array on the device
+             **/
+            const scalarPtr_t<decltype(deleter)> ptr_;
         };
     }
 }

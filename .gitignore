@@ -40,3 +40,4 @@ thirdParty/openmpi*
 thirdParty/ucx
 thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
+testCompute.sh

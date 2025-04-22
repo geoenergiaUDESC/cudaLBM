@@ -8,7 +8,9 @@ Contents: A class containing the arrays of the moment variables
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "globalFunctions.cuh"
 #include "scalarArray.cuh"
+#include "labelArray.cuh"
 
 namespace mbLBM
 {
@@ -30,26 +32,65 @@ namespace mbLBM
             /**
              * @brief Constructs the moments from a number of lattice points
              * @return Object containing all of the moments
-             * @param nPoints Total number of lattice points
+             * @param mesh The undecomposed solution mesh
              * @note This constructor zero-initialises everything
              **/
-            [[nodiscard]] moments(const label_t nPoints)
-                : nPoints_(nPoints),
-                  rho_(scalarArray(nPoints)),
-                  u_(scalarArray(nPoints)),
-                  v_(scalarArray(nPoints)),
-                  w_(scalarArray(nPoints)),
-                  m_xx_(scalarArray(nPoints)),
-                  m_xy_(scalarArray(nPoints)),
-                  m_xz_(scalarArray(nPoints)),
-                  m_yy_(scalarArray(nPoints)),
-                  m_yz_(scalarArray(nPoints)),
-                  m_zz_(scalarArray(nPoints)) {};
+            [[nodiscard]] moments(const latticeMesh &mesh) noexcept
+                : mesh_(mesh),
+                  rho_(scalarArray(mesh)),
+                  u_(scalarArray(mesh)),
+                  v_(scalarArray(mesh)),
+                  w_(scalarArray(mesh)),
+                  m_xx_(scalarArray(mesh)),
+                  m_xy_(scalarArray(mesh)),
+                  m_xz_(scalarArray(mesh)),
+                  m_yy_(scalarArray(mesh)),
+                  m_yz_(scalarArray(mesh)),
+                  m_zz_(scalarArray(mesh)) {};
+
+            /**
+             * @brief Constructs the moments from a pre-defined partition range
+             * @return Object containing all of the moments
+             * @param mesh The undecomposed solution mesh
+             * @param moms The original moments object to be partitioned
+             **/
+            [[nodiscard]] moments(const latticeMesh &mesh, const moments &moms) noexcept
+                : mesh_(mesh),
+                  rho_(scalarArray(mesh, moms.rho())),
+                  u_(scalarArray(mesh, moms.u())),
+                  v_(scalarArray(mesh, moms.v())),
+                  w_(scalarArray(mesh, moms.w())),
+                  m_xx_(scalarArray(mesh, moms.m_xx())),
+                  m_xy_(scalarArray(mesh, moms.m_xy())),
+                  m_xz_(scalarArray(mesh, moms.m_xz())),
+                  m_yy_(scalarArray(mesh, moms.m_yy())),
+                  m_yz_(scalarArray(mesh, moms.m_yz())),
+                  m_zz_(scalarArray(mesh, moms.m_zz())) {};
 
             /**
              * @brief Destructor
              **/
             ~moments() {};
+
+            /**
+             * @brief Returns the number of lattices in the x, y and z directions
+             **/
+            [[nodiscard]] inline constexpr label_t nx() const noexcept
+            {
+                return mesh_.nx();
+            }
+            [[nodiscard]] inline constexpr label_t ny() const noexcept
+            {
+                return mesh_.ny();
+            }
+            [[nodiscard]] inline constexpr label_t nz() const noexcept
+            {
+                return mesh_.nz();
+            }
+            [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+            {
+                return mesh_.nPoints();
+            }
 
             /**
              * @brief Provides immutable access to the moments
@@ -97,24 +138,21 @@ namespace mbLBM
             }
 
         private:
-            /**
-             * @brief Total number of lattice points
-             **/
-            const label_t nPoints_;
+            const latticeMesh &mesh_;
 
             /**
              * @brief The moment variables
              **/
-            scalarArray rho_;
-            scalarArray u_;
-            scalarArray v_;
-            scalarArray w_;
-            scalarArray m_xx_;
-            scalarArray m_xy_;
-            scalarArray m_xz_;
-            scalarArray m_yy_;
-            scalarArray m_yz_;
-            scalarArray m_zz_;
+            const scalarArray rho_;
+            const scalarArray u_;
+            const scalarArray v_;
+            const scalarArray w_;
+            const scalarArray m_xx_;
+            const scalarArray m_xy_;
+            const scalarArray m_xz_;
+            const scalarArray m_yy_;
+            const scalarArray m_yz_;
+            const scalarArray m_zz_;
         };
     }
 
@@ -123,11 +161,46 @@ namespace mbLBM
         class moments
         {
         public:
-            [[nodiscard]] moments() {};
+            [[nodiscard]] moments(const deviceIndex_t deviceID, const mbLBM::host::moments &hostMoments)
+                : ID_(deviceID),
+                  err_(cudaSetDevice(ID_)),
+                  rho_(scalarArray(hostMoments.rho())),
+                  u_(scalarArray(hostMoments.u())),
+                  v_(scalarArray(hostMoments.v())),
+                  w_(scalarArray(hostMoments.w())),
+                  m_xx_(scalarArray(hostMoments.m_xx())),
+                  m_xy_(scalarArray(hostMoments.m_xy())),
+                  m_xz_(scalarArray(hostMoments.m_xz())),
+                  m_yy_(scalarArray(hostMoments.m_yy())),
+                  m_yz_(scalarArray(hostMoments.m_yz())),
+                  m_zz_(scalarArray(hostMoments.m_zz()))
+            {
+#ifdef VERBOSE
+                std::cout << "Allocated partitioned moments on device number " << ID_ << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    nx = " << hostMoments.nx() << ";" << std::endl;
+                std::cout << "    ny = " << hostMoments.ny() << ";" << std::endl;
+                std::cout << "    nz = " << hostMoments.nz() << ";" << std::endl;
+                std::cout << "}" << std::endl;
+                std::cout << std::endl;
+#endif
+            };
 
             ~moments() {};
 
         private:
+            const deviceIndex_t ID_;
+            const cudaError_t err_;
+            const scalarArray rho_;
+            const scalarArray u_;
+            const scalarArray v_;
+            const scalarArray w_;
+            const scalarArray m_xx_;
+            const scalarArray m_xy_;
+            const scalarArray m_xz_;
+            const scalarArray m_yy_;
+            const scalarArray m_yz_;
+            const scalarArray m_zz_;
         };
     }
 }

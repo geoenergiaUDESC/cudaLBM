@@ -31,30 +31,26 @@ namespace mbLBM
                   arr_(scalarArray_t(mesh.nPoints(), 0)) {};
 
             /**
+             * @brief Constructs a scalar solution variable from a latticeMesh object
+             * @return A scalar solution variable
+             * @param mesh The lattice mesh
+             * @param val The initial value
+             * @note This constructor initialises everything to a uniform value
+             **/
+            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalar_t val) noexcept
+                : mesh_(mesh),
+                  arr_(scalarArray_t(mesh.nPoints(), val)) {};
+
+            /**
              * @brief Constructs a scalar solution variable from another scalarArray and a partition list
              * @return A partition scalar solution variable
-             * @param originalArray The original array to be partitioned
-             * @param partitionIndices A list of unsigned integers corresponding to indices of originalArray
-             * @note This constructor copies the elements corresponding to the partition points into the new object
+             * @param mesh The partition of the mesh
+             * @param originalArray The original scalar solution array to be partitioned
+             * @note This constructor copies the elements corresponding to the mesh partition points into the new object
              **/
-            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalarArray &originalArray, const labelArray &partitionIndices) noexcept
+            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalarArray &originalArray) noexcept
                 : mesh_(mesh),
-                  arr_(partitionOriginal(originalArray, partitionIndices)) {};
-
-            [[nodiscard]] scalarArray(const latticeMesh &mesh,
-                                      const scalarArray &originalArray) noexcept
-                : mesh_(mesh),
-                  arr_(foo(mesh, originalArray)) {};
-
-            [[nodiscard]] scalarArray_t foo(const latticeMesh &mesh, const scalarArray &originalArray) const noexcept
-            {
-                scalarArray_t f(mesh.nPoints());
-                for (label_t i = 0; i < mesh.nPoints(); i++)
-                {
-                    f[i] = originalArray.arrRef()[i + mesh.globalOffset()];
-                }
-                return f;
-            }
+                  arr_(partitionArray(mesh, originalArray)) {};
 
             /**
              * @brief Destructor
@@ -140,6 +136,22 @@ namespace mbLBM
             scalarArray_t arr_;
 
             /**
+             * @brief Constructs a scalar solution variable from another scalarArray and a partition list
+             * @return The underlying solution array
+             * @param mesh The partition of the mesh
+             * @param originalArray The original scalar solution array to be partitioned
+             **/
+            [[nodiscard]] scalarArray_t partitionArray(const latticeMesh &mesh, const scalarArray &originalArray) const noexcept
+            {
+                scalarArray_t f(mesh.nPoints());
+                for (label_t i = 0; i < mesh.nPoints(); i++)
+                {
+                    f[i] = originalArray.arrRef()[i + mesh.globalOffset()];
+                }
+                return f;
+            }
+
+            /**
              * @brief Used to partition an original array by an arbitrary list of partition indices
              * @return The elements of originalArray partitioned by partitionIndices
              * @param originalArray The original array to be partitioned
@@ -163,10 +175,10 @@ namespace mbLBM
     namespace device
     {
         /**
-         * @brief Templated typedef for the deleter to a pointer to a scalar variable
+         * @brief Templated typedef for a pointer to a scalar variable
          **/
         template <typename Deleter>
-        using scalarPtr_t = std::unique_ptr<scalar_t[], Deleter>;
+        using scalarPtr_t = std::unique_ptr<scalar_t, Deleter>;
 
         /**
          * @brief Allocates a block of memory on the device and returns its pointer
@@ -192,29 +204,11 @@ namespace mbLBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @param ptr The pointer to be freed
          **/
-        auto deleter = [](scalar_t *ptr) noexcept
+        auto scalarDeleter = [](scalar_t *ptr) noexcept
         {
             cudaFree(ptr);
+            // std::cout << "Freed unique pointer" << std::endl;
         };
-
-        /**
-         * @brief Allocates a scalar array on the device
-         * @return A scalarPtr_t object pointing to a block of memory on the GPU
-         * @param f The pre-existing array on the host to be copied to the GPU
-         **/
-        [[nodiscard]] scalarPtr_t<decltype(deleter)> allocateDeviceScalarArray(const host::scalarArray &f) noexcept
-        {
-            scalarPtr_t<decltype(deleter)> ptr(deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t)), deleter);
-
-            const cudaError_t i = cudaMemcpy(ptr.get(), &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
-
-            if (i != cudaSuccess)
-            {
-                exceptions::program_exit(i, "Unable to copy array");
-            }
-
-            return ptr;
-        }
 
         class scalarArray
         {
@@ -232,11 +226,39 @@ namespace mbLBM
              **/
             ~scalarArray() noexcept {};
 
+            /**
+             * @brief Provides access to the underlying pointer
+             * @return A reference to a unique pointer
+             **/
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &ptr() const noexcept
+            {
+                return ptr_;
+            }
+
         private:
             /**
              * @brief Pointer to the array on the device
              **/
-            const scalarPtr_t<decltype(deleter)> ptr_;
+            const scalarPtr_t<decltype(scalarDeleter)> ptr_;
+
+            /**
+             * @brief Allocates a scalar array on the device
+             * @return A scalarPtr_t object pointing to a block of memory on the GPU
+             * @param f The pre-existing array on the host to be copied to the GPU
+             **/
+            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateDeviceScalarArray(const host::scalarArray &f) noexcept
+            {
+                scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t)), scalarDeleter);
+
+                const cudaError_t i = cudaMemcpy(ptr.get(), &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
+
+                if (i != cudaSuccess)
+                {
+                    exceptions::program_exit(i, "Unable to copy array");
+                }
+
+                return ptr;
+            }
         };
     }
 }

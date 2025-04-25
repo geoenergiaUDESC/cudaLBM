@@ -27,6 +27,11 @@ namespace mbLBM
      **/
     typedef std::vector<scalar_t> scalarArray_t;
 
+    /**
+     * @brief Type used to contain the moments within a given stack frame
+     **/
+    // typedef std::array<scalar_t, 10> momentArray_t;
+
 /**
  * @brief Label type used for scalar types
  * @note Types are either 32 bit or 64 bit unsigned integers
@@ -42,6 +47,12 @@ namespace mbLBM
      * @brief Type used for arrays of labels
      **/
     typedef std::vector<label_t> labelArray_t;
+
+    /**
+     * @brief Type used for lattice indices
+     **/
+    template <const label_t q_>
+    using lattice_constant = const std::integral_constant<label_t, q_>;
 
     /**
      * @brief Label type used for GPU indices

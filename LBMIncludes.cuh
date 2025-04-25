@@ -18,10 +18,12 @@ Contents: A list of header files necessary for compilation
 #include <atomic>
 #include <cstring>
 #include <mpi.h>
+#include <memory>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <array>
 
 #endif

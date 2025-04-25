@@ -39,7 +39,7 @@ namespace mbLBM
             std::cout << std::endl;
             std::cout << "programControl:" << std::endl;
             std::cout << "{" << std::endl;
-            std::cout << "    deviceList: ";
+            std::cout << "    deviceList: [";
             if (deviceList().size() > 1)
             {
                 for (label_t i = 0; i < deviceList().size() - 1; i++)
@@ -47,7 +47,7 @@ namespace mbLBM
                     std::cout << deviceList()[i] << ", ";
                 }
             }
-            std::cout << deviceList()[deviceList().size() - 1] << ";" << std::endl;
+            std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
             std::cout << "    Lx = " << Lx_ << ";" << std::endl;
             std::cout << "    Ly = " << Ly_ << ";" << std::endl;

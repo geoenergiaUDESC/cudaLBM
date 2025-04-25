@@ -65,10 +65,15 @@ namespace mbLBM
             {
                 return arr_;
             }
-            [[nodiscard]] inline scalarArray_t &arrSet() noexcept
-            {
-                return arr_;
-            }
+
+            /**
+             * @brief Returns mutable access to the underlying array
+             * @return An mutable reference to the underlying array
+             **/
+            // [[nodiscard]] inline scalarArray_t &arrSet() noexcept
+            // {
+            //     return arr_;
+            // }
 
             /**
              * @brief Total number of lattice points contained within the array
@@ -133,7 +138,7 @@ namespace mbLBM
             /**
              * @brief The underlying solution array
              **/
-            scalarArray_t arr_;
+            const scalarArray_t arr_;
 
             /**
              * @brief Constructs a scalar solution variable from another scalarArray and a partition list
@@ -195,6 +200,9 @@ namespace mbLBM
             {
                 exceptions::program_exit(i, "Unable to allocate array");
             }
+#ifdef VERBOSE
+            std::cout << "Allocated " << size << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+#endif
 
             return ptr;
         }
@@ -206,8 +214,10 @@ namespace mbLBM
          **/
         auto scalarDeleter = [](scalar_t *ptr) noexcept
         {
+#ifdef VERBOSE
+            std::cout << "Freed unique pointer from address " << ptr << std::endl;
+#endif
             cudaFree(ptr);
-            // std::cout << "Freed unique pointer" << std::endl;
         };
 
         class scalarArray
@@ -230,7 +240,7 @@ namespace mbLBM
              * @brief Provides access to the underlying pointer
              * @return A reference to a unique pointer
              **/
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &ptr() const noexcept
+            [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &ptr() const noexcept
             {
                 return ptr_;
             }
@@ -246,7 +256,7 @@ namespace mbLBM
              * @return A scalarPtr_t object pointing to a block of memory on the GPU
              * @param f The pre-existing array on the host to be copied to the GPU
              **/
-            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateDeviceScalarArray(const host::scalarArray &f) noexcept
+            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateDeviceScalarArray(const host::scalarArray &f) const noexcept
             {
                 scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t)), scalarDeleter);
 
@@ -260,7 +270,10 @@ namespace mbLBM
                 return ptr;
             }
         };
+
     }
 }
+
+#include "ghostInterface.cuh"
 
 #endif

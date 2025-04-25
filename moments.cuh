@@ -8,22 +8,13 @@ Contents: A class containing the arrays of the moment variables
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "velocitySet/velocitySet.cuh"
 #include "globalFunctions.cuh"
 #include "scalarArray.cuh"
 #include "labelArray.cuh"
 
 namespace mbLBM
 {
-    /**
-     * @brief Returns the number of lattice components
-     * @return The number of stencil components for a D3Q19 lattice
-     **/
-    template <typename T>
-    [[nodiscard]] inline constexpr T Q() noexcept
-    {
-        return 19;
-    }
-
     namespace host
     {
         class moments
@@ -37,16 +28,16 @@ namespace mbLBM
              **/
             [[nodiscard]] moments(const latticeMesh &mesh) noexcept
                 : mesh_(mesh),
-                  rho_(scalarArray(mesh)),
-                  u_(scalarArray(mesh)),
-                  v_(scalarArray(mesh)),
-                  w_(scalarArray(mesh)),
-                  m_xx_(scalarArray(mesh)),
-                  m_xy_(scalarArray(mesh)),
-                  m_xz_(scalarArray(mesh)),
-                  m_yy_(scalarArray(mesh)),
-                  m_yz_(scalarArray(mesh)),
-                  m_zz_(scalarArray(mesh)) {};
+                  rho_(scalarArray(mesh, 0)),
+                  u_(scalarArray(mesh, 1)),
+                  v_(scalarArray(mesh, 2)),
+                  w_(scalarArray(mesh, 3)),
+                  m_xx_(scalarArray(mesh, 4)),
+                  m_xy_(scalarArray(mesh, 5)),
+                  m_xz_(scalarArray(mesh, 6)),
+                  m_yy_(scalarArray(mesh, 7)),
+                  m_yz_(scalarArray(mesh, 8)),
+                  m_zz_(scalarArray(mesh, 9)) {};
 
             /**
              * @brief Constructs the moments from a pre-defined partition range
@@ -65,7 +56,8 @@ namespace mbLBM
                   m_xz_(scalarArray(mesh, moms.m_xz())),
                   m_yy_(scalarArray(mesh, moms.m_yy())),
                   m_yz_(scalarArray(mesh, moms.m_yz())),
-                  m_zz_(scalarArray(mesh, moms.m_zz())) {};
+                  m_zz_(scalarArray(mesh, moms.m_zz())) {
+                  };
 
             /**
              * @brief Destructor
@@ -187,6 +179,21 @@ namespace mbLBM
             };
 
             ~moments() {};
+
+            /**
+             * @brief Provides access to the underlying pointers
+             * @return A reference to a unique pointer
+             **/
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &rho() const noexcept { return rho_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &u() const noexcept { return u_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &v() const noexcept { return v_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &w() const noexcept { return w_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xx() const noexcept { return m_xx_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xy() const noexcept { return m_xy_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xz() const noexcept { return m_xz_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_yy() const noexcept { return m_yy_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_yz() const noexcept { return m_yz_.ptr(); }
+            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_zz() const noexcept { return m_zz_.ptr(); }
 
         private:
             const deviceIndex_t ID_;

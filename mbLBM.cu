@@ -11,12 +11,19 @@
 
 using namespace mbLBM;
 
+// const mpiStatus mpiStat(argc, argv);
+// const cudaCommunicator cudaComm;
+
 int main(int argc, char *argv[])
 {
-    // const programControl programCtrl(argc, argv);
-    // const mpiStatus mpiStat(argc, argv);
-    // const cudaCommunicator cudaComm;
-    // const latticeMesh mesh;
+
+    const programControl programCtrl(argc, argv);
+    const latticeMesh mesh;
+
+    VelocitySet::D3Q19::print();
+
+    const device::ghostInterface<VelocitySet::D3Q19> interface(mesh);
+
     // const host::moments moms(mesh);
     // const device::moments devMom_0(                                              //
     //     programCtrl.deviceList()[1],                                             //
@@ -24,8 +31,6 @@ int main(int argc, char *argv[])
     //         latticeMesh(mesh, {{0, mesh.nx()}, {0, mesh.ny()}, {0, mesh.nz()}}), //
     //         moms)                                                                //
     // );                                                                           //
-
-    VelocitySet::D3Q19::print();
 
     return 0;
 }

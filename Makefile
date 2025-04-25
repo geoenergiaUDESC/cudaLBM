@@ -1,8 +1,8 @@
 NVCXX = nvcc
 NVCXX_STANDARD = -std c++20
-NVCXX_OPTFLAGS = -O3
-# NVCXX_WFLAGS = --restrict --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this -Werror all-warnings
-NVCXX_WFLAGS = --restrict --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this
+NVCXX_OPTFLAGS = -O3 -dlto
+NVCXX_WFLAGS = --restrict --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this -Werror all-warnings
+# NVCXX_WFLAGS = --restrict --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this
 NVCXX_MFLAGS = --m64 -arch compute_89
 NVCXX_DFLAGS = -DSCALAR_PRECISION_64 -DLABEL_SIZE_32 -DSTENCIL_TYPE_D3Q19 -DVERBOSE
 

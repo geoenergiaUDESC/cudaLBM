@@ -211,10 +211,7 @@ namespace mbLBM
 
             static inline void print() noexcept
             {
-                std::cout << std::endl;
-                std::cout << "Lattice weights and coefficients:" << std::endl;
-                std::cout << std::endl;
-                std::cout << "D3Q19 {w, cx, cy, cz}" << std::endl;
+                std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
                 std::cout << "{" << std::endl;
                 printAll();
                 std::cout << "}" << std::endl;

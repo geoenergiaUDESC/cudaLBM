@@ -10,7 +10,7 @@ Contents: A class containing the arrays of the moment variables
 #include "LBMTypedefs.cuh"
 #include "velocitySet/velocitySet.cuh"
 #include "globalFunctions.cuh"
-#include "scalarArray.cuh"
+#include "scalarArray/scalarArray.cuh"
 #include "labelArray.cuh"
 
 namespace mbLBM

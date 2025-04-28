@@ -11,6 +11,26 @@ namespace mbLBM
 {
     namespace device
     {
+        /**
+         * @brief Struct holding the number of lattice points on each face of a CUDA block
+         **/
+        struct nGhostFace
+        {
+        public:
+            /**
+             * @brief Construct from a latticeMesh object
+             * @return An nGhostFace struct with xy, xz and yz defined by the mesh
+             **/
+            [[nodiscard]] inline constexpr nGhostFace(const latticeMesh &mesh) noexcept
+                : xy(block::nx<std::size_t>() * block::ny<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
+                  xz(block::nx<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
+                  yz(block::ny<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)) {};
+
+            const std::size_t xy;
+            const std::size_t xz;
+            const std::size_t yz;
+        };
+
         template <class VelSet>
         class ghostPtrs
         {
@@ -21,12 +41,13 @@ namespace mbLBM
              * @param mesh The mesh used to define the amount of memory to allocate to the pointers
              **/
             [[nodiscard]] ghostPtrs(const latticeMesh &mesh) noexcept
-                : x_0_(allocateGhostPtr_x(mesh)),
-                  x_1_(allocateGhostPtr_x(mesh)),
-                  y_0_(allocateGhostPtr_y(mesh)),
-                  y_1_(allocateGhostPtr_y(mesh)),
-                  z_0_(allocateGhostPtr_z(mesh)),
-                  z_1_(allocateGhostPtr_z(mesh)) {};
+                : nGhostFaces_(mesh),
+                  x0_(allocateGhostPtr_x(nGhostFaces_)),
+                  x1_(allocateGhostPtr_x(nGhostFaces_)),
+                  y0_(allocateGhostPtr_y(nGhostFaces_)),
+                  y1_(allocateGhostPtr_y(nGhostFaces_)),
+                  z0_(allocateGhostPtr_z(nGhostFaces_)),
+                  z1_(allocateGhostPtr_z(nGhostFaces_)) {};
 
             /**
              * @brief Default destructor
@@ -35,52 +56,75 @@ namespace mbLBM
 
             /**
              * @brief Provides access to the underlying pointers
-             * @return A reference to a unique pointer
+             * @return An immutable reference to a unique pointer
              **/
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &x0() const noexcept
             {
-                return x_0_;
+                return x0_;
             }
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &x1() const noexcept
             {
-                return x_1_;
+                return x1_;
             }
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &y0() const noexcept
             {
-                return y_0_;
+                return y0_;
             }
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &y1() const noexcept
             {
-                return y_1_;
+                return y1_;
             }
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &z0() const noexcept
             {
-                return z_0_;
+                return z0_;
             }
             [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &z1() const noexcept
             {
-                return z_1_;
+                return z1_;
+            }
+
+            /**
+             * @brief Returns the number of lattice points on each block face
+             * @return Number of lattice points on a block face as a std::size_t
+             **/
+            [[nodiscard]] inline constexpr std::size_t n_xy() const noexcept
+            {
+                return nGhostFaces_.xy;
+            }
+            [[nodiscard]] inline constexpr std::size_t n_xz() const noexcept
+            {
+                return nGhostFaces_.xz;
+            }
+            [[nodiscard]] inline constexpr std::size_t n_yz() const noexcept
+            {
+                return nGhostFaces_.yz;
             }
 
         private:
             /**
+             * @brief Number of lattice points on each face of a CUDA block
+             **/
+            const nGhostFace nGhostFaces_;
+
+            /**
              * @brief Pointers to the arrays on the device
              **/
-            const scalarPtr_t<decltype(scalarDeleter)> x_0_;
-            const scalarPtr_t<decltype(scalarDeleter)> x_1_;
-            const scalarPtr_t<decltype(scalarDeleter)> y_0_;
-            const scalarPtr_t<decltype(scalarDeleter)> y_1_;
-            const scalarPtr_t<decltype(scalarDeleter)> z_0_;
-            const scalarPtr_t<decltype(scalarDeleter)> z_1_;
+            const scalarPtr_t<decltype(scalarDeleter)> x0_;
+            const scalarPtr_t<decltype(scalarDeleter)> x1_;
+            const scalarPtr_t<decltype(scalarDeleter)> y0_;
+            const scalarPtr_t<decltype(scalarDeleter)> y1_;
+            const scalarPtr_t<decltype(scalarDeleter)> z0_;
+            const scalarPtr_t<decltype(scalarDeleter)> z1_;
 
             /**
              * @brief Allocate the pointer on the x-faces (i.e. the y-z plane)
+             * * @return A unique pointer to a block of memory of type scalar_t containing n_yz lattice points
+             * @param nGhostFaces Struct containing the number of lattice points on each block face
              **/
-            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_x(const latticeMesh &mesh) const noexcept
+            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_x(const nGhostFace &nGhostFaces) const noexcept
             {
-                const size_t NUMBER_GHOST_FACE_YZ = block::ny<size_t>() * block::nz<size_t>() * block::nxBlocks(mesh.nx()) * block::nyBlocks(mesh.ny()) * block::nzBlocks(mesh.nz());
                 constexpr const VelSet velSet;
-                const std::size_t count = sizeof(scalar_t) * velSet.QF() * NUMBER_GHOST_FACE_YZ;
+                const std::size_t count = sizeof(scalar_t) * velSet.QF() * nGhostFaces.yz;
 
                 // Allocate the pointer
                 scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(count), scalarDeleter);
@@ -98,12 +142,13 @@ namespace mbLBM
 
             /**
              * @brief Allocate the pointer on the y-faces (i.e. the x-z plane)
+             * * @return A unique pointer to a block of memory of type scalar_t containing n_xz lattice points
+             * @param nGhostFaces Struct containing the number of lattice points on each block face
              **/
-            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_y(const latticeMesh &mesh) const noexcept
+            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_y(const nGhostFace &nGhostFaces) const noexcept
             {
-                const size_t NUMBER_GHOST_FACE_XZ = block::nx<size_t>() * block::nz<size_t>() * block::nxBlocks(mesh.nx()) * block::nyBlocks(mesh.ny()) * block::nzBlocks(mesh.nz());
                 constexpr const VelSet velSet;
-                const std::size_t count = sizeof(scalar_t) * velSet.QF() * NUMBER_GHOST_FACE_XZ;
+                const std::size_t count = sizeof(scalar_t) * velSet.QF() * nGhostFaces.xz;
 
                 // Allocate the pointer
                 scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(count), scalarDeleter);
@@ -121,13 +166,14 @@ namespace mbLBM
 
             /**
              * @brief Allocate the pointer on the z-faces (i.e. the x-y plane)
+             * @return A unique pointer to a block of memory of type scalar_t containing n_xy lattice points
+             * @param nGhostFaces Struct containing the number of lattice points on each block face
              **/
-            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_z(const latticeMesh &mesh) const noexcept
+            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateGhostPtr_z(const nGhostFace &nGhostFaces) const noexcept
             {
                 // Get the memory size
-                const size_t NUMBER_GHOST_FACE_XY = block::nx<size_t>() * block::ny<size_t>() * block::nxBlocks(mesh.nx()) * block::nyBlocks(mesh.ny()) * block::nzBlocks(mesh.nz());
                 constexpr const VelSet velSet;
-                const std::size_t count = sizeof(scalar_t) * velSet.QF() * NUMBER_GHOST_FACE_XY;
+                const std::size_t count = sizeof(scalar_t) * velSet.QF() * nGhostFaces.xy;
 
                 // Allocate the pointer
                 scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(count), scalarDeleter);
@@ -143,6 +189,22 @@ namespace mbLBM
                 return ptr;
             }
         };
+
+        // template <class VelSet>
+        // __host__ inline void interfaceCudaMemcpy(ghostPtrs<VelSet> &dest, const ghostPtrs<VelSet> &src, const cudaMemcpyKind kind) noexcept
+        // {
+        //     // Copy the x interfaces
+        //     cudaMemcpy(dest.x0().get(), src.x0().get(), src.nyz(), kind);
+        //     cudaMemcpy(dest.x1().get(), src.x1().get(), src.nyz(), kind);
+
+        //     // Copy the y interfaces
+        //     cudaMemcpy(dest.y0().get(), src.y0().get(), src.nxz(), kind);
+        //     cudaMemcpy(dest.y1().get(), src.y1().get(), src.nxz(), kind);
+
+        //     // Copy the z interfaces
+        //     cudaMemcpy(dest.z0().get(), src.z0().get(), src.nxy(), kind);
+        //     cudaMemcpy(dest.z1().get(), src.z1().get(), src.nxy(), kind);
+        // }
     }
 }
 

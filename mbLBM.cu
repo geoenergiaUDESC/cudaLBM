@@ -14,6 +14,15 @@ using namespace mbLBM;
 // const mpiStatus mpiStat(argc, argv);
 // const cudaCommunicator cudaComm;
 
+/**
+ * @brief Performs a CUDA memory copy for ghost interface data between source and destination.
+ * @param ghostInterface: reference to the ghost interface data structure
+ * @param dst: destination ghost data structure
+ * @param src: source ghost data structure
+ * @param kind: type of memory copy (e.g., cudaMemcpyHostToDevice)
+ * @param Q: number of quantities in the ghost data that are transfered
+ **/
+
 int main(int argc, char *argv[])
 {
 

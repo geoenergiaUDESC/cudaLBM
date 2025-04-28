@@ -11,20 +11,10 @@
 
 using namespace mbLBM;
 
-// const mpiStatus mpiStat(argc, argv);
-// const cudaCommunicator cudaComm;
-
-/**
- * @brief Performs a CUDA memory copy for ghost interface data between source and destination.
- * @param ghostInterface: reference to the ghost interface data structure
- * @param dst: destination ghost data structure
- * @param src: source ghost data structure
- * @param kind: type of memory copy (e.g., cudaMemcpyHostToDevice)
- * @param Q: number of quantities in the ghost data that are transfered
- **/
-
 int main(int argc, char *argv[])
 {
+    // const mpiStatus mpiStat(argc, argv);
+    // const cudaCommunicator cudaComm;
 
     const programControl programCtrl(argc, argv);
     const latticeMesh mesh;
@@ -33,13 +23,20 @@ int main(int argc, char *argv[])
 
     const device::ghostInterface<VelocitySet::D3Q19> interface(mesh);
 
-    // const host::moments moms(mesh);
-    // const device::moments devMom_0(                                              //
-    //     programCtrl.deviceList()[1],                                             //
-    //     host::moments(                                                           //
-    //         latticeMesh(mesh, {{0, mesh.nx()}, {0, mesh.ny()}, {0, mesh.nz()}}), //
-    //         moms)                                                                //
-    // );                                                                           //
+    const host::moments moms(mesh);
+    const device::moments devMom_0(                                              //
+        programCtrl.deviceList()[1],                                             //
+        host::moments(                                                           //
+            latticeMesh(mesh, {{0, mesh.nx()}, {0, mesh.ny()}, {0, mesh.nz()}}), //
+            moms)                                                                //
+    );                                                                           //
+
+    kernel_collide<VelocitySet::D3Q19><<<dim3{mesh.nx(), mesh.ny(), mesh.nz()}, dim3{16, 16, 4}, 128, 0>>>(devMom_0, mesh, interface);
+
+    // do_nothing<0><<<dim3{mesh.nx(), mesh.ny(), mesh.nz()},
+    //                 dim3{16, 16, 4},
+    //                 128,
+    //                 0>>>();
 
     return 0;
 }

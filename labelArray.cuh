@@ -42,7 +42,7 @@ namespace mbLBM
              * @brief Returns immutable access to the underlying array
              * @return An immutable reference to the underlying array
              **/
-            [[nodiscard]] inline labelArray_t const &arrRef() const noexcept
+            [[nodiscard]] inline constexpr labelArray_t const &arrRef() const noexcept
             {
                 return arr_;
             }
@@ -53,7 +53,7 @@ namespace mbLBM
              * @note This may not be equivalent to the total number of global lattice
              * points since scalarArray can be constructed from a partition
              **/
-            [[nodiscard]] inline label_t nPoints() const noexcept
+            [[nodiscard]] inline constexpr label_t nPoints() const noexcept
             {
                 return arr_.size();
             }
@@ -103,6 +103,9 @@ namespace mbLBM
             }
 
         private:
+            /**
+             * @brief Immutable reference to the mesh
+             **/
             const latticeMesh &mesh_;
 
             /**

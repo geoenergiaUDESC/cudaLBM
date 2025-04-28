@@ -68,6 +68,8 @@ namespace mbLBM
 #endif
         };
 
+        ~latticeMesh() {};
+
         /**
          * @brief Returns the number of lattices in the x, y and z directions
          **/

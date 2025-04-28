@@ -120,7 +120,7 @@ namespace mbLBM
              * @param q The lattice point
              **/
             template <const label_t q_>
-            [[nodiscard]] inline static consteval scalar_t cz(const lattice_constant<q_> q) noexcept
+            [[nodiscard]] static inline consteval scalar_t cz(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
@@ -239,57 +239,60 @@ namespace mbLBM
 
                 if (tx == block::West<std::size_t>()) // West
                 {
-                    pop[1] = interface.fGhost().x1()[idxPopX<0>(ty, tz, bxm1, by, bz, mesh)];
-                    pop[7] = interface.fGhost().x1()[idxPopX<1>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz, mesh)];
-                    pop[9] = interface.fGhost().x1()[idxPopX<2>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz, mesh))];
-                    pop[13] = interface.fGhost().x1()[idxPopX<3>(typ1, tz, bxm1, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bz, mesh)];
-                    pop[15] = interface.fGhost().x1()[idxPopX<4>(ty, tzp1, bxm1, by, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
+                    pop[1] = interface.fGhost().x1()[idxPopX<M>(ty, tz, bxm1, by, bz, QF_, 0, mesh)];
+                    pop[7] = interface.fGhost().x1()[idxPopX<M>(tym1, tz, bxm1, ((block::South(ty)) ? bym1 : by), bz, QF_, 1, mesh)];
+                    pop[9] = interface.fGhost().x1()[idxPopX<M>(ty, tzm1, bxm1, by, ((block::Back(tz)) ? bzm1 : bz), QF_, 2, mesh)];
+                    pop[13] = interface.fGhost().x1()[idxPopX<M>(typ1, tz, bxm1, ((block::North(ty)) ? byp1 : by), bz, QF_, 3, mesh)];
+                    pop[15] = interface.fGhost().x1()[idxPopX<M>(ty, tzp1, bxm1, by, ((block::Front(tz)) ? bzp1 : bz), QF_, 4, mesh)];
                 }
                 else if (tx == block::East<std::size_t>()) // East
                 {
-                    pop[2] = interface.fGhost().x0()[idxPopX<0>(ty, tz, bxp1, by, bz, mesh)];
-                    pop[8] = interface.fGhost().x0()[idxPopX<1>(typ1, tz, bxp1, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bz, mesh)];
-                    pop[10] = interface.fGhost().x0()[idxPopX<2>(ty, tzp1, bxp1, by, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz, mesh))];
-                    pop[14] = interface.fGhost().x0()[idxPopX<3>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz, mesh)];
-                    pop[16] = interface.fGhost().x0()[idxPopX<4>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz), mesh)];
+                    pop[2] = interface.fGhost().x0()[idxPopX<M>(ty, tz, bxp1, by, bz, QF_, 0, mesh)];
+                    pop[8] = interface.fGhost().x0()[idxPopX<M>(typ1, tz, bxp1, ((block::North(ty)) ? byp1 : by), bz, QF_, 1, mesh)];
+                    pop[10] = interface.fGhost().x0()[idxPopX<M>(ty, tzp1, bxp1, by, ((block::Front(tz)) ? bzp1 : bz), QF_, 2, mesh)];
+                    pop[14] = interface.fGhost().x0()[idxPopX<M>(tym1, tz, bxp1, ((block::South(ty)) ? bym1 : by), bz, QF_, 3, mesh)];
+                    pop[16] = interface.fGhost().x0()[idxPopX<M>(ty, tzm1, bxp1, by, ((block::Front(tz)) ? bzm1 : bz), QF_, 4, mesh)];
                 }
 
                 if (ty == block::South<std::size_t>()) // South
                 {
-                    pop[3] = interface.fGhost().y1()[idxPopY<0>(tx, tz, 0, bx, bym1, bz, mesh)];
-                    pop[7] = interface.fGhost().y1()[idxPopY<1>(txm1, tz, 1, ((tx == 0) ? bxm1 : bx), bym1, bz, mesh)];
-                    pop[11] = interface.fGhost().y1()[idxPopY<2>(tx, tzm1, 2, bx, bym1, ((tz == 0) ? bzm1 : bz), mesh)];
-                    pop[14] = interface.fGhost().y1()[idxPopY<3>(txp1, tz, 3, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), bym1, bz, mesh)];
-                    pop[17] = interface.fGhost().y1()[idxPopY<4>(tx, tzp1, 4, bx, bym1, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
+                    pop[3] = interface.fGhost().y1()[idxPopY<M>(tx, tz, bx, bym1, bz, QF_, 0, mesh)];
+                    pop[7] = interface.fGhost().y1()[idxPopY<M>(txm1, tz, ((block::West(tx)) ? bxm1 : bx), bym1, bz, QF_, 1, mesh)];
+                    pop[11] = interface.fGhost().y1()[idxPopY<M>(tx, tzm1, bx, bym1, ((block::Front(tz)) ? bzm1 : bz), QF_, 2, mesh)];
+                    pop[14] = interface.fGhost().y1()[idxPopY<M>(txp1, tz, ((block::East(tx)) ? bxp1 : bx), bym1, bz, QF_, 3, mesh)];
+                    pop[17] = interface.fGhost().y1()[idxPopY<M>(tx, tzp1, bx, bym1, ((block::Front(tz)) ? bzp1 : bz), QF_, 4, mesh)];
                 }
                 else if (ty == block::North<std::size_t>()) // North
                 {
-                    pop[4] = interface.fGhost().y0()[idxPopY<0>(tx, tz, 0, bx, byp1, bz, mesh)];
-                    pop[8] = interface.fGhost().y0()[idxPopY<1>(txp1, tz, 1, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), byp1, bz, mesh)];
-                    pop[12] = interface.fGhost().y0()[idxPopY<2>(tx, tzp1, 2, bx, byp1, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
-                    pop[13] = interface.fGhost().y0()[idxPopY<3>(txm1, tz, 3, ((tx == 0) ? bxm1 : bx), byp1, bz, mesh)];
-                    pop[18] = interface.fGhost().y0()[idxPopY<4>(tx, tzm1, 4, bx, byp1, ((tz == 0) ? bzm1 : bz), mesh)];
+                    pop[4] = interface.fGhost().y0()[idxPopY<M>(tx, tz, bx, byp1, bz, QF_, 0, mesh)];
+                    pop[8] = interface.fGhost().y0()[idxPopY<M>(txp1, tz, ((block::East(tx)) ? bxp1 : bx), byp1, bz, QF_, 1, mesh)];
+                    pop[12] = interface.fGhost().y0()[idxPopY<M>(tx, tzp1, bx, byp1, ((block::Front(tz)) ? bzp1 : bz), QF_, 2, mesh)];
+                    pop[13] = interface.fGhost().y0()[idxPopY<M>(txm1, tz, ((block::West(tx)) ? bxm1 : bx), byp1, bz, QF_, 3, mesh)];
+                    pop[18] = interface.fGhost().y0()[idxPopY<M>(tx, tzm1, bx, byp1, ((block::Front(tz)) ? bzm1 : bz), QF_, 4, mesh)];
                 }
 
                 if (tz == block::Back<std::size_t>()) // Back
                 {
-                    pop[5] = interface.fGhost().z1()[idxPopZ<0>(tx, ty, 0, bx, by, bzm1, mesh)];
-                    pop[9] = interface.fGhost().z1()[idxPopZ<1>(txm1, ty, 1, ((tx == 0) ? bxm1 : bx), by, bzm1, mesh)];
-                    pop[11] = interface.fGhost().z1()[idxPopZ<2>(tx, tym1, 2, bx, ((ty == 0) ? bym1 : by), bzm1, mesh)];
-                    pop[16] = interface.fGhost().z1()[idxPopZ<3>(txp1, ty, 3, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), by, bzm1, mesh)];
-                    pop[18] = interface.fGhost().z1()[idxPopZ<4>(tx, typ1, 4, bx, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bzm1, mesh)];
+                    pop[5] = interface.fGhost().z1()[idxPopZ<M>(tx, ty, bx, by, bzm1, QF_, 0, mesh)];
+                    pop[9] = interface.fGhost().z1()[idxPopZ<M>(txm1, ty, ((block::West(tx)) ? bxm1 : bx), by, bzm1, QF_, 1, mesh)];
+                    pop[11] = interface.fGhost().z1()[idxPopZ<M>(tx, tym1, bx, ((block::South(ty)) ? bym1 : by), bzm1, QF_, 2, mesh)];
+                    pop[16] = interface.fGhost().z1()[idxPopZ<M>(txp1, ty, ((block::East(tx)) ? bxp1 : bx), by, bzm1, QF_, 3, mesh)];
+                    pop[18] = interface.fGhost().z1()[idxPopZ<M>(tx, typ1, bx, ((block::North(ty)) ? byp1 : by), bzm1, QF_, 4, mesh)];
                 }
                 else if (tz == block::Front<std::size_t>()) // Front
                 {
-                    pop[6] = interface.fGhost().z0()[idxPopZ<0>(tx, ty, bx, by, bzp1, mesh)];
-                    pop[10] = interface.fGhost().z0()[idxPopZ<1>(txp1, ty, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), by, bzp1, mesh)];
-                    pop[12] = interface.fGhost().z0()[idxPopZ<2>(tx, typ1, bx, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bzp1, mesh)];
-                    pop[15] = interface.fGhost().z0()[idxPopZ<3>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1, mesh)];
-                    pop[17] = interface.fGhost().z0()[idxPopZ<4>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1, mesh)];
+                    pop[6] = interface.fGhost().z0()[idxPopZ<M>(tx, ty, bx, by, bzp1, QF_, 0, mesh)];
+                    pop[10] = interface.fGhost().z0()[idxPopZ<M>(txp1, ty, ((block::East(tx)) ? bxp1 : bx), by, bzp1, QF_, 1, mesh)];
+                    pop[12] = interface.fGhost().z0()[idxPopZ<M>(tx, typ1, bx, ((block::North(ty)) ? byp1 : by), bzp1, QF_, 2, mesh)];
+                    pop[15] = interface.fGhost().z0()[idxPopZ<M>(txm1, ty, ((block::West(tx)) ? bxm1 : bx), by, bzp1, QF_, 3, mesh)];
+                    pop[17] = interface.fGhost().z0()[idxPopZ<M>(tx, tym1, bx, ((block::South(ty)) ? bym1 : by), bzp1, QF_, 4, mesh)];
                 }
             }
 
-            static inline void print() noexcept
+            /**
+             * @brief Prints information about the velocity set to the terminal
+             **/
+            static void print() noexcept
             {
                 std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
                 std::cout << "{" << std::endl;

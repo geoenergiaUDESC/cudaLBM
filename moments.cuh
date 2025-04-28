@@ -56,11 +56,10 @@ namespace mbLBM
                   m_xz_(scalarArray(mesh, moms.m_xz())),
                   m_yy_(scalarArray(mesh, moms.m_yy())),
                   m_yz_(scalarArray(mesh, moms.m_yz())),
-                  m_zz_(scalarArray(mesh, moms.m_zz())) {
-                  };
+                  m_zz_(scalarArray(mesh, moms.m_zz())) {};
 
             /**
-             * @brief Destructor
+             * @brief Default destructor
              **/
             ~moments() {};
 
@@ -88,48 +87,51 @@ namespace mbLBM
              * @brief Provides immutable access to the moments
              * @return An immutable access to a scalarArray object
              **/
-            [[nodiscard]] inline scalarArray const &rho() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &rho() const noexcept
             {
                 return rho_;
             }
-            [[nodiscard]] inline scalarArray const &u() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &u() const noexcept
             {
                 return u_;
             }
-            [[nodiscard]] inline scalarArray const &v() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &v() const noexcept
             {
                 return v_;
             }
-            [[nodiscard]] inline scalarArray const &w() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &w() const noexcept
             {
                 return w_;
             }
-            [[nodiscard]] inline scalarArray const &m_xx() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_xx() const noexcept
             {
                 return m_xx_;
             }
-            [[nodiscard]] inline scalarArray const &m_xy() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_xy() const noexcept
             {
                 return m_xy_;
             }
-            [[nodiscard]] inline scalarArray const &m_xz() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_xz() const noexcept
             {
                 return m_xz_;
             }
-            [[nodiscard]] inline scalarArray const &m_yy() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_yy() const noexcept
             {
                 return m_yy_;
             }
-            [[nodiscard]] inline scalarArray const &m_yz() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_yz() const noexcept
             {
                 return m_yz_;
             }
-            [[nodiscard]] inline scalarArray const &m_zz() const noexcept
+            [[nodiscard]] inline constexpr scalarArray const &m_zz() const noexcept
             {
                 return m_zz_;
             }
 
         private:
+            /**
+             * @brief Immutable reference to the mesh
+             **/
             const latticeMesh &mesh_;
 
             /**
@@ -178,26 +180,70 @@ namespace mbLBM
 #endif
             };
 
+            /**
+             * @brief Default destructor
+             **/
             ~moments() {};
 
             /**
              * @brief Provides access to the underlying pointers
              * @return A reference to a unique pointer
              **/
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &rho() const noexcept { return rho_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &u() const noexcept { return u_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &v() const noexcept { return v_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &w() const noexcept { return w_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xx() const noexcept { return m_xx_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xy() const noexcept { return m_xy_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_xz() const noexcept { return m_xz_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_yy() const noexcept { return m_yy_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_yz() const noexcept { return m_yz_.ptr(); }
-            [[nodiscard]] const scalarPtr_t<decltype(scalarDeleter)> &m_zz() const noexcept { return m_zz_.ptr(); }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *rho() const noexcept
+            {
+                return rho_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *u() const noexcept
+            {
+                return u_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *v() const noexcept
+            {
+                return v_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *w() const noexcept
+            {
+                return w_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xx() const noexcept
+            {
+                return m_xx_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xy() const noexcept
+            {
+                return m_xy_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xz() const noexcept
+            {
+                return m_xz_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_yy() const noexcept
+            {
+                return m_yy_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_yz() const noexcept
+            {
+                return m_yz_.ptr();
+            }
+            __device__ [[nodiscard]] inline constexpr const scalar_t *m_zz() const noexcept
+            {
+                return m_zz_.ptr();
+            }
 
         private:
+            /**
+             * @brief The device ID
+             **/
             const deviceIndex_t ID_;
+
+            /**
+             * @brief The error code returned from setting the device
+             **/
             const cudaError_t err_;
+
+            /**
+             * @brief The moment variables
+             **/
             const scalarArray rho_;
             const scalarArray u_;
             const scalarArray v_;

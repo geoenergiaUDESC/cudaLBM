@@ -71,19 +71,19 @@ namespace mbLBM
         /**
          * @brief Returns the number of lattices in the x, y and z directions
          **/
-        [[nodiscard]] inline constexpr label_t nx() const noexcept
+        __host__ __device__ [[nodiscard]] inline constexpr label_t nx() const noexcept
         {
             return nx_;
         }
-        [[nodiscard]] inline constexpr label_t ny() const noexcept
+        __host__ __device__ [[nodiscard]] inline constexpr label_t ny() const noexcept
         {
             return ny_;
         }
-        [[nodiscard]] inline constexpr label_t nz() const noexcept
+        __host__ __device__ [[nodiscard]] inline constexpr label_t nz() const noexcept
         {
             return nz_;
         }
-        [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+        __host__ __device__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
         {
             return nPoints_;
         }
@@ -112,8 +112,7 @@ namespace mbLBM
          * @brief Prints the global array label to the terminal
          * @param name Name of the field to be printed
          **/
-        void print(
-            const std::string &name) const noexcept
+        void print(const std::string &name) const noexcept
         {
             std::cout << name << std::endl;
             std::cout << "nx = " << nx_ << std::endl;

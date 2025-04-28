@@ -29,20 +29,27 @@ namespace mbLBM
 
             ~ghostInterface() noexcept {};
 
-            [[nodiscard]] inline constexpr ghostPtrs<VelSet> &fGhost() const noexcept
+            /**
+             * @brief Returns access to the ghost pointer objects
+             * @return An immutable reference to the underlying ghostPtrs objects
+             **/
+            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &fGhost() const noexcept
             {
                 return fGhost_;
             }
-            [[nodiscard]] inline constexpr ghostPtrs<VelSet> &gGhost() const noexcept
+            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &gGhost() const noexcept
             {
                 return fGhost_;
             }
-            [[nodiscard]] inline constexpr ghostPtrs<VelSet> &h_fGhost() const noexcept
+            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &h_fGhost() const noexcept
             {
                 return h_fGhost_;
             }
 
         private:
+            /**
+             * @brief Lists of 6 unique pointers on each face of a CUDA block
+             **/
             const ghostPtrs<VelSet> fGhost_;
             const ghostPtrs<VelSet> gGhost_;
             const ghostPtrs<VelSet> h_fGhost_;

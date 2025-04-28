@@ -25,5 +25,6 @@ Contents: A list of header files necessary for compilation
 #include <string_view>
 #include <type_traits>
 #include <array>
+#include <cuda_runtime_api.h>
 
 #endif

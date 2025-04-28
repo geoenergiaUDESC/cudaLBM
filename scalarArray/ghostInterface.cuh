@@ -25,23 +25,41 @@ namespace mbLBM
             [[nodiscard]] ghostInterface(const latticeMesh &mesh) noexcept
                 : fGhost_(ghostPtrs<VelSet>(mesh)),
                   gGhost_(ghostPtrs<VelSet>(mesh)),
-                  h_fGhost_(ghostPtrs<VelSet>(mesh)) {};
+                  h_fGhost_(ghostPtrs<VelSet>(mesh))
+            {
+#ifdef VERBOSE
+                std::cout << "Allocated ghostInterface object:" << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    nx = " << mesh.nx() << ";" << std::endl;
+                std::cout << "    ny = " << mesh.ny() << ";" << std::endl;
+                std::cout << "    nz = " << mesh.nz() << ";" << std::endl;
+                std::cout << "}" << std::endl;
+#endif
+            };
 
-            ~ghostInterface() noexcept {};
+            /**
+             * @brief Default destructor
+             **/
+            ~ghostInterface() noexcept
+            {
+#ifdef VERBOSE
+                std::cout << "Freeing ghostInterface object" << std::endl;
+#endif
+            };
 
             /**
              * @brief Returns access to the ghost pointer objects
              * @return An immutable reference to the underlying ghostPtrs objects
              **/
-            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &fGhost() const noexcept
             {
                 return fGhost_;
             }
-            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &gGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &gGhost() const noexcept
             {
-                return fGhost_;
+                return gGhost_;
             }
-            [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &h_fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &h_fGhost() const noexcept
             {
                 return h_fGhost_;
             }

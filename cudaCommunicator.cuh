@@ -30,7 +30,7 @@ namespace mbLBM
         /**
          * @brief Returns the process MPI rank
          **/
-        [[nodiscard]] inline mpiRank_t rank() const noexcept
+        [[nodiscard]] inline constexpr mpiRank_t rank() const noexcept
         {
             return myRank_;
         }
@@ -38,7 +38,7 @@ namespace mbLBM
         /**
          * @brief Returns the total number of MPI ranks
          **/
-        [[nodiscard]] inline mpiRank_t totalRank() const noexcept
+        [[nodiscard]] inline constexpr mpiRank_t totalRank() const noexcept
         {
             return totalRank_;
         }

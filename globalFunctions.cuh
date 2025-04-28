@@ -81,9 +81,19 @@ namespace mbLBM
             return 0;
         }
         template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool West(const T n) noexcept
+        {
+            return (n == West<T>());
+        }
+        template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T East() noexcept
         {
             return block::nx<T>() - 1;
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool East(const T n) noexcept
+        {
+            return (n == East<T>());
         }
 
         template <typename T>
@@ -92,9 +102,19 @@ namespace mbLBM
             return 0;
         }
         template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool South(const T n) noexcept
+        {
+            return (n == South<T>());
+        }
+        template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T North() noexcept
         {
             return block::ny<T>() - 1;
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool North(const T n) noexcept
+        {
+            return (n == North<T>());
         }
 
         template <typename T>
@@ -103,9 +123,19 @@ namespace mbLBM
             return 0;
         }
         template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool Back(const T n) noexcept
+        {
+            return (n == Back<T>());
+        }
+        template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T Front() noexcept
         {
             return block::nz<T>() - 1;
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool Front(const T n) noexcept
+        {
+            return (n == Front<T>());
         }
 
     }
@@ -129,18 +159,21 @@ namespace mbLBM
     }
 
     template <const std::size_t pop>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopBlock(const std::size_t threadIDx, const std::size_t threadIDy, const std::size_t threadIDz)
+    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopBlock(
+        const std::size_t threadIDx, const std::size_t threadIDy, const std::size_t threadIDz)
     {
         return threadIDx + block::nx<std::size_t>() * (threadIDy + block::ny<std::size_t>() * (threadIDz + block::nz<std::size_t>() * (pop)));
     }
 
-    template <const label_t QF, const label_t pop, class M>
+    template <class M>
     __device__ [[nodiscard]] inline constexpr std::size_t idxPopX(
         const std::size_t ty,
         const std::size_t tz,
         const std::size_t bx,
         const std::size_t by,
         const std::size_t bz,
+        const std::size_t QF,
+        const std::size_t pop,
         const M &mesh)
     {
 
@@ -161,13 +194,15 @@ namespace mbLBM
         return ty + block::ny<std::size_t>() * (tz + block::nz<std::size_t>() * (pop + QF * (bx + block::nxBlocks<std::size_t>(mesh.nx()) * (by + block::nyBlocks<std::size_t>(mesh.ny()) * bz))));
     }
 
-    template <const label_t QF, const label_t pop, class M>
+    template <class M>
     __device__ [[nodiscard]] inline constexpr std::size_t idxPopY(
         const std::size_t tx,
         const std::size_t tz,
         const std::size_t bx,
         const std::size_t by,
         const std::size_t bz,
+        const std::size_t QF,
+        const std::size_t pop,
         const M &mesh)
     {
 
@@ -188,13 +223,15 @@ namespace mbLBM
         return tx + block::nx<std::size_t>() * (tz + block::nz<std::size_t>() * (pop + QF * (bx + block::nxBlocks<std::size_t>(mesh.nx()) * (by + block::nyBlocks<std::size_t>(mesh.ny()) * bz))));
     }
 
-    template <const label_t QF, const label_t pop, class M>
+    template <class M>
     __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopZ(
         const std::size_t tx,
         const std::size_t ty,
         const std::size_t bx,
         const std::size_t by,
         const std::size_t bz,
+        const std::size_t QF,
+        const std::size_t pop,
         const M &mesh)
     {
 

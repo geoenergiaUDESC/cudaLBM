@@ -26,7 +26,7 @@ namespace mbLBM
              * @param mesh The lattice mesh
              * @note This constructor zero-initialises everything
              **/
-            [[nodiscard]] scalarArray(const latticeMesh &mesh) noexcept
+            [[nodiscard]] inline scalarArray(const latticeMesh &mesh) noexcept
                 : mesh_(mesh),
                   arr_(scalarArray_t(mesh.nPoints(), 0)) {};
 
@@ -37,7 +37,7 @@ namespace mbLBM
              * @param val The initial value
              * @note This constructor initialises everything to a uniform value
              **/
-            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalar_t val) noexcept
+            [[nodiscard]] inline scalarArray(const latticeMesh &mesh, const scalar_t val) noexcept
                 : mesh_(mesh),
                   arr_(scalarArray_t(mesh.nPoints(), val)) {};
 
@@ -48,14 +48,14 @@ namespace mbLBM
              * @param originalArray The original scalar solution array to be partitioned
              * @note This constructor copies the elements corresponding to the mesh partition points into the new object
              **/
-            [[nodiscard]] scalarArray(const latticeMesh &mesh, const scalarArray &originalArray) noexcept
+            [[nodiscard]] inline scalarArray(const latticeMesh &mesh, const scalarArray &originalArray) noexcept
                 : mesh_(mesh),
                   arr_(partitionArray(mesh, originalArray)) {};
 
             /**
              * @brief Destructor
              **/
-            ~scalarArray() noexcept {};
+            inline ~scalarArray() noexcept {};
 
             /**
              * @brief Returns immutable access to the underlying array
@@ -81,13 +81,14 @@ namespace mbLBM
              * @note This may not be equivalent to the total number of global lattice
              * points since scalarArray can be constructed from a partition
              **/
-            [[nodiscard]] inline label_t nPoints() const noexcept
+            [[nodiscard]] inline auto nPoints() const noexcept
             {
                 return arr_.size();
             }
 
             /**
              * @brief Prints the solution variable to the terminal in sequential z planes
+             * @param name (Optional) Name of the variable to print to the terminal
              **/
             void print(const std::string &name) const noexcept
             {
@@ -146,7 +147,7 @@ namespace mbLBM
              * @param mesh The partition of the mesh
              * @param originalArray The original scalar solution array to be partitioned
              **/
-            [[nodiscard]] scalarArray_t partitionArray(const latticeMesh &mesh, const scalarArray &originalArray) const noexcept
+            [[nodiscard]] inline scalarArray_t partitionArray(const latticeMesh &mesh, const scalarArray &originalArray) const noexcept
             {
                 scalarArray_t f(mesh.nPoints());
                 for (label_t i = 0; i < mesh.nPoints(); i++)
@@ -162,7 +163,7 @@ namespace mbLBM
              * @param originalArray The original array to be partitioned
              * @param partitionIndices A list of unsigned integers corresponding to indices of originalArray
              **/
-            [[nodiscard]] scalarArray_t partitionOriginal(
+            [[nodiscard]] inline scalarArray_t partitionOriginal(
                 const scalarArray &originalArray,
                 const labelArray &partitionIndices) const noexcept
             {
@@ -179,88 +180,104 @@ namespace mbLBM
 
     namespace device
     {
-        /**
-         * @brief Templated typedef for a pointer to a scalar variable
-         **/
-        template <typename Deleter>
-        using scalarPtr_t = std::unique_ptr<scalar_t, Deleter>;
-
-        /**
-         * @brief Allocates a block of memory on the device and returns its pointer
-         * @return A raw pointer to a block of memory
-         * @param size The amount of memory to be allocated
-         **/
-        template <typename T>
-        [[nodiscard]] T *deviceMalloc(const std::size_t size) noexcept
-        {
-            T *ptr;
-            const cudaError_t i = cudaMalloc(static_cast<T **>(&ptr), size);
-
-            if (i != cudaSuccess)
-            {
-                exceptions::program_exit(i, "Unable to allocate array");
-            }
-#ifdef VERBOSE
-            std::cout << "Allocated " << size << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
-#endif
-
-            return ptr;
-        }
-
-        /**
-         * @brief Frees a block of memory pointed to by ptr
-         * @return A std::vector of std::string_view objects contained within the caseInfo file
-         * @param ptr The pointer to be freed
-         **/
-        auto scalarDeleter = [](scalar_t *ptr) noexcept
-        {
-#ifdef VERBOSE
-            std::cout << "Freed unique pointer from address " << ptr << std::endl;
-#endif
-            cudaFree(ptr);
-        };
-
         class scalarArray
         {
         public:
             /**
-             * @brief Constructs a scalar array on the device
-             * @return A scalarArray object copied from f
-             * @param f The pre-existing array on the host to be copied to the GPU
+             * @brief Constructs a scalar solution variable on the device from a copy of its host version
+             * @return A scalarArray object copied from the host to the device
+             * @param f The host copy of the scalar solution variable
              **/
             [[nodiscard]] scalarArray(const host::scalarArray &f) noexcept
                 : ptr_(allocateDeviceScalarArray(f)) {};
 
             /**
-             * @brief Destructor
+             * @brief Constructs a scalar solution variable from an arbitrary number of points and a value
+             * @return A scalarArray object of arbitrary number of points and value
+             * @param nPoints The number of lattice points to assign
+             * @param value The value to assign to all points of the array
              **/
-            ~scalarArray() noexcept {};
+            [[nodiscard]] scalarArray(const std::size_t nPoints, const scalar_t value) noexcept
+                : ptr_(allocateDeviceScalarArray(nPoints, value)) {};
 
             /**
-             * @brief Provides access to the underlying pointer
-             * @return A reference to a unique pointer
+             * @brief Destructor
              **/
-            [[nodiscard]] inline constexpr const scalarPtr_t<decltype(scalarDeleter)> &ptr() const noexcept
+            ~scalarArray() noexcept
+            {
+#ifdef VERBOSE
+                std::cout << "Freed memory" << std::endl;
+#endif
+                cudaFree((void *)ptr_);
+            };
+
+            /**
+             * @brief Returns immutable access to the underlying pointer
+             * @return A const-qualified pointer
+             **/
+            __device__ [[nodiscard]] inline constexpr const scalar_t *ptr() const noexcept
             {
                 return ptr_;
             }
 
         private:
             /**
-             * @brief Pointer to the array on the device
+             * @brief Pointer to the underlying variable
              **/
-            const scalarPtr_t<decltype(scalarDeleter)> ptr_;
+            const scalar_t *ptr_;
+
+            /**
+             * @brief Allocates a block of memory on the device and returns its pointer
+             * @return A raw pointer to a block of memory
+             * @param size The amount of memory to be allocated
+             **/
+            template <typename T>
+            [[nodiscard]] inline T *deviceMalloc(const std::size_t size) const noexcept
+            {
+                T *ptr;
+                const cudaError_t i = cudaMalloc(static_cast<T **>(&ptr), size);
+
+                if (i != cudaSuccess)
+                {
+                    exceptions::program_exit(i, "Unable to allocate array");
+                }
+#ifdef VERBOSE
+                std::cout << "Allocated " << size << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+#endif
+
+                return ptr;
+            }
 
             /**
              * @brief Allocates a scalar array on the device
-             * @return A scalarPtr_t object pointing to a block of memory on the GPU
+             * @return A scalar_t * object pointing to a block of memory on the GPU
              * @param f The pre-existing array on the host to be copied to the GPU
              **/
-            [[nodiscard]] scalarPtr_t<decltype(scalarDeleter)> allocateDeviceScalarArray(const host::scalarArray &f) const noexcept
+            [[nodiscard]] const scalar_t *allocateDeviceScalarArray(const host::scalarArray &f) const noexcept
             {
-                scalarPtr_t<decltype(scalarDeleter)> ptr(deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t)), scalarDeleter);
+                scalar_t *ptr = deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t));
 
-                const cudaError_t i = cudaMemcpy(ptr.get(), &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
+                const cudaError_t i = cudaMemcpy(ptr, &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
+
+                if (i != cudaSuccess)
+                {
+                    exceptions::program_exit(i, "Unable to copy array");
+                }
+
+                return ptr;
+            }
+
+            /**
+             * @brief Allocates a scalar array on the device
+             * @return A scalar_t * object pointing to a block of memory on the GPU
+             * @param nPoints The number of scalar points to be allocated to the block of memory
+             * @param val The value set
+             **/
+            [[nodiscard]] const scalar_t *allocateDeviceScalarArray(const std::size_t nPoints, const scalar_t val) const noexcept
+            {
+                scalar_t *ptr = deviceMalloc<scalar_t>(nPoints * sizeof(scalar_t));
+
+                const cudaError_t i = cudaMemset(ptr, val, nPoints * sizeof(scalar_t));
 
                 if (i != cudaSuccess)
                 {
@@ -270,7 +287,6 @@ namespace mbLBM
                 return ptr;
             }
         };
-
     }
 }
 

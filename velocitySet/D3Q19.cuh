@@ -140,7 +140,7 @@ namespace mbLBM
             __device__ static inline void reconstruct(const scalar_t (&moments)[10], scalar_t (&pop)[19]) noexcept
             {
                 const scalar_t multiplyTerm_0 = moments[0] * w0_;
-                const scalar_t pics2 = 1.0 - cs2_ * (moments[4] + moments[7] + moments[9]);
+                const scalar_t pics2 = 1.0 - cs2() * (moments[4] + moments[7] + moments[9]);
                 pop[0] = multiplyTerm_0 * (pics2);
                 const scalar_t multiplyTerm_1 = moments[0] * w1_;
                 pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
@@ -189,24 +189,104 @@ namespace mbLBM
                 const std::size_t zp1 = (threadIdx.z + 1 + block::nz<std::size_t>()) % block::nz<std::size_t>();
                 const std::size_t zm1 = (threadIdx.z - 1 + block::nz<std::size_t>()) % block::nz<std::size_t>();
 
-                pop[1] = s_pop[idxPopBlock(xm1, threadIdx.y, threadIdx.z, 0)];
-                pop[2] = s_pop[idxPopBlock(xp1, threadIdx.y, threadIdx.z, 1)];
-                pop[3] = s_pop[idxPopBlock(threadIdx.x, ym1, threadIdx.z, 2)];
-                pop[4] = s_pop[idxPopBlock(threadIdx.x, yp1, threadIdx.z, 3)];
-                pop[5] = s_pop[idxPopBlock(threadIdx.x, threadIdx.y, zm1, 4)];
-                pop[6] = s_pop[idxPopBlock(threadIdx.x, threadIdx.y, zp1, 5)];
-                pop[7] = s_pop[idxPopBlock(xm1, ym1, threadIdx.z, 6)];
-                pop[8] = s_pop[idxPopBlock(xp1, yp1, threadIdx.z, 7)];
-                pop[9] = s_pop[idxPopBlock(xm1, threadIdx.y, zm1, 8)];
-                pop[10] = s_pop[idxPopBlock(xp1, threadIdx.y, zp1, 9)];
-                pop[11] = s_pop[idxPopBlock(threadIdx.x, ym1, zm1, 10)];
-                pop[12] = s_pop[idxPopBlock(threadIdx.x, yp1, zp1, 11)];
-                pop[13] = s_pop[idxPopBlock(xm1, yp1, threadIdx.z, 12)];
-                pop[14] = s_pop[idxPopBlock(xp1, ym1, threadIdx.z, 13)];
-                pop[15] = s_pop[idxPopBlock(xm1, threadIdx.y, zp1, 14)];
-                pop[16] = s_pop[idxPopBlock(xp1, threadIdx.y, zm1, 15)];
-                pop[17] = s_pop[idxPopBlock(threadIdx.x, ym1, zp1, 16)];
-                pop[18] = s_pop[idxPopBlock(threadIdx.x, yp1, zm1, 17)];
+                pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
+                pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
+                pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
+                pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
+                pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
+                pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
+                pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
+                pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
+                pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
+                pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
+                pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
+                pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
+                pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
+                pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
+                pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
+                pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
+                pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
+                pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+            }
+
+            /**
+             * @brief Loads the population densities from neighbouring CUDA blocks
+             * @param mesh The global mesh
+             * @param interface The ghost interface used to exchange pop
+             * @param pop The array into which the population densities from the neighbouring block is loaded
+             **/
+            template <class M, class G>
+            __device__ static inline void popLoad(const M &mesh, const G &interface, scalar_t (&pop)[19]) noexcept
+            {
+                const std::size_t tx = threadIdx.x;
+                const std::size_t ty = threadIdx.y;
+                const std::size_t tz = threadIdx.z;
+                const std::size_t bx = blockIdx.x;
+                const std::size_t by = blockIdx.y;
+                const std::size_t bz = blockIdx.z;
+                const std::size_t txm1 = (tx - 1 + block::nx<std::size_t>()) % block::nx<std::size_t>();
+                const std::size_t txp1 = (tx + 1 + block::nx<std::size_t>()) % block::nx<std::size_t>();
+                const std::size_t tym1 = (ty - 1 + block::ny<std::size_t>()) % block::ny<std::size_t>();
+                const std::size_t typ1 = (ty + 1 + block::ny<std::size_t>()) % block::ny<std::size_t>();
+                const std::size_t tzm1 = (tz - 1 + block::nz<std::size_t>()) % block::nz<std::size_t>();
+                const std::size_t tzp1 = (tz + 1 + block::nz<std::size_t>()) % block::nz<std::size_t>();
+                const std::size_t bxm1 = (bx - 1 + block::nxBlocks<std::size_t>(mesh.nx())) % block::nxBlocks<std::size_t>(mesh.nx());
+                const std::size_t bxp1 = (bx + 1 + block::nxBlocks<std::size_t>(mesh.nx())) % block::nxBlocks<std::size_t>(mesh.nx());
+                const std::size_t bym1 = (by - 1 + block::nyBlocks<std::size_t>(mesh.ny())) % block::nyBlocks<std::size_t>(mesh.ny());
+                const std::size_t byp1 = (by + 1 + block::nyBlocks<std::size_t>(mesh.ny())) % block::nyBlocks<std::size_t>(mesh.ny());
+                const std::size_t bzm1 = (bz - 1 + block::nzBlocks<std::size_t>(mesh.nz())) % block::nzBlocks<std::size_t>(mesh.nz());
+                const std::size_t bzp1 = (bz + 1 + block::nzBlocks<std::size_t>(mesh.nz())) % block::nzBlocks<std::size_t>(mesh.nz());
+
+                if (tx == block::West<std::size_t>()) // West
+                {
+                    pop[1] = interface.fGhost().x1()[idxPopX<0>(ty, tz, bxm1, by, bz, mesh)];
+                    pop[7] = interface.fGhost().x1()[idxPopX<1>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz, mesh)];
+                    pop[9] = interface.fGhost().x1()[idxPopX<2>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz, mesh))];
+                    pop[13] = interface.fGhost().x1()[idxPopX<3>(typ1, tz, bxm1, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bz, mesh)];
+                    pop[15] = interface.fGhost().x1()[idxPopX<4>(ty, tzp1, bxm1, by, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
+                }
+                else if (tx == block::East<std::size_t>()) // East
+                {
+                    pop[2] = interface.fGhost().x0()[idxPopX<0>(ty, tz, bxp1, by, bz, mesh)];
+                    pop[8] = interface.fGhost().x0()[idxPopX<1>(typ1, tz, bxp1, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bz, mesh)];
+                    pop[10] = interface.fGhost().x0()[idxPopX<2>(ty, tzp1, bxp1, by, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz, mesh))];
+                    pop[14] = interface.fGhost().x0()[idxPopX<3>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz, mesh)];
+                    pop[16] = interface.fGhost().x0()[idxPopX<4>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz), mesh)];
+                }
+
+                if (ty == block::South<std::size_t>()) // South
+                {
+                    pop[3] = interface.fGhost().y1()[idxPopY<0>(tx, tz, 0, bx, bym1, bz, mesh)];
+                    pop[7] = interface.fGhost().y1()[idxPopY<1>(txm1, tz, 1, ((tx == 0) ? bxm1 : bx), bym1, bz, mesh)];
+                    pop[11] = interface.fGhost().y1()[idxPopY<2>(tx, tzm1, 2, bx, bym1, ((tz == 0) ? bzm1 : bz), mesh)];
+                    pop[14] = interface.fGhost().y1()[idxPopY<3>(txp1, tz, 3, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), bym1, bz, mesh)];
+                    pop[17] = interface.fGhost().y1()[idxPopY<4>(tx, tzp1, 4, bx, bym1, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
+                }
+                else if (ty == block::North<std::size_t>()) // North
+                {
+                    pop[4] = interface.fGhost().y0()[idxPopY<0>(tx, tz, 0, bx, byp1, bz, mesh)];
+                    pop[8] = interface.fGhost().y0()[idxPopY<1>(txp1, tz, 1, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), byp1, bz, mesh)];
+                    pop[12] = interface.fGhost().y0()[idxPopY<2>(tx, tzp1, 2, bx, byp1, ((tz == (block::nz<std::size_t>() - 1)) ? bzp1 : bz), mesh)];
+                    pop[13] = interface.fGhost().y0()[idxPopY<3>(txm1, tz, 3, ((tx == 0) ? bxm1 : bx), byp1, bz, mesh)];
+                    pop[18] = interface.fGhost().y0()[idxPopY<4>(tx, tzm1, 4, bx, byp1, ((tz == 0) ? bzm1 : bz), mesh)];
+                }
+
+                if (tz == block::Back<std::size_t>()) // Back
+                {
+                    pop[5] = interface.fGhost().z1()[idxPopZ<0>(tx, ty, 0, bx, by, bzm1, mesh)];
+                    pop[9] = interface.fGhost().z1()[idxPopZ<1>(txm1, ty, 1, ((tx == 0) ? bxm1 : bx), by, bzm1, mesh)];
+                    pop[11] = interface.fGhost().z1()[idxPopZ<2>(tx, tym1, 2, bx, ((ty == 0) ? bym1 : by), bzm1, mesh)];
+                    pop[16] = interface.fGhost().z1()[idxPopZ<3>(txp1, ty, 3, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), by, bzm1, mesh)];
+                    pop[18] = interface.fGhost().z1()[idxPopZ<4>(tx, typ1, 4, bx, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bzm1, mesh)];
+                }
+                else if (tz == block::Front<std::size_t>()) // Front
+                {
+                    pop[6] = interface.fGhost().z0()[idxPopZ<0>(tx, ty, bx, by, bzp1, mesh)];
+                    pop[10] = interface.fGhost().z0()[idxPopZ<1>(txp1, ty, ((tx == (block::nx<std::size_t>() - 1)) ? bxp1 : bx), by, bzp1, mesh)];
+                    pop[12] = interface.fGhost().z0()[idxPopZ<2>(tx, typ1, bx, ((ty == (block::ny<std::size_t>() - 1)) ? byp1 : by), bzp1, mesh)];
+                    pop[15] = interface.fGhost().z0()[idxPopZ<3>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1, mesh)];
+                    pop[17] = interface.fGhost().z0()[idxPopZ<4>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1, mesh)];
+                }
             }
 
             static inline void print() noexcept
@@ -249,7 +329,7 @@ namespace mbLBM
                 static_assert(q_ + 1 < 19, "Compile error in popSave: Loop is incorrectly bounded");
 
                 // Put pop[q + 1] into s_pop[q]
-                s_pop[idxPopBlock(threadIdx.x, threadIdx.y, threadIdx.z, q_)] = pop[q_ + 1];
+                s_pop[idxPopBlock<q_>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[q_ + 1];
 
                 // Check that we have not reached the end of the loop
                 if constexpr (q_ < Q_ - 2)

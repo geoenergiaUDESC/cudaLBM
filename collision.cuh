@@ -9,6 +9,7 @@ Contents: Definition of the collision GPU kernel
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "velocitySet/velocitySet.cuh"
+#include "scalarArray/scalarArray.cuh"
 
 namespace mbLBM
 {
@@ -28,25 +29,24 @@ namespace mbLBM
         const scalar_t *m_yy,
         const scalar_t *m_yz,
         const scalar_t *m_zz,
-        const std::size_t nx,
-        const std::size_t ny,
-        const std::size_t nz)
+        const latticeMesh &mesh,
+        const device::ghostInterface<VelSet> &interface)
     {
         constexpr const VelSet velSet;
 
         constexpr const scalar_t RHO_0 = 0.0;
 
         const scalar_t moments[10] = {
-            RHO_0 + rho[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            u[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            v[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            w[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_xx[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_xy[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_xz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_yy[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_yz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)],
-            m_zz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, nx, ny, nz)]};
+            RHO_0 + rho[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            u[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            v[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            w[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_xx[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_xy[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_xz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_yy[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_yz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
+            m_zz[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)]};
 
 #ifdef VERBOSE
         if ((!threadIdx.y == 0) || (!threadIdx.z == 0))
@@ -68,6 +68,8 @@ namespace mbLBM
 
         // Pull population from shared memory
         velSet.popPull(s_pop, pop);
+
+        velSet.popLoad(mesh, interface, pop);
     }
 
     template <class VelSet>

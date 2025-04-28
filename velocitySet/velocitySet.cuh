@@ -25,12 +25,30 @@ namespace mbLBM
              * @return Scalar constants used by the velocity set
              * @note These methods are consteval
              **/
-            static constexpr const scalar_t as2_ = 3.0;
-            static constexpr const scalar_t cs2_ = 1.0 / as2_;
-            static constexpr const scalar_t F_M_0_SCALE_ = 1.0;
-            static constexpr const scalar_t F_M_I_SCALE_ = as2_;
-            static constexpr const scalar_t F_M_II_SCALE_ = as2_ * as2_ / 2.0;
-            static constexpr const scalar_t F_M_IJ_SCALE_ = as2_ * as2_;
+            static inline consteval scalar_t as2() noexcept
+            {
+                return 3.0;
+            }
+            static inline consteval scalar_t cs2() noexcept
+            {
+                return 1.0 / as2();
+            }
+            static inline consteval scalar_t F_M_0_SCALE() noexcept
+            {
+                return 1.0;
+            }
+            static inline consteval scalar_t F_M_I_SCALE() noexcept
+            {
+                return as2();
+            }
+            static inline consteval scalar_t F_M_II_SCALE() noexcept
+            {
+                return as2() * as2() / 2.0;
+            }
+            static inline consteval scalar_t F_M_IJ_SCALE() noexcept
+            {
+                return as2() * as2();
+            }
         };
     }
 }

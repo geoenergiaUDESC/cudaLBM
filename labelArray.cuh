@@ -75,7 +75,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < mesh_.nx(); i++)
                         {
-                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, mesh_)] << " ";
                         }
                         std::cout << "\n";
                     }
@@ -94,7 +94,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < mesh_.nx(); i++)
                         {
-                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, mesh_)] << " ";
                         }
                         std::cout << "\n";
                     }
@@ -138,7 +138,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < mesh.nx(); i++)
                         {
-                            labels[i] = original.arrRef()[blockLabel<label_t>(i + mesh.xOffset(), j + mesh.yOffset(), k + mesh.zOffset(), {mesh.nx(), mesh.ny(), mesh.nz()})];
+                            labels[i] = original.arrRef()[blockLabel<label_t>(i + mesh.xOffset(), j + mesh.yOffset(), k + mesh.zOffset(), mesh_)];
                         }
                     }
                 }

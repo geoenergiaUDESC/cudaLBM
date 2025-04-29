@@ -349,7 +349,7 @@ namespace mbLBM
                 std::cout << "    [" << lattice_constant<q_>() << "] = {" << w(lattice_constant<q_>()) << ", " << cx(lattice_constant<q_>()) << ", " << cy(lattice_constant<q_>()) << ", " << cz(lattice_constant<q_>()) << "};" << std::endl;
 
                 // Check that we have not reached the end of the loop
-                if constexpr (q_ < Q_ - 1)
+                if constexpr (q() < Q_ - 1)
                 {
                     // Continue if the next iteration is not the last
                     printAll(lattice_constant<q_ + 1>());

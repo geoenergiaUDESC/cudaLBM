@@ -14,6 +14,34 @@ namespace mbLBM
 {
     namespace string
     {
+        struct functionNameLines_t
+        {
+        public:
+            [[nodiscard]] inline functionNameLines_t(const std::vector<std::string> &fileString, const std::string &functionName) noexcept
+                : functionNameLine(scanFor(fileString, functionName)),
+                  openBracketLine(scanFor(fileString, "{")),
+                  closeBracketLine(scanFor(fileString, "}")),
+                  nLines(closeBracketLine - openBracketLine - 1) {};
+
+            const std::size_t functionNameLine;
+            const std::size_t openBracketLine;
+            const std::size_t closeBracketLine;
+            const std::size_t nLines;
+
+        private:
+            [[nodiscard]] std::size_t scanFor(const std::vector<std::string> &fileString, const std::string &functionName) const noexcept
+            {
+                for (std::size_t i = 0; i < fileString.size(); i++)
+                {
+                    if (fileString[i].find(functionName) != std::string::npos)
+                    {
+                        return i;
+                    }
+                }
+                return 0;
+            }
+        };
+
         /**
          * @brief Reads the caseInfo file in the current directory into a vector of strings
          * @return A std::vector of std::string_view objects contained within the caseInfo file
@@ -129,12 +157,12 @@ namespace mbLBM
                             // Check if T is an unsigned integral type
                             if constexpr (std::is_unsigned_v<T>)
                             {
-                                return std::stoul(toReturn);
+                                return static_cast<T>(std::stoul(toReturn));
                             }
                             // T must be a signed integral type
                             else
                             {
-                                return std::stoi(toReturn);
+                                return static_cast<T>(std::stol(toReturn));
                             }
                         }
                     }

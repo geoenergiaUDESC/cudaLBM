@@ -121,22 +121,6 @@ namespace mbLBM
             const scalarArray z0_;
             const scalarArray z1_;
         };
-
-        // template <class VelSet>
-        // __host__ inline void interfaceCudaMemcpy(ghostPtrs<VelSet> &dest, const ghostPtrs<VelSet> &src, const cudaMemcpyKind kind) noexcept
-        // {
-        //     // Copy the x interfaces
-        //     cudaMemcpy(dest.x0().get(), src.x0().get(), src.nyz(), kind);
-        //     cudaMemcpy(dest.x1().get(), src.x1().get(), src.nyz(), kind);
-
-        //     // Copy the y interfaces
-        //     cudaMemcpy(dest.y0().get(), src.y0().get(), src.nxz(), kind);
-        //     cudaMemcpy(dest.y1().get(), src.y1().get(), src.nxz(), kind);
-
-        //     // Copy the z interfaces
-        //     cudaMemcpy(dest.z0().get(), src.z0().get(), src.nxy(), kind);
-        //     cudaMemcpy(dest.z1().get(), src.z1().get(), src.nxy(), kind);
-        // }
     }
 }
 

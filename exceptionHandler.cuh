@@ -19,9 +19,7 @@ namespace mbLBM
          * @param errorMessage Error message string to print on program exit
          * @note The errorMessage parameter is not necessary to specify
          **/
-        inline void program_exit(
-            const int signal,
-            const std::string_view &errorMessage = "Undefined exception")
+        void program_exit(const int signal, const std::string_view &errorMessage = "Undefined exception")
         {
             std::cout << "cudaLBM exiting: " << std::endl;
             std::cout << errorMessage << std::endl;

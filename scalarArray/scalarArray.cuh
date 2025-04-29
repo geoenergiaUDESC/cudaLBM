@@ -103,7 +103,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < mesh_.nx(); i++)
                         {
-                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, mesh_)] << " ";
                         }
                         std::cout << "\n";
                     }
@@ -122,7 +122,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < mesh_.nx(); i++)
                         {
-                            std::cout << arr_[blockLabel<label_t>(i, j, k, {mesh_.nx(), mesh_.ny(), mesh_.nz()})] << " ";
+                            std::cout << arr_[blockLabel<label_t>(i, j, k, mesh_)] << " ";
                         }
                         std::cout << "\n";
                     }
@@ -163,9 +163,7 @@ namespace mbLBM
              * @param originalArray The original array to be partitioned
              * @param partitionIndices A list of unsigned integers corresponding to indices of originalArray
              **/
-            [[nodiscard]] inline scalarArray_t partitionOriginal(
-                const scalarArray &originalArray,
-                const labelArray &partitionIndices) const noexcept
+            [[nodiscard]] inline scalarArray_t partitionOriginal(const scalarArray &originalArray, const labelArray &partitionIndices) const noexcept
             {
                 // Create an appropriately sized array
                 scalarArray_t partitionedArray(partitionIndices.nPoints());
@@ -277,11 +275,13 @@ namespace mbLBM
             {
                 scalar_t *ptr = deviceMalloc<scalar_t>(nPoints * sizeof(scalar_t));
 
-                const cudaError_t i = cudaMemset(ptr, val, nPoints * sizeof(scalar_t));
+                const scalarArray_t f = scalarArray_t(nPoints, val);
+
+                const cudaError_t i = cudaMemcpy(ptr, &(f[0]), nPoints * sizeof(scalar_t), cudaMemcpyHostToDevice);
 
                 if (i != cudaSuccess)
                 {
-                    exceptions::program_exit(i, "Unable to copy array");
+                    exceptions::program_exit(i, "Unable to set array");
                 }
 
                 return ptr;

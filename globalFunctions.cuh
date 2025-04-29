@@ -11,6 +11,9 @@ Contents: Functions used throughout the source code
 
 namespace mbLBM
 {
+    /**
+     * @brief Struct holding the number of lattice elements in three dimensions
+     **/
     struct blockLabel_t
     {
         const label_t nx;
@@ -18,12 +21,18 @@ namespace mbLBM
         const label_t nz;
     };
 
+    /**
+     * @brief Struct holding the first and last indices of a particular dimension of a block
+     **/
     struct blockPartitionRange_t
     {
         const label_t begin;
         const label_t end;
     };
 
+    /**
+     * @brief Struct holding first and last indices of all dimensions of a block
+     **/
     struct blockRange_t
     {
         const blockPartitionRange_t xRange;
@@ -33,6 +42,10 @@ namespace mbLBM
 
     namespace block
     {
+        /**
+         * @brief CUDA block size parameters
+         * @return Dimensions of CUDA blocks
+         **/
         template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T nx() noexcept
         {
@@ -54,6 +67,11 @@ namespace mbLBM
             return nx<T>() * ny<T>() * nz<T>();
         }
 
+        /**
+         * @brief Calculate the number of blocks in a given direction from a number of lattice points
+         * @return Number of blocks in a given direction
+         * @param n Number of lattice points in a given direction
+         **/
         template <typename T>
         __host__ __device__ [[nodiscard]] inline constexpr T nxBlocks(const T n) noexcept
         {
@@ -75,15 +93,14 @@ namespace mbLBM
             return (mesh.nx() / nx<T>()) * (mesh.ny() / ny<T>()) * (mesh.nz() / nz<T>());
         }
 
+        /**
+         * @brief Provide the block-relative indices of block boundaries
+         * @return The x, y or z index in a given direction corresponding to a block boundary
+         **/
         template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T West() noexcept
         {
             return 0;
-        }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool West(const T n) noexcept
-        {
-            return (n == West<T>());
         }
         template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T East() noexcept
@@ -91,20 +108,9 @@ namespace mbLBM
             return block::nx<T>() - 1;
         }
         template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool East(const T n) noexcept
-        {
-            return (n == East<T>());
-        }
-
-        template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T South() noexcept
         {
             return 0;
-        }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool South(const T n) noexcept
-        {
-            return (n == South<T>());
         }
         template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T North() noexcept
@@ -112,15 +118,40 @@ namespace mbLBM
             return block::ny<T>() - 1;
         }
         template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool North(const T n) noexcept
-        {
-            return (n == North<T>());
-        }
-
-        template <typename T>
         __host__ __device__ [[nodiscard]] inline consteval T Back() noexcept
         {
             return 0;
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline consteval T Front() noexcept
+        {
+            return block::nz<T>() - 1;
+        }
+
+        /**
+         * @brief Check whether a particular lattice lies along a block boundary
+         * @return TRUE if n lies along the boundary, FALSE otherwise
+         * @param n The lattice index to be checked
+         **/
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool South(const T n) noexcept
+        {
+            return (n == South<T>());
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool West(const T n) noexcept
+        {
+            return (n == West<T>());
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool East(const T n) noexcept
+        {
+            return (n == East<T>());
+        }
+        template <typename T>
+        __host__ __device__ [[nodiscard]] inline constexpr bool North(const T n) noexcept
+        {
+            return (n == North<T>());
         }
         template <typename T>
         __host__ __device__ [[nodiscard]] inline constexpr bool Back(const T n) noexcept
@@ -128,22 +159,38 @@ namespace mbLBM
             return (n == Back<T>());
         }
         template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T Front() noexcept
-        {
-            return block::nz<T>() - 1;
-        }
-        template <typename T>
         __host__ __device__ [[nodiscard]] inline constexpr bool Front(const T n) noexcept
         {
             return (n == Front<T>());
         }
-
     }
 
+    /**
+     * @brief Returns the flattened block-relative index of a point expressed in 3 dimensions
+     * @return The index of x, y, z expressed in flattened indices
+     * @param x The x-component of the block
+     * @param y The y-component of the block
+     * @param z The z-component of the block
+     * @param blockDimensions The physical dimensions of the block
+     **/
     template <typename T>
-    __host__ __device__ [[nodiscard]] inline constexpr T blockLabel(const T i, const T j, const T k, const blockLabel_t &blockLabel) noexcept
+    __host__ __device__ [[nodiscard]] inline constexpr T blockLabel(const T x, const T y, const T z, const blockLabel_t &blockDimensions) noexcept
     {
-        return (k * (blockLabel.nx * blockLabel.ny)) + (j * blockLabel.nx) + (i);
+        return (z * (blockDimensions.nx * blockDimensions.ny)) + (y * blockDimensions.nx) + (x);
+    }
+
+    /**
+     * @brief Returns the flattened block-relative index of a point expressed in 3 dimensions
+     * @return The index of x, y, z expressed in flattened indices
+     * @param x The x-component of the block
+     * @param y The y-component of the block
+     * @param z The z-component of the block
+     * @param mesh The mesh
+     **/
+    template <typename T, class M>
+    __host__ __device__ [[nodiscard]] inline constexpr T blockLabel(const T x, const T y, const T z, const M &mesh) noexcept
+    {
+        return (z * (mesh.nx() * mesh.ny())) + (y * mesh.nx()) + (x);
     }
 
     template <class M>
@@ -166,7 +213,7 @@ namespace mbLBM
     }
 
     template <class M>
-    __device__ [[nodiscard]] inline constexpr std::size_t idxPopX(
+    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopX(
         const std::size_t ty,
         const std::size_t tz,
         const std::size_t bx,
@@ -195,7 +242,7 @@ namespace mbLBM
     }
 
     template <class M>
-    __device__ [[nodiscard]] inline constexpr std::size_t idxPopY(
+    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopY(
         const std::size_t tx,
         const std::size_t tz,
         const std::size_t bx,

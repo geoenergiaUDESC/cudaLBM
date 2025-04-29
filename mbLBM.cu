@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     // const cudaCommunicator cudaComm;
 
     const programControl programCtrl(argc, argv);
-    const latticeMesh mesh;
+    const latticeMesh mesh(ctorType::MUST_READ);
 
     VelocitySet::D3Q19::print();
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
     const host::moments moms(mesh);
     const device::moments devMom_0(                                              //
-        programCtrl.deviceList()[1],                                             //
+        programCtrl.deviceList()[0],                                             //
         host::moments(                                                           //
             latticeMesh(mesh, {{0, mesh.nx()}, {0, mesh.ny()}, {0, mesh.nz()}}), //
             moms)                                                                //
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     kernel_collide<VelocitySet::D3Q19><<<dim3{mesh.nx(), mesh.ny(), mesh.nz()}, dim3{16, 16, 4}, 128, 0>>>(devMom_0, mesh, interface);
 
-    // do_nothing<0><<<dim3{mesh.nx(), mesh.ny(), mesh.nz()},
+    // do_nothing<0><<<dim3mesh_,
     //                 dim3{16, 16, 4},
     //                 128,
     //                 0>>>();

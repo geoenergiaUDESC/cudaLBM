@@ -22,7 +22,7 @@ namespace mbLBM
         {
             if (!mpiStatus_ == MPI_SUCCESS)
             {
-                exceptions::program_exit(mpiStatus_, "MPI failed to initialise, returned code " + std::to_string(mpiStatus_));
+                exceptions::program_exit(mpiStatus_, "MPI failed to initialise, returned code " + std::to_string(static_cast<int>(mpiStatus_)));
             }
         };
 
@@ -35,7 +35,7 @@ namespace mbLBM
 
             if (!i == mpiError_t::SUCCESS)
             {
-                exceptions::program_exit(i, "MPI failed to finalise, returned code " + std::to_string(i));
+                exceptions::program_exit(i, "MPI failed to finalise, returned code " + std::to_string(static_cast<int>(i)));
             }
         };
 

@@ -35,9 +35,12 @@
 .vscode
 opt
 mbLBM
-caseInfo
 thirdParty/openmpi*
 thirdParty/ucx
 thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
 testCompute.sh
+meshTools/mesh
+meshTools/caseInfo
+meshTools/meshTools
+lidDrivenCavity/mesh

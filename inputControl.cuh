@@ -20,7 +20,7 @@ namespace mbLBM
          * @param argv Second argument passed to main
          **/
         [[nodiscard]] inputControl(int argc, char *argv[]) noexcept
-            : nArgs_(nArgsCheck(argc, argv)),
+            : nArgs_(nArgsCheck(argc)),
               deviceList_(initialiseDeviceList(argc, argv)) {};
 
         /**
@@ -49,7 +49,7 @@ namespace mbLBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] std::size_t nArgsCheck(int argc, char *argv[]) const noexcept
+        [[nodiscard]] std::size_t nArgsCheck(int argc) const noexcept
         {
             // Check for a bad number of supplied arguments
             if (argc < 0)
@@ -77,7 +77,7 @@ namespace mbLBM
         [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const noexcept
         {
             const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
-            if (deviceList.size() > nAvailableDevices() | nAvailableDevices() < 1)
+            if (deviceList.size() > static_cast<std::size_t>(nAvailableDevices()) | nAvailableDevices() < 1)
             {
                 exceptions::program_exit(-1, "Number of GPUs requested is greater than the number available");
             }

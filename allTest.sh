@@ -1,3 +1,12 @@
+cd meshTools
+cp ../lidDrivenCavity/caseInfo caseInfo
+make
+./meshTools
+cp mesh ../lidDrivenCavity/mesh
+rm -rf caseInfo
+rm -rf mesh
+
+cd ../
 make install
 
 cd lidDrivenCavity

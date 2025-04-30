@@ -65,15 +65,15 @@ namespace mbLBM
              * @brief Returns the unique lattice weights
              * @return The unique lattice weights for the D3Q19 velocity set
              **/
-            [[nodiscard]] static inline consteval scalar_t w0() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w0() noexcept
             {
                 return w0_;
             }
-            [[nodiscard]] static inline consteval scalar_t w1() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w1() noexcept
             {
                 return w1_;
             }
-            [[nodiscard]] static inline consteval scalar_t w2() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w2() noexcept
             {
                 return w2_;
             }
@@ -299,6 +299,26 @@ namespace mbLBM
                 printAll();
                 std::cout << "}" << std::endl;
                 std::cout << std::endl;
+            }
+
+            __device__ static inline void stream(const scalar_t (&pop)[19], scalar_t (&moments)[10]) noexcept
+            {
+                // Equation 3
+                moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+                const scalar_t invRho = 1.0 / moments[0];
+
+                // Equation 4
+                moments[1] = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
+                moments[2] = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
+                moments[3] = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
+
+                // Equation 5
+                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
+                moments[5] = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
+                moments[6] = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
+                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
+                moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
+                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
             }
 
         private:

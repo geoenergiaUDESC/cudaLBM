@@ -11,6 +11,16 @@ Contents: Functions used throughout the source code
 
 namespace mbLBM
 {
+    __host__ __device__ [[nodiscard]] inline constexpr scalar_t omega(
+        const scalar_t Re,
+        const scalar_t u_inf,
+        const label_t nx) noexcept
+    {
+        // const scalar_t mu = u_inf * static_cast<scalar_t>(nx) / Re;
+        // const scalar_t tau = 0.5 + 3.0 * mu;
+        return 1.0 / (0.5 + 3.0 * (u_inf * static_cast<scalar_t>(nx) / Re));
+    }
+
     /**
      * @brief Struct holding the number of lattice elements in three dimensions
      **/
@@ -203,6 +213,17 @@ namespace mbLBM
         const std::size_t nyBlock = block::nyBlocks<std::size_t>(mesh.ny());
 
         return threadIDx + block::nx<std::size_t>() * (threadIDy + block::ny<std::size_t>() * (threadIDz + block::nz<std::size_t>() * ((blockIDx + nxBlock * (blockIDy + nyBlock * (blockIDz))))));
+    }
+
+    __host__ __device__ [[nodiscard]] inline std::size_t idxScalarBlock(
+        const std::size_t tx,
+        const std::size_t ty,
+        const std::size_t tz,
+        const std::size_t bx,
+        const std::size_t by,
+        const std::size_t bz)
+    {
+        return tx + block::nx<std::size_t>() * (ty + block::ny<std::size_t>() * (tz + block::nz<std::size_t>() * (bx + block::nx<std::size_t>() * (by + block::ny<std::size_t>() * (bz)))));
     }
 
     template <const std::size_t pop>

@@ -12,6 +12,8 @@ partition the mesh prior to distribution to the devices
 #include "LBMTypedefs.cuh"
 #include "latticeMesh.cuh"
 #include "labelArray.cuh"
+#include "../device/device.cuh"
+// #include "../nodeTypeArray/nodeTypeArray.cuh"
 
 namespace mbLBM
 {
@@ -187,7 +189,7 @@ namespace mbLBM
              * @param f The host copy of the scalar solution variable
              **/
             [[nodiscard]] scalarArray(const host::scalarArray &f) noexcept
-                : ptr_(allocateDeviceScalarArray(f)) {};
+                : ptr_(device::allocateArray<scalar_t, host::scalarArray>(f)) {};
 
             /**
              * @brief Constructs a scalar solution variable from an arbitrary number of points and a value
@@ -196,7 +198,7 @@ namespace mbLBM
              * @param value The value to assign to all points of the array
              **/
             [[nodiscard]] scalarArray(const std::size_t nPoints, const scalar_t value) noexcept
-                : ptr_(allocateDeviceScalarArray(nPoints, value)) {};
+                : ptr_(device::allocateArray(nPoints, value)) {};
 
             /**
              * @brief Destructor
@@ -204,7 +206,7 @@ namespace mbLBM
             ~scalarArray() noexcept
             {
 #ifdef VERBOSE
-                std::cout << "Freed memory" << std::endl;
+                std::cout << "Freeing scalar array" << std::endl;
 #endif
                 cudaFree((void *)ptr_);
             };
@@ -242,47 +244,6 @@ namespace mbLBM
 #ifdef VERBOSE
                 std::cout << "Allocated " << size << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
 #endif
-
-                return ptr;
-            }
-
-            /**
-             * @brief Allocates a scalar array on the device
-             * @return A scalar_t * object pointing to a block of memory on the GPU
-             * @param f The pre-existing array on the host to be copied to the GPU
-             **/
-            [[nodiscard]] const scalar_t *allocateDeviceScalarArray(const host::scalarArray &f) const noexcept
-            {
-                scalar_t *ptr = deviceMalloc<scalar_t>(f.nPoints() * sizeof(scalar_t));
-
-                const cudaError_t i = cudaMemcpy(ptr, &(f.arrRef()[0]), f.nPoints() * sizeof(scalar_t), cudaMemcpyHostToDevice);
-
-                if (i != cudaSuccess)
-                {
-                    exceptions::program_exit(i, "Unable to copy array");
-                }
-
-                return ptr;
-            }
-
-            /**
-             * @brief Allocates a scalar array on the device
-             * @return A scalar_t * object pointing to a block of memory on the GPU
-             * @param nPoints The number of scalar points to be allocated to the block of memory
-             * @param val The value set
-             **/
-            [[nodiscard]] const scalar_t *allocateDeviceScalarArray(const std::size_t nPoints, const scalar_t val) const noexcept
-            {
-                scalar_t *ptr = deviceMalloc<scalar_t>(nPoints * sizeof(scalar_t));
-
-                const scalarArray_t f = scalarArray_t(nPoints, val);
-
-                const cudaError_t i = cudaMemcpy(ptr, &(f[0]), nPoints * sizeof(scalar_t), cudaMemcpyHostToDevice);
-
-                if (i != cudaSuccess)
-                {
-                    exceptions::program_exit(i, "Unable to set array");
-                }
 
                 return ptr;
             }

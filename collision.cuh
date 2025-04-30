@@ -10,6 +10,8 @@ Contents: Definition of the collision GPU kernel
 #include "LBMTypedefs.cuh"
 #include "velocitySet/velocitySet.cuh"
 #include "scalarArray/scalarArray.cuh"
+#include "nodeTypeArray/nodeTypeArray.cuh"
+#include "boundaryConditions.cuh"
 
 namespace mbLBM
 {
@@ -29,14 +31,16 @@ namespace mbLBM
     template <class VelSet>
     __launch_bounds__(MAX_THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__ void kernel_collide(
         const device::moments &mom,
-        const latticeMesh &mesh,
-        const device::ghostInterface<VelSet> &interface)
+        const host::latticeMesh &mesh,
+        const device::ghostInterface<VelSet> &interface,
+        const device::nodeTypeArray &nodeTypes,
+        const programControl &programCtrl)
     {
         constexpr const VelSet velSet;
 
         constexpr const scalar_t RHO_0 = 0.0;
 
-        const scalar_t moments[10] = {
+        scalar_t moments[10] = {
             RHO_0 + mom.rho()[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
             mom.u()[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
             mom.v()[idxMom(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z, mesh)],
@@ -71,6 +75,20 @@ namespace mbLBM
 
         // Load from shared memory
         velSet.popLoad(mesh, interface, pop);
+
+        // Perform the streaming
+        const nodeType::type nodeType = nodeTypes.ptr()[idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
+        if (nodeType == nodeType::BULK)
+        {
+            velSet.stream(pop, moments);
+        }
+        else
+        {
+            boundaryConditions::stream(moments, pop, nodeType, programCtrl.Re(), programCtrl.u_inf(), mesh.nx());
+        }
+
+        // Multiply moments by as2 -- as4*0.5 -- as4 - add correction to m_alpha_beta
+        VelocitySet::velocitySet::scale(moments);
     }
 
 }

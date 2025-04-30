@@ -25,6 +25,7 @@ namespace mbLBM
         [[nodiscard]] programControl(int argc, char *argv[]) noexcept
             : input_(inputControl(argc, argv)),
               Re_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Re")),
+              u_inf_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "u_inf")),
               Lx_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lx")),
               Ly_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Ly")),
               Lz_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lz")),
@@ -71,6 +72,16 @@ namespace mbLBM
             return input_.deviceList();
         }
 
+        __host__ __device__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
+        {
+            return Re_;
+        }
+
+        __host__ __device__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
+        {
+            return u_inf_;
+        }
+
     private:
         /**
          * @brief A reference to the input control object
@@ -81,6 +92,11 @@ namespace mbLBM
          * @brief The Reynolds number
          **/
         const scalar_t Re_;
+
+        /**
+         * @brief The characteristic velocity
+         **/
+        const scalar_t u_inf_;
 
         /**
          * @brief Characteristic domain length in the x, y and z directions

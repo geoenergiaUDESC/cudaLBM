@@ -9,28 +9,28 @@ This class is used to exchange the microscopic velocity components at the edge o
 
 namespace mbLBM
 {
+    /**
+     * @brief Struct holding the number of lattice points on each face of a CUDA block
+     **/
+    struct nGhostFace
+    {
+    public:
+        /**
+         * @brief Construct from a latticeMesh object
+         * @return An nGhostFace struct with xy, xz and yz defined by the mesh
+         **/
+        [[nodiscard]] inline constexpr nGhostFace(const host::latticeMesh &mesh) noexcept
+            : xy(block::nx<std::size_t>() * block::ny<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
+              xz(block::nx<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
+              yz(block::ny<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)) {};
+
+        const std::size_t xy;
+        const std::size_t xz;
+        const std::size_t yz;
+    };
+
     namespace device
     {
-        /**
-         * @brief Struct holding the number of lattice points on each face of a CUDA block
-         **/
-        struct nGhostFace
-        {
-        public:
-            /**
-             * @brief Construct from a latticeMesh object
-             * @return An nGhostFace struct with xy, xz and yz defined by the mesh
-             **/
-            [[nodiscard]] inline constexpr nGhostFace(const latticeMesh &mesh) noexcept
-                : xy(block::nx<std::size_t>() * block::ny<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
-                  xz(block::nx<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)),
-                  yz(block::ny<std::size_t>() * block::nz<std::size_t>() * block::nBlocks<std::size_t>(mesh)) {};
-
-            const std::size_t xy;
-            const std::size_t xz;
-            const std::size_t yz;
-        };
-
         template <class VelSet>
         class ghostPtrs
         {
@@ -40,7 +40,7 @@ namespace mbLBM
              * @return A ghostPtrs object constructed from the mesh
              * @param mesh The mesh used to define the amount of memory to allocate to the pointers
              **/
-            [[nodiscard]] ghostPtrs(const latticeMesh &mesh) noexcept
+            [[nodiscard]] ghostPtrs(const host::latticeMesh &mesh) noexcept
                 : nGhostFaces_(mesh),
                   x0_(scalarArray(nGhostFaces_.yz, 0)),
                   x1_(scalarArray(nGhostFaces_.yz, 0)),

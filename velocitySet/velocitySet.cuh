@@ -25,29 +25,45 @@ namespace mbLBM
              * @return Scalar constants used by the velocity set
              * @note These methods are consteval
              **/
-            static inline consteval scalar_t as2() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t as2() noexcept
             {
                 return 3.0;
             }
-            static inline consteval scalar_t cs2() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t cs2() noexcept
             {
                 return 1.0 / as2();
             }
-            static inline consteval scalar_t F_M_0_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_0_SCALE() noexcept
             {
                 return 1.0;
             }
-            static inline consteval scalar_t F_M_I_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_I_SCALE() noexcept
             {
                 return as2();
             }
-            static inline consteval scalar_t F_M_II_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_II_SCALE() noexcept
             {
                 return as2() * as2() / 2.0;
             }
-            static inline consteval scalar_t F_M_IJ_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_IJ_SCALE() noexcept
             {
                 return as2() * as2();
+            }
+
+            __device__ static inline void scale(scalar_t (&moments)[10]) noexcept
+            {
+                moments[0] = moments[0] * F_M_0_SCALE();
+
+                moments[1] = moments[1] * F_M_I_SCALE();
+                moments[2] = moments[2] * F_M_I_SCALE();
+                moments[3] = moments[3] * F_M_I_SCALE();
+
+                moments[4] = moments[4] * F_M_II_SCALE();
+                moments[5] = moments[5] * F_M_IJ_SCALE();
+                moments[6] = moments[6] * F_M_IJ_SCALE();
+                moments[7] = moments[7] * F_M_II_SCALE();
+                moments[8] = moments[8] * F_M_IJ_SCALE();
+                moments[9] = moments[9] * F_M_II_SCALE();
             }
         };
     }

@@ -6,7 +6,7 @@
 
 using namespace mbLBM;
 
-[[nodiscard]] inline const nodeTypeArray_t defineMesh(const latticeMesh &mesh) noexcept
+[[nodiscard]] inline const nodeTypeArray_t defineMesh(const host::latticeMesh &mesh) noexcept
 {
     nodeTypeArray_t nodeTypes(mesh.nPoints(), nodeType::UNDEFINED);
 
@@ -128,7 +128,7 @@ inline void writeMesh(const nodeTypeArray_t &nodeTypes, const std::string &fileN
 
 int main(int argc, char *argv[])
 {
-    const latticeMesh mesh(ctorType::NO_READ);
+    const host::latticeMesh mesh(ctorType::NO_READ);
 
     const nodeTypeArray_t nodeTypes = defineMesh(mesh);
 

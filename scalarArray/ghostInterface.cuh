@@ -22,7 +22,7 @@ namespace mbLBM
              * @return A ghostInterface object constructed from the mesh
              * @param mesh The mesh used to define the amount of memory to allocate to the pointers
              **/
-            [[nodiscard]] ghostInterface(const latticeMesh &mesh) noexcept
+            [[nodiscard]] ghostInterface(const host::latticeMesh &mesh) noexcept
                 : fGhost_(ghostPtrs<VelSet>(mesh)),
                   gGhost_(ghostPtrs<VelSet>(mesh)),
                   h_fGhost_(ghostPtrs<VelSet>(mesh))

@@ -103,6 +103,9 @@ namespace mbLBM
 #endif
             };
 
+            /**
+             * @brief Destructor for the host latticeMesh class
+             **/
             ~latticeMesh() {};
 
             /**

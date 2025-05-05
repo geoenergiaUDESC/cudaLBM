@@ -42,20 +42,20 @@ namespace mbLBM
 
             /**
              * @brief Returns the weight for a given lattice point
-             * @return w[q]
+             * @return w_q[q]
              * @param q The lattice point
              **/
             template <const label_t q_>
-            [[nodiscard]] static inline consteval scalar_t w(const lattice_constant<q_> q) noexcept
+            [[nodiscard]] static inline consteval scalar_t w_q(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function w(q)");
 
                 // This will be eliminated by the compiler because the function is consteval
                 constexpr const scalar_t W[Q_] =
-                    {w0_,
-                     w1_, w1_, w1_, w1_, w1_, w1_,
-                     w2_, w2_, w2_, w2_, w2_, w2_, w2_, w2_, w2_, w2_, w2_, w2_};
+                    {w_0_,
+                     w_1_, w_1_, w_1_, w_1_, w_1_, w_1_,
+                     w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_, w_2_};
 
                 // Return the component
                 return W[q()];
@@ -65,17 +65,17 @@ namespace mbLBM
              * @brief Returns the unique lattice weights
              * @return The unique lattice weights for the D3Q19 velocity set
              **/
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w0() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_0() noexcept
             {
-                return w0_;
+                return w_0_;
             }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w1() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_1() noexcept
             {
-                return w1_;
+                return w_1_;
             }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w2() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_2() noexcept
             {
-                return w2_;
+                return w_2_;
             }
 
             /**
@@ -133,23 +133,52 @@ namespace mbLBM
             }
 
             /**
+             * @brief Returns the equilibrium distribution for a given lattice index
+             * @return f_eq[q]
+             * @param rhow w_q[q] * rho
+             * @param uc3 3 * ((u * cx[q]) + (v * cy[q]) + (w * [cz]))
+             * @param p1_muu 1 - 1.5 * ((u ^ 2) + (v ^ 2) + (w ^ 2))
+             **/
+            [[nodiscard]] static inline constexpr scalar_t f_eq(const scalar_t rhow, const scalar_t uc3, const scalar_t p1_muu) noexcept
+            {
+                return (rhow * (p1_muu + uc3 * (1.0 + uc3 * 0.5)));
+            }
+
+            /**
+             * @brief Returns the population density
+             * @return f_eq
+             * @param rho Density
+             * @param u The x-component of velocity
+             * @param v The y-component of velocity
+             * @param w The z-component of velocity
+             **/
+            [[nodiscard]] static inline constexpr std::array<scalar_t, 19> f_eq(const scalar_t rho, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            {
+                // Define equilibrium populations
+                std::array<scalar_t, 19> pop;
+                f_eq_loop<0>(pop, rho, u, v, w);
+
+                return pop;
+            }
+
+            /**
              * @brief Reconstructs the population at a given lattice point
              * @param moments The 10 moments at the lattice point
              * @param pop The population to be reconstructed
              **/
             __device__ static inline void reconstruct(const scalar_t (&moments)[10], scalar_t (&pop)[19]) noexcept
             {
-                const scalar_t multiplyTerm_0 = moments[0] * w0_;
+                const scalar_t multiplyTerm_0 = moments[0] * w_0_;
                 const scalar_t pics2 = 1.0 - cs2() * (moments[4] + moments[7] + moments[9]);
                 pop[0] = multiplyTerm_0 * (pics2);
-                const scalar_t multiplyTerm_1 = moments[0] * w1_;
+                const scalar_t multiplyTerm_1 = moments[0] * w_1_;
                 pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
                 pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
                 pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
                 pop[4] = multiplyTerm_1 * (pics2 - moments[2] + moments[7]);
                 pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
                 pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
-                const scalar_t multiplyTerm_2 = moments[0] * w2_;
+                const scalar_t multiplyTerm_2 = moments[0] * w_2_;
                 pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
@@ -325,9 +354,9 @@ namespace mbLBM
             /**
              * @brief Lattice weights
              **/
-            static constexpr const scalar_t w0_ = 1.0 / 3.0;
-            static constexpr const scalar_t w1_ = 1.0 / 18.0;
-            static constexpr const scalar_t w2_ = 1.0 / 36.0;
+            static constexpr const scalar_t w_0_ = 1.0 / 3.0;
+            static constexpr const scalar_t w_1_ = 1.0 / 18.0;
+            static constexpr const scalar_t w_2_ = 1.0 / 36.0;
 
             /**
              * @brief Number of velocity components in the lattice
@@ -362,11 +391,47 @@ namespace mbLBM
                 }
             }
 
+            /**
+             * @brief Implementation of the equilibrium distribution loop
+             * @param pop The population to be set
+             * @param rho Density
+             * @param u The x-component of velocity
+             * @param v The y-component of velocity
+             * @param w The z-component of velocity
+             * @note This function effectively unrolls the loop at compile-time and checks for its bounds
+             **/
+            template <const label_t q_ = 0>
+            static inline constexpr void f_eq_loop(
+                std::array<scalar_t, 19> &pop,
+                const scalar_t rho,
+                const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            {
+                // Check at compile time that the loop is correctly bounded
+                static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
+
+                // Compute the equilibrium distribution for q
+                pop[q_] = f_eq(
+                    w_q(lattice_constant<q_>()) * rho,
+                    3 * ((u * cx(lattice_constant<q_>())) + (v * cy(lattice_constant<q_>())) + (w * cz(lattice_constant<q_>()))),
+                    1 - 1.5 * ((u * u) + (v * v) + (w * w)));
+
+                // Check that we have not reached the end of the loop
+                if constexpr (q_ < Q_ - 2)
+                {
+                    // Continue if the next iteration is not the last
+                    f_eq_loop<q_ + 1>(pop, rho, u, v, w);
+                }
+            }
+
+            /**
+             * @brief Implementation of the print loop
+             * @note This function effectively unrolls the loop at compile-time and checks for its bounds
+             **/
             template <const label_t q_ = 0>
             static inline void printAll(const lattice_constant<q_> q = lattice_constant<0>()) noexcept
             {
                 // Print the lattice weight to the terminal
-                std::cout << "    [" << lattice_constant<q_>() << "] = {" << w(lattice_constant<q_>()) << ", " << cx(lattice_constant<q_>()) << ", " << cy(lattice_constant<q_>()) << ", " << cz(lattice_constant<q_>()) << "};" << std::endl;
+                std::cout << "    [" << lattice_constant<q_>() << "] = {" << w_q(lattice_constant<q_>()) << ", " << cx(lattice_constant<q_>()) << ", " << cy(lattice_constant<q_>()) << ", " << cz(lattice_constant<q_>()) << "};" << std::endl;
 
                 // Check that we have not reached the end of the loop
                 if constexpr (q() < Q_ - 1)

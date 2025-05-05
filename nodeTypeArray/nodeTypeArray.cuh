@@ -1,8 +1,7 @@
 /**
-Filename: scalarArray.cuh
-Contents: A class representing a scalar variable
-The host version of this class is principally used to
-partition the mesh prior to distribution to the devices
+Filename: nodeTypeArray.cuh
+Contents: A class representing the types of each individual mesh node
+This is a temporary fix before the boundary condition function pointers are implemented
 **/
 
 #ifndef __MBLBM_NODETYPEARRAY_CUH
@@ -11,45 +10,13 @@ partition the mesh prior to distribution to the devices
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "latticeMesh.cuh"
-#include "labelArray.cuh"
 
 namespace mbLBM
 {
-    // namespace host
-    // {
-    //     class nodeTypeArray
-    //     {
-    //     public:
-    //         // Default constructor - return all UNDEFINED
-    //         [[nodiscard]] nodeTypeArray()
-    //             : nodeTypes_(extractNodeTypes("nodeTypes", ctorType::NO_READ)) {};
-
-    //         // Construct specifying
-    //         ~nodeTypeArray() {};
-
-    //     private:
-    //         const nodeTypeArray_t nodeTypes_;
-
-    //         [[nodiscard]] const nodeTypeArray_t extractNodeTypes(const std::string &functionName, const ctorType::type readType) const noexcept
-    //         {
-    //             if (readType == ctorType::MUST_READ)
-    //             {
-    //                 const std::vector<std::string> fileString = string::readCaseDirectory("mesh");
-    //                 const string::functionNameLines_t lines(fileString, functionName);
-    //                 nodeTypeArray_t v(lines.nLines, nodeType::UNDEFINED);
-    //                 for (std::size_t i = lines.openBracketLine + 1; i < lines.closeBracketLine; i++)
-    //                 {
-    //                     v[i - lines.openBracketLine - 1] = static_cast<nodeType::type>(stoi(fileString[i]));
-    //                 }
-    //                 return v;
-    //             }
-    //             else
-    //             {
-    //                 return nodeTypeArray_t(nPoints_, nodeType::UNDEFINED);
-    //             }
-    //         }
-    //     };
-    // }
+    namespace host
+    {
+        typedef array<nodeType::type> nodeTypeArray;
+    }
 
     namespace device
     {

@@ -13,7 +13,6 @@ namespace mbLBM
 {
     namespace device
     {
-        template <class VelSet>
         class ghostInterface
         {
         public:
@@ -23,9 +22,9 @@ namespace mbLBM
              * @param mesh The mesh used to define the amount of memory to allocate to the pointers
              **/
             [[nodiscard]] ghostInterface(const host::latticeMesh &mesh) noexcept
-                : fGhost_(ghostPtrs<VelSet>(mesh)),
-                  gGhost_(ghostPtrs<VelSet>(mesh)),
-                  h_fGhost_(ghostPtrs<VelSet>(mesh))
+                : fGhost_(ghostPtrs(mesh)),
+                  gGhost_(ghostPtrs(mesh)),
+                  h_fGhost_(ghostPtrs(mesh))
             {
 #ifdef VERBOSE
                 std::cout << "Allocated ghostInterface object:" << std::endl;
@@ -38,7 +37,7 @@ namespace mbLBM
             };
 
             /**
-             * @brief Default destructor
+             * @brief Destructor for the ghostInterface class
              **/
             ~ghostInterface() noexcept
             {
@@ -51,15 +50,15 @@ namespace mbLBM
              * @brief Returns access to the ghost pointer objects
              * @return An immutable reference to the underlying ghostPtrs objects
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs &fGhost() const noexcept
             {
                 return fGhost_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &gGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs &gGhost() const noexcept
             {
                 return gGhost_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs<VelSet> &h_fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const ghostPtrs &h_fGhost() const noexcept
             {
                 return h_fGhost_;
             }
@@ -68,9 +67,9 @@ namespace mbLBM
             /**
              * @brief Lists of 6 unique pointers on each face of a CUDA block
              **/
-            const ghostPtrs<VelSet> fGhost_;
-            const ghostPtrs<VelSet> gGhost_;
-            const ghostPtrs<VelSet> h_fGhost_;
+            const ghostPtrs fGhost_;
+            const ghostPtrs gGhost_;
+            const ghostPtrs h_fGhost_;
         };
     }
 }

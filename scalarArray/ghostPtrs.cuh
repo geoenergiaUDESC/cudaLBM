@@ -31,7 +31,6 @@ namespace mbLBM
 
     namespace device
     {
-        template <class VelSet>
         class ghostPtrs
         {
         public:
@@ -50,7 +49,7 @@ namespace mbLBM
                   z1_(scalarArray(nGhostFaces_.xy, 0)) {};
 
             /**
-             * @brief Default destructor
+             * @brief Destructor for the ghostPtrs object
              **/
             ~ghostPtrs() noexcept
             {

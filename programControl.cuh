@@ -72,11 +72,19 @@ namespace mbLBM
             return input_.deviceList();
         }
 
+        /**
+         * @brief Returns the Reynolds number
+         * @return The Reynolds number
+         **/
         __host__ __device__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
         {
             return Re_;
         }
 
+        /**
+         * @brief Returns the characteristic velocity
+         * @return The characteristic velocity
+         **/
         __host__ __device__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
         {
             return u_inf_;

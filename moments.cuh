@@ -10,8 +10,8 @@ Contents: A class containing the arrays of the moment variables
 #include "LBMTypedefs.cuh"
 #include "velocitySet/velocitySet.cuh"
 #include "globalFunctions.cuh"
+#include "array/array.cuh"
 #include "scalarArray/scalarArray.cuh"
-#include "labelArray.cuh"
 
 namespace mbLBM
 {
@@ -22,44 +22,27 @@ namespace mbLBM
         public:
             /**
              * @brief Constructs the moments from a number of lattice points
-             * @return Object containing all of the moments
+             * @return An object holding the moments on the host
              * @param mesh The undecomposed solution mesh
-             * @note This constructor zero-initialises everything
+             * @param readType The type of constructor
+             * @note If readType is NO_READ, this constructor zero-initialises everything
+             * @note If readType is MUST_READ, this constructor attempts to read the variables from input files
              **/
-            [[nodiscard]] moments(const latticeMesh &mesh) noexcept
+            [[nodiscard]] moments(const latticeMesh &mesh, const ctorType::type readType) noexcept
                 : mesh_(mesh),
-                  rho_(scalarArray(mesh, 0)),
-                  u_(scalarArray(mesh, 1)),
-                  v_(scalarArray(mesh, 2)),
-                  w_(scalarArray(mesh, 3)),
-                  m_xx_(scalarArray(mesh, 4)),
-                  m_xy_(scalarArray(mesh, 5)),
-                  m_xz_(scalarArray(mesh, 6)),
-                  m_yy_(scalarArray(mesh, 7)),
-                  m_yz_(scalarArray(mesh, 8)),
-                  m_zz_(scalarArray(mesh, 9)) {};
+                  rho_(scalarArray(mesh, "rho", readType)),
+                  u_(scalarArray(mesh, "u", readType)),
+                  v_(scalarArray(mesh, "v", readType)),
+                  w_(scalarArray(mesh, "w", readType)),
+                  m_xx_(scalarArray(mesh, "m_xx", readType)),
+                  m_xy_(scalarArray(mesh, "m_xy", readType)),
+                  m_xz_(scalarArray(mesh, "m_xz", readType)),
+                  m_yy_(scalarArray(mesh, "m_yy", readType)),
+                  m_yz_(scalarArray(mesh, "m_yz", readType)),
+                  m_zz_(scalarArray(mesh, "m_zz", readType)) {};
 
             /**
-             * @brief Constructs the moments from a pre-defined partition range
-             * @return Object containing all of the moments
-             * @param mesh The undecomposed solution mesh
-             * @param moms The original moments object to be partitioned
-             **/
-            [[nodiscard]] moments(const latticeMesh &mesh, const moments &moms) noexcept
-                : mesh_(mesh),
-                  rho_(scalarArray(mesh, moms.rho())),
-                  u_(scalarArray(mesh, moms.u())),
-                  v_(scalarArray(mesh, moms.v())),
-                  w_(scalarArray(mesh, moms.w())),
-                  m_xx_(scalarArray(mesh, moms.m_xx())),
-                  m_xy_(scalarArray(mesh, moms.m_xy())),
-                  m_xz_(scalarArray(mesh, moms.m_xz())),
-                  m_yy_(scalarArray(mesh, moms.m_yy())),
-                  m_yz_(scalarArray(mesh, moms.m_yz())),
-                  m_zz_(scalarArray(mesh, moms.m_zz())) {};
-
-            /**
-             * @brief Default destructor
+             * @brief Destructor for the host moments class
              **/
             ~moments() {};
 
@@ -128,6 +111,24 @@ namespace mbLBM
                 return m_zz_;
             }
 
+            /**
+             * @brief Writes the moment variables to a file
+             * @param time The solution time step
+             **/
+            void writeFile(const std::size_t time) const noexcept
+            {
+                rho_.saveFile(time);
+                u_.saveFile(time);
+                v_.saveFile(time);
+                w_.saveFile(time);
+                m_xx_.saveFile(time);
+                m_xy_.saveFile(time);
+                m_xz_.saveFile(time);
+                m_yy_.saveFile(time);
+                m_yz_.saveFile(time);
+                m_zz_.saveFile(time);
+            }
+
         private:
             /**
              * @brief Immutable reference to the mesh
@@ -155,6 +156,12 @@ namespace mbLBM
         class moments
         {
         public:
+            /**
+             * @brief Constructs the device moments from a copy of the host moments
+             * @return An object holding the moments on the device
+             * @param deviceID The unique ID of the device onto which the moments are to be copied
+             * @param hostMoments The moments as they exist on the host
+             **/
             [[nodiscard]] moments(const deviceIndex_t deviceID, const mbLBM::host::moments &hostMoments)
                 : ID_(deviceID),
                   err_(cudaSetDevice(ID_)),
@@ -181,7 +188,7 @@ namespace mbLBM
             };
 
             /**
-             * @brief Default destructor
+             * @brief Destructor for the device moments class
              **/
             ~moments() {};
 

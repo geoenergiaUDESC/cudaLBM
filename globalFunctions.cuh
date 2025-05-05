@@ -11,13 +11,8 @@ Contents: Functions used throughout the source code
 
 namespace mbLBM
 {
-    __host__ __device__ [[nodiscard]] inline constexpr scalar_t omega(
-        const scalar_t Re,
-        const scalar_t u_inf,
-        const label_t nx) noexcept
+    __host__ __device__ [[nodiscard]] inline constexpr scalar_t omega(const scalar_t Re, const scalar_t u_inf, const label_t nx) noexcept
     {
-        // const scalar_t mu = u_inf * static_cast<scalar_t>(nx) / Re;
-        // const scalar_t tau = 0.5 + 3.0 * mu;
         return 1.0 / (0.5 + 3.0 * (u_inf * static_cast<scalar_t>(nx) / Re));
     }
 

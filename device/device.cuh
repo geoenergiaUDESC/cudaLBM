@@ -1,8 +1,6 @@
 /**
-Filename: scalarArray.cuh
-Contents: A class representing a scalar variable
-The host version of this class is principally used to
-partition the mesh prior to distribution to the devices
+Filename: device.cuh
+Contents: Common memory allocation routines for allocating memory on the GPU
 **/
 
 #ifndef __MBLBM_DEVICE_CUH

@@ -50,6 +50,10 @@ namespace mbLBM
                 return as2() * as2();
             }
 
+            /**
+             * @brief Multiplies all of the moments by their coefficients
+             * @param moments The moments to be scaled
+             **/
             __device__ static inline void scale(scalar_t (&moments)[10]) noexcept
             {
                 moments[0] = moments[0] * F_M_0_SCALE();
@@ -70,5 +74,17 @@ namespace mbLBM
 }
 
 #include "D3Q19.cuh"
+
+namespace mbLBM
+{
+    /**
+     * @brief Velocity set used throughout the code
+     * @note For now only D3Q19 is implemented
+     * @note These types are supplied via command line defines during compilation
+     **/
+#ifdef STENCIL_TYPE_D3Q19
+    typedef VelocitySet::D3Q19 vSet;
+#endif
+}
 
 #endif

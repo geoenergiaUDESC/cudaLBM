@@ -17,18 +17,45 @@ namespace mbLBM
         struct functionNameLines_t
         {
         public:
+            /**
+             * @brief Reads a std::vector of std::strings for functionName
+             * @return A functionNameLines_t object
+             * @param fileString A std::vector of std::strings read from a file to be scanned
+             * @param functionName The function name for which fileString is to be scanned
+             **/
             [[nodiscard]] inline functionNameLines_t(const std::vector<std::string> &fileString, const std::string &functionName) noexcept
                 : functionNameLine(scanFor(fileString, functionName)),
                   openBracketLine(scanFor(fileString, "{")),
                   closeBracketLine(scanFor(fileString, "}")),
                   nLines(closeBracketLine - openBracketLine - 1) {};
 
+            /**
+             * @brief The line on which the function name appears
+             **/
             const std::size_t functionNameLine;
+
+            /**
+             * @brief The line on which the first open curly brace after functionName appears
+             **/
             const std::size_t openBracketLine;
+
+            /**
+             * @brief The line on which the curly braces are closed
+             **/
             const std::size_t closeBracketLine;
+
+            /**
+             * @brief The number of lines read
+             **/
             const std::size_t nLines;
 
         private:
+            /**
+             * @brief Scans fileString for a substring of characters and returns the line on which it is found
+             * @return The line on which functionName is found
+             * @param fileString A std::vector of std::strings read from a file to be scanned
+             * @param functionName The function name for which fileString is to be scanned
+             **/
             [[nodiscard]] std::size_t scanFor(const std::vector<std::string> &fileString, const std::string &functionName) const noexcept
             {
                 for (std::size_t i = 0; i < fileString.size(); i++)
@@ -218,7 +245,7 @@ namespace mbLBM
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/
         template <typename T>
-        [[nodiscard]] std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name) noexcept
+        [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name) noexcept
         {
             const std::vector<std::string> s_v = string::split(parseNameValuePair(args, name), ","[0], true);
 

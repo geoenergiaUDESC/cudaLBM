@@ -19,25 +19,13 @@ namespace mbLBM
     [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 1024; }
     [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
 
-#define MAX_THREADS_PER_BLOCK 1024
-#define MIN_BLOCKS_PER_MP 16
-
-    template <const label_t i>
-    __global__ void __launch_bounds__(MAX_THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) do_nothing()
-    {
-        printf("Doing nothing with template arg %u\n", i);
-    }
-
-    template <class VelSet>
-    __launch_bounds__(MAX_THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__ void kernel_collide(
+    __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void kernel_collide(
         const device::moments &mom,
         const host::latticeMesh &mesh,
-        const device::ghostInterface<VelSet> &interface,
+        const device::ghostInterface &interface,
         const device::nodeTypeArray &nodeTypes,
         const programControl &programCtrl)
     {
-        constexpr const VelSet velSet;
-
         constexpr const scalar_t RHO_0 = 0.0;
 
         scalar_t moments[10] = {
@@ -60,27 +48,27 @@ namespace mbLBM
 #endif
 
         // Perform the reconstruction
-        scalar_t pop[velSet.Q()];
-        velSet.reconstruct(moments, pop);
+        scalar_t pop[vSet::Q()];
+        vSet::reconstruct(moments, pop);
 
         // Save the population in shared memory
-        __shared__ scalar_t s_pop[block::size<std::size_t>() * (velSet.Q() - 1)];
-        velSet.popSave(pop, s_pop);
+        __shared__ scalar_t s_pop[block::size<std::size_t>() * (vSet::Q() - 1)];
+        vSet::popSave(pop, s_pop);
 
         // Not 100% sure if this needs to be here or within popSave
         __syncthreads();
 
         // Pull population from shared memory
-        velSet.popPull(s_pop, pop);
+        vSet::popPull(s_pop, pop);
 
         // Load from shared memory
-        velSet.popLoad(mesh, interface, pop);
+        vSet::popLoad(mesh, interface, pop);
 
         // Perform the streaming
         const nodeType::type nodeType = nodeTypes.ptr()[idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
         if (nodeType == nodeType::BULK)
         {
-            velSet.stream(pop, moments);
+            vSet::stream(pop, moments);
         }
         else
         {

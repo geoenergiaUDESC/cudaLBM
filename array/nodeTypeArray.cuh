@@ -7,15 +7,15 @@ This is a temporary fix before the boundary condition function pointers are impl
 #ifndef __MBLBM_NODETYPEARRAY_CUH
 #define __MBLBM_NODETYPEARRAY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 // #include "latticeMesh.cuh"
 
 namespace mbLBM
 {
     namespace host
     {
-        typedef array<nodeType::type> nodeTypeArray;
+        // typedef array<nodeType::type> nodeTypeArray;
     }
 
     namespace device

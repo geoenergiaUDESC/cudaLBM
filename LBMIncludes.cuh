@@ -17,7 +17,7 @@ Contents: A list of header files necessary for compilation
 #include <sstream>
 #include <atomic>
 #include <cstring>
-#include <mpi.h>
+// #include <mpi.h>
 #include <memory>
 #include <iomanip>
 #include <iostream>

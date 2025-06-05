@@ -10,6 +10,19 @@ Contains: A list of typedefs used throughout the cudaLBM source code
 
 namespace mbLBM
 {
+#define checkCudaErrors(err) __checkCudaErrors(err, #err, __FILE__, __LINE__)
+
+    inline void __checkCudaErrors(const cudaError_t err, const char *const func, const char *const file, const int line)
+    {
+        if (err != cudaSuccess)
+        {
+            fprintf(stderr, "CUDA error at %s(%d)\"%s\": [%d] %s.\n",
+                    file, line, func, (int)err, cudaGetErrorString(err));
+            fflush(stderr);
+            exit(-1);
+        }
+    }
+
     /**
      * @brief Floating point type used for scalar types
      * @note Types are either 32 bit or 64 bit floating point numbers
@@ -20,6 +33,9 @@ namespace mbLBM
 #elif SCALAR_PRECISION_64
     typedef double scalar_t;
 #endif
+
+#define ptrRestrict __restrict__
+    // #define ptrRestrict
 
     /**
      * @brief Type used for arrays of scalars
@@ -199,6 +215,27 @@ namespace mbLBM
             MUST_READ = 1
         } type;
     }
+
+    // __device__ __constant__ label_t d_nx;
+    // __device__ __constant__ label_t d_ny;
+    // __device__ __constant__ label_t d_nz;
+    // __device__ __constant__ scalar_t d_Re;
+    // __device__ __constant__ scalar_t d_u_inf;
+    // __device__ __constant__ scalar_t d_omega;
+    // __device__ __constant__ label_t d_NUM_BLOCK_X;
+    // __device__ __constant__ label_t d_NUM_BLOCK_Y;
+    // __device__ __constant__ label_t d_NUM_BLOCK_Z;
+
+    // scalar_t *d_rho;
+    // scalar_t *d_u;
+    // scalar_t *d_v;
+    // scalar_t *d_w;
+    // scalar_t *d_m_xx;
+    // scalar_t *d_m_xy;
+    // scalar_t *d_m_xz;
+    // scalar_t *d_m_yy;
+    // scalar_t *d_m_yz;
+    // scalar_t *d_m_zz;
 }
 
 #endif

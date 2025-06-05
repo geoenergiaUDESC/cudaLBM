@@ -11,9 +11,19 @@ Contents: Functions used throughout the source code
 
 namespace mbLBM
 {
-    __host__ __device__ [[nodiscard]] inline constexpr scalar_t omega(const scalar_t Re, const scalar_t u_inf, const label_t nx) noexcept
+    __host__ [[nodiscard]] inline constexpr scalar_t omega(const scalar_t Re, const scalar_t u_inf, const label_t nx) noexcept
     {
-        return 1.0 / (0.5 + 3.0 * (u_inf * static_cast<scalar_t>(nx) / Re));
+        return static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * (u_inf * static_cast<scalar_t>(nx) / Re));
+    }
+
+    // __device__ [[nodiscard]] inline scalar_t omega() noexcept
+    // {
+    //     return static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * (d_u_inf * static_cast<scalar_t>(d_nx) / d_Re));
+    // }
+
+    __device__ [[nodiscard]] inline scalar_t omega() noexcept
+    {
+        return static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * (0.05 * static_cast<scalar_t>(128.0) / 500.0));
     }
 
     /**
@@ -51,25 +61,46 @@ namespace mbLBM
          * @brief CUDA block size parameters
          * @return Dimensions of CUDA blocks
          **/
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T nx() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t nx() noexcept
         {
+#ifdef SCALAR_PRECISION_32
             return 8;
+#elif SCALAR_PRECISION_64
+            return 4;
+#endif
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T ny() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t ny() noexcept
         {
+#ifdef SCALAR_PRECISION_32
             return 8;
+#elif SCALAR_PRECISION_64
+            return 4;
+#endif
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T nz() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
+#ifdef SCALAR_PRECISION_32
             return 8;
+#elif SCALAR_PRECISION_64
+            return 4;
+#endif
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T size() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t size() noexcept
         {
-            return nx<T>() * ny<T>() * nz<T>();
+            return nx() * ny() * nz();
+        }
+        __host__ __device__ [[nodiscard]] inline consteval dim3 threadBlock() noexcept
+        {
+            return {nx(), ny(), nz()};
+        }
+        template <typename M>
+        __host__ __device__ [[nodiscard]] inline constexpr dim3 gridBlock(const M &mesh) noexcept
+        {
+            return {static_cast<uint32_t>(mesh.nx() / nx()), static_cast<uint32_t>(mesh.ny() / ny()), static_cast<uint32_t>(mesh.nz() / nz())};
         }
 
         /**
@@ -77,60 +108,55 @@ namespace mbLBM
          * @return Number of blocks in a given direction
          * @param n Number of lattice points in a given direction
          **/
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr T nxBlocks(const T n) noexcept
-        {
-            return n / nx<T>();
-        }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr T nyBlocks(const T n) noexcept
-        {
-            return n / ny<T>();
-        }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr T nzBlocks(const T n) noexcept
-        {
-            return n / nz<T>();
-        }
-        template <typename T, class M>
-        __host__ __device__ [[nodiscard]] inline constexpr T nBlocks(const M &mesh) noexcept
-        {
-            return (mesh.nx() / nx<T>()) * (mesh.ny() / ny<T>()) * (mesh.nz() / nz<T>());
-        }
+
+        // __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks(const label_t n) noexcept
+        // {
+        //     return n / nx();
+        // }
+
+        // __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks(const label_t n) noexcept
+        // {
+        //     return n / ny();
+        // }
+
+        // __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks(const label_t n) noexcept
+        // {
+        //     return n / nz();
+        // }
 
         /**
          * @brief Provide the block-relative indices of block boundaries
          * @return The x, y or z index in a given direction corresponding to a block boundary
          **/
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T West() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t West() noexcept
         {
             return 0;
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T East() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t East() noexcept
         {
-            return block::nx<T>() - 1;
+            return block::nx() - 1;
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T South() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t South() noexcept
         {
             return 0;
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T North() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t North() noexcept
         {
-            return block::ny<T>() - 1;
+            return block::ny() - 1;
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T Back() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t Back() noexcept
         {
             return 0;
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline consteval T Front() noexcept
+
+        __host__ __device__ [[nodiscard]] inline consteval label_t Front() noexcept
         {
-            return block::nz<T>() - 1;
+            return block::nz() - 1;
         }
 
         /**
@@ -138,35 +164,35 @@ namespace mbLBM
          * @return TRUE if n lies along the boundary, FALSE otherwise
          * @param n The lattice index to be checked
          **/
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool South(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool South(const label_t n) noexcept
         {
-            return (n == South<T>());
+            return (n == South());
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool West(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool West(const label_t n) noexcept
         {
-            return (n == West<T>());
+            return (n == West());
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool East(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool East(const label_t n) noexcept
         {
-            return (n == East<T>());
+            return (n == East());
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool North(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool North(const label_t n) noexcept
         {
-            return (n == North<T>());
+            return (n == North());
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool Back(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool Back(const label_t n) noexcept
         {
-            return (n == Back<T>());
+            return (n == Back());
         }
-        template <typename T>
-        __host__ __device__ [[nodiscard]] inline constexpr bool Front(const T n) noexcept
+
+        __host__ __device__ [[nodiscard]] inline constexpr bool Front(const label_t n) noexcept
         {
-            return (n == Front<T>());
+            return (n == Front());
         }
     }
 
@@ -178,8 +204,8 @@ namespace mbLBM
      * @param z The z-component of the block
      * @param blockDimensions The physical dimensions of the block
      **/
-    template <typename T>
-    __host__ __device__ [[nodiscard]] inline constexpr T blockLabel(const T x, const T y, const T z, const blockLabel_t &blockDimensions) noexcept
+
+    __host__ __device__ [[nodiscard]] inline constexpr label_t blockLabel(const label_t x, const label_t y, const label_t z, const blockLabel_t &blockDimensions) noexcept
     {
         return (z * (blockDimensions.nx * blockDimensions.ny)) + (y * blockDimensions.nx) + (x);
     }
@@ -192,52 +218,67 @@ namespace mbLBM
      * @param z The z-component of the block
      * @param mesh The mesh
      **/
-    template <typename T, class M>
-    __host__ __device__ [[nodiscard]] inline constexpr T blockLabel(const T x, const T y, const T z, const M &mesh) noexcept
+    template <class M>
+    __host__ __device__ [[nodiscard]] inline constexpr label_t blockLabel(const label_t x, const label_t y, const label_t z, const M &mesh) noexcept
     {
         return (z * (mesh.nx() * mesh.ny())) + (y * mesh.nx()) + (x);
     }
 
-    template <class M>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxMom(
-        const std::size_t threadIDx, const std::size_t threadIDy, const std::size_t threadIDz,
-        const std::size_t blockIDx, const std::size_t blockIDy, const std::size_t blockIDz,
-        const M &mesh)
+    __host__ [[nodiscard]] inline label_t idxMom(
+        const label_t tx, const label_t ty, const label_t tz,
+        const label_t bx, const label_t by, const label_t bz,
+        const label_t nx, const label_t ny)
     {
-        const std::size_t nxBlock = block::nxBlocks<std::size_t>(mesh.nx());
-        const std::size_t nyBlock = block::nyBlocks<std::size_t>(mesh.ny());
+        const label_t nxBlock = nx / block::nx();
+        const label_t nyBlock = ny / block::ny();
 
-        return threadIDx + block::nx<std::size_t>() * (threadIDy + block::ny<std::size_t>() * (threadIDz + block::nz<std::size_t>() * ((blockIDx + nxBlock * (blockIDy + nyBlock * (blockIDz))))));
+        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlock * (by + nyBlock * (bz)))));
     }
 
-    __host__ __device__ [[nodiscard]] inline std::size_t idxScalarBlock(
-        const std::size_t tx,
-        const std::size_t ty,
-        const std::size_t tz,
-        const std::size_t bx,
-        const std::size_t by,
-        const std::size_t bz)
+    __device__ [[nodiscard]] inline label_t idxMom(
+        const label_t tx,
+        const label_t ty,
+        const label_t tz,
+        const label_t bx,
+        const label_t by,
+        const label_t bz)
     {
-        return tx + block::nx<std::size_t>() * (ty + block::ny<std::size_t>() * (tz + block::nz<std::size_t>() * (bx + block::nx<std::size_t>() * (by + block::ny<std::size_t>() * (bz)))));
+        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
     }
 
-    template <const std::size_t pop>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopBlock(
-        const std::size_t threadIDx, const std::size_t threadIDy, const std::size_t threadIDz)
+    template <const label_t mom, const label_t NUMBER_MOMENTS>
+    __device__ [[nodiscard]] inline label_t idxMom__(
+        const label_t tx, const label_t ty, const label_t tz,
+        const label_t bx, const label_t by, const label_t bz)
     {
-        return threadIDx + block::nx<std::size_t>() * (threadIDy + block::ny<std::size_t>() * (threadIDz + block::nz<std::size_t>() * (pop)));
+        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz))))));
     }
 
-    template <class M>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopX(
-        const std::size_t ty,
-        const std::size_t tz,
-        const std::size_t bx,
-        const std::size_t by,
-        const std::size_t bz,
-        const std::size_t QF,
-        const std::size_t pop,
-        const M &mesh)
+    __device__ [[nodiscard]] inline label_t idxScalarBlock(
+        const label_t tx,
+        const label_t ty,
+        const label_t tz,
+        const label_t bx,
+        const label_t by,
+        const label_t bz)
+    {
+        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
+    }
+
+    template <const label_t pop>
+    __host__ __device__ [[nodiscard]] inline constexpr label_t idxPopBlock(
+        const label_t tx, const label_t ty, const label_t tz)
+    {
+        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
+    }
+
+    template <const label_t pop, const label_t QF>
+    __device__ [[nodiscard]] inline label_t idxPopX(
+        const label_t ty,
+        const label_t tz,
+        const label_t bx,
+        const label_t by,
+        const label_t bz)
     {
 
         /*idx //  D   pop //  D   pop
@@ -254,19 +295,16 @@ namespace mbLBM
         9   //  1   26  //  -1  25
         */
 
-        return ty + block::ny<std::size_t>() * (tz + block::nz<std::size_t>() * (pop + QF * (bx + block::nxBlocks<std::size_t>(mesh.nx()) * (by + block::nyBlocks<std::size_t>(mesh.ny()) * bz))));
+        return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
     }
 
-    template <class M>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopY(
-        const std::size_t tx,
-        const std::size_t tz,
-        const std::size_t bx,
-        const std::size_t by,
-        const std::size_t bz,
-        const std::size_t QF,
-        const std::size_t pop,
-        const M &mesh)
+    template <const label_t pop, const label_t QF>
+    __device__ [[nodiscard]] inline label_t idxPopY(
+        const label_t tx,
+        const label_t tz,
+        const label_t bx,
+        const label_t by,
+        const label_t bz)
     {
 
         /*
@@ -283,19 +321,16 @@ namespace mbLBM
         8   //  1   24  //  -1  23
         9   //  1   25  //  -1  26
         */
-        return tx + block::nx<std::size_t>() * (tz + block::nz<std::size_t>() * (pop + QF * (bx + block::nxBlocks<std::size_t>(mesh.nx()) * (by + block::nyBlocks<std::size_t>(mesh.ny()) * bz))));
+        return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
     }
 
-    template <class M>
-    __host__ __device__ [[nodiscard]] inline constexpr std::size_t idxPopZ(
-        const std::size_t tx,
-        const std::size_t ty,
-        const std::size_t bx,
-        const std::size_t by,
-        const std::size_t bz,
-        const std::size_t QF,
-        const std::size_t pop,
-        const M &mesh)
+    template <const label_t pop, const label_t QF>
+    __device__ [[nodiscard]] inline label_t idxPopZ(
+        const label_t tx,
+        const label_t ty,
+        const label_t bx,
+        const label_t by,
+        const label_t bz)
     {
 
         /*
@@ -313,7 +348,7 @@ namespace mbLBM
         9   //  1   25  //  -1  26
         */
 
-        return tx + block::nx<std::size_t>() * (ty + block::ny<std::size_t>() * (pop + QF * (bx + block::nxBlocks<std::size_t>(mesh.nx()) * (by + block::nyBlocks<std::size_t>(mesh.ny()) * bz))));
+        return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
     }
 }
 

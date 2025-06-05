@@ -32,22 +32,22 @@ namespace mbLBM
             /**
              * @brief The line on which the function name appears
              **/
-            const std::size_t functionNameLine;
+            const label_t functionNameLine;
 
             /**
              * @brief The line on which the first open curly brace after functionName appears
              **/
-            const std::size_t openBracketLine;
+            const label_t openBracketLine;
 
             /**
              * @brief The line on which the curly braces are closed
              **/
-            const std::size_t closeBracketLine;
+            const label_t closeBracketLine;
 
             /**
              * @brief The number of lines read
              **/
-            const std::size_t nLines;
+            const label_t nLines;
 
         private:
             /**
@@ -56,9 +56,9 @@ namespace mbLBM
              * @param fileString A std::vector of std::strings read from a file to be scanned
              * @param functionName The function name for which fileString is to be scanned
              **/
-            [[nodiscard]] std::size_t scanFor(const std::vector<std::string> &fileString, const std::string &functionName) const noexcept
+            [[nodiscard]] label_t scanFor(const std::vector<std::string> &fileString, const std::string &functionName) const noexcept
             {
-                for (std::size_t i = 0; i < fileString.size(); i++)
+                for (label_t i = 0; i < fileString.size(); i++)
                 {
                     if (fileString[i].find(functionName) != std::string::npos)
                     {
@@ -156,7 +156,7 @@ namespace mbLBM
          * @param T The type of variable returned
          * @param S The vector of strings which is searched
          * @param name The name of the variable which is to be found and returned as type T
-         * @return The value of the variable expressed as a std::size_t
+         * @return The value of the variable expressed as a label_t
          * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
@@ -164,7 +164,7 @@ namespace mbLBM
         [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name) noexcept
         {
             // Loop over S
-            for (std::size_t i = 0; i < S.size(); i++)
+            for (label_t i = 0; i < S.size(); i++)
             {
                 // Check if S[i] contains a substring of name
                 if (S[i].find(name) != std::string_view::npos)
@@ -215,7 +215,7 @@ namespace mbLBM
         [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name) noexcept
         {
             // Loop over the input arguments and search for name
-            for (std::size_t i = 0; i < args.size(); i++)
+            for (label_t i = 0; i < args.size(); i++)
             {
                 // The name argument exists, so handle it
                 if (args[i] == name)
@@ -250,9 +250,9 @@ namespace mbLBM
             const std::vector<std::string> s_v = string::split(parseNameValuePair(args, name), ","[0], true);
 
             std::vector<T> arr;
-            std::size_t arrLength = 0;
+            label_t arrLength = 0;
 
-            for (std::size_t i = 0; i < s_v.size(); i++)
+            for (label_t i = 0; i < s_v.size(); i++)
             {
                 // Should check here if the string converts to a negative number and exit
                 if constexpr (std::is_signed_v<T>)

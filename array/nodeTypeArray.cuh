@@ -7,15 +7,15 @@ This is a temporary fix before the boundary condition function pointers are impl
 #ifndef __MBLBM_NODETYPEARRAY_CUH
 #define __MBLBM_NODETYPEARRAY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "latticeMesh.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+// #include "latticeMesh.cuh"
 
 namespace mbLBM
 {
     namespace host
     {
-        typedef array<nodeType::type> nodeTypeArray;
+        // typedef array<nodeType::type> nodeTypeArray;
     }
 
     namespace device
@@ -45,13 +45,14 @@ namespace mbLBM
                 std::cout << "Freeing device node types" << std::endl;
 #endif
                 cudaFree((void *)ptr_);
+                // cudaFree(static_cast<void *>(ptr_));
             };
 
             /**
              * @brief Returns immutable access to the underlying pointer
              * @return A const-qualified pointer
              **/
-            __device__ [[nodiscard]] inline constexpr const nodeType::type *ptr() const noexcept
+            __host__ __device__ [[nodiscard]] inline const nodeType::type *ptr() const noexcept
             {
                 return ptr_;
             }
@@ -60,7 +61,7 @@ namespace mbLBM
             /**
              * @brief Pointer to the underlying array
              **/
-            const nodeType::type *ptr_;
+            const nodeType::type *const ptrRestrict ptr_;
         };
     }
 }

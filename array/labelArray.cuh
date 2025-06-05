@@ -16,7 +16,7 @@ namespace mbLBM
 {
     namespace host
     {
-        typedef array<label_t> scalarArray;
+        typedef array<label_t> labelArray;
     }
 }
 

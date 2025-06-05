@@ -24,8 +24,8 @@ namespace mbLBM
          **/
         [[nodiscard]] programControl(int argc, char *argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              Re_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Re")),
-              u_inf_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "u_inf")),
+              Re_(initialiseConst<scalar_t>("Re")),
+              u_inf_(initialiseConst<scalar_t>("u_inf")),
               Lx_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lx")),
               Ly_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Ly")),
               Lz_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lz")),
@@ -56,6 +56,18 @@ namespace mbLBM
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "}" << std::endl;
             std::cout << std::endl;
+
+            // Set the Reynolds number and characteristic velocity in the device const memory
+            // if (cudaMemcpyToSymbol(d_Re, &Re_, sizeof(Re_), 0, cudaMemcpyHostToDevice) != cudaSuccess)
+            // {
+            //     std::cout << "Failed to copy to symbol Re to device constant memory in constructor of programControl" << std::endl;
+            // }
+            // if (cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_), 0, cudaMemcpyHostToDevice) != cudaSuccess)
+            // {
+            //     std::cout << "Failed to copy to symbol u_inf to device constant memory in constructor of programControl" << std::endl;
+            // }
+
+            // cudaDeviceSynchronize();
         };
 
         /**
@@ -117,6 +129,17 @@ namespace mbLBM
          * @brief Total number of simulation time steps
          **/
         const label_t nTimeSteps_;
+
+        /**
+         * @brief Reads a variable from the caseInfo file into a parameter of type T
+         * @return The variable as type T
+         * @param varName The name of the variable to read
+         **/
+        template <typename T>
+        [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
+        {
+            return string::extractParameter<T>(string::readCaseDirectory("caseInfo"), varName);
+        }
     };
 }
 

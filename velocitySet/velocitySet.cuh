@@ -27,15 +27,15 @@ namespace mbLBM
              **/
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t as2() noexcept
             {
-                return 3.0;
+                return static_cast<scalar_t>(3.0);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t cs2() noexcept
             {
-                return 1.0 / as2();
+                return static_cast<scalar_t>(1.0) / as2();
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_0_SCALE() noexcept
             {
-                return 1.0;
+                return static_cast<scalar_t>(1.0);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_I_SCALE() noexcept
             {
@@ -43,7 +43,7 @@ namespace mbLBM
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_II_SCALE() noexcept
             {
-                return as2() * as2() / 2.0;
+                return as2() * as2() / static_cast<scalar_t>(2.0);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_IJ_SCALE() noexcept
             {
@@ -54,7 +54,7 @@ namespace mbLBM
              * @brief Multiplies all of the moments by their coefficients
              * @param moments The moments to be scaled
              **/
-            __device__ static inline void scale(scalar_t (&moments)[10]) noexcept
+            __device__ static inline void scale(scalar_t moments[10]) noexcept
             {
                 moments[0] = moments[0] * F_M_0_SCALE();
 

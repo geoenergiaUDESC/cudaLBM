@@ -12,7 +12,7 @@ inline void initialConditionApply(
     scalarArray_t &mom_4,
     scalarArray_t &mom_5,
     const nodeTypeArray_t nodeTypes,
-    const std::size_t i,
+    const label_t i,
     const scalar_t Re,
     const scalar_t u_inf,
     const label_t nx) noexcept
@@ -727,12 +727,12 @@ void initialCondition(
     const scalar_t u_inf,
     const label_t nx) noexcept
 {
-    std::size_t pctCounter = 0;
-    const std::size_t n = nodeTypes.size();
-    std::size_t iCounter = 0;
+    label_t pctCounter = 0;
+    const label_t n = nodeTypes.size();
+    label_t iCounter = 0;
 
     std::cout << "Entered initialCondition function" << std::endl;
-    for (std::size_t i = 0; i < nodeTypes.size(); i++)
+    for (label_t i = 0; i < nodeTypes.size(); i++)
     {
         pctCounter++;
         initialConditionApply(rho, u, v, w, mom_0, mom_1, mom_2, mom_3, mom_4, mom_5, nodeTypes, i, Re, u_inf, nx);

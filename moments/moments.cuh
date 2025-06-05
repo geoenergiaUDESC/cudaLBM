@@ -8,10 +8,10 @@ Contents: A class containing the arrays of the moment variables
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
-#include "velocitySet/velocitySet.cuh"
-#include "globalFunctions.cuh"
-#include "array/array.cuh"
-#include "scalarArray/scalarArray.cuh"
+#include "../latticeMesh/latticeMesh.cuh"
+#include "../velocitySet/velocitySet.cuh"
+#include "../globalFunctions.cuh"
+#include "../array/array.cuh"
 
 namespace mbLBM
 {
@@ -49,6 +49,10 @@ namespace mbLBM
             /**
              * @brief Returns the number of lattices in the x, y and z directions
              **/
+            [[nodiscard]] inline constexpr const latticeMesh &mesh() const noexcept
+            {
+                return mesh_;
+            }
             [[nodiscard]] inline constexpr label_t nx() const noexcept
             {
                 return mesh_.nx();
@@ -64,6 +68,22 @@ namespace mbLBM
             [[nodiscard]] inline constexpr label_t nPoints() const noexcept
             {
                 return mesh_.nPoints();
+            }
+
+            /**
+             * @brief Returns the number of CUDA in the x, y and z directions
+             **/
+            [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
+            {
+                return mesh_.nxBlocks();
+            }
+            [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
+            {
+                return mesh_.nyBlocks();
+            }
+            [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
+            {
+                return mesh_.nzBlocks();
             }
 
             /**
@@ -115,7 +135,7 @@ namespace mbLBM
              * @brief Writes the moment variables to a file
              * @param time The solution time step
              **/
-            void writeFile(const std::size_t time) const noexcept
+            void writeFile(const label_t time) const noexcept
             {
                 rho_.saveFile(time);
                 u_.saveFile(time);
@@ -185,6 +205,7 @@ namespace mbLBM
                 std::cout << "}" << std::endl;
                 std::cout << std::endl;
 #endif
+                checkCudaErrors(cudaDeviceSynchronize());
             };
 
             /**
@@ -196,43 +217,84 @@ namespace mbLBM
              * @brief Provides access to the underlying pointers
              * @return A reference to a unique pointer
              **/
-            __device__ [[nodiscard]] inline constexpr const scalar_t *rho() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *rho() const noexcept
             {
                 return rho_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *u() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *u() const noexcept
             {
                 return u_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *v() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *v() const noexcept
             {
                 return v_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *w() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *w() const noexcept
             {
                 return w_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xx() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_xx() const noexcept
             {
                 return m_xx_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xy() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_xy() const noexcept
             {
                 return m_xy_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_xz() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_xz() const noexcept
             {
                 return m_xz_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_yy() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_yy() const noexcept
             {
                 return m_yy_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_yz() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_yz() const noexcept
             {
                 return m_yz_.ptr();
             }
-            __device__ [[nodiscard]] inline constexpr const scalar_t *m_zz() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *m_zz() const noexcept
+            {
+                return m_zz_.ptr();
+            }
+
+            __host__ __device__ [[nodiscard]] inline scalar_t *rho() noexcept
+            {
+                return rho_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *u() noexcept
+            {
+                return u_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *v() noexcept
+            {
+                return v_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *w() noexcept
+            {
+                return w_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_xx() noexcept
+            {
+                return m_xx_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_xy() noexcept
+            {
+                return m_xy_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_xz() noexcept
+            {
+                return m_xz_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_yy() noexcept
+            {
+                return m_yy_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_yz() noexcept
+            {
+                return m_yz_.ptr();
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *m_zz() noexcept
             {
                 return m_zz_.ptr();
             }
@@ -251,18 +313,20 @@ namespace mbLBM
             /**
              * @brief The moment variables
              **/
-            const scalarArray rho_;
-            const scalarArray u_;
-            const scalarArray v_;
-            const scalarArray w_;
-            const scalarArray m_xx_;
-            const scalarArray m_xy_;
-            const scalarArray m_xz_;
-            const scalarArray m_yy_;
-            const scalarArray m_yz_;
-            const scalarArray m_zz_;
+            scalarArray rho_;
+            scalarArray u_;
+            scalarArray v_;
+            scalarArray w_;
+            scalarArray m_xx_;
+            scalarArray m_xy_;
+            scalarArray m_xz_;
+            scalarArray m_yy_;
+            scalarArray m_yz_;
+            scalarArray m_zz_;
         };
     }
 }
+
+#include "ghostInterface.cuh"
 
 #endif

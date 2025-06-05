@@ -6,20 +6,28 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 #ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
 #define __MBLBM_BOUNDARYCONDITIONS_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+// #include "LBMIncludes.cuh"
+// #include "LBMTypedefs.cuh"
 
-namespace mbLBM
+// namespace mbLBM
 {
     class boundaryConditions
     {
     public:
         [[nodiscard]] inline consteval boundaryConditions() {};
 
-        // This is way too long but seems to work for now
         __device__ static inline void calculateMoments(
             const scalar_t pop[19],
-            scalar_t moments[10],
+            scalar_t *const rhoVar,
+            scalar_t *const ux_t30,
+            scalar_t *const uy_t30,
+            scalar_t *const uz_t30,
+            scalar_t *const m_xx_t45,
+            scalar_t *const m_xy_t90,
+            scalar_t *const m_xz_t90,
+            scalar_t *const m_yy_t45,
+            scalar_t *const m_yz_t90,
+            scalar_t *const m_zz_t45,
             const nodeType::type nodeType) noexcept
         {
             scalar_t rho_I;

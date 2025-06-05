@@ -10,8 +10,8 @@ partition the mesh prior to distribution to the devices
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
-#include "latticeMesh.cuh"
-#include "../device/device.cuh"
+// #include "../latticeMesh/latticeMesh.cuh"
+// #include "../device/device.cuh"
 #include "../array/array.cuh"
 
 namespace mbLBM
@@ -40,7 +40,7 @@ namespace mbLBM
              * @param nPoints The number of lattice points to assign
              * @param value The value to assign to all points of the array
              **/
-            [[nodiscard]] scalarArray(const std::size_t nPoints, const scalar_t value) noexcept
+            [[nodiscard]] scalarArray(const label_t nPoints, const scalar_t value) noexcept
                 : ptr_(device::allocateArray(nPoints, value)) {};
 
             /**
@@ -49,16 +49,25 @@ namespace mbLBM
             ~scalarArray() noexcept
             {
 #ifdef VERBOSE
-                std::cout << "Freeing scalar array" << std::endl;
+                // std::cout << "Freeing scalar array" << std::endl;
 #endif
                 cudaFree((void *)ptr_);
+                // cudaFree(ptr_);
             };
 
             /**
              * @brief Returns immutable access to the underlying pointer
              * @return A const-qualified pointer
              **/
-            __device__ [[nodiscard]] inline constexpr const scalar_t *ptr() const noexcept
+            __host__ __device__ [[nodiscard]] inline const scalar_t *ptr() const noexcept
+            {
+                return ptr_;
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *ptr() noexcept
+            {
+                return ptr_;
+            }
+            __host__ __device__ [[nodiscard]] inline scalar_t *ptrRestrict &ptrRef() noexcept
             {
                 return ptr_;
             }
@@ -67,33 +76,9 @@ namespace mbLBM
             /**
              * @brief Pointer to the underlying variable
              **/
-            const scalar_t *ptr_;
-
-            /**
-             * @brief Allocates a block of memory on the device and returns its pointer
-             * @return A raw pointer to a block of memory
-             * @param size The amount of memory to be allocated
-             **/
-            template <typename T>
-            [[nodiscard]] inline T *deviceMalloc(const std::size_t size) const noexcept
-            {
-                T *ptr;
-                const cudaError_t i = cudaMalloc(static_cast<T **>(&ptr), size);
-
-                if (i != cudaSuccess)
-                {
-                    exceptions::program_exit(i, "Unable to allocate array");
-                }
-#ifdef VERBOSE
-                std::cout << "Allocated " << size << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
-#endif
-
-                return ptr;
-            }
+            scalar_t *ptrRestrict ptr_;
         };
     }
 }
-
-#include "ghostInterface.cuh"
 
 #endif

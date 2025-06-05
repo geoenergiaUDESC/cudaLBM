@@ -9,6 +9,7 @@ Contents: A class holding information about the solution grid
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "strings.cuh"
+#include "../globalFunctions.cuh"
 
 namespace mbLBM
 {
@@ -32,7 +33,7 @@ namespace mbLBM
                   yOffset_(0),
                   zOffset_(0),
                   globalOffset_(0),
-                  nodeTypes_(extractNodeTypes("nodeTypes", ctorType::MUST_READ))
+                  nodeTypes_(extractNodeTypes(ctorType::MUST_READ))
             {
 #ifdef VERBOSE
                 std::cout << "Allocated global latticeMesh object:" << std::endl;
@@ -62,7 +63,7 @@ namespace mbLBM
                   yOffset_(0),
                   zOffset_(0),
                   globalOffset_(0),
-                  nodeTypes_(extractNodeTypes("nodeTypes", readType))
+                  nodeTypes_(extractNodeTypes(readType))
             {
 #ifdef VERBOSE
                 std::cout << "Allocated global latticeMesh object:" << std::endl;
@@ -81,27 +82,27 @@ namespace mbLBM
              * @param partitionRange Struct containing index ranges for x, y and z
              * @return A latticeMesh object
              **/
-            [[nodiscard]] latticeMesh(const latticeMesh &originalMesh, const blockRange_t partitionRange) noexcept
-                : nx_(partitionRange.xRange.end - partitionRange.xRange.begin),
-                  ny_(partitionRange.yRange.end - partitionRange.yRange.begin),
-                  nz_(partitionRange.zRange.end - partitionRange.zRange.begin),
-                  nPoints_(nx_ * ny_ * nz_),
-                  xOffset_(partitionRange.xRange.begin),
-                  yOffset_(partitionRange.yRange.begin),
-                  zOffset_(partitionRange.zRange.begin),
-                  globalOffset_(blockLabel<label_t>(xOffset_, yOffset_, zOffset_, {nx_, ny_, nz_})),
-                  nodeTypes_(extractNodeTypes("nodeTypes", ctorType::NO_READ))
-            {
-#ifdef VERBOSE
-                std::cout << "Allocated partitioned latticeMesh object:" << std::endl;
-                std::cout << "{" << std::endl;
-                std::cout << "    nx = " << nx_ << ";" << std::endl;
-                std::cout << "    ny = " << ny_ << ";" << std::endl;
-                std::cout << "    nz = " << nz_ << ";" << std::endl;
-                std::cout << "}" << std::endl;
-                std::cout << std::endl;
-#endif
-            };
+            //             [[nodiscard]] latticeMesh(const latticeMesh &originalMesh, const blockRange_t partitionRange) noexcept
+            //                 : nx_(partitionRange.xRange.end - partitionRange.xRange.begin),
+            //                   ny_(partitionRange.yRange.end - partitionRange.yRange.begin),
+            //                   nz_(partitionRange.zRange.end - partitionRange.zRange.begin),
+            //                   nPoints_(nx_ * ny_ * nz_),
+            //                   xOffset_(partitionRange.xRange.begin),
+            //                   yOffset_(partitionRange.yRange.begin),
+            //                   zOffset_(partitionRange.zRange.begin),
+            //                   globalOffset_(blockLabel<label_t>(xOffset_, yOffset_, zOffset_, {nx_, ny_, nz_})),
+            //                   nodeTypes_(extractNodeTypes("nodeTypes", ctorType::NO_READ))
+            //             {
+            // #ifdef VERBOSE
+            //                 std::cout << "Allocated partitioned latticeMesh object:" << std::endl;
+            //                 std::cout << "{" << std::endl;
+            //                 std::cout << "    nx = " << nx_ << ";" << std::endl;
+            //                 std::cout << "    ny = " << ny_ << ";" << std::endl;
+            //                 std::cout << "    nz = " << nz_ << ";" << std::endl;
+            //                 std::cout << "}" << std::endl;
+            //                 std::cout << std::endl;
+            // #endif
+            //             };
 
             /**
              * @brief Destructor for the host latticeMesh class
@@ -127,6 +128,27 @@ namespace mbLBM
             __host__ __device__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
             {
                 return nPoints_;
+            }
+
+            /**
+             * @brief Returns the number of CUDA blocks in the x, y and z directions
+             * @return Number of CUDA blocks as a label_t
+             **/
+            __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
+            {
+                return nx_ / block::nx();
+            }
+            __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
+            {
+                return ny_ / block::ny();
+            }
+            __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
+            {
+                return nz_ / block::nz();
+            }
+            __host__ __device__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
+            {
+                return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
             }
 
             /**
@@ -205,7 +227,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < nx_; i++)
                         {
-                            std::cout << blockLabel<label_t>(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
+                            std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
                         }
                         std::cout << "\n";
                     }
@@ -224,7 +246,7 @@ namespace mbLBM
                     {
                         for (label_t i = 0; i < nx_; i++)
                         {
-                            std::cout << blockLabel<label_t>(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
+                            std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
                         }
                         std::cout << "\n";
                     }
@@ -232,6 +254,10 @@ namespace mbLBM
                 }
             }
 
+            /**
+             * @brief Writes the mesh partition to a file
+             * @param fileName The file name to which the mesh will be written
+             **/
             void write(const std::string &fileName = "mesh") const noexcept
             {
                 if (nodeTypeCheck())
@@ -276,14 +302,19 @@ namespace mbLBM
              **/
             const nodeTypeArray_t nodeTypes_;
 
-            [[nodiscard]] const nodeTypeArray_t extractNodeTypes(const std::string &functionName, const ctorType::type readType) const noexcept
+            /**
+             * @brief Extracts the type of each lattice node
+             * @return The types of each lattice node
+             * @param readType The constructor type: MUST_READ or NO_READ
+             **/
+            [[nodiscard]] const nodeTypeArray_t extractNodeTypes(const ctorType::type readType) const noexcept
             {
                 if (readType == ctorType::MUST_READ)
                 {
-                    const std::vector<std::string> fileString = string::readCaseDirectory("mesh");
-                    const string::functionNameLines_t lines(fileString, functionName);
+                    const std::vector<std::string> fileString = string::readCaseDirectory("nodeTypes");
+                    const string::functionNameLines_t lines(fileString, "nodeTypes");
                     nodeTypeArray_t v(lines.nLines, nodeType::UNDEFINED);
-                    for (std::size_t i = lines.openBracketLine + 1; i < lines.closeBracketLine; i++)
+                    for (label_t i = lines.openBracketLine + 1; i < lines.closeBracketLine; i++)
                     {
                         v[i - lines.openBracketLine - 1] = static_cast<nodeType::type>(stoi(fileString[i]));
                     }
@@ -295,6 +326,10 @@ namespace mbLBM
                 }
             }
 
+            /**
+             * @brief Checks whether each node type has been defined
+             * @return True if all nodes are defined, false otherwise
+             **/
             [[nodiscard]] inline bool nodeTypeCheck() const noexcept
             {
                 for (label_t n = 0; n < nodeTypes_.size(); n++)
@@ -309,17 +344,17 @@ namespace mbLBM
         };
     }
 
-    namespace device
-    {
-        class latticeMesh
-        {
-        public:
-            [[nodiscard]] latticeMesh() noexcept {};
-            ~latticeMesh() {};
+    // namespace device
+    // {
+    //     class latticeMesh
+    //     {
+    //     public:
+    //         [[nodiscard]] latticeMesh() noexcept {};
+    //         ~latticeMesh() {};
 
-        private:
-        };
-    }
+    //     private:
+    //     };
+    // }
 }
 
 #endif

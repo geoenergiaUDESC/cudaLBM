@@ -214,6 +214,109 @@ typedef struct ghostData
     scalar_t *Z_1;
 } GhostData;
 
+template <typename T>
+class deviceArray
+{
+public:
+    [[nodiscard]] deviceArray(const label_t nPoints)
+        : ptr_(device::allocate<T>(nPoints)) {};
+
+    ~deviceArray()
+    {
+        cudaFree(ptr_);
+    }
+
+    /**
+     * @brief Overloads the [] operator
+     * @return The i-th index of the underlying array
+     **/
+    __device__ __host__ inline T operator[](const label_t i) const noexcept
+    {
+        return ptr_[i];
+    }
+
+    __device__ __host__ [[nodiscard]] inline const T *ptr() const noexcept
+    {
+        return ptr_;
+    }
+
+    __device__ __host__ [[nodiscard]] inline T *ptr() noexcept
+    {
+        return ptr_;
+    }
+
+    [[nodiscard]] inline T *&ptrRef() noexcept
+    {
+        return ptr_;
+    }
+
+private:
+    T *ptr_;
+};
+
+class ghostData_t
+{
+public:
+    [[nodiscard]] ghostData_t()
+        // : X_0(deviceArray<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
+        //   X_1(deviceArray<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
+        //   Y_0(deviceArray<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
+        //   Y_1(deviceArray<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
+        //   Z_0(deviceArray<scalar_t>(NUMBER_GHOST_FACE_XY * QF)),
+        //   Z_1(deviceArray<scalar_t>(NUMBER_GHOST_FACE_XY * QF)) {};
+        : X_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
+          X_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
+          Y_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
+          Y_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
+          Z_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XY * QF)),
+          Z_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XY * QF)) {};
+
+    // private:
+    // deviceArray<scalar_t> X_0;
+    // deviceArray<scalar_t> X_1;
+    // deviceArray<scalar_t> Y_0;
+    // deviceArray<scalar_t> Y_1;
+    // deviceArray<scalar_t> Z_0;
+    // deviceArray<scalar_t> Z_1;
+    scalar_t *X_0;
+    scalar_t *X_1;
+    scalar_t *Y_0;
+    scalar_t *Y_1;
+    scalar_t *Z_0;
+    scalar_t *Z_1;
+};
+
+class ghostInterfaceData_t
+{
+public:
+    [[nodiscard]] ghostInterfaceData_t()
+        : fGhost(ghostData_t()),
+          gGhost(ghostData_t()),
+          h_fGhost(ghostData_t()) {};
+
+    __host__ inline void swap() noexcept
+    {
+        interfaceSwap(fGhost.X_0, gGhost.X_0);
+        interfaceSwap(fGhost.X_1, gGhost.X_1);
+        interfaceSwap(fGhost.Y_0, gGhost.Y_0);
+        interfaceSwap(fGhost.Y_1, gGhost.Y_1);
+        interfaceSwap(fGhost.Z_0, gGhost.Z_0);
+        interfaceSwap(fGhost.Z_1, gGhost.Z_1);
+    }
+
+    __host__ void interfaceSwap(scalar_t *&pt1, scalar_t *&pt2) noexcept
+    {
+        scalar_t *temp = pt1;
+        pt1 = pt2;
+        pt2 = temp;
+    }
+
+    // private:
+    ghostData_t fGhost;
+    ghostData_t gGhost;
+    ghostData_t h_fGhost;
+};
+
 typedef struct ghostInterfaceData
 {
     ghostData fGhost;
@@ -276,22 +379,21 @@ __host__ void allocateHostMemory(
 }
 
 __host__ void allocateDeviceMemory(
-    scalar_t **d_fMom,
-    unsigned int **dNodeType,
+    // unsigned int **dNodeType,
     GhostInterfaceData *ghostInterface)
 {
     // cudaMalloc((void**)d_fMom, MEM_SIZE_MOM);
-    cudaMalloc(d_fMom, MEM_SIZE_MOM);
+    // cudaMalloc(d_fMom, MEM_SIZE_MOM);
     // std::cout << "Allocated device moments to address " << d_fMom << std::endl;
     // cudaMalloc((void **)dNodeType, sizeof(int) * NUMBER_LBM_NODES);
-    cudaMalloc(dNodeType, sizeof(int) * NUMBER_LBM_NODES);
+    // cudaMalloc(dNodeType, sizeof(int) * NUMBER_LBM_NODES);
     interfaceMalloc(*ghostInterface);
 }
 
 __host__ void interfaceCudaMemcpy(
-    [[maybe_unused]] GhostInterfaceData &ghostInterface,
-    ghostData &dst,
-    const ghostData &src,
+    [[maybe_unused]] ghostInterfaceData_t &ghostInterface,
+    ghostData_t &dst,
+    const ghostData_t &src,
     cudaMemcpyKind kind)
 {
     struct MemcpyPair
@@ -316,21 +418,22 @@ __host__ void interfaceCudaMemcpy(
     }
 }
 
-__host__ __device__ label_t __forceinline__ idxScalarGlobal(unsigned int x, unsigned int y, unsigned int z)
+__host__ __device__ label_t __forceinline__ idxScalarGlobal(const label_t x, const label_t y, const label_t z)
 {
     // return NX * (NY * z + y) + x;
     return x + NX * (y + NY * (z));
 }
 
 __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuInitialization_mom(
-    scalar_t *fMom,
-    scalar_t *randomNumbers)
+    scalar_t *fMom)
 {
     label_t x = threadIdx.x + blockDim.x * blockIdx.x;
     label_t y = threadIdx.y + blockDim.y * blockIdx.y;
     label_t z = threadIdx.z + blockDim.z * blockIdx.z;
     if (x >= NX || y >= NY || z >= NZ)
+    {
         return;
+    }
 
     label_t index = idxScalarGlobal(x, y, z);
     // size_t index = 0;
@@ -416,7 +519,7 @@ __device__ static inline void reconstruct(
 }
 
 __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuInitialization_pop(
-    scalar_t *fMom, ghostInterfaceData ghostInterface)
+    scalar_t *fMom, ghostInterfaceData_t ghostInterface)
 {
     int x = threadIdx.x + blockDim.x * blockIdx.x;
     int y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -538,13 +641,16 @@ __host__ void hostInitialization_nodeType(unsigned int *hNodeType)
 }
 
 __host__ void initializeDomain(
-    GhostInterfaceData &ghostInterface,
-    scalar_t *&d_fMom, scalar_t *&h_fMom,
-    unsigned int *&hNodeType, unsigned int *&dNodeType, scalar_t **&randomNumbers,
-    dim3 gridBlock, dim3 threadBlock)
+    ghostInterfaceData_t &ghostInterface,
+    scalar_t *const &d_fMom,
+    scalar_t *&h_fMom,
+    unsigned int *&hNodeType,
+    unsigned int *const &dNodeType,
+    dim3 gridBlock,
+    dim3 threadBlock)
 {
 
-    gpuInitialization_mom<<<gridBlock, threadBlock, 0, 0>>>(d_fMom, randomNumbers[0]);
+    gpuInitialization_mom<<<gridBlock, threadBlock, 0, 0>>>(d_fMom);
 
     gpuInitialization_pop<<<gridBlock, threadBlock, 0, 0>>>(d_fMom, ghostInterface);
 
@@ -1286,9 +1392,9 @@ __device__ static inline void calculateBoundaryMoments(
 }
 
 __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuMomCollisionStream(
-    scalar_t *fMom,
-    unsigned int *dNodeType,
-    ghostInterfaceData ghostInterface)
+    scalar_t *const fMom,
+    const unsigned int *const dNodeType,
+    ghostInterfaceData_t ghostInterface)
 {
     const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
     const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -1504,18 +1610,18 @@ __host__ __device__ void interfaceSwap(scalar_t *&pt1, scalar_t *&pt2)
     pt2 = temp;
 }
 
-__host__ void swapGhostInterfaces(GhostInterfaceData &ghostInterface)
-{
-    // Synchronize device before performing swaps
-    checkCudaErrors(cudaDeviceSynchronize());
+// __host__ void swapGhostInterfaces(ghostInterfaceData_t &ghostInterface)
+// {
+//     // Synchronize device before performing swaps
+//     checkCudaErrors(cudaDeviceSynchronize());
 
-    // Swap interface pointers for fGhost and gGhost
-    interfaceSwap(ghostInterface.fGhost.X_0, ghostInterface.gGhost.X_0);
-    interfaceSwap(ghostInterface.fGhost.X_1, ghostInterface.gGhost.X_1);
-    interfaceSwap(ghostInterface.fGhost.Y_0, ghostInterface.gGhost.Y_0);
-    interfaceSwap(ghostInterface.fGhost.Y_1, ghostInterface.gGhost.Y_1);
-    interfaceSwap(ghostInterface.fGhost.Z_0, ghostInterface.gGhost.Z_0);
-    interfaceSwap(ghostInterface.fGhost.Z_1, ghostInterface.gGhost.Z_1);
-}
+//     // Swap interface pointers for fGhost and gGhost
+//     interfaceSwap(ghostInterface.fGhost.X_0, ghostInterface.gGhost.X_0);
+//     interfaceSwap(ghostInterface.fGhost.X_1, ghostInterface.gGhost.X_1);
+//     interfaceSwap(ghostInterface.fGhost.Y_0, ghostInterface.gGhost.Y_0);
+//     interfaceSwap(ghostInterface.fGhost.Y_1, ghostInterface.gGhost.Y_1);
+//     interfaceSwap(ghostInterface.fGhost.Z_0, ghostInterface.gGhost.Z_0);
+//     interfaceSwap(ghostInterface.fGhost.Z_1, ghostInterface.gGhost.Z_1);
+// }
 
 #endif

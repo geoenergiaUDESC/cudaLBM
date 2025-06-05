@@ -8,15 +8,15 @@ partition the mesh prior to distribution to the devices
 #ifndef __MBLBM_LABELARRAYS_CUH
 #define __MBLBM_LABELARRAYS_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 #include "../array/array.cuh"
 
 namespace mbLBM
 {
     namespace host
     {
-        typedef array<label_t> labelArray;
+        // typedef array<label_t> labelArray;
     }
 }
 

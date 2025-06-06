@@ -8,6 +8,7 @@ Contents: Functions used throughout the source code
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "globalDefines.cuh"
 
 namespace mbLBM
 {
@@ -224,37 +225,50 @@ namespace mbLBM
         return (z * (mesh.nx() * mesh.ny())) + (y * mesh.nx()) + (x);
     }
 
-    __host__ [[nodiscard]] inline label_t idxMom(
-        const label_t tx, const label_t ty, const label_t tz,
-        const label_t bx, const label_t by, const label_t bz,
-        const label_t nx, const label_t ny)
-    {
-        const label_t nxBlock = nx / block::nx();
-        const label_t nyBlock = ny / block::ny();
+    // __host__ [[nodiscard]] inline label_t idxMom(
+    //     const label_t tx, const label_t ty, const label_t tz,
+    //     const label_t bx, const label_t by, const label_t bz,
+    //     const label_t nx, const label_t ny)
+    // {
+    //     const label_t nxBlock = nx / block::nx();
+    //     const label_t nyBlock = ny / block::ny();
 
-        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlock * (by + nyBlock * (bz)))));
-    }
+    //     return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlock * (by + nyBlock * (bz)))));
+    // }
 
-    __device__ [[nodiscard]] inline label_t idxMom(
-        const label_t tx,
-        const label_t ty,
-        const label_t tz,
-        const label_t bx,
-        const label_t by,
-        const label_t bz)
-    {
-        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
-    }
+    // __device__ [[nodiscard]] inline label_t idxMom(
+    //     const label_t tx,
+    //     const label_t ty,
+    //     const label_t tz,
+    //     const label_t bx,
+    //     const label_t by,
+    //     const label_t bz)
+    // {
+    //     return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
+    // }
 
-    template <const label_t mom, const label_t NUMBER_MOMENTS>
-    __device__ [[nodiscard]] inline label_t idxMom__(
+    template <const label_t mom>
+    __device__ __host__ [[nodiscard]] inline label_t idxMom(
         const label_t tx, const label_t ty, const label_t tz,
         const label_t bx, const label_t by, const label_t bz)
     {
-        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz))))));
+        return tx + BLOCK_NX * (ty + BLOCK_NY * (tz + BLOCK_NZ * (mom + NUMBER_MOMENTS * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz))))));
     }
 
-    __device__ [[nodiscard]] inline label_t idxScalarBlock(
+    __host__ __device__ [[nodiscard]] inline scalar_t gpu_f_eq(const scalar_t rhow, const scalar_t uc3, const scalar_t p1_muu)
+    {
+        // f_eq = rho_w * (1 - uu * 1.5 + uc * 3 + uc * uc * 4.5) ->
+        // f_eq = rho_w * (1 - uu * 1.5 + uc * 3 * ( 1 + uc * 1.5)) ->
+        return (rhow * (p1_muu + uc3 * (static_cast<scalar_t>(1.0) + uc3 * static_cast<scalar_t>(0.5))));
+    }
+
+    __host__ __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
+    {
+        // return NX * (NY * z + y) + x;
+        return x + NX * (y + NY * (z));
+    }
+
+    __host__ __device__ [[nodiscard]] inline label_t idxScalarBlock(
         const label_t tx,
         const label_t ty,
         const label_t tz,
@@ -262,17 +276,16 @@ namespace mbLBM
         const label_t by,
         const label_t bz)
     {
-        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
+        return tx + BLOCK_NX * (ty + BLOCK_NY * (tz + BLOCK_NZ * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
     }
 
     template <const label_t pop>
-    __host__ __device__ [[nodiscard]] inline constexpr label_t idxPopBlock(
-        const label_t tx, const label_t ty, const label_t tz)
+    __host__ __device__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz)
     {
-        return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
+        return tx + BLOCK_NX * (ty + BLOCK_NY * (tz + BLOCK_NZ * (pop)));
     }
 
-    template <const label_t pop, const label_t QF>
+    template <const label_t pop>
     __device__ [[nodiscard]] inline label_t idxPopX(
         const label_t ty,
         const label_t tz,
@@ -280,25 +293,10 @@ namespace mbLBM
         const label_t by,
         const label_t bz)
     {
-
-        /*idx //  D   pop //  D   pop
-        D3Q19
-        0   //  1   1   //  -1  2
-        1   //  1   7   //  -1  8
-        2   //  1   9   //  -1  10
-        3   //  1   13  //  -1  14
-        4   //  1   15  //  -1  16
-        D3Q27
-        6   //  1   19  //  -1  20
-        7   //  1   21  //  -1  22
-        8   //  1   23  //  -1  24
-        9   //  1   26  //  -1  25
-        */
-
-        return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
+        return ty + BLOCK_NY * (tz + BLOCK_NZ * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
     }
 
-    template <const label_t pop, const label_t QF>
+    template <const label_t pop>
     __device__ [[nodiscard]] inline label_t idxPopY(
         const label_t tx,
         const label_t tz,
@@ -306,25 +304,10 @@ namespace mbLBM
         const label_t by,
         const label_t bz)
     {
-
-        /*
-        idx //  D   pop //  D   pop
-        D3Q19
-        0   //  1   3   //  -1  4
-        1   //  1   7   //  -1  8
-        2   //  1   11  //  -1  12
-        3   //  1   14  //  -1  13
-        4   //  1   17  //  -1  18
-        D3Q27
-        6   //  1   19  //  -1  20
-        7   //  1   21  //  -1  22
-        8   //  1   24  //  -1  23
-        9   //  1   25  //  -1  26
-        */
-        return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
+        return tx + BLOCK_NX * (tz + BLOCK_NZ * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
     }
 
-    template <const label_t pop, const label_t QF>
+    template <const label_t pop>
     __device__ [[nodiscard]] inline label_t idxPopZ(
         const label_t tx,
         const label_t ty,
@@ -332,23 +315,34 @@ namespace mbLBM
         const label_t by,
         const label_t bz)
     {
+        return tx + BLOCK_NX * (ty + BLOCK_NY * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
+    }
 
-        /*
-        idx //  D   pop //  D   pop
-        D3Q19
-        0   //  1   5   //  -1  6
-        1   //  1   9   //  -1  10
-        2   //  1   11  //  -1  12
-        3   //  1   16  //  -1  15
-        4   //  1   18  //  -1  17
-        D3Q27
-        6   //  1   19  //  -1  20
-        7   //  1   22  //  -1  21
-        8   //  1   23  //  -1  24
-        9   //  1   25  //  -1  26
-        */
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_WEST(const label_t x)
+    {
+        return (threadIdx.x == 0 && x != 0);
+    }
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_EAST(const label_t x)
+    {
+        return (threadIdx.x == (BLOCK_NX - 1) && x != (NX - 1));
+    }
 
-        return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * bz))));
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_SOUTH(const label_t y)
+    {
+        return (threadIdx.y == 0 && y != 0);
+    }
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_NORTH(const label_t y)
+    {
+        return (threadIdx.y == (BLOCK_NY - 1) && y != (NY - 1));
+    }
+
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_BACK(const label_t z)
+    {
+        return (threadIdx.z == 0 && z != 0);
+    }
+    __device__ [[nodiscard]] inline bool INTERFACE_BC_FRONT(const label_t z)
+    {
+        return (threadIdx.z == (BLOCK_NZ - 1) && z != (NZ - 1));
     }
 }
 

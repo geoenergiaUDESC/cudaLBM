@@ -58,6 +58,8 @@ namespace mbLBM
     typedef std::size_t label_t;
 #endif
 
+    typedef uint32_t nodeType_t;
+
     /**
      * @brief Type used for arrays of labels
      **/

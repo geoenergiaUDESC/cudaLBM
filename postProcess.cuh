@@ -7,24 +7,43 @@
 namespace mbLBM
 {
     template <typename T>
-    [[nodiscard]] const std::vector<T> deviceToHost(const host::latticeMesh &mesh, const T *f, const label_t nFields = 1)
+    [[nodiscard]] const std::vector<T> deviceToHost(const T *f, const label_t nFields = 1) noexcept
     {
-        std::vector<T> F(mesh.nPoints() * nFields, 0);
+        std::vector<T> F(NUMBER_LBM_POP_NODES * nFields, 0);
 
-        const cudaError_t i = cudaMemcpy(F.data(), f, mesh.nPoints() * sizeof(T) * nFields, cudaMemcpyDeviceToHost);
+        const cudaError_t i = cudaMemcpy(F.data(), f, NUMBER_LBM_POP_NODES * sizeof(T) * nFields, cudaMemcpyDeviceToHost);
 
         if (i != cudaSuccess)
         {
-            exceptions::program_exit(i, "Unable to copy array");
+            // exceptions::program_exit(i, "Unable to copy array");
         }
         else
         {
 #ifdef VERBOSE
-            std::cout << "Copied " << sizeof(T) * mesh.nPoints() << " bytes of memory in cudaMemcpy from address " << f << " to the host" << std::endl;
+            std::cout << "Copied " << sizeof(T) * NUMBER_LBM_POP_NODES << " bytes of memory in cudaMemcpy from address " << f << " to the host" << std::endl;
 #endif
         }
 
         return F;
+    }
+
+    template <const label_t variableIndex>
+    [[nodiscard]] __host__ const std::vector<scalar_t> save(const scalar_t *const h_fMom) noexcept
+    {
+        std::vector<scalar_t> f(NX * NY * NZ, 0);
+
+        for (label_t z = 0; z < NZ; z++)
+        {
+            for (label_t y = 0; y < NY; y++)
+            {
+                for (label_t x = 0; x < NX; x++)
+                {
+                    f[idxScalarGlobal(x, y, z)] = h_fMom[idxMom<variableIndex>(x % BLOCK_NX, y % BLOCK_NY, z % BLOCK_NZ, x / BLOCK_NX, y / BLOCK_NY, z / BLOCK_NZ)];
+                }
+            }
+        }
+
+        return f;
     }
 
     void writeTecplotHexahedralData(
@@ -34,7 +53,7 @@ namespace mbLBM
         const label_t nj,
         const label_t nk,
         const std::string &title,
-        const std::vector<std::string> &solutionVarNames)
+        const std::vector<std::string> &solutionVarNames) noexcept
     {
         // Check input sizes
         const label_t numNodes = ni * nj * nk;

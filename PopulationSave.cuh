@@ -1,5 +1,5 @@
 /* write to global pop */
-if (INTERFACE_BC_WEST)
+if (INTERFACE_BC_WEST(x))
 { // w
     ghostInterface.gGhost.X_0[idxPopX<0>(ty, tz, bx, by, bz)] = pop[2];
     ghostInterface.gGhost.X_0[idxPopX<1>(ty, tz, bx, by, bz)] = pop[8];
@@ -13,7 +13,7 @@ if (INTERFACE_BC_WEST)
     ghostInterface.gGhost.X_0[idxPopX(ty, tz, 8, bx, by, bz)] = pop[25];
 #endif // D3Q27
 }
-if (INTERFACE_BC_EAST)
+if (INTERFACE_BC_EAST(x))
 { // e
     ghostInterface.gGhost.X_1[idxPopX<0>(ty, tz, bx, by, bz)] = pop[1];
     ghostInterface.gGhost.X_1[idxPopX<1>(ty, tz, bx, by, bz)] = pop[7];
@@ -28,7 +28,7 @@ if (INTERFACE_BC_EAST)
 #endif // D3Q27
 }
 
-if (INTERFACE_BC_SOUTH)
+if (INTERFACE_BC_SOUTH(y))
 { // s
     ghostInterface.gGhost.Y_0[idxPopY<0>(tx, tz, bx, by, bz)] = pop[4];
     ghostInterface.gGhost.Y_0[idxPopY<1>(tx, tz, bx, by, bz)] = pop[8];
@@ -42,7 +42,7 @@ if (INTERFACE_BC_SOUTH)
     ghostInterface.gGhost.Y_0[idxPopY(tx, tz, 8, bx, by, bz)] = pop[26];
 #endif // D3Q27
 }
-if (INTERFACE_BC_NORTH)
+if (INTERFACE_BC_NORTH(y))
 { // n
     ghostInterface.gGhost.Y_1[idxPopY<0>(tx, tz, bx, by, bz)] = pop[3];
     ghostInterface.gGhost.Y_1[idxPopY<1>(tx, tz, bx, by, bz)] = pop[7];
@@ -57,7 +57,7 @@ if (INTERFACE_BC_NORTH)
 #endif // D3Q27
 }
 
-if (INTERFACE_BC_BACK)
+if (INTERFACE_BC_BACK(z))
 { // b
     ghostInterface.gGhost.Z_0[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[6];
     ghostInterface.gGhost.Z_0[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[10];
@@ -71,7 +71,7 @@ if (INTERFACE_BC_BACK)
     ghostInterface.gGhost.Z_0[idxPopZ(tx, ty, 8, bx, by, bz)] = pop[26];
 #endif // D3Q27
 }
-if (INTERFACE_BC_FRONT)
+if (INTERFACE_BC_FRONT(z))
 {
     ghostInterface.gGhost.Z_1[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[5];
     ghostInterface.gGhost.Z_1[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[9];

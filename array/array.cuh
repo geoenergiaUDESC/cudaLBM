@@ -389,6 +389,46 @@ namespace mbLBM
 
             return ptr;
         }
+
+        template <typename T>
+        class array
+        {
+        public:
+            [[nodiscard]] array(const label_t nPoints)
+                : ptr_(device::allocate<T>(nPoints)) {};
+
+            ~array()
+            {
+                cudaFree(ptr_);
+            }
+
+            /**
+             * @brief Overloads the [] operator
+             * @return The i-th index of the underlying array
+             **/
+            __device__ __host__ inline T operator[](const label_t i) const noexcept
+            {
+                return ptr_[i];
+            }
+
+            __device__ __host__ [[nodiscard]] inline const T *ptr() const noexcept
+            {
+                return ptr_;
+            }
+
+            __device__ __host__ [[nodiscard]] inline T *ptr() noexcept
+            {
+                return ptr_;
+            }
+
+            [[nodiscard]] inline T *&ptrRef() noexcept
+            {
+                return ptr_;
+            }
+
+        private:
+            T *ptr_;
+        };
     }
 }
 

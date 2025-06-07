@@ -12,15 +12,28 @@ Contents: Functions used throughout the source code
 
 namespace mbLBM
 {
+    __device__ [[nodiscard]] inline bool out_of_bounds(const label_t nx, const label_t ny, const label_t nz) noexcept
+    {
+        return ((threadIdx.x + blockDim.x * blockIdx.x >= nx) || (threadIdx.y + blockDim.y * blockIdx.y >= ny) || (threadIdx.z + blockDim.z * blockIdx.z >= nz));
+    }
+
+    __host__ [[nodiscard]] inline bool out_of_bounds(
+        const label_t nx, const label_t ny, const label_t nz,
+        const label_t tx, const label_t ty, const label_t tz,
+        const label_t bx, const label_t by, const label_t bz) noexcept
+    {
+        return ((tx + bx * bx >= nx) || (ty + by * by >= ny) || (tz + bz * bz >= nz));
+    }
+
+    __device__ [[nodiscard]] inline bool bad_node_type(const nodeType_t nodeType) noexcept
+    {
+        return (nodeType == 0b11111111);
+    }
+
     __host__ [[nodiscard]] inline constexpr scalar_t omega(const scalar_t Re, const scalar_t u_inf, const label_t nx) noexcept
     {
         return static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * (u_inf * static_cast<scalar_t>(nx) / Re));
     }
-
-    // __device__ [[nodiscard]] inline scalar_t omega() noexcept
-    // {
-    //     return static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * (d_u_inf * static_cast<scalar_t>(d_nx) / d_Re));
-    // }
 
     __device__ [[nodiscard]] inline scalar_t omega() noexcept
     {
@@ -137,7 +150,7 @@ namespace mbLBM
 
         __host__ __device__ [[nodiscard]] inline consteval label_t East() noexcept
         {
-            return block::nx() - 1;
+            return BLOCK_NX - 1;
         }
 
         __host__ __device__ [[nodiscard]] inline consteval label_t South() noexcept
@@ -147,7 +160,7 @@ namespace mbLBM
 
         __host__ __device__ [[nodiscard]] inline consteval label_t North() noexcept
         {
-            return block::ny() - 1;
+            return BLOCK_NY - 1;
         }
 
         __host__ __device__ [[nodiscard]] inline consteval label_t Back() noexcept
@@ -157,7 +170,7 @@ namespace mbLBM
 
         __host__ __device__ [[nodiscard]] inline consteval label_t Front() noexcept
         {
-            return block::nz() - 1;
+            return BLOCK_NZ - 1;
         }
 
         /**
@@ -225,28 +238,6 @@ namespace mbLBM
         return (z * (mesh.nx() * mesh.ny())) + (y * mesh.nx()) + (x);
     }
 
-    // __host__ [[nodiscard]] inline label_t idxMom(
-    //     const label_t tx, const label_t ty, const label_t tz,
-    //     const label_t bx, const label_t by, const label_t bz,
-    //     const label_t nx, const label_t ny)
-    // {
-    //     const label_t nxBlock = nx / block::nx();
-    //     const label_t nyBlock = ny / block::ny();
-
-    //     return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlock * (by + nyBlock * (bz)))));
-    // }
-
-    // __device__ [[nodiscard]] inline label_t idxMom(
-    //     const label_t tx,
-    //     const label_t ty,
-    //     const label_t tz,
-    //     const label_t bx,
-    //     const label_t by,
-    //     const label_t bz)
-    // {
-    //     return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + NUM_BLOCK_X * (by + NUM_BLOCK_Y * (bz)))));
-    // }
-
     template <const label_t mom>
     __device__ __host__ [[nodiscard]] inline label_t idxMom(
         const label_t tx, const label_t ty, const label_t tz,
@@ -257,14 +248,11 @@ namespace mbLBM
 
     __host__ __device__ [[nodiscard]] inline scalar_t gpu_f_eq(const scalar_t rhow, const scalar_t uc3, const scalar_t p1_muu)
     {
-        // f_eq = rho_w * (1 - uu * 1.5 + uc * 3 + uc * uc * 4.5) ->
-        // f_eq = rho_w * (1 - uu * 1.5 + uc * 3 * ( 1 + uc * 1.5)) ->
         return (rhow * (p1_muu + uc3 * (static_cast<scalar_t>(1.0) + uc3 * static_cast<scalar_t>(0.5))));
     }
 
     __host__ __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
     {
-        // return NX * (NY * z + y) + x;
         return x + NX * (y + NY * (z));
     }
 

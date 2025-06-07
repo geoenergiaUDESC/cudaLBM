@@ -14,74 +14,8 @@ Contents: Definition of the collision GPU kernel
 
 namespace mbLBM
 {
-
-    __device__ inline void interfaceTest_x(const scalar_t *ptrRestrict ptr)
-    {
-        printf("%0.12g, %0.12g, %0.12g, %0.12g, %0.12g\n",
-               ptr[idxPopX<0, VelocitySet::D3Q19::QF()>(threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-               ptr[idxPopX<1, VelocitySet::D3Q19::QF()>(threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-               ptr[idxPopX<2, VelocitySet::D3Q19::QF()>(threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-               ptr[idxPopX<3, VelocitySet::D3Q19::QF()>(threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-               ptr[idxPopX<4, VelocitySet::D3Q19::QF()>(threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)]);
-    }
-
     [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 512; }
     [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
-
-    __device__ inline void popTest(const scalar_t pop[19], const bool printWithoutCheck = false) noexcept
-    {
-#ifdef VERBOSE
-        if ((pop[1] != 0) || (printWithoutCheck))
-        {
-            printf("{%u %u %u} %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g \n",
-                   threadIdx.x + blockDim.x * blockIdx.x,
-                   threadIdx.y + blockDim.y * blockIdx.y,
-                   threadIdx.z + blockDim.z * blockIdx.z,
-                   pop[0],
-                   pop[1],
-                   pop[2],
-                   pop[3],
-                   pop[4],
-                   pop[5],
-                   pop[6],
-                   pop[7],
-                   pop[8],
-                   pop[9],
-                   pop[10],
-                   pop[11],
-                   pop[12],
-                   pop[13],
-                   pop[14],
-                   pop[15],
-                   pop[16],
-                   pop[17],
-                   pop[18]);
-        }
-#endif
-    }
-
-    __device__ inline void momentTest(const scalar_t moments[10], const bool printWithoutCheck = false) noexcept
-    {
-#ifdef VERBOSE
-        if ((moments[1] != 0) || (printWithoutCheck))
-        {
-            printf("{%u %u %u} %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g %0.15g\n",
-                   threadIdx.x + blockDim.x * blockIdx.x,
-                   threadIdx.y + blockDim.y * blockIdx.y,
-                   threadIdx.z + blockDim.z * blockIdx.z,
-                   moments[0],
-                   moments[1],
-                   moments[2],
-                   moments[3],
-                   moments[4],
-                   moments[5],
-                   moments[6],
-                   moments[7],
-                   moments[8],
-                   moments[9]);
-        }
-#endif
-    }
 
     __device__ inline void collide(scalar_t moments[10]) noexcept
     {

@@ -107,8 +107,12 @@ namespace mbLBM
     __device__ constexpr const scalar_t cx[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
     __device__ constexpr const scalar_t cy[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
     __device__ constexpr const scalar_t cz[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
-
     __device__ constexpr const scalar_t w[Q] = {W0, W1, W1, W1, W1, W1, W1, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2};
+
+    constexpr const scalar_t h_cx[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+    constexpr const scalar_t h_cy[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+    constexpr const scalar_t h_cz[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+    constexpr const scalar_t h_w[Q] = {W0, W1, W1, W1, W1, W1, W1, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2, W2};
 
     constexpr const scalar_t as2 = static_cast<scalar_t>(3.0);
     constexpr const scalar_t cs2 = static_cast<scalar_t>(1.0) / as2;

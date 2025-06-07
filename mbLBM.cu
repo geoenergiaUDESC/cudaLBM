@@ -6,10 +6,11 @@
 // #include "programControl.cuh"
 // #include "inputControl.cuh"
 // #include "latticeMesh/latticeMesh.cuh"
-// #include "moments/moments.cuh"
+#include "moments/moments.cuh"
 // #include "collision.cuh"
 #include "original.cuh"
 #include "postProcess.cuh"
+#include "velocitySet/velocitySet.cuh"
 
 using namespace mbLBM;
 
@@ -22,15 +23,10 @@ int main(void)
     // Perform device memory allocation
     device::array<scalar_t> d_fMom(NUMBER_LBM_NODES * NUMBER_MOMENTS);
     device::array<nodeType_t> dNodeType(NUMBER_LBM_NODES);
-    deviceHalo ghostInterface;
+    device::halo ghostInterface(NX, NY, NZ);
 
-    nodeType_t *hNodeType;
-    scalar_t *h_fMom;
-    scalar_t *rho;
-    scalar_t *ux;
-    scalar_t *uy;
-    scalar_t *uz;
-    allocateHostMemory(&h_fMom, &rho, &ux, &uy, &uz);
+    nodeType_t *const hNodeType = host::allocate<nodeType_t>(NUMBER_LBM_NODES);
+    // scalar_t *const h_fMom = host::allocate<scalar_t>(NUMBER_LBM_NODES * NUMBER_MOMENTS);
 
     std::cout << "domain: " << NX << " " << NY << " " << NZ << std::endl;
     std::cout << "threadBlock: " << BLOCK_NX << " " << BLOCK_NY << " " << BLOCK_NZ << std::endl;
@@ -46,7 +42,7 @@ int main(void)
 
     initializeDomain(
         ghostInterface,
-        d_fMom.ptr(), h_fMom,
+        d_fMom.ptr(),
         hNodeType, dNodeType.ptr(),
         gridBlock, threadBlock);
 
@@ -73,6 +69,8 @@ int main(void)
     checkCudaErrors(cudaDeviceSynchronize());
 
     {
+        scalar_t *const h_fMom = host::allocate<scalar_t>(NUMBER_LBM_NODES * NUMBER_MOMENTS);
+
         checkCudaErrors(cudaMemcpy(h_fMom, d_fMom.ptr(), sizeof(scalar_t) * NUMBER_LBM_NODES * NUMBER_MOMENTS, cudaMemcpyDeviceToHost));
 
         writeTecplotHexahedralData(
@@ -80,6 +78,8 @@ int main(void)
             "v_end.dat",
             NX, NY, NZ,
             "Title", {"v"});
+
+        cudaFreeHost(h_fMom);
     }
 
     return 0;

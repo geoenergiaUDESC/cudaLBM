@@ -12,14 +12,28 @@ namespace mbLBM
 {
 #define checkCudaErrors(err) __checkCudaErrors(err, #err, __FILE__, __LINE__)
 
-    inline void __checkCudaErrors(const cudaError_t err, const char *const func, const char *const file, const int line)
+    void __checkCudaErrors(const cudaError_t err, const char *const func, const char *const file, const int line) noexcept
     {
         if (err != cudaSuccess)
         {
-            fprintf(stderr, "CUDA error at %s(%d)\"%s\": [%d] %s.\n",
-                    file, line, func, (int)err, cudaGetErrorString(err));
-            fflush(stderr);
-            exit(-1);
+            // fprintf(stderr, "CUDA error at %s(%d)\"%s\": [%d] %s.\n",
+            //         file, line, func, (int)err, cudaGetErrorString(err));
+
+            std::cerr
+                << "CUDA error at "
+                << file
+                << "("
+                << line
+                << ")\""
+                << func
+                << "\": ["
+                << static_cast<int>(err)
+                << "] "
+                << cudaGetErrorString(err)
+                << "." << std::endl;
+
+            // fflush(stderr);
+            std::exit(-1);
         }
     }
 

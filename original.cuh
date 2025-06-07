@@ -9,102 +9,15 @@
 namespace mbLBM
 {
 
-    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 512; }
+    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 1024; }
     [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
 
 #include "globalFunctions.cuh"
 
-    // template <const label_t pop>
-    // __host__ __device__ label_t __forceinline__ idxPopBlock(const label_t tx, const label_t ty, const label_t tz)
-    // {
-    //     return tx + BLOCK_NX * (ty + BLOCK_NY * (tz + BLOCK_NZ * (pop)));
-    // }
-
-    class deviceHaloFace
-    {
-    public:
-        [[nodiscard]] deviceHaloFace()
-            : X_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
-              X_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_YZ * QF)),
-              Y_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
-              Y_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XZ * QF)),
-              Z_0(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XY * QF)),
-              Z_1(device::allocate<scalar_t>(NUMBER_GHOST_FACE_XY * QF)) {};
-
-        ~deviceHaloFace()
-        {
-            // cudaFree(X_0);
-            // cudaFree(X_1);
-            // cudaFree(Y_0);
-            // cudaFree(Y_1);
-            // cudaFree(Z_0);
-            // cudaFree(Z_1);
-        }
-
-        // private:
-        scalar_t *X_0;
-        scalar_t *X_1;
-        scalar_t *Y_0;
-        scalar_t *Y_1;
-        scalar_t *Z_0;
-        scalar_t *Z_1;
-    };
-
-    class deviceHalo
-    {
-    public:
-        [[nodiscard]] deviceHalo()
-            : fGhost(deviceHaloFace()),
-              gGhost(deviceHaloFace()),
-              h_fGhost(deviceHaloFace()) {};
-
-        __host__ inline void swap() noexcept
-        {
-            interfaceSwap(fGhost.X_0, gGhost.X_0);
-            interfaceSwap(fGhost.X_1, gGhost.X_1);
-            interfaceSwap(fGhost.Y_0, gGhost.Y_0);
-            interfaceSwap(fGhost.Y_1, gGhost.Y_1);
-            interfaceSwap(fGhost.Z_0, gGhost.Z_0);
-            interfaceSwap(fGhost.Z_1, gGhost.Z_1);
-        }
-
-        __host__ void interfaceSwap(scalar_t *&pt1, scalar_t *&pt2) noexcept
-        {
-            scalar_t *temp = pt1;
-            pt1 = pt2;
-            pt2 = temp;
-        }
-
-        // private:
-        deviceHaloFace fGhost;
-        deviceHaloFace gGhost;
-        deviceHaloFace h_fGhost;
-    };
-
-    __host__ void allocateHostMemory(
-        scalar_t **h_fMom,
-        scalar_t **rho,
-        scalar_t **ux,
-        scalar_t **uy,
-        scalar_t **uz)
-    {
-        // checkCudaErrors(cudaMallocHost((void **)h_fMom, MEM_SIZE_MOM));
-        // checkCudaErrors(cudaMallocHost((void **)rho, MEM_SIZE_SCALAR));
-        // checkCudaErrors(cudaMallocHost((void **)ux, MEM_SIZE_SCALAR));
-        // checkCudaErrors(cudaMallocHost((void **)uy, MEM_SIZE_SCALAR));
-        // checkCudaErrors(cudaMallocHost((void **)uz, MEM_SIZE_SCALAR));
-
-        checkCudaErrors(cudaMallocHost(h_fMom, MEM_SIZE_MOM));
-        checkCudaErrors(cudaMallocHost(rho, MEM_SIZE_SCALAR));
-        checkCudaErrors(cudaMallocHost(ux, MEM_SIZE_SCALAR));
-        checkCudaErrors(cudaMallocHost(uy, MEM_SIZE_SCALAR));
-        checkCudaErrors(cudaMallocHost(uz, MEM_SIZE_SCALAR));
-    }
-
     __host__ void interfaceCudaMemcpy(
-        deviceHaloFace &dst,
-        const deviceHaloFace &src,
-        const cudaMemcpyKind kind)
+        device::haloFace &dst,
+        const device::haloFace &src,
+        const cudaMemcpyKind kind) noexcept
     {
         struct MemcpyPair
         {
@@ -114,12 +27,12 @@ namespace mbLBM
         };
 
         MemcpyPair memcpyPairs[] = {
-            {dst.X_0, src.X_0, sizeof(scalar_t) * NUMBER_GHOST_FACE_YZ * QF},
-            {dst.X_1, src.X_1, sizeof(scalar_t) * NUMBER_GHOST_FACE_YZ * QF},
-            {dst.Y_0, src.Y_0, sizeof(scalar_t) * NUMBER_GHOST_FACE_XZ * QF},
-            {dst.Y_1, src.Y_1, sizeof(scalar_t) * NUMBER_GHOST_FACE_XZ * QF},
-            {dst.Z_0, src.Z_0, sizeof(scalar_t) * NUMBER_GHOST_FACE_XY * QF},
-            {dst.Z_1, src.Z_1, sizeof(scalar_t) * NUMBER_GHOST_FACE_XY * QF}};
+            {dst.x0(), src.x0(), sizeof(scalar_t) * NUMBER_GHOST_FACE_YZ * QF},
+            {dst.x1(), src.x1(), sizeof(scalar_t) * NUMBER_GHOST_FACE_YZ * QF},
+            {dst.y0(), src.y0(), sizeof(scalar_t) * NUMBER_GHOST_FACE_XZ * QF},
+            {dst.y1(), src.y1(), sizeof(scalar_t) * NUMBER_GHOST_FACE_XZ * QF},
+            {dst.z0(), src.z0(), sizeof(scalar_t) * NUMBER_GHOST_FACE_XY * QF},
+            {dst.z1(), src.z1(), sizeof(scalar_t) * NUMBER_GHOST_FACE_XY * QF}};
 
         checkCudaErrors(cudaDeviceSynchronize());
         for (const auto &pair : memcpyPairs)
@@ -128,19 +41,80 @@ namespace mbLBM
         }
     }
 
-    __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuInitialization_mom(
-        scalar_t *fMom)
+    __host__ inline void foo(scalar_t *const fMom) noexcept
     {
-        label_t x = threadIdx.x + blockDim.x * blockIdx.x;
-        label_t y = threadIdx.y + blockDim.y * blockIdx.y;
-        label_t z = threadIdx.z + blockDim.z * blockIdx.z;
-        if (x >= NX || y >= NY || z >= NZ)
+
+        // first moments
+        const scalar_t rho = RHO_0;
+        const scalar_t ux = U_0_X;
+        const scalar_t uy = U_0_Y;
+        const scalar_t uz = U_0_Z;
+
+        for (label_t bz = 0; bz < NUM_BLOCK_Z; bz++)
+        {
+            for (label_t by = 0; by < NUM_BLOCK_Y; by++)
+            {
+                for (label_t bx = 0; bx < NUM_BLOCK_X; bx++)
+                {
+                    for (label_t tz = 0; tz < BLOCK_NZ; tz++)
+                    {
+                        for (label_t ty = 0; ty < BLOCK_NY; ty++)
+                        {
+                            for (label_t tx = 0; tx < BLOCK_NX; tx++)
+                            {
+                                if (out_of_bounds(NX, NY, NZ, tx, ty, tz, bx, by, bz))
+                                {
+                                    return;
+                                }
+
+                                // Zeroth moment
+                                fMom[idxMom<M_RHO_INDEX>(tx, ty, tz, bx, by, bz)] = rho - RHO_0;
+
+                                // First moment
+                                fMom[idxMom<M_UX_INDEX>(tx, ty, tz, bx, by, bz)] = F_M_I_SCALE * ux;
+                                fMom[idxMom<M_UY_INDEX>(tx, ty, tz, bx, by, bz)] = F_M_I_SCALE * uy;
+                                fMom[idxMom<M_UZ_INDEX>(tx, ty, tz, bx, by, bz)] = F_M_I_SCALE * uz;
+
+                                // Second moments
+                                // define equilibrium populations
+                                scalar_t pop[Q];
+                                for (label_t i = 0; i < Q; i++)
+                                {
+                                    pop[i] = gpu_f_eq(
+                                        h_w[i] * RHO_0,
+                                        static_cast<scalar_t>(3) * (ux * h_cx[i] + uy * h_cy[i] + uz * h_cz[i]),
+                                        static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (ux * ux + uy * uy + uz * uz));
+                                }
+
+                                const scalar_t invRho = static_cast<scalar_t>(1.0) / rho;
+                                const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2;
+                                const scalar_t pixy = ((pop[7] + pop[8]) - (pop[13] + pop[14])) * invRho;
+                                const scalar_t pixz = ((pop[9] + pop[10]) - (pop[15] + pop[16])) * invRho;
+                                const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2;
+                                const scalar_t piyz = ((pop[11] + pop[12]) - (pop[17] + pop[18])) * invRho;
+                                const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2;
+
+                                fMom[idxMom<M_MXX_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_II_SCALE * pixx;
+                                fMom[idxMom<M_MXY_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_IJ_SCALE * pixy;
+                                fMom[idxMom<M_MXZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_IJ_SCALE * pixz;
+                                fMom[idxMom<M_MYY_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_II_SCALE * piyy;
+                                fMom[idxMom<M_MYZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_IJ_SCALE * piyz;
+                                fMom[idxMom<M_MZZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_II_SCALE * pizz;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuInitialization_mom(
+        scalar_t *const fMom)
+    {
+        if (out_of_bounds(NX, NY, NZ))
         {
             return;
         }
-
-        label_t index = idxScalarGlobal(x, y, z);
-        // size_t index = 0;
 
         // first moments
         const scalar_t rho = RHO_0;
@@ -165,13 +139,13 @@ namespace mbLBM
                 1 - 1.5 * (ux * ux + uy * uy + uz * uz));
         }
 
-        scalar_t invRho = 1.0 / rho;
-        scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2;
-        scalar_t pixy = ((pop[7] + pop[8]) - (pop[13] + pop[14])) * invRho;
-        scalar_t pixz = ((pop[9] + pop[10]) - (pop[15] + pop[16])) * invRho;
-        scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2;
-        scalar_t piyz = ((pop[11] + pop[12]) - (pop[17] + pop[18])) * invRho;
-        scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2;
+        const scalar_t invRho = 1.0 / rho;
+        const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2;
+        const scalar_t pixy = ((pop[7] + pop[8]) - (pop[13] + pop[14])) * invRho;
+        const scalar_t pixz = ((pop[9] + pop[10]) - (pop[15] + pop[16])) * invRho;
+        const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2;
+        const scalar_t piyz = ((pop[11] + pop[12]) - (pop[17] + pop[18])) * invRho;
+        const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2;
 
         fMom[idxMom<M_MXX_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_II_SCALE * pixx;
         fMom[idxMom<M_MXY_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_IJ_SCALE * pixy;
@@ -180,8 +154,6 @@ namespace mbLBM
         fMom[idxMom<M_MYZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_IJ_SCALE * piyz;
         fMom[idxMom<M_MZZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = F_M_II_SCALE * pizz;
     }
-
-    // #include "velocitySet/velocitySet.cuh"
 
     __device__ static inline void reconstruct(
         scalar_t pop[19],
@@ -234,7 +206,7 @@ namespace mbLBM
         scalar_t *const m_xz_t90,
         scalar_t *const m_yy_t45,
         scalar_t *const m_yz_t90,
-        scalar_t *const m_zz_t45)
+        scalar_t *const m_zz_t45) noexcept
     {
         const scalar_t invRho = 1.0 / *rhoVar;
         const scalar_t omegaVar = OMEGA;
@@ -259,17 +231,13 @@ namespace mbLBM
     }
 
     __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuInitialization_pop(
-        scalar_t *fMom, deviceHalo ghostInterface)
+        const scalar_t *const fMom, device::halo ghostInterface)
     {
-        const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
-        const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
-        const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
-        if (x >= NX || y >= NY || z >= NZ)
+        if (out_of_bounds(NX, NY, NZ))
         {
             return;
         }
 
-        // const label_t index = idxScalarGlobal(x, y, z);
         // zeroth moment
 
         scalar_t rhoVar = RHO_0 + fMom[idxMom<M_RHO_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
@@ -298,53 +266,53 @@ namespace mbLBM
 
         if (threadIdx.x == 0)
         { // w
-            ghostInterface.fGhost.X_0[idxPopX<0>(ty, tz, bx, by, bz)] = pop[2];
-            ghostInterface.fGhost.X_0[idxPopX<1>(ty, tz, bx, by, bz)] = pop[8];
-            ghostInterface.fGhost.X_0[idxPopX<2>(ty, tz, bx, by, bz)] = pop[10];
-            ghostInterface.fGhost.X_0[idxPopX<3>(ty, tz, bx, by, bz)] = pop[14];
-            ghostInterface.fGhost.X_0[idxPopX<4>(ty, tz, bx, by, bz)] = pop[16];
+            ghostInterface.fGhost().x0()[idxPopX<0>(ty, tz, bx, by, bz)] = pop[2];
+            ghostInterface.fGhost().x0()[idxPopX<1>(ty, tz, bx, by, bz)] = pop[8];
+            ghostInterface.fGhost().x0()[idxPopX<2>(ty, tz, bx, by, bz)] = pop[10];
+            ghostInterface.fGhost().x0()[idxPopX<3>(ty, tz, bx, by, bz)] = pop[14];
+            ghostInterface.fGhost().x0()[idxPopX<4>(ty, tz, bx, by, bz)] = pop[16];
         }
         else if (threadIdx.x == (BLOCK_NX - 1))
         {
-            ghostInterface.fGhost.X_1[idxPopX<0>(ty, tz, bx, by, bz)] = pop[1];
-            ghostInterface.fGhost.X_1[idxPopX<1>(ty, tz, bx, by, bz)] = pop[7];
-            ghostInterface.fGhost.X_1[idxPopX<2>(ty, tz, bx, by, bz)] = pop[9];
-            ghostInterface.fGhost.X_1[idxPopX<3>(ty, tz, bx, by, bz)] = pop[13];
-            ghostInterface.fGhost.X_1[idxPopX<4>(ty, tz, bx, by, bz)] = pop[15];
+            ghostInterface.fGhost().x1()[idxPopX<0>(ty, tz, bx, by, bz)] = pop[1];
+            ghostInterface.fGhost().x1()[idxPopX<1>(ty, tz, bx, by, bz)] = pop[7];
+            ghostInterface.fGhost().x1()[idxPopX<2>(ty, tz, bx, by, bz)] = pop[9];
+            ghostInterface.fGhost().x1()[idxPopX<3>(ty, tz, bx, by, bz)] = pop[13];
+            ghostInterface.fGhost().x1()[idxPopX<4>(ty, tz, bx, by, bz)] = pop[15];
         }
 
         if (threadIdx.y == 0)
         { // s
-            ghostInterface.fGhost.Y_0[idxPopY<0>(tx, tz, bx, by, bz)] = pop[4];
-            ghostInterface.fGhost.Y_0[idxPopY<1>(tx, tz, bx, by, bz)] = pop[8];
-            ghostInterface.fGhost.Y_0[idxPopY<2>(tx, tz, bx, by, bz)] = pop[12];
-            ghostInterface.fGhost.Y_0[idxPopY<3>(tx, tz, bx, by, bz)] = pop[13];
-            ghostInterface.fGhost.Y_0[idxPopY<4>(tx, tz, bx, by, bz)] = pop[18];
+            ghostInterface.fGhost().y0()[idxPopY<0>(tx, tz, bx, by, bz)] = pop[4];
+            ghostInterface.fGhost().y0()[idxPopY<1>(tx, tz, bx, by, bz)] = pop[8];
+            ghostInterface.fGhost().y0()[idxPopY<2>(tx, tz, bx, by, bz)] = pop[12];
+            ghostInterface.fGhost().y0()[idxPopY<3>(tx, tz, bx, by, bz)] = pop[13];
+            ghostInterface.fGhost().y0()[idxPopY<4>(tx, tz, bx, by, bz)] = pop[18];
         }
         else if (threadIdx.y == (BLOCK_NY - 1))
         {
-            ghostInterface.fGhost.Y_1[idxPopY<0>(tx, tz, bx, by, bz)] = pop[3];
-            ghostInterface.fGhost.Y_1[idxPopY<1>(tx, tz, bx, by, bz)] = pop[7];
-            ghostInterface.fGhost.Y_1[idxPopY<2>(tx, tz, bx, by, bz)] = pop[11];
-            ghostInterface.fGhost.Y_1[idxPopY<3>(tx, tz, bx, by, bz)] = pop[14];
-            ghostInterface.fGhost.Y_1[idxPopY<4>(tx, tz, bx, by, bz)] = pop[17];
+            ghostInterface.fGhost().y1()[idxPopY<0>(tx, tz, bx, by, bz)] = pop[3];
+            ghostInterface.fGhost().y1()[idxPopY<1>(tx, tz, bx, by, bz)] = pop[7];
+            ghostInterface.fGhost().y1()[idxPopY<2>(tx, tz, bx, by, bz)] = pop[11];
+            ghostInterface.fGhost().y1()[idxPopY<3>(tx, tz, bx, by, bz)] = pop[14];
+            ghostInterface.fGhost().y1()[idxPopY<4>(tx, tz, bx, by, bz)] = pop[17];
         }
 
         if (threadIdx.z == 0)
         { // b
-            ghostInterface.fGhost.Z_0[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[6];
-            ghostInterface.fGhost.Z_0[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[10];
-            ghostInterface.fGhost.Z_0[idxPopZ<2>(tx, ty, bx, by, bz)] = pop[12];
-            ghostInterface.fGhost.Z_0[idxPopZ<3>(tx, ty, bx, by, bz)] = pop[15];
-            ghostInterface.fGhost.Z_0[idxPopZ<4>(tx, ty, bx, by, bz)] = pop[17];
+            ghostInterface.fGhost().z0()[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[6];
+            ghostInterface.fGhost().z0()[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[10];
+            ghostInterface.fGhost().z0()[idxPopZ<2>(tx, ty, bx, by, bz)] = pop[12];
+            ghostInterface.fGhost().z0()[idxPopZ<3>(tx, ty, bx, by, bz)] = pop[15];
+            ghostInterface.fGhost().z0()[idxPopZ<4>(tx, ty, bx, by, bz)] = pop[17];
         }
         else if (threadIdx.z == (BLOCK_NZ - 1))
         {
-            ghostInterface.fGhost.Z_1[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[5];
-            ghostInterface.fGhost.Z_1[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[9];
-            ghostInterface.fGhost.Z_1[idxPopZ<2>(tx, ty, bx, by, bz)] = pop[11];
-            ghostInterface.fGhost.Z_1[idxPopZ<3>(tx, ty, bx, by, bz)] = pop[16];
-            ghostInterface.fGhost.Z_1[idxPopZ<4>(tx, ty, bx, by, bz)] = pop[18];
+            ghostInterface.fGhost().z1()[idxPopZ<0>(tx, ty, bx, by, bz)] = pop[5];
+            ghostInterface.fGhost().z1()[idxPopZ<1>(tx, ty, bx, by, bz)] = pop[9];
+            ghostInterface.fGhost().z1()[idxPopZ<2>(tx, ty, bx, by, bz)] = pop[11];
+            ghostInterface.fGhost().z1()[idxPopZ<3>(tx, ty, bx, by, bz)] = pop[16];
+            ghostInterface.fGhost().z1()[idxPopZ<4>(tx, ty, bx, by, bz)] = pop[18];
         }
     }
 
@@ -361,14 +329,14 @@ namespace mbLBM
             }
         }
 
-        printf("boundary condition done\n");
+        std::cout << "boundary condition done" << std::endl;
     }
 
     __host__ void initializeDomain(
-        deviceHalo &ghostInterface,
+        device::halo &ghostInterface,
         scalar_t *const &d_fMom,
-        scalar_t *&h_fMom,
-        nodeType_t *&hNodeType,
+        // scalar_t *const &h_fMom,
+        nodeType_t *const &hNodeType,
         nodeType_t *const &dNodeType,
         const dim3 gBlock,
         const dim3 tBlock) noexcept
@@ -379,7 +347,7 @@ namespace mbLBM
         gpuInitialization_pop<<<gBlock, tBlock, 0, 0>>>(d_fMom, ghostInterface);
 
         // Node type initialization
-        checkCudaErrors(cudaMallocHost(&hNodeType, sizeof(nodeType_t) * NUMBER_LBM_NODES));
+        // checkCudaErrors(cudaMallocHost(&hNodeType, sizeof(nodeType_t) * NUMBER_LBM_NODES));
 
         hostInitialization_nodeType(hNodeType);
         checkCudaErrors(cudaMemcpy(dNodeType, hNodeType, sizeof(nodeType_t) * NUMBER_LBM_NODES, cudaMemcpyHostToDevice));
@@ -387,34 +355,34 @@ namespace mbLBM
 
         // Interface population initialization
         interfaceCudaMemcpy(
-            ghostInterface.gGhost,
-            ghostInterface.fGhost,
+            ghostInterface.gGhost(),
+            ghostInterface.fGhost(),
             cudaMemcpyDeviceToDevice);
 
         // Synchronize after all initializations
         checkCudaErrors(cudaDeviceSynchronize());
 
         // Synchronize and transfer data back to host if needed
-        checkCudaErrors(cudaDeviceSynchronize());
-        checkCudaErrors(cudaMemcpy(h_fMom, d_fMom, sizeof(scalar_t) * NUMBER_LBM_NODES * NUMBER_MOMENTS, cudaMemcpyDeviceToHost));
-        checkCudaErrors(cudaDeviceSynchronize());
-        printf("Mom copy to host \n");
-        if constexpr (console_flush)
         {
-            fflush(stdout);
+            // checkCudaErrors(cudaDeviceSynchronize());
+            // checkCudaErrors(cudaMemcpy(h_fMom, d_fMom, sizeof(scalar_t) * NUMBER_LBM_NODES * NUMBER_MOMENTS, cudaMemcpyDeviceToHost));
+            // checkCudaErrors(cudaDeviceSynchronize());
+            // std::cout << "Mom copy to host" << std::endl;
+            // if constexpr (console_flush)
+            // {
+            //     fflush(stdout);
+            // }
         }
     }
 
     __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void gpuMomCollisionStream(
         scalar_t *const fMom,
         const nodeType_t *const dNodeType,
-        deviceHalo ghostInterface)
+        device::halo ghostInterface)
     {
-        const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
-        const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
-        const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
+        const nodeType_t nodeType = dNodeType[idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
 
-        if (x >= NX || y >= NY || z >= NZ)
+        if (out_of_bounds(NX, NY, NZ) || bad_node_type(nodeType))
         {
             return;
         }
@@ -422,11 +390,6 @@ namespace mbLBM
         scalar_t pop[Q];
         __shared__ scalar_t s_pop[BLOCK_LBM_SIZE * (Q - 1)];
 
-        const nodeType_t nodeType = dNodeType[idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        if (nodeType == 0b11111111)
-        {
-            return;
-        }
         scalar_t rhoVar = RHO_0 + fMom[idxMom<M_RHO_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
         scalar_t ux_t30 = fMom[idxMom<M_UX_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
         scalar_t uy_t30 = fMom[idxMom<M_UY_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
@@ -493,35 +456,8 @@ namespace mbLBM
         pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
         pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
 
-        const label_t tx = threadIdx.x;
-        const label_t ty = threadIdx.y;
-        const label_t tz = threadIdx.z;
-
-        const label_t bx = blockIdx.x;
-        const label_t by = blockIdx.y;
-        const label_t bz = blockIdx.z;
-
-        const label_t txp1 = (tx + 1 + BLOCK_NX) % BLOCK_NX;
-        const label_t txm1 = (tx - 1 + BLOCK_NX) % BLOCK_NX;
-
-        const label_t typ1 = (ty + 1 + BLOCK_NY) % BLOCK_NY;
-        const label_t tym1 = (ty - 1 + BLOCK_NY) % BLOCK_NY;
-
-        const label_t tzp1 = (tz + 1 + BLOCK_NZ) % BLOCK_NZ;
-        const label_t tzm1 = (tz - 1 + BLOCK_NZ) % BLOCK_NZ;
-
-        const label_t bxm1 = (bx - 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
-        const label_t bxp1 = (bx + 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
-
-        const label_t bym1 = (by - 1 + NUM_BLOCK_Y) % NUM_BLOCK_Y;
-        const label_t byp1 = (by + 1 + NUM_BLOCK_Y) % NUM_BLOCK_Y;
-
-        const label_t bzm1 = (bz - 1 + NUM_BLOCK_Z) % NUM_BLOCK_Z;
-        const label_t bzp1 = (bz + 1 + NUM_BLOCK_Z) % NUM_BLOCK_Z;
-
         /* load pop from global in cover nodes */
-
-#include "popLoad.cuh"
+        ghostInterface.popLoad(pop);
 
         scalar_t invRho;
         if (nodeType != BULK)
@@ -595,14 +531,7 @@ namespace mbLBM
         fMom[idxMom<M_MYZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = m_yz_t90;
         fMom[idxMom<M_MZZ_INDEX>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = m_zz_t45;
 
-#include "PopulationSave.cuh"
-    }
-
-    __host__ __device__ void interfaceSwap(scalar_t *&pt1, scalar_t *&pt2)
-    {
-        scalar_t *temp = pt1;
-        pt1 = pt2;
-        pt2 = temp;
+        ghostInterface.populationSave(pop);
     }
 
 }

@@ -136,19 +136,19 @@ namespace mbLBM
              **/
             __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
             {
-                return nx_ / block::nx();
+                return nx_ / BLOCK_NX;
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
             {
-                return ny_ / block::ny();
+                return ny_ / BLOCK_NY;
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
             {
-                return nz_ / block::nz();
+                return nz_ / BLOCK_NZ;
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
             {
-                return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
+                return (nx_ / BLOCK_NX) * (ny_ / BLOCK_NY) * (nz_ / BLOCK_NZ);
             }
 
             /**

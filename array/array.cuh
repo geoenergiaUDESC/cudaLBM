@@ -42,7 +42,7 @@ namespace mbLBM
             allocateMemory(&ptr, nPoints);
 
 #ifdef VERBOSE
-            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocManaged to address " << ptr << std::endl;
 #endif
 
             return ptr;
@@ -330,7 +330,7 @@ namespace mbLBM
         template <typename T>
         __host__ void allocateMemory(T **ptr, const std::size_t nPoints) noexcept
         {
-            const cudaError_t i = cudaMalloc(ptr, sizeof(T) * nPoints);
+            const cudaError_t i = cudaMallocManaged(ptr, sizeof(T) * nPoints);
             if (i != cudaSuccess)
             {
                 exceptions::program_exit(i, "Unable to allocate array");
@@ -350,7 +350,8 @@ namespace mbLBM
             allocateMemory(&ptr, nPoints);
 
 #ifdef VERBOSE
-            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+            // std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocManaged to address " << ptr << std::endl;
+            std::cout << "Allocated " << nPoints << " points to address " << ptr << std::endl;
 #endif
 
             return ptr;
@@ -383,15 +384,15 @@ namespace mbLBM
          * @return A T * object pointing to a block of memory on the GPU
          * @param f The pre-existing array on the host to be copied to the GPU
          **/
-        template <typename T, class F>
-        __host__ [[nodiscard]] T *allocateArray(const F &f) noexcept
-        {
-            T *ptr = allocate<T>(f.nPoints());
+        // template <typename T, class F>
+        // __host__ [[nodiscard]] T *allocateArray(const F &f) noexcept
+        // {
+        //     T *ptr = allocate<T>(f.nPoints());
 
-            copy(ptr, f.arrRef());
+        //     copy(ptr, f.arrRef());
 
-            return ptr;
-        }
+        //     return ptr;
+        // }
 
         /**
          * @brief Allocates a scalar array on the device
@@ -430,6 +431,9 @@ namespace mbLBM
         public:
             [[nodiscard]] array(const label_t nPoints)
                 : ptr_(device::allocate<T>(nPoints)) {};
+
+            [[nodiscard]] array(const std::vector<T> &f)
+                : ptr_(device::allocateArray<T>(f)) {};
 
             ~array()
             {

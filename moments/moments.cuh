@@ -8,7 +8,6 @@ Contents: A class containing the arrays of the moment variables
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
-#include "../globalDefines.cuh"
 #include "../globalFunctions.cuh"
 // #include "../latticeMesh/latticeMesh.cuh"
 // #include "../velocitySet/velocitySet.cuh"

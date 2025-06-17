@@ -730,37 +730,40 @@ namespace mbLBM
         __host__ [[nodiscard]] inline static nodeType_t initialCondition(
             const label_t x,
             const label_t y,
-            const label_t z)
+            const label_t z,
+            const label_t nx,
+            const label_t ny,
+            const label_t nz)
         {
             if (y == 0 && x == 0 && z == 0) // SWB
             {
                 return SOUTH_WEST_BACK;
             }
-            else if (y == 0 && x == 0 && z == (NZ_TOTAL - 1)) // SWF
+            else if (y == 0 && x == 0 && z == (nz - 1)) // SWF
             {
                 return SOUTH_WEST_FRONT;
             }
-            else if (y == 0 && x == (NX - 1) && z == 0) // SEB
+            else if (y == 0 && x == (nx - 1) && z == 0) // SEB
             {
                 return SOUTH_EAST_BACK;
             }
-            else if (y == 0 && x == (NX - 1) && z == (NZ_TOTAL - 1)) // SEF
+            else if (y == 0 && x == (nx - 1) && z == (nz - 1)) // SEF
             {
                 return SOUTH_EAST_FRONT;
             }
-            else if (y == (NY - 1) && x == 0 && z == 0) // NWB
+            else if (y == (ny - 1) && x == 0 && z == 0) // NWB
             {
                 return NORTH;
             }
-            else if (y == (NY - 1) && x == 0 && z == (NZ_TOTAL - 1)) // NWF
+            else if (y == (ny - 1) && x == 0 && z == (nz - 1)) // NWF
             {
                 return NORTH;
             }
-            else if (y == (NY - 1) && x == (NX - 1) && z == 0) // NEB
+            else if (y == (ny - 1) && x == (nx - 1) && z == 0) // NEB
             {
                 return NORTH;
             }
-            else if (y == (NY - 1) && x == (NX - 1) && z == (NZ_TOTAL - 1)) // NEF
+            else if (y == (ny - 1) && x == (nx - 1) && z == (nz - 1)) // NEF
             {
                 return NORTH;
             }
@@ -768,15 +771,15 @@ namespace mbLBM
             {
                 return SOUTH_WEST;
             }
-            else if (y == 0 && x == (NX - 1)) // SE
+            else if (y == 0 && x == (nx - 1)) // SE
             {
                 return SOUTH_EAST;
             }
-            else if (y == (NY - 1) && x == 0) // NW
+            else if (y == (ny - 1) && x == 0) // NW
             {
                 return NORTH;
             }
-            else if (y == (NY - 1) && x == (NX - 1)) // NE
+            else if (y == (ny - 1) && x == (nx - 1)) // NE
             {
                 return NORTH;
             }
@@ -784,15 +787,15 @@ namespace mbLBM
             {
                 return SOUTH_BACK;
             }
-            else if (y == 0 && z == (NZ_TOTAL - 1)) // SF
+            else if (y == 0 && z == (nz - 1)) // SF
             {
                 return SOUTH_FRONT;
             }
-            else if (y == (NY - 1) && z == 0) // NB
+            else if (y == (ny - 1) && z == 0) // NB
             {
                 return NORTH;
             }
-            else if (y == (NY - 1) && z == (NZ_TOTAL - 1)) // NF
+            else if (y == (ny - 1) && z == (nz - 1)) // NF
             {
                 return NORTH;
             }
@@ -800,15 +803,15 @@ namespace mbLBM
             {
                 return WEST_BACK;
             }
-            else if (x == 0 && z == (NZ_TOTAL - 1)) // WF
+            else if (x == 0 && z == (nz - 1)) // WF
             {
                 return WEST_FRONT;
             }
-            else if (x == (NX - 1) && z == 0) // EB
+            else if (x == (nx - 1) && z == 0) // EB
             {
                 return EAST_BACK;
             }
-            else if (x == (NX - 1) && z == (NZ_TOTAL - 1)) // EF
+            else if (x == (nx - 1) && z == (nz - 1)) // EF
             {
                 return EAST_FRONT;
             }
@@ -816,7 +819,7 @@ namespace mbLBM
             {
                 return SOUTH;
             }
-            else if (y == (NY - 1)) // N
+            else if (y == (ny - 1)) // N
             {
                 return NORTH;
             }
@@ -824,7 +827,7 @@ namespace mbLBM
             {
                 return WEST;
             }
-            else if (x == (NX - 1)) // E
+            else if (x == (nx - 1)) // E
             {
                 return EAST;
             }
@@ -832,7 +835,7 @@ namespace mbLBM
             {
                 return BACK;
             }
-            else if (z == (NZ_TOTAL - 1)) // F
+            else if (z == (nz - 1)) // F
             {
                 return FRONT;
             }

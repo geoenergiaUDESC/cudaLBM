@@ -2,12 +2,12 @@
 #define POPPULL_CUH
 
 {
-    const label_t xp1 = (threadIdx.x + 1 + BLOCK_NX) % BLOCK_NX;
-    const label_t xm1 = (threadIdx.x - 1 + BLOCK_NX) % BLOCK_NX;
-    const label_t yp1 = (threadIdx.y + 1 + BLOCK_NY) % BLOCK_NY;
-    const label_t ym1 = (threadIdx.y - 1 + BLOCK_NY) % BLOCK_NY;
-    const label_t zp1 = (threadIdx.z + 1 + BLOCK_NZ) % BLOCK_NZ;
-    const label_t zm1 = (threadIdx.z - 1 + BLOCK_NZ) % BLOCK_NZ;
+    const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
+    const label_t xm1 = (threadIdx.x - 1 + block::nx()) % block::nx();
+    const label_t yp1 = (threadIdx.y + 1 + block::ny()) % block::ny();
+    const label_t ym1 = (threadIdx.y - 1 + block::ny()) % block::ny();
+    const label_t zp1 = (threadIdx.z + 1 + block::nz()) % block::nz();
+    const label_t zm1 = (threadIdx.z - 1 + block::nz()) % block::nz();
 
     pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
     pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];

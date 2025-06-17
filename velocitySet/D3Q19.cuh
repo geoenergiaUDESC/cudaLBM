@@ -154,11 +154,20 @@ namespace mbLBM
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            [[nodiscard]] static inline constexpr std::array<scalar_t, 19> f_eq(const scalar_t rho, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            // [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> f_eq(const scalar_t rho, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            // {
+            //     // Define equilibrium populations
+            //     std::array<scalar_t, 19> pop{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            //     f_eq_loop<0>(pop, rho, u, v, w);
+
+            //     return pop;
+            // }
+
+            [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
             {
-                // Define equilibrium populations
-                std::array<scalar_t, 19> pop{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-                f_eq_loop<0>(pop, rho, u, v, w);
+                std::array<scalar_t, Q_> pop;
+
+                f_eq_loop<0>(pop, ux, uy, uz);
 
                 return pop;
             }
@@ -229,6 +238,92 @@ namespace mbLBM
                     multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8])};
             }
 
+            __device__ static inline void reconstruct(
+                scalar_t pop[19],
+                const scalar_t rhoVar,
+                const scalar_t ux_t30,
+                const scalar_t uy_t30,
+                const scalar_t uz_t30,
+                const scalar_t m_xx_t45,
+                const scalar_t m_xy_t90,
+                const scalar_t m_xz_t90,
+                const scalar_t m_yy_t45,
+                const scalar_t m_yz_t90,
+                const scalar_t m_zz_t45) noexcept
+            {
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (m_xx_t45 + m_yy_t45 + m_zz_t45);
+
+                const scalar_t multiplyTerm_0 = rhoVar * w_0();
+                pop[0] = multiplyTerm_0 * pics2;
+
+                const scalar_t multiplyTerm_1 = rhoVar * w_1();
+                pop[1] = multiplyTerm_1 * (pics2 + ux_t30 + m_xx_t45);
+                pop[2] = multiplyTerm_1 * (pics2 - ux_t30 + m_xx_t45);
+                pop[3] = multiplyTerm_1 * (pics2 + uy_t30 + m_yy_t45);
+                pop[4] = multiplyTerm_1 * (pics2 - uy_t30 + m_yy_t45);
+                pop[5] = multiplyTerm_1 * (pics2 + uz_t30 + m_zz_t45);
+                pop[6] = multiplyTerm_1 * (pics2 - uz_t30 + m_zz_t45);
+
+                const scalar_t multiplyTerm_2 = rhoVar * w_2();
+                pop[7] = multiplyTerm_2 * (pics2 + ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
+                pop[8] = multiplyTerm_2 * (pics2 - ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
+                pop[9] = multiplyTerm_2 * (pics2 + ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
+                pop[10] = multiplyTerm_2 * (pics2 - ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
+                pop[11] = multiplyTerm_2 * (pics2 + uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
+                pop[12] = multiplyTerm_2 * (pics2 - uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
+                pop[13] = multiplyTerm_2 * (pics2 + ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
+                pop[14] = multiplyTerm_2 * (pics2 - ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
+                pop[15] = multiplyTerm_2 * (pics2 + ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
+                pop[16] = multiplyTerm_2 * (pics2 - ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
+                pop[17] = multiplyTerm_2 * (pics2 + uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
+                pop[18] = multiplyTerm_2 * (pics2 - uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
+            }
+
+            __host__ static const std::array<scalar_t, 19> reconstruct(
+                const scalar_t rhoVar,
+                const scalar_t ux_t30,
+                const scalar_t uy_t30,
+                const scalar_t uz_t30,
+                const scalar_t m_xx_t45,
+                const scalar_t m_xy_t90,
+                const scalar_t m_xz_t90,
+                const scalar_t m_yy_t45,
+                const scalar_t m_yz_t90,
+                const scalar_t m_zz_t45) noexcept
+            {
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (m_xx_t45 + m_yy_t45 + m_zz_t45);
+
+                const scalar_t multiplyTerm_0 = rhoVar * w_0();
+
+                std::array<scalar_t, 19> pop;
+
+                pop[0] = multiplyTerm_0 * pics2;
+
+                const scalar_t multiplyTerm_1 = rhoVar * w_1();
+                pop[1] = multiplyTerm_1 * (pics2 + ux_t30 + m_xx_t45);
+                pop[2] = multiplyTerm_1 * (pics2 - ux_t30 + m_xx_t45);
+                pop[3] = multiplyTerm_1 * (pics2 + uy_t30 + m_yy_t45);
+                pop[4] = multiplyTerm_1 * (pics2 - uy_t30 + m_yy_t45);
+                pop[5] = multiplyTerm_1 * (pics2 + uz_t30 + m_zz_t45);
+                pop[6] = multiplyTerm_1 * (pics2 - uz_t30 + m_zz_t45);
+
+                const scalar_t multiplyTerm_2 = rhoVar * w_2();
+                pop[7] = multiplyTerm_2 * (pics2 + ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
+                pop[8] = multiplyTerm_2 * (pics2 - ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
+                pop[9] = multiplyTerm_2 * (pics2 + ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
+                pop[10] = multiplyTerm_2 * (pics2 - ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
+                pop[11] = multiplyTerm_2 * (pics2 + uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
+                pop[12] = multiplyTerm_2 * (pics2 - uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
+                pop[13] = multiplyTerm_2 * (pics2 + ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
+                pop[14] = multiplyTerm_2 * (pics2 - ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
+                pop[15] = multiplyTerm_2 * (pics2 + ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
+                pop[16] = multiplyTerm_2 * (pics2 - ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
+                pop[17] = multiplyTerm_2 * (pics2 + uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
+                pop[18] = multiplyTerm_2 * (pics2 - uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
+
+                return pop;
+            }
+
             /**
              * @brief Saves pop into the shared memory array s_pop
              * @param pop The population to be set in shared memory
@@ -271,14 +366,14 @@ namespace mbLBM
                 scalar_t pop[19],
                 const scalar_t s_pop[block::size() * 18]) noexcept
             {
-                const label_t xp1 = (threadIdx.x + 1 + BLOCK_NX) % BLOCK_NX;
-                const label_t xm1 = (threadIdx.x - 1 + BLOCK_NX) % BLOCK_NX;
+                const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
+                const label_t xm1 = (threadIdx.x - 1 + block::nx()) % block::nx();
 
-                const label_t yp1 = (threadIdx.y + 1 + BLOCK_NY) % BLOCK_NY;
-                const label_t ym1 = (threadIdx.y - 1 + BLOCK_NY) % BLOCK_NY;
+                const label_t yp1 = (threadIdx.y + 1 + block::ny()) % block::ny();
+                const label_t ym1 = (threadIdx.y - 1 + block::ny()) % block::ny();
 
-                const label_t zp1 = (threadIdx.z + 1 + BLOCK_NZ) % BLOCK_NZ;
-                const label_t zm1 = (threadIdx.z - 1 + BLOCK_NZ) % BLOCK_NZ;
+                const label_t zp1 = (threadIdx.z + 1 + block::nz()) % block::nz();
+                const label_t zm1 = (threadIdx.z - 1 + block::nz()) % block::nz();
 
                 pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
                 pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
@@ -323,14 +418,14 @@ namespace mbLBM
                 const label_t by = blockIdx.y;
                 const label_t bz = blockIdx.z;
 
-                const label_t txp1 = (tx + 1 + BLOCK_NX) % BLOCK_NX;
-                const label_t txm1 = (tx - 1 + BLOCK_NX) % BLOCK_NX;
+                const label_t txp1 = (tx + 1 + block::nx()) % block::nx();
+                const label_t txm1 = (tx - 1 + block::nx()) % block::nx();
 
-                const label_t typ1 = (ty + 1 + BLOCK_NY) % BLOCK_NY;
-                const label_t tym1 = (ty - 1 + BLOCK_NY) % BLOCK_NY;
+                const label_t typ1 = (ty + 1 + block::ny()) % block::ny();
+                const label_t tym1 = (ty - 1 + block::ny()) % block::ny();
 
-                const label_t tzp1 = (tz + 1 + BLOCK_NZ) % BLOCK_NZ;
-                const label_t tzm1 = (tz - 1 + BLOCK_NZ) % BLOCK_NZ;
+                const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
+                const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
 
                 const label_t bxm1 = (bx - 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
                 const label_t bxp1 = (bx + 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
@@ -346,14 +441,14 @@ namespace mbLBM
                     pop[1] = x1[idxPopX<0>(ty, tz, bxm1, by, bz)];
                     pop[7] = x1[idxPopX<1>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
                     pop[9] = x1[idxPopX<2>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = x1[idxPopX<3>(typ1, tz, bxm1, ((ty == (BLOCK_NY - 1)) ? byp1 : by), bz)];
-                    pop[15] = x1[idxPopX<4>(ty, tzp1, bxm1, by, ((tz == (BLOCK_NZ - 1)) ? bzp1 : bz))];
+                    pop[13] = x1[idxPopX<3>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[15] = x1[idxPopX<4>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
-                else if (tx == (BLOCK_NX - 1))
+                else if (tx == (block::nx() - 1))
                 { // e
                     pop[2] = x0[idxPopX<0>(ty, tz, bxp1, by, bz)];
-                    pop[8] = x0[idxPopX<1>(typ1, tz, bxp1, ((ty == (BLOCK_NY - 1)) ? byp1 : by), bz)];
-                    pop[10] = x0[idxPopX<2>(ty, tzp1, bxp1, by, ((tz == (BLOCK_NZ - 1)) ? bzp1 : bz))];
+                    pop[8] = x0[idxPopX<1>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[10] = x0[idxPopX<2>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                     pop[14] = x0[idxPopX<3>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
                     pop[16] = x0[idxPopX<4>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
                 }
@@ -363,14 +458,14 @@ namespace mbLBM
                     pop[3] = y1[idxPopY<0>(tx, tz, bx, bym1, bz)];
                     pop[7] = y1[idxPopY<1>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
                     pop[11] = y1[idxPopY<2>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = y1[idxPopY<3>(txp1, tz, ((tx == (BLOCK_NX - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = y1[idxPopY<4>(tx, tzp1, bx, bym1, ((tz == (BLOCK_NZ - 1)) ? bzp1 : bz))];
+                    pop[14] = y1[idxPopY<3>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
+                    pop[17] = y1[idxPopY<4>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
-                else if (ty == (BLOCK_NY - 1))
+                else if (ty == (block::ny() - 1))
                 { // n
                     pop[4] = y0[idxPopY<0>(tx, tz, bx, byp1, bz)];
-                    pop[8] = y0[idxPopY<1>(txp1, tz, ((tx == (BLOCK_NX - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = y0[idxPopY<2>(tx, tzp1, bx, byp1, ((tz == (BLOCK_NZ - 1)) ? bzp1 : bz))];
+                    pop[8] = y0[idxPopY<1>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
+                    pop[12] = y0[idxPopY<2>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                     pop[13] = y0[idxPopY<3>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
                     pop[18] = y0[idxPopY<4>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
                 }
@@ -380,14 +475,14 @@ namespace mbLBM
                     pop[5] = z1[idxPopZ<0>(tx, ty, bx, by, bzm1)];
                     pop[9] = z1[idxPopZ<1>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
                     pop[11] = z1[idxPopZ<2>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = z1[idxPopZ<3>(txp1, ty, ((tx == (BLOCK_NX - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = z1[idxPopZ<4>(tx, typ1, bx, ((ty == (BLOCK_NY - 1)) ? byp1 : by), bzm1)];
+                    pop[16] = z1[idxPopZ<3>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
+                    pop[18] = z1[idxPopZ<4>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
                 }
-                else if (tz == (BLOCK_NZ - 1))
+                else if (tz == (block::nz() - 1))
                 { // f
                     pop[6] = z0[idxPopZ<0>(tx, ty, bx, by, bzp1)];
-                    pop[10] = z0[idxPopZ<1>(txp1, ty, ((tx == (BLOCK_NX - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = z0[idxPopZ<2>(tx, typ1, bx, ((ty == (BLOCK_NY - 1)) ? byp1 : by), bzp1)];
+                    pop[10] = z0[idxPopZ<1>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
+                    pop[12] = z0[idxPopZ<2>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
                     pop[15] = z0[idxPopZ<3>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
                     pop[17] = z0[idxPopZ<4>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
                 }
@@ -497,6 +592,27 @@ namespace mbLBM
                 {
                     // Continue if the next iteration is not the last
                     f_eq_loop<q_ + 1>(pop, rho, u, v, w);
+                }
+            }
+
+            template <const label_t q_>
+            static inline constexpr void f_eq_loop(
+                std::array<scalar_t, 19> &pop,
+                const scalar_t ux,
+                const scalar_t uy,
+                const scalar_t uz) noexcept
+            {
+                // Check at compile time that the loop is correctly bounded
+                static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
+
+                pop[q_] = f_eq(
+                    w_q(lattice_constant<q_>()),
+                    static_cast<scalar_t>(3) * (ux * cx(lattice_constant<q_>()) + uy * cy(lattice_constant<q_>()) + uz * cz(lattice_constant<q_>())),
+                    static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (ux * ux + uy * uy + uz * uz));
+
+                if constexpr (q_ < Q_ - 2)
+                {
+                    f_eq_loop<q_ + 1>(pop, ux, uy, uz);
                 }
             }
 

@@ -136,19 +136,19 @@ namespace mbLBM
              **/
             __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
             {
-                return nx_ / BLOCK_NX;
+                return nx_ / block::nx();
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
             {
-                return ny_ / BLOCK_NY;
+                return ny_ / block::ny();
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
             {
-                return nz_ / BLOCK_NZ;
+                return nz_ / block::nz();
             }
             __host__ __device__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
             {
-                return (nx_ / BLOCK_NX) * (ny_ / BLOCK_NY) * (nz_ / BLOCK_NZ);
+                return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
             }
 
             /**
@@ -214,45 +214,45 @@ namespace mbLBM
              * @brief Prints the global array label to the terminal
              * @param name Name of the field to be printed
              **/
-            void print(const std::string &name) const noexcept
-            {
-                std::cout << name << std::endl;
-                std::cout << "nx = " << nx_ << std::endl;
-                std::cout << "ny = " << ny_ << std::endl;
-                std::cout << "nz = " << nz_ << std::endl;
-                std::cout << std::endl;
-                for (label_t k = 0; k < nz_; k++)
-                {
-                    for (label_t j = 0; j < ny_; j++)
-                    {
-                        for (label_t i = 0; i < nx_; i++)
-                        {
-                            std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
-                        }
-                        std::cout << "\n";
-                    }
-                    std::cout << "\n";
-                }
-            }
-            void print() const noexcept
-            {
-                std::cout << "nx = " << nx_ << std::endl;
-                std::cout << "ny = " << ny_ << std::endl;
-                std::cout << "nz = " << nz_ << std::endl;
-                std::cout << std::endl;
-                for (label_t k = 0; k < nz_; k++)
-                {
-                    for (label_t j = 0; j < ny_; j++)
-                    {
-                        for (label_t i = 0; i < nx_; i++)
-                        {
-                            std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
-                        }
-                        std::cout << "\n";
-                    }
-                    std::cout << "\n";
-                }
-            }
+            // void print(const std::string &name) const noexcept
+            // {
+            //     std::cout << name << std::endl;
+            //     std::cout << "nx = " << nx_ << std::endl;
+            //     std::cout << "ny = " << ny_ << std::endl;
+            //     std::cout << "nz = " << nz_ << std::endl;
+            //     std::cout << std::endl;
+            //     for (label_t k = 0; k < nz_; k++)
+            //     {
+            //         for (label_t j = 0; j < ny_; j++)
+            //         {
+            //             for (label_t i = 0; i < nx_; i++)
+            //             {
+            //                 std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
+            //             }
+            //             std::cout << "\n";
+            //         }
+            //         std::cout << "\n";
+            //     }
+            // }
+            // void print() const noexcept
+            // {
+            //     std::cout << "nx = " << nx_ << std::endl;
+            //     std::cout << "ny = " << ny_ << std::endl;
+            //     std::cout << "nz = " << nz_ << std::endl;
+            //     std::cout << std::endl;
+            //     for (label_t k = 0; k < nz_; k++)
+            //     {
+            //         for (label_t j = 0; j < ny_; j++)
+            //         {
+            //             for (label_t i = 0; i < nx_; i++)
+            //             {
+            //                 std::cout << blockLabel(i + xOffset_, j + yOffset_, k + zOffset_, {nx_, ny_, nz_}) << " ";
+            //             }
+            //             std::cout << "\n";
+            //         }
+            //         std::cout << "\n";
+            //     }
+            // }
 
             /**
              * @brief Writes the mesh partition to a file

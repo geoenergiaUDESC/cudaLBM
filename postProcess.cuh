@@ -9,9 +9,9 @@ namespace mbLBM
     template <typename T>
     [[nodiscard]] const std::vector<T> deviceToHost(const T *f, const label_t nFields = 1) noexcept
     {
-        std::vector<T> F(NUMBER_LBM_POP_NODES * nFields, 0);
+        std::vector<T> F(NX * NY * NZ * nFields, 0);
 
-        const cudaError_t i = cudaMemcpy(F.data(), f, NUMBER_LBM_POP_NODES * sizeof(T) * nFields, cudaMemcpyDeviceToHost);
+        const cudaError_t i = cudaMemcpy(F.data(), f, NX * NY * NZ * sizeof(T) * nFields, cudaMemcpyDeviceToHost);
 
         if (i != cudaSuccess)
         {
@@ -20,7 +20,7 @@ namespace mbLBM
         else
         {
 #ifdef VERBOSE
-            std::cout << "Copied " << sizeof(T) * NUMBER_LBM_POP_NODES << " bytes of memory in cudaMemcpy from address " << f << " to the host" << std::endl;
+            std::cout << "Copied " << sizeof(T) * NX * NY * NZ << " bytes of memory in cudaMemcpy from address " << f << " to the host" << std::endl;
 #endif
         }
 
@@ -28,17 +28,21 @@ namespace mbLBM
     }
 
     template <const label_t variableIndex>
-    [[nodiscard]] __host__ const std::vector<scalar_t> save(const scalar_t *const h_fMom) noexcept
+    [[nodiscard]] __host__ const std::vector<scalar_t> save(
+        const scalar_t *const h_fMom,
+        const label_t nx,
+        const label_t ny,
+        const label_t nz) noexcept
     {
-        std::vector<scalar_t> f(NX * NY * NZ, 0);
+        std::vector<scalar_t> f(nx * ny * nz, 0);
 
-        for (label_t z = 0; z < NZ; z++)
+        for (label_t z = 0; z < nz; z++)
         {
-            for (label_t y = 0; y < NY; y++)
+            for (label_t y = 0; y < ny; y++)
             {
-                for (label_t x = 0; x < NX; x++)
+                for (label_t x = 0; x < nx; x++)
                 {
-                    f[idxScalarGlobal(x, y, z)] = h_fMom[idxMom<variableIndex>(x % BLOCK_NX, y % BLOCK_NY, z % BLOCK_NZ, x / BLOCK_NX, y / BLOCK_NY, z / BLOCK_NZ)];
+                    f[idxScalarGlobal(x, y, z)] = h_fMom[idxMom<variableIndex>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz())];
                 }
             }
         }

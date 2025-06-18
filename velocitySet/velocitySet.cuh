@@ -33,41 +33,35 @@ namespace LBM
             {
                 return static_cast<scalar_t>(1.0) / as2();
             }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_0_SCALE() noexcept
-            {
-                return static_cast<scalar_t>(1.0);
-            }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_I_SCALE() noexcept
+
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_i() noexcept
             {
                 return as2();
             }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_II_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_ii() noexcept
             {
                 return as2() * as2() / static_cast<scalar_t>(2.0);
             }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t F_M_IJ_SCALE() noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_ij() noexcept
             {
                 return as2() * as2();
             }
 
             /**
-             * @brief Multiplies all of the moments by their coefficients
-             * @param moments The moments to be scaled
+             * @brief Scale the moments by constant values
              **/
-            __device__ static inline void scale(scalar_t moments[10]) noexcept
+            __device__ static inline void scale(scalar_t *const ptrRestrict moms)
             {
-                moments[0] = moments[0] * F_M_0_SCALE();
-
-                moments[1] = moments[1] * F_M_I_SCALE();
-                moments[2] = moments[2] * F_M_I_SCALE();
-                moments[3] = moments[3] * F_M_I_SCALE();
-
-                moments[4] = moments[4] * F_M_II_SCALE();
-                moments[5] = moments[5] * F_M_IJ_SCALE();
-                moments[6] = moments[6] * F_M_IJ_SCALE();
-                moments[7] = moments[7] * F_M_II_SCALE();
-                moments[8] = moments[8] * F_M_IJ_SCALE();
-                moments[9] = moments[9] * F_M_II_SCALE();
+                // Scale the moments correctly
+                moms[1] = scale_i() * moms[1];
+                moms[2] = scale_i() * moms[2];
+                moms[3] = scale_i() * moms[3];
+                moms[4] = scale_ii() * (moms[4]);
+                moms[5] = scale_ij() * (moms[5]);
+                moms[6] = scale_ij() * (moms[6]);
+                moms[7] = scale_ii() * (moms[7]);
+                moms[8] = scale_ij() * (moms[8]);
+                moms[9] = scale_ii() * (moms[9]);
             }
         };
     }

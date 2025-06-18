@@ -162,18 +162,18 @@ namespace LBM
              * @brief Calculates the number of faces on the side of a block depending upon the direction (x, y or z)
              * @param mesh The mesh
              **/
-            template <const std::size_t index>
+            template <const std::size_t faceIndex>
             [[nodiscard]] inline constexpr std::size_t nFaces(const host::latticeMesh &mesh) const noexcept
             {
-                if constexpr (index == device::haloFaces::x())
+                if constexpr (faceIndex == device::haloFaces::x())
                 {
                     return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nx()) * VelocitySet::D3Q19::QF();
                 }
-                if constexpr (index == device::haloFaces::y())
+                if constexpr (faceIndex == device::haloFaces::y())
                 {
                     return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::ny()) * VelocitySet::D3Q19::QF();
                 }
-                if constexpr (index == device::haloFaces::z())
+                if constexpr (faceIndex == device::haloFaces::z())
                 {
                     return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nz()) * VelocitySet::D3Q19::QF();
                 }
@@ -186,10 +186,10 @@ namespace LBM
              * @param fMom The 10 interlaced moments
              * @param mesh The mesh
              **/
-            template <const std::size_t index, const std::size_t side>
+            template <const std::size_t faceIndex, const std::size_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) const noexcept
             {
-                std::vector<scalar_t> face(nFaces<index>(mesh), 0);
+                std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
 
                 const label_t nBlockx = mesh.nxBlocks();
                 const label_t nBlocky = mesh.nyBlocks();
@@ -215,27 +215,21 @@ namespace LBM
                                             continue;
                                         }
 
-                                        // zeroth moment
-                                        const scalar_t rhoVar = RHO_0 + fMom[host::idxMom<index::rho()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t ux_t30 = fMom[host::idxMom<index::u()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t uy_t30 = fMom[host::idxMom<index::v()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t uz_t30 = fMom[host::idxMom<index::w()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_xx_t45 = fMom[host::idxMom<index::xx()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_xy_t90 = fMom[host::idxMom<index::xy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_xz_t90 = fMom[host::idxMom<index::xz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_yy_t45 = fMom[host::idxMom<index::yy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_yz_t90 = fMom[host::idxMom<index::yz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-                                        const scalar_t m_zz_t45 = fMom[host::idxMom<index::zz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)];
-
-                                        // scalar_t pop[Q];
-                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(
-                                            rhoVar,
-                                            ux_t30, uy_t30, uz_t30,
-                                            m_xx_t45, m_xy_t90, m_xz_t90,
-                                            m_yy_t45, m_yz_t90, m_zz_t45);
+                                        // Reconstruct from the moments
+                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(std::array<scalar_t, 10>{
+                                            RHO_0 + fMom[host::idxMom<index::rho()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::u()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::v()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::w()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::xx()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::xy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::xz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::yy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::yz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            fMom[host::idxMom<index::zz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)]});
 
                                         // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
-                                        if constexpr (index == device::haloFaces::x())
+                                        if constexpr (faceIndex == device::haloFaces::x())
                                         {
                                             if constexpr (side == 0)
                                             {
@@ -261,7 +255,7 @@ namespace LBM
                                             }
                                         }
 
-                                        if constexpr (index == device::haloFaces::y())
+                                        if constexpr (faceIndex == device::haloFaces::y())
                                         {
                                             if constexpr (side == 0)
                                             {
@@ -287,7 +281,7 @@ namespace LBM
                                             }
                                         }
 
-                                        if constexpr (index == device::haloFaces::z())
+                                        if constexpr (faceIndex == device::haloFaces::z())
                                         {
                                             if constexpr (side == 0)
                                             {

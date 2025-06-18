@@ -129,7 +129,7 @@ int main(void)
     // Perform device memory allocation
     device::array<scalar_t> d_fMom(host::moments(mesh, u_infTemp));
     const device::array<nodeType_t> dNodeType(host::nodeType(mesh));
-    device::halo ghostInterface(host::moments(mesh, u_infTemp), mesh);
+    device::halo blockHalo(host::moments(mesh, u_infTemp), mesh);
 
     // Setup Streams
     cudaStream_t streamsLBM[1];
@@ -152,9 +152,9 @@ int main(void)
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
             d_fMom.ptr(),
             dNodeType.ptr(),
-            ghostInterface);
+            blockHalo);
 
-        ghostInterface.swap();
+        blockHalo.swap();
     }
 
     std::cout << "Exited main loop" << std::endl;

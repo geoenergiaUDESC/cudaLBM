@@ -49,7 +49,6 @@ namespace LBM
 #endif
 
 #define ptrRestrict __restrict__
-    // #define ptrRestrict
 
     /**
      * @brief Type used for arrays of scalars
@@ -59,7 +58,7 @@ namespace LBM
     /**
      * @brief Type used to contain the moments within a given stack frame
      **/
-    // typedef std::array<scalar_t, 10> momentArray_t;
+    using momentArray_t = scalar_t[10];
 
     /**
      * @brief Label type used for scalar types
@@ -182,12 +181,12 @@ namespace LBM
         ERR_LASTCODE = 93               // Last error code.
     } mpiError_t;
 
-    // Store node types as a 16 bit integer
+    // Store node types as an enumerated type
     namespace nodeType
     {
-        typedef enum Enum : int16_t
+        typedef enum Enum : nodeType_t
         {
-            UNDEFINED = -1,
+            UNDEFINED = static_cast<nodeType_t>(-1),
             BULK = 0,
             NORTH = 1,
             SOUTH = 2,
@@ -232,6 +231,22 @@ namespace LBM
         } type;
     }
 
+    /**
+     * @brief Ranks of tensor
+     **/
+    // namespace tensorComponent
+    // {
+    //     typedef enum Enum : label_t
+    //     {
+    //         m_0 = 0,  // Scalar
+    //         m_i = 1,  // Vector
+    //         m_ii = 2, // Diagonal component of a symmetric tensor
+    //         m_ij = 3  // Off-diagonal component of a symmetric tensor
+    //     } type;
+    // }
+    // template <const tensorComponent::type m>
+    // using tensor_component = const std::integral_constant<tensorComponent::type, m>;
+
     __device__ __constant__ label_t d_nx;
     __device__ __constant__ label_t d_ny;
     __device__ __constant__ label_t d_nz;
@@ -241,17 +256,6 @@ namespace LBM
     __device__ __constant__ label_t d_NUM_BLOCK_X;
     __device__ __constant__ label_t d_NUM_BLOCK_Y;
     __device__ __constant__ label_t d_NUM_BLOCK_Z;
-
-    // scalar_t *d_rho;
-    // scalar_t *d_u;
-    // scalar_t *d_v;
-    // scalar_t *d_w;
-    // scalar_t *d_m_xx;
-    // scalar_t *d_m_xy;
-    // scalar_t *d_m_xz;
-    // scalar_t *d_m_yy;
-    // scalar_t *d_m_yz;
-    // scalar_t *d_m_zz;
 }
 
 #endif

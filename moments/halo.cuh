@@ -75,7 +75,7 @@ namespace LBM
              * @brief Loads the populations at the halo points into pop
              * @param pop The population density array into which the halo points are to be loaded
              **/
-            __device__ inline void popLoad(scalar_t pop[19]) const noexcept
+            __device__ inline void popLoad(scalar_t *const ptrRestrict pop) const noexcept
             {
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
@@ -159,7 +159,7 @@ namespace LBM
              * @brief Saves the populations in pop to the halo
              * @param pop The population density array from which the halo points are to be saved
              **/
-            __device__ inline void popSave(const scalar_t pop[19]) noexcept
+            __device__ inline void popSave(const scalar_t *const ptrRestrict pop) noexcept
             {
                 const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
                 const label_t y = threadIdx.y + blockDim.y * blockIdx.y;

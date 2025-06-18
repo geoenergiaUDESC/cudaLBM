@@ -12,7 +12,7 @@ Contents: A class handling the setup of the solver
 #include "strings.cuh"
 #include "inputControl.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     class programControl
     {
@@ -33,7 +33,7 @@ namespace mbLBM
         {
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
-            std::cout << "{ UDESC mbLBM                                                             }" << std::endl;
+            std::cout << "{ UDESC LBM                                                             }" << std::endl;
             std::cout << "{ Universidade do Esdado de Santa Catarina                                }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;

@@ -9,7 +9,7 @@ Contents: A generic function to exit on an error code and display an error messa
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     namespace exceptions
     {

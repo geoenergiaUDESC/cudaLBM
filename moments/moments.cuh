@@ -9,12 +9,10 @@ Contents: A class containing the arrays of the moment variables
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 #include "../globalFunctions.cuh"
-// #include "../latticeMesh/latticeMesh.cuh"
-// #include "../velocitySet/velocitySet.cuh"
-// #include "../globalFunctions.cuh"
-// #include "../array/array.cuh"
+#include "../velocitySet/velocitySet.cuh"
+#include "../latticeMesh/latticeMesh.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     namespace host
     {

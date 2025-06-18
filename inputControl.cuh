@@ -9,7 +9,7 @@ Contents: A class handling the input arguments supplied to the executable
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     class inputControl
     {

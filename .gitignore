@@ -34,7 +34,7 @@
 # Additional files
 .vscode
 opt
-mbLBM
+LBM
 thirdParty/openmpi*
 thirdParty/ucx
 thirdParty/opt*

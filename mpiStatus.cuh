@@ -9,7 +9,7 @@ Contents: A class handling the initialisation of CUDA-aware MPI
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     class mpiStatus
     {

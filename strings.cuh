@@ -10,7 +10,7 @@ Contents: Functions employed throughout the source code to manipulate strings
 #ifndef __MBLBM_STRINGS_CUH
 #define __MBLBM_STRINGS_CUH
 
-namespace mbLBM
+namespace LBM
 {
     namespace string
     {

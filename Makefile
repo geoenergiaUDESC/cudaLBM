@@ -27,20 +27,20 @@ CXX_FLAGS = $(CXX_STANDARD) $(CXX_OPTFLAGS) $(CXX_MFLAGS) $(CXX_WFLAGS) $(CXX_DF
 
 default:
 	make clean
-	$(NVCXX) $(NVCXX_FLAGS) mbLBM.cu -o mbLBM -lmpi -lm
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o LBM -lmpi -lm
 
 install:
 	make clean
 	make uninstall
-	$(NVCXX) $(NVCXX_FLAGS) mbLBM.cu -o mbLBM -lmpi -lm
-	cp -rf mbLBM build/bin/mbLBM
-	rm -rf mbLBM
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o LBM -lmpi -lm
+	cp -rf LBM build/bin/LBM
+	rm -rf LBM
 
 clean:
-	rm -rf mbLBM
+	rm -rf LBM
 
 uninstall:
-	rm -rf build/bin/mbLBM
+	rm -rf build/bin/LBM
 
 installMesh:
 	make cleanMesh
@@ -52,4 +52,4 @@ cleanMesh:
 	rm -rf meshTools
 
 uninstallMesh:
-	rm -rf $(PROJECT_DIR)/opt/mbLBM/bin/meshTools
+	rm -rf $(PROJECT_DIR)/opt/LBM/bin/meshTools

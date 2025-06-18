@@ -4,7 +4,7 @@
 #include "latticeMesh/latticeMesh.cuh"
 #include "strings.cuh"
 
-using namespace mbLBM;
+using namespace LBM;
 
 [[nodiscard]] const nodeTypeArray_t defineMesh(const host::latticeMesh &mesh) noexcept
 {

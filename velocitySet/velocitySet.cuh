@@ -6,7 +6,7 @@ Contents: Base class used for definition of the velocity set
 #ifndef __MBLBM_VELOCITYSET_CUH
 #define __MBLBM_VELOCITYSET_CUH
 
-namespace mbLBM
+namespace LBM
 {
     namespace VelocitySet
     {
@@ -75,7 +75,7 @@ namespace mbLBM
 
 #include "D3Q19.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     /**
      * @brief Velocity set used throughout the code

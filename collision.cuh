@@ -20,35 +20,7 @@ namespace LBM
     [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
 
     __device__ static inline void collide(
-        scalar_t *const ptrRestrict rhoVar,
-        scalar_t *const ptrRestrict ux_t30,
-        scalar_t *const ptrRestrict uy_t30,
-        scalar_t *const ptrRestrict uz_t30,
-        scalar_t *const ptrRestrict m_xx_t45,
-        scalar_t *const ptrRestrict m_xy_t90,
-        scalar_t *const ptrRestrict m_xz_t90,
-        scalar_t *const ptrRestrict m_yy_t45,
-        scalar_t *const ptrRestrict m_yz_t90,
-        scalar_t *const ptrRestrict m_zz_t45) noexcept
-    {
-        // const scalar_t omegaVar = d_omega;
-        const scalar_t t_omegaVar = 1 - d_omega;
-        const scalar_t omegaVar_d2 = d_omega / 2;
-
-        // Velocity updates are removed since force terms are zero
-        // Diagonal moment updates (remove force terms)
-        *m_xx_t45 = t_omegaVar * *m_xx_t45 + omegaVar_d2 * (*ux_t30) * (*ux_t30);
-        *m_yy_t45 = t_omegaVar * *m_yy_t45 + omegaVar_d2 * (*uy_t30) * (*uy_t30);
-        *m_zz_t45 = t_omegaVar * *m_zz_t45 + omegaVar_d2 * (*uz_t30) * (*uz_t30);
-
-        // Off-diagonal moment updates (remove force terms)
-        *m_xy_t90 = t_omegaVar * *m_xy_t90 + d_omega * (*ux_t30) * (*uy_t30);
-        *m_xz_t90 = t_omegaVar * *m_xz_t90 + d_omega * (*ux_t30) * (*uz_t30);
-        *m_yz_t90 = t_omegaVar * *m_yz_t90 + d_omega * (*uy_t30) * (*uz_t30);
-    }
-
-    __device__ static inline void collide(
-        scalar_t moments[10]) noexcept
+        scalar_t *const ptrRestrict moments) noexcept
     {
         // const scalar_t omegaVar = d_omega;
         const scalar_t t_omegaVar = 1 - d_omega;

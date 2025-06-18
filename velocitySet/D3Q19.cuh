@@ -160,55 +160,9 @@ namespace LBM
                 return pop;
             }
 
-            /**
-             * @brief Reconstructs the population at a given lattice point
-             * @param pop The population to be reconstructed
-             * @param moments The moments from which the population is to be reconstructed
-             **/
             __device__ static inline void reconstruct(
-                scalar_t pop[19],
-                const scalar_t rhoVar,
-                const scalar_t ux_t30,
-                const scalar_t uy_t30,
-                const scalar_t uz_t30,
-                const scalar_t m_xx_t45,
-                const scalar_t m_xy_t90,
-                const scalar_t m_xz_t90,
-                const scalar_t m_yy_t45,
-                const scalar_t m_yz_t90,
-                const scalar_t m_zz_t45) noexcept
-            {
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (m_xx_t45 + m_yy_t45 + m_zz_t45);
-
-                const scalar_t multiplyTerm_0 = rhoVar * w_0();
-                pop[0] = multiplyTerm_0 * pics2;
-
-                const scalar_t multiplyTerm_1 = rhoVar * w_1();
-                pop[1] = multiplyTerm_1 * (pics2 + ux_t30 + m_xx_t45);
-                pop[2] = multiplyTerm_1 * (pics2 - ux_t30 + m_xx_t45);
-                pop[3] = multiplyTerm_1 * (pics2 + uy_t30 + m_yy_t45);
-                pop[4] = multiplyTerm_1 * (pics2 - uy_t30 + m_yy_t45);
-                pop[5] = multiplyTerm_1 * (pics2 + uz_t30 + m_zz_t45);
-                pop[6] = multiplyTerm_1 * (pics2 - uz_t30 + m_zz_t45);
-
-                const scalar_t multiplyTerm_2 = rhoVar * w_2();
-                pop[7] = multiplyTerm_2 * (pics2 + ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
-                pop[8] = multiplyTerm_2 * (pics2 - ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
-                pop[9] = multiplyTerm_2 * (pics2 + ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
-                pop[10] = multiplyTerm_2 * (pics2 - ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
-                pop[11] = multiplyTerm_2 * (pics2 + uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
-                pop[12] = multiplyTerm_2 * (pics2 - uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
-                pop[13] = multiplyTerm_2 * (pics2 + ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
-                pop[14] = multiplyTerm_2 * (pics2 - ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
-                pop[15] = multiplyTerm_2 * (pics2 + ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
-                pop[16] = multiplyTerm_2 * (pics2 - ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
-                pop[17] = multiplyTerm_2 * (pics2 + uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
-                pop[18] = multiplyTerm_2 * (pics2 - uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
-            }
-
-            __device__ static inline void reconstruct(
-                scalar_t pop[19],
-                const scalar_t moments[10]) noexcept
+                scalar_t *const ptrRestrict pop,
+                const scalar_t *const ptrRestrict moments) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -244,46 +198,37 @@ namespace LBM
              * @return The reconstructed population
              **/
             __host__ static const std::array<scalar_t, 19> reconstruct(
-                const scalar_t rhoVar,
-                const scalar_t ux_t30,
-                const scalar_t uy_t30,
-                const scalar_t uz_t30,
-                const scalar_t m_xx_t45,
-                const scalar_t m_xy_t90,
-                const scalar_t m_xz_t90,
-                const scalar_t m_yy_t45,
-                const scalar_t m_yz_t90,
-                const scalar_t m_zz_t45) noexcept
+                const std::array<scalar_t, 10> &moments) noexcept
             {
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (m_xx_t45 + m_yy_t45 + m_zz_t45);
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
-                const scalar_t multiplyTerm_0 = rhoVar * w_0();
+                const scalar_t multiplyTerm_0 = moments[0] * w_0();
 
                 std::array<scalar_t, 19> pop;
 
                 pop[0] = multiplyTerm_0 * pics2;
 
-                const scalar_t multiplyTerm_1 = rhoVar * w_1();
-                pop[1] = multiplyTerm_1 * (pics2 + ux_t30 + m_xx_t45);
-                pop[2] = multiplyTerm_1 * (pics2 - ux_t30 + m_xx_t45);
-                pop[3] = multiplyTerm_1 * (pics2 + uy_t30 + m_yy_t45);
-                pop[4] = multiplyTerm_1 * (pics2 - uy_t30 + m_yy_t45);
-                pop[5] = multiplyTerm_1 * (pics2 + uz_t30 + m_zz_t45);
-                pop[6] = multiplyTerm_1 * (pics2 - uz_t30 + m_zz_t45);
+                const scalar_t multiplyTerm_1 = moments[0] * w_1();
+                pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
+                pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
+                pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
+                pop[4] = multiplyTerm_1 * (pics2 - moments[2] + moments[7]);
+                pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
+                pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
 
-                const scalar_t multiplyTerm_2 = rhoVar * w_2();
-                pop[7] = multiplyTerm_2 * (pics2 + ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
-                pop[8] = multiplyTerm_2 * (pics2 - ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 + m_xy_t90);
-                pop[9] = multiplyTerm_2 * (pics2 + ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
-                pop[10] = multiplyTerm_2 * (pics2 - ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 + m_xz_t90);
-                pop[11] = multiplyTerm_2 * (pics2 + uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
-                pop[12] = multiplyTerm_2 * (pics2 - uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 + m_yz_t90);
-                pop[13] = multiplyTerm_2 * (pics2 + ux_t30 - uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
-                pop[14] = multiplyTerm_2 * (pics2 - ux_t30 + uy_t30 + m_xx_t45 + m_yy_t45 - m_xy_t90);
-                pop[15] = multiplyTerm_2 * (pics2 + ux_t30 - uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
-                pop[16] = multiplyTerm_2 * (pics2 - ux_t30 + uz_t30 + m_xx_t45 + m_zz_t45 - m_xz_t90);
-                pop[17] = multiplyTerm_2 * (pics2 + uy_t30 - uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
-                pop[18] = multiplyTerm_2 * (pics2 - uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
+                const scalar_t multiplyTerm_2 = moments[0] * w_2();
+                pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
+                pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
+                pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
+                pop[10] = multiplyTerm_2 * (pics2 - moments[1] - moments[3] + moments[4] + moments[9] + moments[6]);
+                pop[11] = multiplyTerm_2 * (pics2 + moments[2] + moments[3] + moments[7] + moments[9] + moments[8]);
+                pop[12] = multiplyTerm_2 * (pics2 - moments[2] - moments[3] + moments[7] + moments[9] + moments[8]);
+                pop[13] = multiplyTerm_2 * (pics2 + moments[1] - moments[2] + moments[4] + moments[7] - moments[5]);
+                pop[14] = multiplyTerm_2 * (pics2 - moments[1] + moments[2] + moments[4] + moments[7] - moments[5]);
+                pop[15] = multiplyTerm_2 * (pics2 + moments[1] - moments[3] + moments[4] + moments[9] - moments[6]);
+                pop[16] = multiplyTerm_2 * (pics2 - moments[1] + moments[3] + moments[4] + moments[9] - moments[6]);
+                pop[17] = multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
+                pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
 
                 return pop;
             }
@@ -294,7 +239,7 @@ namespace LBM
              * @param s_pop The shared memory array
              **/
             __device__ static inline void popSaveShared(
-                const scalar_t pop[19],
+                const scalar_t *const ptrRestrict pop,
                 scalar_t s_pop[block::size() * 18]) noexcept
             {
                 s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
@@ -327,7 +272,7 @@ namespace LBM
              * @param pop The array into which s_pop is pulled
              **/
             __device__ static inline void popPull(
-                scalar_t pop[19],
+                scalar_t *const ptrRestrict pop,
                 const scalar_t s_pop[block::size() * 18]) noexcept
             {
                 const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
@@ -366,13 +311,13 @@ namespace LBM
              * @param pop The array into which the population densities from the neighbouring block is loaded
              **/
             __device__ static inline void popLoad(
-                const scalar_t *__restrict__ const x0,
-                const scalar_t *__restrict__ const x1,
-                const scalar_t *__restrict__ const y0,
-                const scalar_t *__restrict__ const y1,
-                const scalar_t *__restrict__ const z0,
-                const scalar_t *__restrict__ const z1,
-                scalar_t pop[19]) noexcept
+                const scalar_t *const ptrRestrict x0,
+                const scalar_t *const ptrRestrict x1,
+                const scalar_t *const ptrRestrict y0,
+                const scalar_t *const ptrRestrict y1,
+                const scalar_t *const ptrRestrict z0,
+                const scalar_t *const ptrRestrict z1,
+                scalar_t *const ptrRestrict pop) noexcept
             {
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
@@ -452,40 +397,14 @@ namespace LBM
                 }
             }
 
+            /**
+             * @brief Calculates the moments from the population density
+             * @param pop The lattice population density
+             * @param moments The lattice moments
+             **/
             __device__ inline static void calculateMoments(
-                const scalar_t pop[19],
-                scalar_t *const rhoVar,
-                scalar_t *const ux_t30,
-                scalar_t *const uy_t30,
-                scalar_t *const uz_t30,
-                scalar_t *const m_xx_t45,
-                scalar_t *const m_xy_t90,
-                scalar_t *const m_xz_t90,
-                scalar_t *const m_yy_t45,
-                scalar_t *const m_yz_t90,
-                scalar_t *const m_zz_t45) noexcept
-            {
-                // Equation 3
-                *rhoVar = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
-                const scalar_t invRho = static_cast<scalar_t>(1) / *rhoVar;
-
-                // Equation 4 + force correction
-                *ux_t30 = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
-                *uy_t30 = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
-                *uz_t30 = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
-
-                // Equation 5
-                *m_xx_t45 = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
-                *m_xy_t90 = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
-                *m_xz_t90 = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
-                *m_yy_t45 = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
-                *m_yz_t90 = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
-                *m_zz_t45 = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
-            }
-
-            __device__ inline static void calculateMoments(
-                const scalar_t pop[19],
-                scalar_t moments[10]) noexcept
+                const scalar_t *const ptrRestrict pop,
+                scalar_t *const ptrRestrict moments) noexcept
             {
                 // Equation 3
                 moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
@@ -535,7 +454,9 @@ namespace LBM
              * @note This function effectively unrolls the loop at compile-time and checks for its bounds
              **/
             template <const label_t q_ = 0>
-            __device__ static inline constexpr void popSave_loop(const scalar_t pop[19], scalar_t s_pop[block::size() * 18]) noexcept
+            __device__ static inline constexpr void popSave_loop(
+                const scalar_t *const ptrRestrict pop,
+                scalar_t s_pop[block::size() * 18]) noexcept
             {
                 // Check at compile time that the loop is correctly bounded
                 static_assert(q_ + 1 < 19, "Compile error in popSaveShared: Loop is incorrectly bounded");

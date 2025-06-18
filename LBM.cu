@@ -38,7 +38,7 @@ namespace LBM
                         // Override for the top wall (y = mesh.ny()-1): ux = U_MAX
                         if (y == mesh.ny() - 1)
                         {
-                            fMom[idxMom<index::u()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_I_SCALE() * u_inf;
+                            fMom[idxMom<index::u()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_i() * u_inf;
                         }
                         else
                         {
@@ -66,12 +66,12 @@ namespace LBM
                         const scalar_t pizz = (pop[5] + pop[6] + pop_9_10 + pop_11_12 + pop_15_16 + pop_17_18) - VelocitySet::velocitySet::cs2();
 
                         // Store second-order moments
-                        fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_II_SCALE() * pixx;
-                        fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_IJ_SCALE() * pixy;
-                        fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_IJ_SCALE() * pixz;
-                        fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_II_SCALE() * piyy;
-                        fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_IJ_SCALE() * piyz;
-                        fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::F_M_II_SCALE() * pizz;
+                        fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pixx;
+                        fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixy;
+                        fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixz;
+                        fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * piyy;
+                        fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * piyz;
+                        fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pizz;
                     }
                 }
             }

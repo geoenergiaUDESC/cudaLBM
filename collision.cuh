@@ -19,6 +19,10 @@ namespace LBM
     [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 1024; }
     [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
 
+    /**
+     * @brief Performs the collision operation
+     * @param moments The 10 solution moments
+     **/
     __device__ static inline void collide(
         scalar_t *const ptrRestrict moments) noexcept
     {

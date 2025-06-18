@@ -8,7 +8,7 @@ Contains: A list of typedefs used throughout the cudaLBM source code
 
 #include "LBMIncludes.cuh"
 
-namespace mbLBM
+namespace LBM
 {
 #define checkCudaErrors(err) __checkCudaErrors(err, #err, __FILE__, __LINE__)
 
@@ -232,15 +232,15 @@ namespace mbLBM
         } type;
     }
 
-    // __device__ __constant__ label_t d_nx;
-    // __device__ __constant__ label_t d_ny;
-    // __device__ __constant__ label_t d_nz;
-    // __device__ __constant__ scalar_t d_Re;
-    // __device__ __constant__ scalar_t d_u_inf;
-    // __device__ __constant__ scalar_t d_omega;
-    // __device__ __constant__ label_t d_NUM_BLOCK_X;
-    // __device__ __constant__ label_t d_NUM_BLOCK_Y;
-    // __device__ __constant__ label_t d_NUM_BLOCK_Z;
+    __device__ __constant__ label_t d_nx;
+    __device__ __constant__ label_t d_ny;
+    __device__ __constant__ label_t d_nz;
+    __device__ __constant__ scalar_t d_Re;
+    __device__ __constant__ scalar_t d_u_inf;
+    __device__ __constant__ scalar_t d_omega;
+    __device__ __constant__ label_t d_NUM_BLOCK_X;
+    __device__ __constant__ label_t d_NUM_BLOCK_Y;
+    __device__ __constant__ label_t d_NUM_BLOCK_Z;
 
     // scalar_t *d_rho;
     // scalar_t *d_u;

@@ -8,7 +8,7 @@ Contents: Definition of the D3Q19 velocity set
 
 #include "velocitySet.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     namespace VelocitySet
     {
@@ -26,7 +26,6 @@ namespace mbLBM
              * @brief Number of velocity components
              * @return 19
              **/
-
             [[nodiscard]] static inline consteval label_t Q() noexcept
             {
                 return Q_;
@@ -36,7 +35,6 @@ namespace mbLBM
              * @brief Number of velocity components on a lattice face
              * @return 5
              **/
-
             [[nodiscard]] static inline consteval label_t QF() noexcept
             {
                 return QF_;
@@ -149,20 +147,10 @@ namespace mbLBM
             /**
              * @brief Returns the population density
              * @return f_eq
-             * @param rho Density
              * @param u The x-component of velocity
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            // [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> f_eq(const scalar_t rho, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
-            // {
-            //     // Define equilibrium populations
-            //     std::array<scalar_t, 19> pop{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            //     f_eq_loop<0>(pop, rho, u, v, w);
-
-            //     return pop;
-            // }
-
             [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
             {
                 std::array<scalar_t, Q_> pop;
@@ -174,70 +162,9 @@ namespace mbLBM
 
             /**
              * @brief Reconstructs the population at a given lattice point
-             * @param moments The 10 moments at the lattice point
              * @param pop The population to be reconstructed
+             * @param moments The moments from which the population is to be reconstructed
              **/
-            __device__ static inline void reconstruct(
-                scalar_t pop[19],
-                const scalar_t moments[10]) noexcept
-            {
-                const scalar_t pics2 = 1.0 - cs2() * (moments[4] + moments[7] + moments[9]);
-
-                const scalar_t multiplyTerm_0 = moments[0] * w_0();
-                pop[0] = multiplyTerm_0 * pics2;
-
-                const scalar_t multiplyTerm_1 = moments[0] * w_1();
-                pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
-                pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
-                pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
-                pop[4] = multiplyTerm_1 * (pics2 - moments[2] + moments[7]);
-                pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
-                pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
-
-                const scalar_t multiplyTerm_2 = moments[0] * w_2();
-                pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
-                pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
-                pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
-                pop[10] = multiplyTerm_2 * (pics2 - moments[1] - moments[3] + moments[4] + moments[9] + moments[6]);
-                pop[11] = multiplyTerm_2 * (pics2 + moments[2] + moments[3] + moments[7] + moments[9] + moments[8]);
-                pop[12] = multiplyTerm_2 * (pics2 - moments[2] - moments[3] + moments[7] + moments[9] + moments[8]);
-                pop[13] = multiplyTerm_2 * (pics2 + moments[1] - moments[2] + moments[4] + moments[7] - moments[5]);
-                pop[14] = multiplyTerm_2 * (pics2 - moments[1] + moments[2] + moments[4] + moments[7] - moments[5]);
-                pop[15] = multiplyTerm_2 * (pics2 + moments[1] - moments[3] + moments[4] + moments[9] - moments[6]);
-                pop[16] = multiplyTerm_2 * (pics2 - moments[1] + moments[3] + moments[4] + moments[9] - moments[6]);
-                pop[17] = multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
-                pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
-            }
-
-            __host__ static inline constexpr std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> moments) noexcept
-            {
-                const scalar_t multiplyTerm_0 = moments[0] * w_0();
-                const scalar_t multiplyTerm_1 = moments[0] * w_1();
-                const scalar_t multiplyTerm_2 = moments[0] * w_2();
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
-
-                return std::array<scalar_t, 19>{
-                    multiplyTerm_0 * (pics2),
-                    multiplyTerm_1 * (pics2 + moments[1] + moments[4]),
-                    multiplyTerm_1 * (pics2 - moments[1] + moments[4]),
-                    multiplyTerm_1 * (pics2 + moments[2] + moments[7]),
-                    multiplyTerm_1 * (pics2 - moments[2] + moments[7]),
-                    multiplyTerm_1 * (pics2 + moments[3] + moments[9]),
-                    multiplyTerm_1 * (pics2 - moments[3] + moments[9]),
-                    multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]),
-                    multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]),
-                    multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]),
-                    multiplyTerm_2 * (pics2 - moments[1] - moments[3] + moments[4] + moments[9] + moments[6]),
-                    multiplyTerm_2 * (pics2 + moments[2] + moments[3] + moments[7] + moments[9] + moments[8]),
-                    multiplyTerm_2 * (pics2 - moments[2] - moments[3] + moments[7] + moments[9] + moments[8]),
-                    multiplyTerm_2 * (pics2 + moments[1] - moments[2] + moments[4] + moments[7] - moments[5]),
-                    multiplyTerm_2 * (pics2 - moments[1] + moments[2] + moments[4] + moments[7] - moments[5]),
-                    multiplyTerm_2 * (pics2 + moments[1] - moments[3] + moments[4] + moments[9] - moments[6]),
-                    multiplyTerm_2 * (pics2 - moments[1] + moments[3] + moments[4] + moments[9] - moments[6]),
-                    multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]),
-                    multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8])};
-            }
-
             __device__ static inline void reconstruct(
                 scalar_t pop[19],
                 const scalar_t rhoVar,
@@ -279,6 +206,43 @@ namespace mbLBM
                 pop[18] = multiplyTerm_2 * (pics2 - uy_t30 + uz_t30 + m_yy_t45 + m_zz_t45 - m_yz_t90);
             }
 
+            __device__ static inline void reconstruct(
+                scalar_t pop[19],
+                const scalar_t moments[10]) noexcept
+            {
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
+
+                const scalar_t multiplyTerm_0 = moments[0] * w_0();
+                pop[0] = multiplyTerm_0 * pics2;
+
+                const scalar_t multiplyTerm_1 = moments[0] * w_1();
+                pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
+                pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
+                pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
+                pop[4] = multiplyTerm_1 * (pics2 - moments[2] + moments[7]);
+                pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
+                pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
+
+                const scalar_t multiplyTerm_2 = moments[0] * w_2();
+                pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
+                pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
+                pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
+                pop[10] = multiplyTerm_2 * (pics2 - moments[1] - moments[3] + moments[4] + moments[9] + moments[6]);
+                pop[11] = multiplyTerm_2 * (pics2 + moments[2] + moments[3] + moments[7] + moments[9] + moments[8]);
+                pop[12] = multiplyTerm_2 * (pics2 - moments[2] - moments[3] + moments[7] + moments[9] + moments[8]);
+                pop[13] = multiplyTerm_2 * (pics2 + moments[1] - moments[2] + moments[4] + moments[7] - moments[5]);
+                pop[14] = multiplyTerm_2 * (pics2 - moments[1] + moments[2] + moments[4] + moments[7] - moments[5]);
+                pop[15] = multiplyTerm_2 * (pics2 + moments[1] - moments[3] + moments[4] + moments[9] - moments[6]);
+                pop[16] = multiplyTerm_2 * (pics2 - moments[1] + moments[3] + moments[4] + moments[9] - moments[6]);
+                pop[17] = multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
+                pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
+            }
+
+            /**
+             * @brief Reconstructs the population at a given lattice point
+             * @param moments The moments from which the population is to be reconstructed
+             * @return The reconstructed population
+             **/
             __host__ static const std::array<scalar_t, 19> reconstruct(
                 const scalar_t rhoVar,
                 const scalar_t ux_t30,
@@ -329,28 +293,28 @@ namespace mbLBM
              * @param pop The population to be set in shared memory
              * @param s_pop The shared memory array
              **/
-            __device__ static inline void popSave(
+            __device__ static inline void popSaveShared(
                 const scalar_t pop[19],
                 scalar_t s_pop[block::size() * 18]) noexcept
             {
-                s_pop[idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
-                s_pop[idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
-                s_pop[idxPopBlock<2>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[3];
-                s_pop[idxPopBlock<3>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[4];
-                s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[5];
-                s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[6];
-                s_pop[idxPopBlock<6>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[7];
-                s_pop[idxPopBlock<7>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[8];
-                s_pop[idxPopBlock<8>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[9];
-                s_pop[idxPopBlock<9>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[10];
-                s_pop[idxPopBlock<10>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[11];
-                s_pop[idxPopBlock<11>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[12];
-                s_pop[idxPopBlock<12>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[13];
-                s_pop[idxPopBlock<13>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[14];
-                s_pop[idxPopBlock<14>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[15];
-                s_pop[idxPopBlock<15>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[16];
-                s_pop[idxPopBlock<16>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[17];
-                s_pop[idxPopBlock<17>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[18];
+                s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
+                s_pop[device::idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
+                s_pop[device::idxPopBlock<2>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[3];
+                s_pop[device::idxPopBlock<3>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[4];
+                s_pop[device::idxPopBlock<4>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[5];
+                s_pop[device::idxPopBlock<5>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[6];
+                s_pop[device::idxPopBlock<6>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[7];
+                s_pop[device::idxPopBlock<7>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[8];
+                s_pop[device::idxPopBlock<8>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[9];
+                s_pop[device::idxPopBlock<9>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[10];
+                s_pop[device::idxPopBlock<10>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[11];
+                s_pop[device::idxPopBlock<11>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[12];
+                s_pop[device::idxPopBlock<12>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[13];
+                s_pop[device::idxPopBlock<13>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[14];
+                s_pop[device::idxPopBlock<14>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[15];
+                s_pop[device::idxPopBlock<15>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[16];
+                s_pop[device::idxPopBlock<16>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[17];
+                s_pop[device::idxPopBlock<17>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[18];
 
                 // Call the implementation of the loop unrolled at compile time
                 // popSave_loop(pop, s_pop);
@@ -375,24 +339,24 @@ namespace mbLBM
                 const label_t zp1 = (threadIdx.z + 1 + block::nz()) % block::nz();
                 const label_t zm1 = (threadIdx.z - 1 + block::nz()) % block::nz();
 
-                pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
-                pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
-                pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
-                pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
-                pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
-                pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
-                pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
-                pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
-                pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
-                pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
-                pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
-                pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
-                pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
-                pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
-                pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
-                pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
-                pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
-                pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+                pop[1] = s_pop[device::idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
+                pop[2] = s_pop[device::idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
+                pop[3] = s_pop[device::idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
+                pop[4] = s_pop[device::idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
+                pop[5] = s_pop[device::idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
+                pop[6] = s_pop[device::idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
+                pop[7] = s_pop[device::idxPopBlock<6>(xm1, ym1, threadIdx.z)];
+                pop[8] = s_pop[device::idxPopBlock<7>(xp1, yp1, threadIdx.z)];
+                pop[9] = s_pop[device::idxPopBlock<8>(xm1, threadIdx.y, zm1)];
+                pop[10] = s_pop[device::idxPopBlock<9>(xp1, threadIdx.y, zp1)];
+                pop[11] = s_pop[device::idxPopBlock<10>(threadIdx.x, ym1, zm1)];
+                pop[12] = s_pop[device::idxPopBlock<11>(threadIdx.x, yp1, zp1)];
+                pop[13] = s_pop[device::idxPopBlock<12>(xm1, yp1, threadIdx.z)];
+                pop[14] = s_pop[device::idxPopBlock<13>(xp1, ym1, threadIdx.z)];
+                pop[15] = s_pop[device::idxPopBlock<14>(xm1, threadIdx.y, zp1)];
+                pop[16] = s_pop[device::idxPopBlock<15>(xp1, threadIdx.y, zm1)];
+                pop[17] = s_pop[device::idxPopBlock<16>(threadIdx.x, ym1, zp1)];
+                pop[18] = s_pop[device::idxPopBlock<17>(threadIdx.x, yp1, zm1)];
             }
 
             /**
@@ -427,65 +391,118 @@ namespace mbLBM
                 const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
                 const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
 
-                const label_t bxm1 = (bx - 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
-                const label_t bxp1 = (bx + 1 + NUM_BLOCK_X) % NUM_BLOCK_X;
+                const label_t bxm1 = (bx - 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
+                const label_t bxp1 = (bx + 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
 
-                const label_t bym1 = (by - 1 + NUM_BLOCK_Y) % NUM_BLOCK_Y;
-                const label_t byp1 = (by + 1 + NUM_BLOCK_Y) % NUM_BLOCK_Y;
+                const label_t bym1 = (by - 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
+                const label_t byp1 = (by + 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
 
-                const label_t bzm1 = (bz - 1 + NUM_BLOCK_Z) % NUM_BLOCK_Z;
-                const label_t bzp1 = (bz + 1 + NUM_BLOCK_Z) % NUM_BLOCK_Z;
+                const label_t bzm1 = (bz - 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
+                const label_t bzp1 = (bz + 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
 
                 if (tx == 0)
                 { // w
-                    pop[1] = x1[idxPopX<0>(ty, tz, bxm1, by, bz)];
-                    pop[7] = x1[idxPopX<1>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[9] = x1[idxPopX<2>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = x1[idxPopX<3>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[15] = x1[idxPopX<4>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[1] = x1[device::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bxm1, by, bz)];
+                    pop[7] = x1[device::idxPopX<1, VelocitySet::D3Q19::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
+                    pop[9] = x1[device::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
+                    pop[13] = x1[device::idxPopX<3, VelocitySet::D3Q19::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[15] = x1[device::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
                 else if (tx == (block::nx() - 1))
                 { // e
-                    pop[2] = x0[idxPopX<0>(ty, tz, bxp1, by, bz)];
-                    pop[8] = x0[idxPopX<1>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[10] = x0[idxPopX<2>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[14] = x0[idxPopX<3>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[16] = x0[idxPopX<4>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
+                    pop[2] = x0[device::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bxp1, by, bz)];
+                    pop[8] = x0[device::idxPopX<1, VelocitySet::D3Q19::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[10] = x0[device::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[14] = x0[device::idxPopX<3, VelocitySet::D3Q19::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
+                    pop[16] = x0[device::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
                 }
 
                 if (ty == 0)
                 { // s
-                    pop[3] = y1[idxPopY<0>(tx, tz, bx, bym1, bz)];
-                    pop[7] = y1[idxPopY<1>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
-                    pop[11] = y1[idxPopY<2>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = y1[idxPopY<3>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = y1[idxPopY<4>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[3] = y1[device::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, bym1, bz)];
+                    pop[7] = y1[device::idxPopY<1, VelocitySet::D3Q19::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
+                    pop[11] = y1[device::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
+                    pop[14] = y1[device::idxPopY<3, VelocitySet::D3Q19::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
+                    pop[17] = y1[device::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
                 else if (ty == (block::ny() - 1))
                 { // n
-                    pop[4] = y0[idxPopY<0>(tx, tz, bx, byp1, bz)];
-                    pop[8] = y0[idxPopY<1>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = y0[idxPopY<2>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[13] = y0[idxPopY<3>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
-                    pop[18] = y0[idxPopY<4>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
+                    pop[4] = y0[device::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, byp1, bz)];
+                    pop[8] = y0[device::idxPopY<1, VelocitySet::D3Q19::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
+                    pop[12] = y0[device::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[13] = y0[device::idxPopY<3, VelocitySet::D3Q19::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
+                    pop[18] = y0[device::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
                 }
 
                 if (tz == 0)
                 { // b
-                    pop[5] = z1[idxPopZ<0>(tx, ty, bx, by, bzm1)];
-                    pop[9] = z1[idxPopZ<1>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
-                    pop[11] = z1[idxPopZ<2>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = z1[idxPopZ<3>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = z1[idxPopZ<4>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
+                    pop[5] = z1[device::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bzm1)];
+                    pop[9] = z1[device::idxPopZ<1, VelocitySet::D3Q19::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
+                    pop[11] = z1[device::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
+                    pop[16] = z1[device::idxPopZ<3, VelocitySet::D3Q19::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
+                    pop[18] = z1[device::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
                 }
                 else if (tz == (block::nz() - 1))
                 { // f
-                    pop[6] = z0[idxPopZ<0>(tx, ty, bx, by, bzp1)];
-                    pop[10] = z0[idxPopZ<1>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = z0[idxPopZ<2>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
-                    pop[15] = z0[idxPopZ<3>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
-                    pop[17] = z0[idxPopZ<4>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
+                    pop[6] = z0[device::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bzp1)];
+                    pop[10] = z0[device::idxPopZ<1, VelocitySet::D3Q19::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
+                    pop[12] = z0[device::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
+                    pop[15] = z0[device::idxPopZ<3, VelocitySet::D3Q19::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
+                    pop[17] = z0[device::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
                 }
+            }
+
+            __device__ inline static void calculateMoments(
+                const scalar_t pop[19],
+                scalar_t *const rhoVar,
+                scalar_t *const ux_t30,
+                scalar_t *const uy_t30,
+                scalar_t *const uz_t30,
+                scalar_t *const m_xx_t45,
+                scalar_t *const m_xy_t90,
+                scalar_t *const m_xz_t90,
+                scalar_t *const m_yy_t45,
+                scalar_t *const m_yz_t90,
+                scalar_t *const m_zz_t45) noexcept
+            {
+                // Equation 3
+                *rhoVar = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+                const scalar_t invRho = static_cast<scalar_t>(1) / *rhoVar;
+
+                // Equation 4 + force correction
+                *ux_t30 = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
+                *uy_t30 = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
+                *uz_t30 = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
+
+                // Equation 5
+                *m_xx_t45 = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
+                *m_xy_t90 = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
+                *m_xz_t90 = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
+                *m_yy_t45 = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
+                *m_yz_t90 = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
+                *m_zz_t45 = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
+            }
+
+            __device__ inline static void calculateMoments(
+                const scalar_t pop[19],
+                scalar_t moments[10]) noexcept
+            {
+                // Equation 3
+                moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+                const scalar_t invRho = static_cast<scalar_t>(1) / moments[0];
+
+                // Equation 4 + force correction
+                moments[1] = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
+                moments[2] = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
+                moments[3] = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
+
+                // Equation 5
+                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
+                moments[5] = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
+                moments[6] = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
+                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
+                moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
+                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
             }
 
             /**
@@ -500,36 +517,7 @@ namespace mbLBM
                 std::cout << std::endl;
             }
 
-            __device__ static inline void calculateMoments(
-                const scalar_t pop[19],
-                scalar_t moments[10]) noexcept
-            {
-                // Equation 3
-                moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
-                const scalar_t invRho = 1.0 / moments[0];
-
-                // Equation 4
-                moments[1] = (pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16]) * invRho;
-                moments[2] = (pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18]) * invRho;
-                moments[3] = (pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17]) * invRho;
-
-                // Equation 5
-                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
-                moments[5] = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
-                moments[6] = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
-                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
-                moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
-                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
-            }
-
         private:
-            /**
-             * @brief Lattice weights
-             **/
-            // static constexpr const scalar_t w_0_ = static_cast<scalar_t>(static_cast<long double>(1.0) / static_cast<long double>(3.0));
-            // static constexpr const scalar_t w_1_ = static_cast<scalar_t>(static_cast<long double>(1.0) / static_cast<long double>(18.0));
-            // static constexpr const scalar_t w_2_ = static_cast<scalar_t>(static_cast<long double>(1.0) / static_cast<long double>(36.0));
-
             /**
              * @brief Number of velocity components in the lattice
              **/
@@ -550,7 +538,7 @@ namespace mbLBM
             __device__ static inline constexpr void popSave_loop(const scalar_t pop[19], scalar_t s_pop[block::size() * 18]) noexcept
             {
                 // Check at compile time that the loop is correctly bounded
-                static_assert(q_ + 1 < 19, "Compile error in popSave: Loop is incorrectly bounded");
+                static_assert(q_ + 1 < 19, "Compile error in popSaveShared: Loop is incorrectly bounded");
 
                 // Put pop[q + 1] into s_pop[q]
                 s_pop[idxPopBlock<q_>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[q_ + 1];

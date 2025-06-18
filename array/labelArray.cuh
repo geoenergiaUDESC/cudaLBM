@@ -12,11 +12,16 @@ partition the mesh prior to distribution to the devices
 #include "../LBMTypedefs.cuh"
 #include "../array/array.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     namespace host
     {
         // typedef array<label_t> labelArray;
+    }
+
+    namespace device
+    {
+        typedef array<label_t> labelArray;
     }
 }
 

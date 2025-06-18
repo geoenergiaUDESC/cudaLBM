@@ -9,7 +9,7 @@ Contents: A class handling parallel execution
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 
-namespace mbLBM
+namespace LBM
 {
     /**
      * @brief Constructor for the cudaCommunicator class

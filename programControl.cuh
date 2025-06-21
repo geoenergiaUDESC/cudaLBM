@@ -29,7 +29,9 @@ namespace LBM
               Lx_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lx")),
               Ly_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Ly")),
               Lz_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lz")),
-              nTimeSteps_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nTimeSteps"))
+              nTimeSteps_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nTimeSteps")),
+              saveInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "saveInterval")),
+              infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval"))
         {
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
@@ -57,18 +59,37 @@ namespace LBM
             std::cout << "}" << std::endl;
             std::cout << std::endl;
 
-            // Set the Reynolds number and characteristic velocity in the device const memory
-            // if (cudaMemcpyToSymbol(d_Re, &Re_, sizeof(Re_), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-            // {
-            //     std::cout << "Failed to copy to symbol Re to device constant memory in constructor of programControl" << std::endl;
-            // }
-            // if (cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_), 0, cudaMemcpyHostToDevice) != cudaSuccess)
-            // {
-            //     std::cout << "Failed to copy to symbol u_inf to device constant memory in constructor of programControl" << std::endl;
-            // }
+            // checkCudaErrors(cudaMemcpyToSymbol(d_Re, &Re_, sizeof(d_Re)));
+            // checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_)));
+            // const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
+            // const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
 
-            // cudaDeviceSynchronize();
+            // const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
+
+            // checkCudaErrors(cudaMemcpyToSymbol(d_tau, &tau, sizeof(tau)));
+            // checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));
+
+            cudaDeviceSynchronize();
         };
+
+        void copyDeviceSymbols(const label_t nx) const noexcept
+        {
+            const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
+            const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
+            const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
+
+            cudaDeviceSynchronize();
+            checkCudaErrors(cudaMemcpyToSymbol(d_Re, &Re_, sizeof(d_Re)));
+            cudaDeviceSynchronize();
+            checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_)));
+            cudaDeviceSynchronize();
+            cudaDeviceSynchronize();
+            cudaDeviceSynchronize();
+            checkCudaErrors(cudaMemcpyToSymbol(d_tau, &tau, sizeof(tau)));
+            cudaDeviceSynchronize();
+            checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));
+            cudaDeviceSynchronize();
+        }
 
         /**
          * @brief Destructor for the programControl class
@@ -88,7 +109,7 @@ namespace LBM
          * @brief Returns the Reynolds number
          * @return The Reynolds number
          **/
-        __host__ __device__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
         {
             return Re_;
         }
@@ -97,9 +118,36 @@ namespace LBM
          * @brief Returns the characteristic velocity
          * @return The characteristic velocity
          **/
-        __host__ __device__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr scalar_t u_inf() const noexcept
         {
             return u_inf_;
+        }
+
+        /**
+         * @brief Returns the total number of simulation time steps
+         * @return The total number of simulation time steps
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr label_t nt() const noexcept
+        {
+            return nTimeSteps_;
+        }
+
+        /**
+         * @brief Decide whether or not the program should perform a checkpoint
+         * @return True if the program should checkpoint, false otherwise
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr bool save(const label_t timeStep) const noexcept
+        {
+            return (timeStep % saveInterval_) == 0;
+        }
+
+        /**
+         * @brief Decide whether or not the program should perform a checkpoint
+         * @return True if the program should checkpoint, false otherwise
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr bool print(const label_t timeStep) const noexcept
+        {
+            return (timeStep % infoInterval_) == 0;
         }
 
     private:
@@ -126,9 +174,11 @@ namespace LBM
         const scalar_t Lz_;
 
         /**
-         * @brief Total number of simulation time steps
+         * @brief Total number of simulation time steps, the save interval and the info output interval
          **/
         const label_t nTimeSteps_;
+        const label_t saveInterval_;
+        const label_t infoInterval_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

@@ -8,6 +8,7 @@
 #include "collision.cuh"
 #include "postProcess.cuh"
 #include "momentBasedD3Q19.cuh"
+#include "fieldAverage.cuh"
 
 using namespace LBM;
 
@@ -34,7 +35,7 @@ namespace LBM
                         constexpr const scalar_t uz = 0.0;
 
                         // Zeroth moment (density fluctuation and velocity)
-                        fMom[idxMom<index::rho()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = 0; // rho - RHO_0 = 0
+                        fMom[idxMom<index::rho()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = 0; // rho - rho0() = 0
                         // Override for the top wall (y = mesh.ny()-1): ux = U_MAX
                         if (y == mesh.ny() - 1)
                         {
@@ -98,84 +99,202 @@ namespace LBM
     }
 }
 
-int main(void)
+struct vector
 {
-    const scalar_t u_infTemp = static_cast<scalar_t>(0.05);
+    scalar_t x;
+    scalar_t y;
+    scalar_t z;
+};
+
+// This can probably be pre-computed on the CPU before transferring to the GPU
+// __device__ vector compute_wall_normal()
+// {
+//     const label_t i = (threadIdx.x + blockDim.x * blockIdx.x);
+//     const label_t j = (threadIdx.y + blockDim.y * blockIdx.y);
+//     const label_t k = (threadIdx.z + blockDim.z * blockIdx.z);
+//     vector normal{0.0, 0.0, 0.0};
+
+//     // X-direction boundaries
+//     if (i == 0)
+//     {
+//         normal.x = 1.0;
+//     } // West face
+//     if (i == d_nx - 1)
+//     {
+//         normal.x = 1.0;
+//     } // East face
+
+//     // Y-direction boundaries
+//     if (j == 0)
+//     {
+//         normal.y = 1.0;
+//     } // South face
+//     if (j == d_ny - 1)
+//     {
+//         normal.y = 1.0;
+//     } // North face
+
+//     // Z-direction boundaries
+//     if (k == 0)
+//     {
+//         normal.z = 1.0;
+//     } // Bottom face
+//     if (k == d_nz - 1)
+//     {
+//         normal.z = 1.0;
+//     } // Top face
+
+//     // Normalize vector
+//     const scalar_t length = sqrt(
+//         normal.x * normal.x +
+//         normal.y * normal.y +
+//         normal.z * normal.z);
+
+//     if (length > 1e-10)
+//     {
+//         normal.x /= length;
+//         normal.y /= length;
+//         normal.z /= length;
+//     }
+
+//     return normal;
+// }
+
+// __device__ void fixedVelocity(
+//     scalar_t *const ptrRestrict moments, const scalar_t (&ptrRestrict pop)[19],
+//     const vector u_b, const vector normal, const scalar_t omega,
+//     const vector *const ptrRestrict c)
+// {
+//     // Step 1: Compute known density and stress
+//     scalar_t rho_known = 0.0f;
+//     scalar_t sigma_xx_k = 0.0f, sigma_xy_k = 0.0f, sigma_xz_k = 0.0f;
+//     scalar_t sigma_yy_k = 0.0f, sigma_yz_k = 0.0f, sigma_zz_k = 0.0f;
+//     const scalar_t cs2 = 1.0f / 3.0f; // D3Q19 value
+
+//     for (int i = 0; i < 19; i++)
+//     {
+//         const scalar_t ci_dot_n = c[i].x * normal.x + c[i].y * normal.y + c[i].z * normal.z;
+
+//         if (ci_dot_n <= 0.0f)
+//         {
+//             const scalar_t pop_val = pop[i];
+//             const scalar_t cx = c[i].x, cy = c[i].y, cz = c[i].z;
+
+//             rho_known += pop_val;
+//             sigma_xx_k += pop_val * (cx * cx - cs2);
+//             sigma_xy_k += pop_val * cx * cy;
+//             sigma_xz_k += pop_val * cx * cz;
+//             sigma_yy_k += pop_val * (cy * cy - cs2);
+//             sigma_yz_k += pop_val * cy * cz;
+//             sigma_zz_k += pop_val * (cz * cz - cs2);
+//         }
+//     }
+
+//     // Normalize by known density
+//     if (rho_known > 1e-6f)
+//     {
+//         const scalar_t inv_rho_k = 1.0f / rho_known;
+//         sigma_xx_k *= inv_rho_k;
+//         sigma_xy_k *= inv_rho_k;
+//         sigma_xz_k *= inv_rho_k;
+//         sigma_yy_k *= inv_rho_k;
+//         sigma_yz_k *= inv_rho_k;
+//         sigma_zz_k *= inv_rho_k;
+//     }
+
+//     // Step 2: Estimate boundary density
+//     const scalar_t u_dot_n = u_b.x * normal.x + u_b.y * normal.y + u_b.z * normal.z;
+//     const scalar_t rho_boundary = (1.0f - u_dot_n > 1e-8f) ? rho_known / (1.0f - u_dot_n) : rho_known;
+
+//     // Step 3: Set conserved moments
+//     moments[0] = rho_boundary;
+//     moments[1] = u_b.x;
+//     moments[2] = u_b.y;
+//     moments[3] = u_b.z;
+
+//     // Step 4: Compute normal stress component
+//     const scalar_t nx = normal.x, ny = normal.y, nz = normal.z;
+//     const scalar_t sigma_nn_k = sigma_xx_k * nx * nx + sigma_yy_k * ny * ny + sigma_zz_k * nz * nz + 2.0f * (sigma_xy_k * nx * ny + sigma_xz_k * nx * nz + sigma_yz_k * ny * nz);
+
+//     // Step 5: Reconstruction factors
+//     scalar_t A = 3.0f * sigma_nn_k - 3.0f * omega * sigma_nn_k + 4.0f;
+//     const scalar_t denom = omega + 9.0f;
+//     if (fabsf(A) < 1e-6f)
+//     {
+//         A = copysignf(1e-6f, A);
+//     }
+
+//     // Step 6: Set non-conserved moments (with cs2 subtraction)
+//     moments[4] = (4.0f * denom * (10.0f * sigma_xx_k - sigma_zz_k)) / (99.0f * A);
+//     moments[5] = (18.0f * sigma_xy_k - 4.0f * u_b.x + 2.0f * omega * sigma_xy_k - 3.0f * u_b.x * sigma_nn_k + 3.0f * omega * u_b.x * sigma_nn_k) / (3.0f * A);
+//     moments[6] = (sigma_xz_k * denom) / (3.0f * A);
+//     moments[7] = (15.0f * sigma_nn_k + 2.0f) / (3.0f * A);
+//     moments[8] = (2.0f * sigma_yz_k * denom) / (3.0f * A);
+//     moments[9] = -4.0f * (sigma_xx_k - 10.0f * sigma_zz_k) * denom / (99.0f * A);
+// }
+
+int main(int argc, char *argv[])
+{
     const host::latticeMesh mesh;
 
-    // Some intialisation of constants, works for now
-    {
-        const scalar_t ReTemp = static_cast<scalar_t>(500);
+    const programControl programCtrl(argc, argv);
 
-        checkCudaErrors(cudaMemcpyToSymbol(d_Re, &ReTemp, sizeof(d_Re)));
-        checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_infTemp, sizeof(u_infTemp)));
-        const scalar_t VISC = u_infTemp * static_cast<scalar_t>(mesh.nx()) / ReTemp;
-        const scalar_t TAU = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * VISC;
-        const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / TAU;
-
-        checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omegaTemp, sizeof(omegaTemp)));
-
-        // Output some parameters
-        // std::cout << "domain: " << mesh.nx() << " " << mesh.ny() << " " << mesh.nz() << std::endl;
-        std::cout << "threadBlock: " << block::nx() << " " << block::ny() << " " << block::nz() << std::endl;
-        std::cout << "gridBlock: " << mesh.nx() / block::nx() << " " << mesh.ny() / block::ny() << " " << mesh.nz() / block::nz() << std::endl;
-        std::cout << "OMEGA = " << omegaTemp << std::endl;
-        std::cout << "VISC = " << VISC << std::endl;
-    }
-
-    // set cuda device
-    checkCudaErrors(cudaSetDevice(GPU_INDEX));
+    // Set cuda device
+    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
+    checkCudaErrors(cudaDeviceSynchronize());
 
     // Perform device memory allocation
-    device::array<scalar_t> d_fMom(host::moments(mesh, u_infTemp));
-    const device::array<nodeType_t> dNodeType(host::nodeType(mesh));
-    device::halo blockHalo(host::moments(mesh, u_infTemp), mesh);
+    device::array<scalar_t> moments(host::moments(mesh, programCtrl.u_inf()));
+    device::array<scalar_t> momentsMean(host::moments(mesh, programCtrl.u_inf()));
+    const device::array<nodeType_t> nodeTypes(host::nodeType(mesh));
+    device::halo blockHalo(host::moments(mesh, programCtrl.u_inf()), mesh);
 
     // Setup Streams
     cudaStream_t streamsLBM[1];
     checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(GPU_INDEX));
+    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaStreamCreate(&streamsLBM[0]));
     checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(GPU_INDEX));
+    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
     checkCudaErrors(cudaDeviceSynchronize());
 
-    for (label_t step = INI_STEP; step < N_STEPS; step++)
-    {
+    // Copy symbols to device
+    mesh.copyDeviceSymbols();
+    programCtrl.copyDeviceSymbols(mesh.nx());
 
-        if ((step % 100) == 0)
+    for (label_t timeStep = 0; timeStep < programCtrl.nt(); timeStep++)
+    {
+        if (programCtrl.print(timeStep))
         {
-            std::cout << "Time: " << step << std::endl;
+            std::cout << "Time: " << timeStep << std::endl;
         }
 
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
-            d_fMom.ptr(),
-            dNodeType.ptr(),
+            moments.ptr(),
+            nodeTypes.ptr(),
             blockHalo);
 
+        fieldAverage::calculate<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
+            moments.ptr(),
+            momentsMean.ptr(),
+            nodeTypes.ptr(),
+            timeStep);
+
         blockHalo.swap();
+
+        if (programCtrl.save(timeStep))
+        {
+            postProcess::writeTecplotHexahedralData(
+                postProcess::to_host(momentsMean, mesh),
+                "momentsMean_" + std::to_string(timeStep) + ".dat",
+                mesh,
+                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                "Lid driven cavity: Re = " + std::to_string(programCtrl.Re()));
+        }
     }
 
-    std::cout << "Exited main loop" << std::endl;
-
-    checkCudaErrors(cudaDeviceSynchronize());
-
-    {
-        // Very inefficient, allocating the memory twice since we are creating a vector!
-        // Fix this!!!
-        scalar_t *const h_fMom_ = host::allocate<scalar_t>(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS());
-
-        checkCudaErrors(cudaMemcpy(h_fMom_, d_fMom.ptr(), sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), cudaMemcpyDeviceToHost));
-
-        writeTecplotHexahedralData(
-            save<index::v()>(h_fMom_, mesh),
-            "v_" + std::to_string(N_STEPS - 1) + ".dat",
-            mesh,
-            "Title", {"v"});
-
-        cudaFreeHost(h_fMom_);
-    }
+    std::cout << "End" << std::endl;
 
     return 0;
 }

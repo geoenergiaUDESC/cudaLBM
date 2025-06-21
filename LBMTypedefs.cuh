@@ -38,6 +38,14 @@ namespace LBM
     }
 
     /**
+     * @brief Launch bounds information
+     * @note These variables are device specific - enable modification later
+     **/
+    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 1024; }
+    [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
+#define launchBounds __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP())
+
+    /**
      * @brief Floating point type used for scalar types
      * @note Types are either 32 bit or 64 bit floating point numbers
      * @note These types are supplied via command line defines during compilation
@@ -251,6 +259,7 @@ namespace LBM
     __device__ __constant__ label_t d_ny;
     __device__ __constant__ label_t d_nz;
     __device__ __constant__ scalar_t d_Re;
+    __device__ __constant__ scalar_t d_tau;
     __device__ __constant__ scalar_t d_u_inf;
     __device__ __constant__ scalar_t d_omega;
     __device__ __constant__ label_t d_NUM_BLOCK_X;

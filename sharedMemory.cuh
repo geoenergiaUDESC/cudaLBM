@@ -24,9 +24,10 @@ namespace LBM
          * @param pop The population density at the current thread
          * @param s_pop The population density in shared memory
          **/
+        template <class VSet>
         __device__ static inline void save(
-            const scalar_t *const ptrRestrict pop,
-            scalar_t *const ptrRestrict s_pop) noexcept
+            const scalar_t (&ptrRestrict pop)[VSet::Q()],
+            scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
         {
             s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
             s_pop[device::idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
@@ -55,9 +56,10 @@ namespace LBM
          * @param pop The population density at the current thread
          * @param s_pop The population density in shared memory
          **/
+        template <class VSet>
         __device__ static inline void pull(
-            scalar_t *const ptrRestrict pop,
-            const scalar_t *const ptrRestrict s_pop) noexcept
+            scalar_t (&ptrRestrict pop)[VSet::Q()],
+            const scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
         {
             const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
             const label_t xm1 = (threadIdx.x - 1 + block::nx()) % block::nx();

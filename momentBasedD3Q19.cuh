@@ -16,14 +16,14 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 
 namespace LBM
 {
-    __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP()) __global__ void momentBasedD3Q19(
+    launchBounds __global__ void momentBasedD3Q19(
         scalar_t *const fMom,
         const nodeType_t *const dNodeType,
         device::halo blockHalo)
     {
         const nodeType_t nodeType = dNodeType[device::idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
 
-        if (device::out_of_bounds(d_nx, d_ny, d_nz) || device::bad_node_type(nodeType))
+        if (device::out_of_bounds() || device::bad_node_type(nodeType))
         {
             return;
         }
@@ -32,7 +32,7 @@ namespace LBM
         __shared__ scalar_t s_pop[block::size() * (VelocitySet::D3Q19::Q() - 1)];
 
         momentArray_t moments = {
-            RHO_0 + fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
+            rho0() + fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
             fMom[device::idxMom<index::u()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
             fMom[device::idxMom<index::v()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
             fMom[device::idxMom<index::w()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
@@ -47,18 +47,18 @@ namespace LBM
         VelocitySet::D3Q19::reconstruct(pop, moments);
 
         // Save populations in shared memory
-        sharedMemory::save(pop, s_pop);
+        sharedMemory::save<VelocitySet::D3Q19>(pop, s_pop);
 
         // Pull from shared memory
-        sharedMemory::pull(pop, s_pop);
+        sharedMemory::pull<VelocitySet::D3Q19>(pop, s_pop);
 
         // Load pop from global memory in cover nodes
-        blockHalo.popLoad(pop);
+        blockHalo.popLoad<VelocitySet::D3Q19>(pop);
 
         // Calculate the moments either at the boundary or interior
         if (nodeType != BULK)
         {
-            boundaryConditions::calculateMoments(pop, moments, nodeType);
+            boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop, moments, nodeType);
         }
         else
         {
@@ -75,7 +75,7 @@ namespace LBM
         VelocitySet::D3Q19::reconstruct(pop, moments);
 
         // Write the moments to global memory
-        fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[0] - RHO_0;
+        fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[0] - rho0();
         fMom[device::idxMom<index::u()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[1];
         fMom[device::idxMom<index::v()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[2];
         fMom[device::idxMom<index::w()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[3];
@@ -87,7 +87,7 @@ namespace LBM
         fMom[device::idxMom<index::zz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = moments[9];
 
         // Save the populations to the block halo
-        blockHalo.popSave(pop);
+        blockHalo.popSave<VelocitySet::D3Q19>(pop);
     }
 }
 

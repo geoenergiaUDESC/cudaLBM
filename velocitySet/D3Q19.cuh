@@ -161,8 +161,8 @@ namespace LBM
             }
 
             __device__ static inline void reconstruct(
-                scalar_t *const ptrRestrict pop,
-                const scalar_t *const ptrRestrict moments) noexcept
+                scalar_t (&ptrRestrict pop)[19],
+                const scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -197,7 +197,7 @@ namespace LBM
              * @param moments The moments from which the population is to be reconstructed
              * @return The reconstructed population
              **/
-            __host__ static const std::array<scalar_t, 19> reconstruct(
+            __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(
                 const std::array<scalar_t, 10> &moments) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
@@ -239,7 +239,7 @@ namespace LBM
              * @param s_pop The shared memory array
              **/
             __device__ static inline void popSaveShared(
-                const scalar_t *const ptrRestrict pop,
+                const scalar_t (&ptrRestrict pop)[19],
                 scalar_t s_pop[block::size() * 18]) noexcept
             {
                 s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
@@ -272,7 +272,7 @@ namespace LBM
              * @param pop The array into which s_pop is pulled
              **/
             __device__ static inline void popPull(
-                scalar_t *const ptrRestrict pop,
+                scalar_t (&ptrRestrict pop)[19],
                 const scalar_t s_pop[block::size() * 18]) noexcept
             {
                 const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
@@ -317,7 +317,7 @@ namespace LBM
                 const scalar_t *const ptrRestrict y1,
                 const scalar_t *const ptrRestrict z0,
                 const scalar_t *const ptrRestrict z1,
-                scalar_t *const ptrRestrict pop) noexcept
+                scalar_t (&ptrRestrict pop)[19]) noexcept
             {
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
@@ -403,8 +403,8 @@ namespace LBM
              * @param moments The lattice moments
              **/
             __device__ inline static void calculateMoments(
-                const scalar_t *const ptrRestrict pop,
-                scalar_t *const ptrRestrict moments) noexcept
+                const scalar_t (&ptrRestrict pop)[19],
+                scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 // Equation 3
                 moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
@@ -455,7 +455,7 @@ namespace LBM
              **/
             template <const label_t q_ = 0>
             __device__ static inline constexpr void popSave_loop(
-                const scalar_t *const ptrRestrict pop,
+                const scalar_t (&ptrRestrict pop)[19],
                 scalar_t s_pop[block::size() * 18]) noexcept
             {
                 // Check at compile time that the loop is correctly bounded

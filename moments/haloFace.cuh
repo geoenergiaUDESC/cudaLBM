@@ -217,7 +217,7 @@ namespace LBM
 
                                         // Reconstruct from the moments
                                         const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(std::array<scalar_t, 10>{
-                                            RHO_0 + fMom[host::idxMom<index::rho()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
+                                            rho0() + fMom[host::idxMom<index::rho()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
                                             fMom[host::idxMom<index::u()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
                                             fMom[host::idxMom<index::v()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
                                             fMom[host::idxMom<index::w()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],

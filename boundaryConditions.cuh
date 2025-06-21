@@ -16,9 +16,10 @@ namespace LBM
     public:
         [[nodiscard]] inline consteval boundaryConditions() {};
 
+        template <class VSet>
         __device__ static inline void calculateMoments(
-            const scalar_t pop[19],
-            scalar_t *const ptrRestrict moments,
+            const scalar_t pop[VSet::Q()],
+            scalar_t (&ptrRestrict moments)[10],
             const nodeType_t nodeType) noexcept
         {
             scalar_t rho_I;

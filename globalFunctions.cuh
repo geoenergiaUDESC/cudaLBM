@@ -77,7 +77,7 @@ namespace LBM
          * @return Dimensions of CUDA blocks
          **/
 
-        __host__ __device__ [[nodiscard]] inline consteval label_t nx() noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t nx() noexcept
         {
 #ifdef SCALAR_PRECISION_32
             return 8;
@@ -86,7 +86,7 @@ namespace LBM
 #endif
         }
 
-        __host__ __device__ [[nodiscard]] inline consteval label_t ny() noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t ny() noexcept
         {
 #ifdef SCALAR_PRECISION_32
             return 8;
@@ -95,7 +95,7 @@ namespace LBM
 #endif
         }
 
-        __host__ __device__ [[nodiscard]] inline consteval label_t nz() noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
             return 8;
@@ -104,7 +104,7 @@ namespace LBM
 #endif
         }
 
-        __host__ __device__ [[nodiscard]] inline consteval label_t size() noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t size() noexcept
         {
             return nx() * ny() * nz();
         }
@@ -204,9 +204,9 @@ namespace LBM
      **/
     namespace device
     {
-        __device__ [[nodiscard]] inline bool out_of_bounds(const label_t nx, const label_t ny, const label_t nz) noexcept
+        __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= nx) || (threadIdx.y + blockDim.y * blockIdx.y >= ny) || (threadIdx.z + blockDim.z * blockIdx.z >= nz));
+            return ((threadIdx.x + blockDim.x * blockIdx.x >= d_nx) || (threadIdx.y + blockDim.y * blockIdx.y >= d_ny) || (threadIdx.z + blockDim.z * blockIdx.z >= d_nz));
         }
 
         __device__ [[nodiscard]] inline bool bad_node_type(const nodeType_t nodeType) noexcept
@@ -295,12 +295,10 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }
     }
 
-    constexpr const scalar_t RHO_0 = 1.0;
-
-    constexpr const label_t GPU_INDEX = 0;
-
-    constexpr const label_t INI_STEP = 0;
-    constexpr const label_t N_STEPS = 1001;
+    __device__ __host__ [[nodiscard]] inline consteval scalar_t rho0() noexcept
+    {
+        return 1.0;
+    }
 }
 
 #endif

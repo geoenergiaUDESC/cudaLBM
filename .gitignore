@@ -59,3 +59,4 @@ lidDrivenCavity/m_yz
 lidDrivenCavity/m_zz
 lidDrivenCavity/nodeTypes
 lidDrivenCavity/*.dat
+build/bin/*

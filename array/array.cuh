@@ -400,7 +400,7 @@ namespace LBM
              * @brief Overloads the [] operator
              * @return The i-th index of the underlying array
              **/
-            __device__ __host__ inline T operator[](const label_t i) const noexcept
+            __device__ __host__ [[nodiscard]] inline T operator[](const label_t i) const noexcept
             {
                 return ptr_[i];
             }

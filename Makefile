@@ -27,29 +27,29 @@ CXX_FLAGS = $(CXX_STANDARD) $(CXX_OPTFLAGS) $(CXX_MFLAGS) $(CXX_WFLAGS) $(CXX_DF
 
 default:
 	make clean
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o LBM -lmpi -lm
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19 -lmpi -lm
 
 install:
 	make clean
 	make uninstall
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o LBM -lmpi -lm
-	cp -rf LBM build/bin/LBM
-	rm -rf LBM
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19 -lmpi -lm
+	cp -rf momentBasedD3Q19 build/bin/momentBasedD3Q19
+	rm -rf momentBasedD3Q19
 
 clean:
-	rm -rf LBM
+	rm -rf momentBasedD3Q19
 
 uninstall:
-	rm -rf build/bin/LBM
+	rm -rf build/bin/momentBasedD3Q19
 
-installMesh:
-	make cleanMesh
-	$(NVCXX) $(NVCXX_FLAGS) meshTools.cu -o meshTools
-	cp -rf meshTools build/bin/meshTools
-	rm -rf meshTools
+#installMesh:
+#	make cleanMesh
+#	$(NVCXX) $(NVCXX_FLAGS) meshTools.cu -o meshTools
+#	cp -rf meshTools build/bin/meshTools
+#	rm -rf meshTools
 
-cleanMesh:
-	rm -rf meshTools
+#cleanMesh:
+#	rm -rf meshTools
 
-uninstallMesh:
-	rm -rf $(PROJECT_DIR)/opt/LBM/bin/meshTools
+#uninstallMesh:
+#	rm -rf $(PROJECT_DIR)/opt/LBM/bin/meshTools

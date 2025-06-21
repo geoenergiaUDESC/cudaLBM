@@ -54,23 +54,45 @@ namespace LBM
                 checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Z, &d_NUM_BLOCK_Z_tmp, sizeof(label_t)));
             };
 
+            void copyDeviceSymbols() const noexcept
+            {
+                const label_t d_NUM_BLOCK_X_tmp = nx_ / block::nx();
+                const label_t d_NUM_BLOCK_Y_tmp = ny_ / block::ny();
+                const label_t d_NUM_BLOCK_Z_tmp = nz_ / block::nz();
+
+                // Allocate symbols on the GPU, temporary workaround
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_nx, &nx_, sizeof(label_t)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_ny, &ny_, sizeof(label_t)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_nz, &nz_, sizeof(label_t)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_X, &d_NUM_BLOCK_X_tmp, sizeof(label_t)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Y, &d_NUM_BLOCK_Y_tmp, sizeof(label_t)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Z, &d_NUM_BLOCK_Z_tmp, sizeof(label_t)));
+                cudaDeviceSynchronize();
+            }
+
             /**
              * @brief Returns the number of lattices in the x, y and z directions
              * @return Number of lattices as a label_t
              **/
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nx() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nx() const noexcept
             {
                 return nx_;
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t ny() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t ny() const noexcept
             {
                 return ny_;
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nz() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nz() const noexcept
             {
                 return nz_;
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
             {
                 return nPoints_;
             }
@@ -79,19 +101,19 @@ namespace LBM
              * @brief Returns the number of CUDA blocks in the x, y and z directions
              * @return Number of CUDA blocks as a label_t
              **/
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
             {
                 return nx_ / block::nx();
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
             {
                 return ny_ / block::ny();
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
             {
                 return nz_ / block::nz();
             }
-            __host__ __device__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
             {
                 return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
             }
@@ -100,7 +122,7 @@ namespace LBM
              * @brief Returns the dimensions of a thread block in the x, y and z directions
              * @return Dimensions of a thread block as a dim3
              **/
-            __host__ __device__ [[nodiscard]] inline constexpr dim3 threadBlock() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr dim3 threadBlock() const noexcept
             {
                 return {block::nx(), block::ny(), block::nz()};
             }
@@ -109,7 +131,7 @@ namespace LBM
              * @brief Returns the number of thread blocks in the x, y and z directions
              * @return Number of thread blocks as a dim3
              **/
-            __host__ __device__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
             {
                 return {static_cast<uint32_t>(nx_ / block::nx()), static_cast<uint32_t>(ny_ / block::ny()), static_cast<uint32_t>(nz_ / block::nz())};
             }
@@ -225,19 +247,19 @@ namespace LBM
     //              * @brief Returns the number of lattices in the x, y and z directions
     //              * @return Number of lattices as a label_t
     //              **/
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nx() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nx() const noexcept
     //             {
     //                 return nx_;
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t ny() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t ny() const noexcept
     //             {
     //                 return ny_;
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nz() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nz() const noexcept
     //             {
     //                 return nz_;
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
     //             {
     //                 return nPoints_;
     //             }
@@ -246,19 +268,19 @@ namespace LBM
     //              * @brief Returns the number of CUDA blocks in the x, y and z directions
     //              * @return Number of CUDA blocks as a label_t
     //              **/
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
     //             {
     //                 return nx_ / block::nx();
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nyBlocks() const noexcept
     //             {
     //                 return ny_ / block::ny();
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nzBlocks() const noexcept
     //             {
     //                 return nz_ / block::nz();
     //             }
-    //             __host__ __device__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
+    //             __device__ __host__ [[nodiscard]] inline constexpr label_t nBlocks() const noexcept
     //             {
     //                 return (nx_ / block::nx()) * (ny_ / block::ny()) * (nz_ / block::nz());
     //             }

@@ -7,6 +7,7 @@ Contents: A list of header files necessary for compilation
 #define __MBLBM_INCLUDES_CUH
 
 #include <algorithm>
+#include <bit>
 #include <iostream>
 #include <stdint.h>
 #include <iomanip>

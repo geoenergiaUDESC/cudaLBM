@@ -8,6 +8,7 @@ Contents: A templated class for various different types of arrays
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+#include "../latticeMesh/latticeMesh.cuh"
 
 namespace LBM
 {
@@ -30,7 +31,7 @@ namespace LBM
         }
 
         /**
-         * @brief Allocates a block of memory on the device and returns its pointer
+         * @brief Allocates a block of memory on the host and returns its pointer
          * @return A raw pointer to a block of memory
          * @param size The amount of memory to be allocated
          **/
@@ -385,8 +386,13 @@ namespace LBM
              * @param f The std::vector to be allocated on the device
              * @return An array object constructed from f
              **/
-            [[nodiscard]] array(const std::vector<T> &f)
-                : ptr_(device::allocateArray<T>(f)) {};
+            [[nodiscard]] array(
+                const std::vector<T> &f,
+                const std::vector<std::string> &varNames,
+                const host::latticeMesh &mesh)
+                : ptr_(device::allocateArray<T>(f)),
+                  varNames_(varNames),
+                  mesh_(mesh) {};
 
             /**
              * @brief Destructor for the array class
@@ -423,11 +429,48 @@ namespace LBM
                 return ptr_;
             }
 
+            /**
+             * @brief Provides access to the variable names
+             * @return An immutable reference to an std::vector of std::strings
+             **/
+            __host__ [[nodiscard]] inline const std::vector<std::string> &varNames() const noexcept
+            {
+                return varNames_;
+            }
+
+            /**
+             * @brief Provides access to a variable name
+             * @return An std::string
+             **/
+            __host__ [[nodiscard]] inline const std::string &varName(const label_t var) const noexcept
+            {
+                return varNames_[var];
+            }
+
+            /**
+             * @brief Provides access to the mesh
+             * @return An immutable reference to a host::latticeMesh object
+             **/
+            __host__ [[nodiscard]] inline const host::latticeMesh &mesh() const noexcept
+            {
+                return mesh_;
+            }
+
         private:
             /**
              * @brief Pointer to the data
              **/
             T *const ptrRestrict ptr_;
+
+            /**
+             * @brief Names of the solution variables
+             **/
+            const std::vector<std::string> varNames_;
+
+            /**
+             * @brief Reference to the mesh
+             **/
+            const host::latticeMesh &mesh_;
         };
     }
 }

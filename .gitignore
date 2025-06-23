@@ -61,4 +61,3 @@ lidDrivenCavity/nodeTypes
 lidDrivenCavity/*.dat
 lidDrivenCavity/*.LBMBin
 build/bin/*
-.github*

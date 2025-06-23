@@ -10,15 +10,21 @@ namespace LBM
 {
     namespace host
     {
+        /**
+         * @brief Copies a device pointer of type T into an std::vector of type T on the host
+         * @param devPtr Pointer to the array on the device
+         * @param nPoints The number of elements contained within devPtr
+         * @note This is currently somewhat redundant but will be taken care of later
+         **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> copyToHost(const T *const ptrRestrict device_ptr, const label_t count)
+        __host__ [[nodiscard]] const std::vector<T> copyToHost(const T *const ptrRestrict devPtr, const label_t nPoints)
         {
-            std::vector<T> hostFields(count, 0);
+            std::vector<T> hostFields(nPoints, 0);
 
             const cudaError_t err = cudaMemcpy(
                 hostFields.data(),
-                device_ptr,
-                count * sizeof(T),
+                devPtr,
+                nPoints * sizeof(T),
                 cudaMemcpyDeviceToHost);
 
             if (err != cudaSuccess)
@@ -36,14 +42,15 @@ namespace LBM
          * @param fileName Name of the file to be written
          * @param mesh The mesh
          * @param varNames The names of the solution variables
-         * @param data The solution variables encoded in interleaved AoS format
+         * @param fields The solution variables encoded in interleaved AoS format
+         * @param timeStep The current time step
          **/
         template <typename T>
         __host__ void writeFile(
             const std::string &filename,
             const host::latticeMesh &mesh,
             const std::vector<std::string> &varNames,
-            const std::vector<T> &data,
+            const std::vector<T> &fields,
             const std::size_t timeStep)
         {
             static_assert(std::is_floating_point<T>::value, "T must be floating point");
@@ -56,7 +63,7 @@ namespace LBM
             const std::size_t nPoints = static_cast<std::size_t>(mesh.nx()) * static_cast<std::size_t>(mesh.ny()) * static_cast<std::size_t>(mesh.nz());
             const std::size_t expectedSize = nPoints * nVars;
 
-            if (data.size() != expectedSize)
+            if (fields.size() != expectedSize)
             {
                 throw std::invalid_argument("Data vector size mismatch");
             }
@@ -109,7 +116,7 @@ namespace LBM
             out << std::endl;
 
             // Write binary data with safe size conversion
-            const std::size_t byteSize = data.size() * sizeof(T);
+            const std::size_t byteSize = fields.size() * sizeof(T);
 
             if (byteSize > static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()))
             {
@@ -123,7 +130,7 @@ namespace LBM
             out << "\tfield[" << expectedSize << "][" << mesh.nx() << "][" << mesh.ny() << "][" << mesh.nz() << "][" << nVars << "]" << std::endl;
             out << "\t{" << std::endl;
             // out.flush();
-            out.write(reinterpret_cast<const char *>(data.data()), static_cast<std::streamsize>(byteSize));
+            out.write(reinterpret_cast<const char *>(fields.data()), static_cast<std::streamsize>(byteSize));
             out << std::endl;
             out << "\t};" << std::endl;
             out << "};" << std::endl;
@@ -132,22 +139,23 @@ namespace LBM
         /**
          * @brief Wraps the implementation of the binary write
          * @param fileName Name of the file to be written
-         * @param arr Object containing the solution variables encoded in interleaved AoS format
+         * @param fields Object containing the solution variables encoded in interleaved AoS format
+         * @param timeStep The current time step
          **/
         template <typename T>
         __host__ void write(
             const std::string &filename,
-            const device::array<T> &arr,
+            const device::array<T> &fields,
             const std::size_t timeStep)
         {
-            const std::size_t nVars = arr.varNames().size();
-            const std::size_t nTotal = static_cast<std::size_t>(arr.mesh().nx()) * static_cast<std::size_t>(arr.mesh().ny()) * static_cast<std::size_t>(arr.mesh().nz()) * nVars;
+            const std::size_t nVars = fields.varNames().size();
+            const std::size_t nTotal = static_cast<std::size_t>(fields.mesh().nx()) * static_cast<std::size_t>(fields.mesh().ny()) * static_cast<std::size_t>(fields.mesh().nz()) * nVars;
 
             // Copy device -> host
-            const std::vector<T> hostFields = copyToHost(arr.ptr(), nTotal);
+            const std::vector<T> hostFields = copyToHost(fields.ptr(), nTotal);
 
             // Write to file
-            writeFile(filename, arr.mesh(), arr.varNames(), hostFields, timeStep);
+            writeFile(filename, fields.mesh(), fields.varNames(), hostFields, timeStep);
         }
     }
 }

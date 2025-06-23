@@ -6,9 +6,9 @@ Contents: A templated class for various different types of arrays
 #ifndef __MBLBM_ARRAY_CUH
 #define __MBLBM_ARRAY_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../latticeMesh/latticeMesh.cuh"
+#include "LBMIncludes.cuh"
+#include "LBMTypedefs.cuh"
+#include "latticeMesh/latticeMesh.cuh"
 
 namespace LBM
 {

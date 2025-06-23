@@ -9,7 +9,7 @@ Contents: A class holding information about the solution grid
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "strings.cuh"
-#include "../globalFunctions.cuh"
+#include "globalFunctions.cuh"
 
 namespace LBM
 {

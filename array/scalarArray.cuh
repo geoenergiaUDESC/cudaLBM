@@ -8,9 +8,8 @@ partition the mesh prior to distribution to the devices
 #ifndef __MBLBM_SCALARARRAYS_CUH
 #define __MBLBM_SCALARARRAYS_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../array/array.cuh"
+#include "LBMIncludes.cuh"
+#include "LBMTypedefs.cuh"
 
 namespace LBM
 {

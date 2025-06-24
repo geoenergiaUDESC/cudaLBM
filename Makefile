@@ -6,7 +6,15 @@ NVCXX_OPTFLAGS = -O3 --restrict
 NVCXX_WFLAGS = --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this
 NVCXX_COMPILER_WFLAGS = -Xcompiler "-O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings"
 # NVCXX_COMPILER_WFLAGS = -Xcompiler "-Wall -Wextra -Wpedantic -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings"
-NVCXX_MFLAGS = --m64 -arch compute_89
+
+# Define compute capability
+GPU_ARCH_CODE := $(shell nvidia-smi --query-gpu=compute_cap --format=csv,noheader | sed 's/\.//' | sort -n | tail -1)
+ifeq ($(GPU_ARCH_CODE),)
+    GPU_ARCH_CODE := 86  # Default value if it fails
+endif
+
+NVCXX_MFLAGS = --m64 -arch compute_$(GPU_ARCH_CODE)
+
 NVCXX_DFLAGS = -DSCALAR_PRECISION_32 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19 -DVERBOSE
 
 CXX = g++
@@ -27,12 +35,12 @@ CXX_FLAGS = $(CXX_STANDARD) $(CXX_OPTFLAGS) $(CXX_MFLAGS) $(CXX_WFLAGS) $(CXX_DF
 
 default:
 	make clean
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19 -lmpi -lm
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19
 
 install:
 	make clean
 	make uninstall
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19 -lmpi -lm
+	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19
 	cp -rf momentBasedD3Q19 build/bin/momentBasedD3Q19
 	rm -rf momentBasedD3Q19
 
@@ -41,15 +49,3 @@ clean:
 
 uninstall:
 	rm -rf build/bin/momentBasedD3Q19
-
-#installMesh:
-#	make cleanMesh
-#	$(NVCXX) $(NVCXX_FLAGS) meshTools.cu -o meshTools
-#	cp -rf meshTools build/bin/meshTools
-#	rm -rf meshTools
-
-#cleanMesh:
-#	rm -rf meshTools
-
-#uninstallMesh:
-#	rm -rf $(PROJECT_DIR)/opt/LBM/bin/meshTools

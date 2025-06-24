@@ -35,46 +35,46 @@ namespace LBM
             return f;
         }
 
-        [[nodiscard]] const std::vector<std::vector<scalar_t>> to_host(
-            const device::array<scalar_t> &moments,
-            const host::latticeMesh &mesh) noexcept
-        {
-            checkCudaErrors(cudaDeviceSynchronize());
+        //         [[nodiscard]] const std::vector<std::vector<scalar_t>> to_host(
+        //             const device::array<scalar_t> &moments,
+        //             const host::latticeMesh &mesh) noexcept
+        //         {
+        //             checkCudaErrors(cudaDeviceSynchronize());
 
-            scalar_t *const ptr = host::allocate<scalar_t>(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS());
+        //             scalar_t *const ptr = host::allocate<scalar_t>(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS());
 
-            checkCudaErrors(cudaDeviceSynchronize());
+        //             checkCudaErrors(cudaDeviceSynchronize());
 
-            checkCudaErrors(cudaMemcpy(ptr, moments.ptr(), sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), cudaMemcpyDeviceToHost));
+        //             checkCudaErrors(cudaMemcpy(ptr, moments.ptr(), sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), cudaMemcpyDeviceToHost));
 
-            checkCudaErrors(cudaDeviceSynchronize());
+        //             checkCudaErrors(cudaDeviceSynchronize());
 
-#ifdef VERBOSE
-            std::cout << "Copied " << sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS() << " bytes of memory in cudaMemcpyDeviceToHost from address " << moments.ptr() << " to " << ptr << std::endl;
-#endif
+        // #ifdef VERBOSE
+        //             std::cout << "Copied " << sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS() << " bytes of memory in cudaMemcpyDeviceToHost from address " << moments.ptr() << " to " << ptr << std::endl;
+        // #endif
 
-            const std::vector<std::vector<scalar_t>> hostMoments{
-                save<index::rho()>(ptr, mesh),
-                save<index::u()>(ptr, mesh),
-                save<index::v()>(ptr, mesh),
-                save<index::w()>(ptr, mesh),
-                save<index::xx()>(ptr, mesh),
-                save<index::xy()>(ptr, mesh),
-                save<index::xz()>(ptr, mesh),
-                save<index::yy()>(ptr, mesh),
-                save<index::yz()>(ptr, mesh),
-                save<index::zz()>(ptr, mesh)};
+        //             const std::vector<std::vector<scalar_t>> hostMoments{
+        //                 save<index::rho()>(ptr, mesh),
+        //                 save<index::u()>(ptr, mesh),
+        //                 save<index::v()>(ptr, mesh),
+        //                 save<index::w()>(ptr, mesh),
+        //                 save<index::xx()>(ptr, mesh),
+        //                 save<index::xy()>(ptr, mesh),
+        //                 save<index::xz()>(ptr, mesh),
+        //                 save<index::yy()>(ptr, mesh),
+        //                 save<index::yz()>(ptr, mesh),
+        //                 save<index::zz()>(ptr, mesh)};
 
-            cudaFreeHost(ptr);
+        //             cudaFreeHost(ptr);
 
-#ifdef VERBOSE
-            std::cout << "Freed memory allocated to address " << ptr << std::endl;
-#endif
+        // #ifdef VERBOSE
+        //             std::cout << "Freed memory allocated to address " << ptr << std::endl;
+        // #endif
 
-            checkCudaErrors(cudaDeviceSynchronize());
+        //             checkCudaErrors(cudaDeviceSynchronize());
 
-            return hostMoments;
-        }
+        //             return hostMoments;
+        //         }
 
         /**
          * @brief Writes a solution variable to a file

@@ -42,14 +42,14 @@ clean:
 uninstall:
 	rm -rf build/bin/momentBasedD3Q19
 
-#installMesh:
-#	make cleanMesh
-#	$(NVCXX) $(NVCXX_FLAGS) meshTools.cu -o meshTools
-#	cp -rf meshTools build/bin/meshTools
-#	rm -rf meshTools
+installTest:
+	make cleanTest
+	$(NVCXX) $(NVCXX_FLAGS) testRead.cu -o testRead
+	cp -rf testRead build/bin/testRead
+	rm -rf testRead
 
-#cleanMesh:
-#	rm -rf meshTools
+cleanTest:
+	rm -rf testRead
 
-#uninstallMesh:
-#	rm -rf $(PROJECT_DIR)/opt/LBM/bin/meshTools
+uninstallTest:
+	rm -rf $(PROJECT_DIR)/opt/LBM/bin/testRead

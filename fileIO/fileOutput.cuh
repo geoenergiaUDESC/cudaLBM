@@ -8,35 +8,8 @@ Contents: Implementation of writing solution variables encoded in binary format
 
 namespace LBM
 {
-    namespace host
+    namespace fileIO
     {
-        /**
-         * @brief Copies a device pointer of type T into an std::vector of type T on the host
-         * @param devPtr Pointer to the array on the device
-         * @param nPoints The number of elements contained within devPtr
-         * @note This is currently somewhat redundant but will be taken care of later
-         **/
-        template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> copyToHost(const T *const ptrRestrict devPtr, const label_t nPoints)
-        {
-            std::vector<T> hostFields(nPoints, 0);
-
-            const cudaError_t err = cudaMemcpy(
-                hostFields.data(),
-                devPtr,
-                nPoints * sizeof(T),
-                cudaMemcpyDeviceToHost);
-
-            if (err != cudaSuccess)
-            {
-                throw std::runtime_error(
-                    "CUDA copy failed: " +
-                    std::string(cudaGetErrorString(err)));
-            }
-
-            return hostFields;
-        }
-
         /**
          * @brief Implementation of the writing of the binary file
          * @param fileName Name of the file to be written
@@ -45,10 +18,10 @@ namespace LBM
          * @param fields The solution variables encoded in interleaved AoS format
          * @param timeStep The current time step
          **/
-        template <typename T>
+        template <typename T, class M>
         __host__ void writeFile(
             const std::string &filename,
-            const host::latticeMesh &mesh,
+            const M &mesh,
             const std::vector<std::string> &varNames,
             const std::vector<T> &fields,
             const std::size_t timeStep)
@@ -134,28 +107,6 @@ namespace LBM
             out << std::endl;
             out << "\t};" << std::endl;
             out << "};" << std::endl;
-        }
-
-        /**
-         * @brief Wraps the implementation of the binary write
-         * @param fileName Name of the file to be written
-         * @param fields Object containing the solution variables encoded in interleaved AoS format
-         * @param timeStep The current time step
-         **/
-        template <typename T>
-        __host__ void write(
-            const std::string &filename,
-            const device::array<T> &fields,
-            const std::size_t timeStep)
-        {
-            const std::size_t nVars = fields.varNames().size();
-            const std::size_t nTotal = static_cast<std::size_t>(fields.mesh().nx()) * static_cast<std::size_t>(fields.mesh().ny()) * static_cast<std::size_t>(fields.mesh().nz()) * nVars;
-
-            // Copy device -> host
-            const std::vector<T> hostFields = copyToHost(fields.ptr(), nTotal);
-
-            // Write to file
-            writeFile(filename, fields.mesh(), fields.varNames(), hostFields, timeStep);
         }
     }
 }

@@ -160,9 +160,12 @@ namespace LBM
                 return pop;
             }
 
-            __device__ static inline void reconstruct(
-                scalar_t (&ptrRestrict pop)[19],
-                const scalar_t (&ptrRestrict moments)[10]) noexcept
+            /**
+             * @brief Reconstructs the population at a given lattice point
+             * @param pop The reconstructed population
+             * @param moments The moments from which the population is to be reconstructed
+             **/
+            __device__ static inline void reconstruct(scalar_t (&ptrRestrict pop)[19], const scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -197,8 +200,7 @@ namespace LBM
              * @param moments The moments from which the population is to be reconstructed
              * @return The reconstructed population
              **/
-            __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(
-                const std::array<scalar_t, 10> &moments) noexcept
+            __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -238,9 +240,7 @@ namespace LBM
              * @param pop The population to be set in shared memory
              * @param s_pop The shared memory array
              **/
-            __device__ static inline void popSaveShared(
-                const scalar_t (&ptrRestrict pop)[19],
-                scalar_t s_pop[block::size() * 18]) noexcept
+            __device__ static inline void popSaveShared(const scalar_t (&ptrRestrict pop)[19], scalar_t (&ptrRestrict s_pop)[block::size() * 18]) noexcept
             {
                 s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
                 s_pop[device::idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
@@ -271,9 +271,7 @@ namespace LBM
              * @param s_pop The shared memory array from which pop is pulled
              * @param pop The array into which s_pop is pulled
              **/
-            __device__ static inline void popPull(
-                scalar_t (&ptrRestrict pop)[19],
-                const scalar_t s_pop[block::size() * 18]) noexcept
+            __device__ static inline void popPull(scalar_t (&ptrRestrict pop)[19], const scalar_t (&ptrRestrict s_pop)[block::size() * 18]) noexcept
             {
                 const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
                 const label_t xm1 = (threadIdx.x - 1 + block::nx()) % block::nx();

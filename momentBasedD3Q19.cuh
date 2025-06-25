@@ -8,11 +8,15 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "array/array.cuh"
 #include "velocitySet/velocitySet.cuh"
 #include "boundaryConditions.cuh"
 #include "globalFunctions.cuh"
 #include "boundaryConditions.cuh"
-#include "sharedMemory.cuh"
+// #include "memory/memory.cuh"
+// #include "sharedMemory.cuh"
+#include "collision.cuh"
+#include "moments/moments.cuh"
 
 namespace LBM
 {

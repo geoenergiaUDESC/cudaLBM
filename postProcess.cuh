@@ -8,73 +8,32 @@ namespace LBM
 {
     namespace postProcess
     {
-        /**
-         * @brief Copies a device variable to the host
-         * @param fMom The device variable array
-         * @param mesh The mesh
-         * @return An std::vector of type T, de-interlaced from fMom
-         **/
-        template <const label_t variableIndex, typename T>
-        __host__ [[nodiscard]] const std::vector<T> save(
-            const T *const fMom,
-            const host::latticeMesh &mesh) noexcept
-        {
-            std::vector<T> f(mesh.nx() * mesh.ny() * mesh.nz(), 0);
+        // /**
+        //  * @brief Copies a device variable to the host
+        //  * @param fMom The device variable array
+        //  * @param mesh The mesh
+        //  * @return An std::vector of type T, de-interlaced from fMom
+        //  **/
+        // template <const label_t variableIndex, typename T>
+        // __host__ [[nodiscard]] const std::vector<T> save(
+        //     const T *const fMom,
+        //     const host::latticeMesh &mesh) noexcept
+        // {
+        //     std::vector<T> f(mesh.nx() * mesh.ny() * mesh.nz(), 0);
 
-            for (label_t z = 0; z < mesh.nz(); z++)
-            {
-                for (label_t y = 0; y < mesh.ny(); y++)
-                {
-                    for (label_t x = 0; x < mesh.nx(); x++)
-                    {
-                        f[host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny())] = fMom[host::idxMom<variableIndex>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())];
-                    }
-                }
-            }
+        //     for (label_t z = 0; z < mesh.nz(); z++)
+        //     {
+        //         for (label_t y = 0; y < mesh.ny(); y++)
+        //         {
+        //             for (label_t x = 0; x < mesh.nx(); x++)
+        //             {
+        //                 f[host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny())] = fMom[host::idxMom<variableIndex>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())];
+        //             }
+        //         }
+        //     }
 
-            return f;
-        }
-
-        [[nodiscard]] const std::vector<std::vector<scalar_t>> to_host(
-            const device::array<scalar_t> &moments,
-            const host::latticeMesh &mesh) noexcept
-        {
-            checkCudaErrors(cudaDeviceSynchronize());
-
-            scalar_t *const ptr = host::allocate<scalar_t>(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS());
-
-            checkCudaErrors(cudaDeviceSynchronize());
-
-            checkCudaErrors(cudaMemcpy(ptr, moments.ptr(), sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), cudaMemcpyDeviceToHost));
-
-            checkCudaErrors(cudaDeviceSynchronize());
-
-#ifdef VERBOSE
-            std::cout << "Copied " << sizeof(scalar_t) * mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS() << " bytes of memory in cudaMemcpyDeviceToHost from address " << moments.ptr() << " to " << ptr << std::endl;
-#endif
-
-            const std::vector<std::vector<scalar_t>> hostMoments{
-                save<index::rho()>(ptr, mesh),
-                save<index::u()>(ptr, mesh),
-                save<index::v()>(ptr, mesh),
-                save<index::w()>(ptr, mesh),
-                save<index::xx()>(ptr, mesh),
-                save<index::xy()>(ptr, mesh),
-                save<index::xz()>(ptr, mesh),
-                save<index::yy()>(ptr, mesh),
-                save<index::yz()>(ptr, mesh),
-                save<index::zz()>(ptr, mesh)};
-
-            cudaFreeHost(ptr);
-
-#ifdef VERBOSE
-            std::cout << "Freed memory allocated to address " << ptr << std::endl;
-#endif
-
-            checkCudaErrors(cudaDeviceSynchronize());
-
-            return hostMoments;
-        }
+        //     return f;
+        // }
 
         /**
          * @brief Writes a solution variable to a file

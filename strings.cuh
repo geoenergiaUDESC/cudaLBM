@@ -194,9 +194,13 @@ namespace LBM
                         }
                     }
                     // Otherwise T must be a scalar type
-                    else
+                    else if constexpr (std::is_floating_point_v<T>)
                     {
                         return static_cast<T>(std::stold(toReturn));
+                    }
+                    else if constexpr (std::is_same_v<T, std::string>)
+                    {
+                        return toReturn;
                     }
                 }
             }

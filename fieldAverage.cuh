@@ -34,7 +34,7 @@ namespace LBM
 
             const label_t meanCounter = step;
 
-            const scalar_t invCount = 1.0 / (static_cast<scalar_t>(meanCounter) + 1.0);
+            const scalar_t invCount = static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(meanCounter) + static_cast<scalar_t>(1.0));
 
             const momentArray_t moments_0 = {
                 fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],

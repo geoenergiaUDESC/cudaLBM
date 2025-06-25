@@ -235,7 +235,8 @@ namespace LBM
         typedef enum Enum : int
         {
             NO_READ = 0,
-            MUST_READ = 1
+            MUST_READ = 1,
+            READ_IF_PRESENT = 2
         } type;
     }
 

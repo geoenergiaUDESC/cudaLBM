@@ -11,6 +11,7 @@ Contents: A class handling the setup of the solver
 #include "exceptionHandler.cuh"
 #include "strings.cuh"
 #include "inputControl.cuh"
+#include "fileIO/fileIO.cuh"
 
 namespace LBM
 {
@@ -24,6 +25,7 @@ namespace LBM
          **/
         [[nodiscard]] programControl(int argc, char *argv[]) noexcept
             : input_(inputControl(argc, argv)),
+              caseName_(string::extractParameter<std::string>(string::readCaseDirectory("caseInfo"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
               Lx_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lx")),
@@ -31,11 +33,12 @@ namespace LBM
               Lz_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lz")),
               nTimeSteps_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nTimeSteps")),
               saveInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "saveInterval")),
-              infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval"))
+              infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval")),
+              latestTime_(fileIO::latestTime(caseName_))
         {
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
-            std::cout << "{ UDESC LBM                                                             }" << std::endl;
+            std::cout << "{ UDESC LBM                                                               }" << std::endl;
             std::cout << "{ Universidade do Esdado de Santa Catarina                                }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
@@ -51,12 +54,13 @@ namespace LBM
                 }
             }
             std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
+            std::cout << "    Case: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
             std::cout << "    Lx = " << Lx_ << ";" << std::endl;
             std::cout << "    Ly = " << Ly_ << ";" << std::endl;
             std::cout << "    Lz = " << Lz_ << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
-            std::cout << "}" << std::endl;
+            std::cout << "};" << std::endl;
             std::cout << std::endl;
 
             // checkCudaErrors(cudaMemcpyToSymbol(d_Re, &Re_, sizeof(d_Re)));
@@ -95,6 +99,15 @@ namespace LBM
          * @brief Destructor for the programControl class
          **/
         ~programControl() noexcept {};
+
+        /**
+         * @brief Returns the name of the case
+         * @return A const std::string
+         **/
+        [[nodiscard]] inline constexpr const std::string &caseName() const noexcept
+        {
+            return caseName_;
+        }
 
         /**
          * @brief Returns the array of device indices
@@ -150,11 +163,17 @@ namespace LBM
             return (timeStep % infoInterval_) == 0;
         }
 
+        __device__ __host__ [[nodiscard]] inline constexpr label_t latestTime() const noexcept
+        {
+            return latestTime_;
+        }
+
     private:
         /**
          * @brief A reference to the input control object
          **/
         const inputControl input_;
+        const std::string caseName_;
 
         /**
          * @brief The Reynolds number
@@ -179,6 +198,7 @@ namespace LBM
         const label_t nTimeSteps_;
         const label_t saveInterval_;
         const label_t infoInterval_;
+        const label_t latestTime_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

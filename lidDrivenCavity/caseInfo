@@ -19,7 +19,7 @@ u_inf           0.0256;
 
 nTimeSteps      100001;
 
-saveInterval    10000;
+saveInterval    100000;
 
 infoInterval    100;
 

@@ -151,11 +151,11 @@ namespace LBM
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
+            [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
             {
                 std::array<scalar_t, Q_> pop;
 
-                f_eq_loop<0>(pop, ux, uy, uz);
+                f_eq_loop<0>(pop, u, v, w);
 
                 return pop;
             }
@@ -236,173 +236,11 @@ namespace LBM
             }
 
             /**
-             * @brief Saves pop into the shared memory array s_pop
-             * @param pop The population to be set in shared memory
-             * @param s_pop The shared memory array
-             **/
-            __device__ static inline void popSaveShared(const scalar_t (&ptrRestrict pop)[19], scalar_t (&ptrRestrict s_pop)[block::size() * 18]) noexcept
-            {
-                s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
-                s_pop[device::idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
-                s_pop[device::idxPopBlock<2>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[3];
-                s_pop[device::idxPopBlock<3>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[4];
-                s_pop[device::idxPopBlock<4>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[5];
-                s_pop[device::idxPopBlock<5>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[6];
-                s_pop[device::idxPopBlock<6>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[7];
-                s_pop[device::idxPopBlock<7>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[8];
-                s_pop[device::idxPopBlock<8>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[9];
-                s_pop[device::idxPopBlock<9>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[10];
-                s_pop[device::idxPopBlock<10>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[11];
-                s_pop[device::idxPopBlock<11>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[12];
-                s_pop[device::idxPopBlock<12>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[13];
-                s_pop[device::idxPopBlock<13>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[14];
-                s_pop[device::idxPopBlock<14>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[15];
-                s_pop[device::idxPopBlock<15>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[16];
-                s_pop[device::idxPopBlock<16>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[17];
-                s_pop[device::idxPopBlock<17>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[18];
-
-                // Call the implementation of the loop unrolled at compile time
-                // popSave_loop(pop, s_pop);
-                __syncthreads();
-            }
-
-            /**
-             * @brief Pulls s_pop from shared memory into pop
-             * @param s_pop The shared memory array from which pop is pulled
-             * @param pop The array into which s_pop is pulled
-             **/
-            __device__ static inline void popPull(scalar_t (&ptrRestrict pop)[19], const scalar_t (&ptrRestrict s_pop)[block::size() * 18]) noexcept
-            {
-                const label_t xp1 = (threadIdx.x + 1 + block::nx()) % block::nx();
-                const label_t xm1 = (threadIdx.x - 1 + block::nx()) % block::nx();
-
-                const label_t yp1 = (threadIdx.y + 1 + block::ny()) % block::ny();
-                const label_t ym1 = (threadIdx.y - 1 + block::ny()) % block::ny();
-
-                const label_t zp1 = (threadIdx.z + 1 + block::nz()) % block::nz();
-                const label_t zm1 = (threadIdx.z - 1 + block::nz()) % block::nz();
-
-                pop[1] = s_pop[device::idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
-                pop[2] = s_pop[device::idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
-                pop[3] = s_pop[device::idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
-                pop[4] = s_pop[device::idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
-                pop[5] = s_pop[device::idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
-                pop[6] = s_pop[device::idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
-                pop[7] = s_pop[device::idxPopBlock<6>(xm1, ym1, threadIdx.z)];
-                pop[8] = s_pop[device::idxPopBlock<7>(xp1, yp1, threadIdx.z)];
-                pop[9] = s_pop[device::idxPopBlock<8>(xm1, threadIdx.y, zm1)];
-                pop[10] = s_pop[device::idxPopBlock<9>(xp1, threadIdx.y, zp1)];
-                pop[11] = s_pop[device::idxPopBlock<10>(threadIdx.x, ym1, zm1)];
-                pop[12] = s_pop[device::idxPopBlock<11>(threadIdx.x, yp1, zp1)];
-                pop[13] = s_pop[device::idxPopBlock<12>(xm1, yp1, threadIdx.z)];
-                pop[14] = s_pop[device::idxPopBlock<13>(xp1, ym1, threadIdx.z)];
-                pop[15] = s_pop[device::idxPopBlock<14>(xm1, threadIdx.y, zp1)];
-                pop[16] = s_pop[device::idxPopBlock<15>(xp1, threadIdx.y, zm1)];
-                pop[17] = s_pop[device::idxPopBlock<16>(threadIdx.x, ym1, zp1)];
-                pop[18] = s_pop[device::idxPopBlock<17>(threadIdx.x, yp1, zm1)];
-            }
-
-            /**
-             * @brief Loads the population densities from neighbouring CUDA blocks
-             * @param mesh The global mesh
-             * @param interface The ghost interface used to exchange pop
-             * @param pop The array into which the population densities from the neighbouring block is loaded
-             **/
-            __device__ static inline void popLoad(
-                const scalar_t *const ptrRestrict x0,
-                const scalar_t *const ptrRestrict x1,
-                const scalar_t *const ptrRestrict y0,
-                const scalar_t *const ptrRestrict y1,
-                const scalar_t *const ptrRestrict z0,
-                const scalar_t *const ptrRestrict z1,
-                scalar_t (&ptrRestrict pop)[19]) noexcept
-            {
-                const label_t tx = threadIdx.x;
-                const label_t ty = threadIdx.y;
-                const label_t tz = threadIdx.z;
-
-                const label_t bx = blockIdx.x;
-                const label_t by = blockIdx.y;
-                const label_t bz = blockIdx.z;
-
-                const label_t txp1 = (tx + 1 + block::nx()) % block::nx();
-                const label_t txm1 = (tx - 1 + block::nx()) % block::nx();
-
-                const label_t typ1 = (ty + 1 + block::ny()) % block::ny();
-                const label_t tym1 = (ty - 1 + block::ny()) % block::ny();
-
-                const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
-                const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
-
-                const label_t bxm1 = (bx - 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-                const label_t bxp1 = (bx + 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-
-                const label_t bym1 = (by - 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-                const label_t byp1 = (by + 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-
-                const label_t bzm1 = (bz - 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
-                const label_t bzp1 = (bz + 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
-
-                if (tx == 0)
-                { // w
-                    pop[1] = x1[device::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bxm1, by, bz)];
-                    pop[7] = x1[device::idxPopX<1, VelocitySet::D3Q19::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[9] = x1[device::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = x1[device::idxPopX<3, VelocitySet::D3Q19::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[15] = x1[device::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                }
-                else if (tx == (block::nx() - 1))
-                { // e
-                    pop[2] = x0[device::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bxp1, by, bz)];
-                    pop[8] = x0[device::idxPopX<1, VelocitySet::D3Q19::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[10] = x0[device::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[14] = x0[device::idxPopX<3, VelocitySet::D3Q19::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[16] = x0[device::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
-                }
-
-                if (ty == 0)
-                { // s
-                    pop[3] = y1[device::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, bym1, bz)];
-                    pop[7] = y1[device::idxPopY<1, VelocitySet::D3Q19::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
-                    pop[11] = y1[device::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = y1[device::idxPopY<3, VelocitySet::D3Q19::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = y1[device::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                }
-                else if (ty == (block::ny() - 1))
-                { // n
-                    pop[4] = y0[device::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, byp1, bz)];
-                    pop[8] = y0[device::idxPopY<1, VelocitySet::D3Q19::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = y0[device::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[13] = y0[device::idxPopY<3, VelocitySet::D3Q19::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
-                    pop[18] = y0[device::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
-                }
-
-                if (tz == 0)
-                { // b
-                    pop[5] = z1[device::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bzm1)];
-                    pop[9] = z1[device::idxPopZ<1, VelocitySet::D3Q19::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
-                    pop[11] = z1[device::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = z1[device::idxPopZ<3, VelocitySet::D3Q19::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = z1[device::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
-                }
-                else if (tz == (block::nz() - 1))
-                { // f
-                    pop[6] = z0[device::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bzp1)];
-                    pop[10] = z0[device::idxPopZ<1, VelocitySet::D3Q19::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = z0[device::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
-                    pop[15] = z0[device::idxPopZ<3, VelocitySet::D3Q19::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
-                    pop[17] = z0[device::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
-                }
-            }
-
-            /**
              * @brief Calculates the moments from the population density
              * @param pop The lattice population density
              * @param moments The lattice moments
              **/
-            __device__ inline static void calculateMoments(
-                const scalar_t (&ptrRestrict pop)[19],
-                scalar_t (&ptrRestrict moments)[10]) noexcept
+            __device__ inline static void calculateMoments(const scalar_t (&ptrRestrict pop)[19], scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 // Equation 3
                 moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
@@ -430,7 +268,7 @@ namespace LBM
                 std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
                 std::cout << "{" << std::endl;
                 printAll();
-                std::cout << "}" << std::endl;
+                std::cout << "};" << std::endl;
                 std::cout << std::endl;
             }
 
@@ -446,80 +284,27 @@ namespace LBM
             static constexpr const label_t QF_ = 5;
 
             /**
-             * @brief Implementation of the population save loop
-             * @param pop The population to be set in shared memory
-             * @param s_pop The shared memory array
-             * @note This function effectively unrolls the loop at compile-time and checks for its bounds
-             **/
-            template <const label_t q_ = 0>
-            __device__ static inline constexpr void popSave_loop(
-                const scalar_t (&ptrRestrict pop)[19],
-                scalar_t s_pop[block::size() * 18]) noexcept
-            {
-                // Check at compile time that the loop is correctly bounded
-                static_assert(q_ + 1 < 19, "Compile error in popSaveShared: Loop is incorrectly bounded");
-
-                // Put pop[q + 1] into s_pop[q]
-                s_pop[idxPopBlock<q_>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[q_ + 1];
-
-                // Check that we have not reached the end of the loop
-                if constexpr (q_ < Q_ - 2)
-                {
-                    // Continue if the next iteration is not the last
-                    popSave_loop<q_ + 1>(pop, s_pop);
-                }
-            }
-
-            /**
              * @brief Implementation of the equilibrium distribution loop
              * @param pop The population to be set
-             * @param rho Density
              * @param u The x-component of velocity
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              * @note This function effectively unrolls the loop at compile-time and checks for its bounds
              **/
-            template <const label_t q_ = 0>
-            static inline constexpr void f_eq_loop(
-                std::array<scalar_t, 19> pop,
-                const scalar_t rho,
-                const scalar_t u, const scalar_t v, const scalar_t w) noexcept
-            {
-                // Check at compile time that the loop is correctly bounded
-                static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
-
-                // Compute the equilibrium distribution for q
-                pop[q_] = f_eq(
-                    w_q(lattice_constant<q_>()) * rho,
-                    static_cast<scalar_t>(3.0) * ((u * cx(lattice_constant<q_>())) + (v * cy(lattice_constant<q_>())) + (w * cz(lattice_constant<q_>()))),
-                    static_cast<scalar_t>(1.0) - static_cast<scalar_t>(1.5) * ((u * u) + (v * v) + (w * w)));
-
-                // Check that we have not reached the end of the loop
-                if constexpr (q_ < Q_ - 2)
-                {
-                    // Continue if the next iteration is not the last
-                    f_eq_loop<q_ + 1>(pop, rho, u, v, w);
-                }
-            }
-
             template <const label_t q_>
-            static inline constexpr void f_eq_loop(
-                std::array<scalar_t, 19> &pop,
-                const scalar_t ux,
-                const scalar_t uy,
-                const scalar_t uz) noexcept
+            static inline constexpr void f_eq_loop(std::array<scalar_t, 19> &pop, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
             {
                 // Check at compile time that the loop is correctly bounded
                 static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
 
                 pop[q_] = f_eq(
                     w_q(lattice_constant<q_>()),
-                    static_cast<scalar_t>(3) * (ux * cx(lattice_constant<q_>()) + uy * cy(lattice_constant<q_>()) + uz * cz(lattice_constant<q_>())),
-                    static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (ux * ux + uy * uy + uz * uz));
+                    static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
+                    static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
 
                 if constexpr (q_ < Q_ - 2)
                 {
-                    f_eq_loop<q_ + 1>(pop, ux, uy, uz);
+                    f_eq_loop<q_ + 1>(pop, u, v, w);
                 }
             }
 
@@ -531,7 +316,7 @@ namespace LBM
             static inline void printAll(const lattice_constant<q_> q = lattice_constant<0>()) noexcept
             {
                 // Print the lattice weight to the terminal
-                std::cout << "    [" << lattice_constant<q_>() << "] = {" << w_q(lattice_constant<q_>()) << ", " << cx(lattice_constant<q_>()) << ", " << cy(lattice_constant<q_>()) << ", " << cz(lattice_constant<q_>()) << "};" << std::endl;
+                std::cout << "    [" << lattice_constant<q_>() << "] = {" << w_q(lattice_constant<q_>()) << ", " << static_cast<int>(cx(lattice_constant<q_>())) << ", " << static_cast<int>(cy(lattice_constant<q_>())) << ", " << static_cast<int>(cz(lattice_constant<q_>())) << "};" << std::endl;
 
                 // Check that we have not reached the end of the loop
                 if constexpr (q() < Q_ - 1)

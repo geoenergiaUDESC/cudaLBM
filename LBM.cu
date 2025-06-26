@@ -10,7 +10,9 @@ int main(int argc, char *argv[])
 
     const programControl programCtrl(argc, argv);
 
-    const host::array<scalar_t> hostMoments(programCtrl, mesh, ctorType::READ_IF_PRESENT);
+    VelocitySet::D3Q19::print();
+
+    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(programCtrl, mesh);
 
     // Set cuda device
     checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
@@ -44,13 +46,14 @@ int main(int argc, char *argv[])
     mesh.copyDeviceSymbols();
     programCtrl.copyDeviceSymbols(mesh.nx());
 
-    std::cout << "Restarting from t = " << programCtrl.latestTime() << std::endl;
+    std::cout << "Time loop start" << std::endl;
+    std::cout << std::endl;
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
         if (programCtrl.print(timeStep))
         {
-            std::cout << "Time: " << timeStep << std::endl;
+            std::cout << "Time: " << timeStep << "\n";
         }
 
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(

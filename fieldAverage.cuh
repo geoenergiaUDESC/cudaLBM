@@ -25,7 +25,7 @@ namespace LBM
             const nodeType_t *const nodeTypes,
             const label_t step)
         {
-            const nodeType_t nodeType = nodeTypes[device::idxScalarBlock(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
+            const nodeType_t nodeType = nodeTypes[device::idxScalarBlock(threadIdx, blockIdx)];
 
             if (device::out_of_bounds() || device::bad_node_type(nodeType))
             {
@@ -37,27 +37,27 @@ namespace LBM
             const scalar_t invCount = static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(meanCounter) + static_cast<scalar_t>(1.0));
 
             const momentArray_t moments_0 = {
-                fMom[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::u()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::v()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::w()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::xx()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::xy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::xz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::yy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::yz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)],
-                fMom[device::idxMom<index::zz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)]};
+                fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::u()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::v()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::w()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::xx()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::xy()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::xz()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::yy()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::yz()>(threadIdx, blockIdx)],
+                fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)]};
 
-            fMomMean[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::rho()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[0]) * invCount;
-            fMomMean[device::idxMom<index::u()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::u()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[1]) * invCount;
-            fMomMean[device::idxMom<index::v()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::v()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[2]) * invCount;
-            fMomMean[device::idxMom<index::w()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::w()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[3]) * invCount;
-            fMomMean[device::idxMom<index::xx()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::xx()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[4]) * invCount;
-            fMomMean[device::idxMom<index::xy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::xy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[5]) * invCount;
-            fMomMean[device::idxMom<index::xz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::xz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[6]) * invCount;
-            fMomMean[device::idxMom<index::yy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::yy()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[7]) * invCount;
-            fMomMean[device::idxMom<index::yz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::yz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[8]) * invCount;
-            fMomMean[device::idxMom<index::zz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] = ((fMomMean[device::idxMom<index::zz()>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)] * static_cast<scalar_t>(meanCounter)) + moments_0[9]) * invCount;
+            fMomMean[device::idxMom<index::rho()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::rho()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[0]) * invCount;
+            fMomMean[device::idxMom<index::u()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::u()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[1]) * invCount;
+            fMomMean[device::idxMom<index::v()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::v()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[2]) * invCount;
+            fMomMean[device::idxMom<index::w()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::w()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[3]) * invCount;
+            fMomMean[device::idxMom<index::xx()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::xx()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[4]) * invCount;
+            fMomMean[device::idxMom<index::xy()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::xy()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[5]) * invCount;
+            fMomMean[device::idxMom<index::xz()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::xz()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[6]) * invCount;
+            fMomMean[device::idxMom<index::yy()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::yy()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[7]) * invCount;
+            fMomMean[device::idxMom<index::yz()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::yz()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[8]) * invCount;
+            fMomMean[device::idxMom<index::zz()>(threadIdx, blockIdx)] = ((fMomMean[device::idxMom<index::zz()>(threadIdx, blockIdx)] * static_cast<scalar_t>(meanCounter)) + moments_0[9]) * invCount;
         }
     }
 }

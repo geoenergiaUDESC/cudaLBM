@@ -5,7 +5,6 @@ Contents: Functions employed throughout the source code to manipulate strings
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
-#include "exceptionHandler.cuh"
 
 #ifndef __MBLBM_STRINGS_CUH
 #define __MBLBM_STRINGS_CUH
@@ -14,72 +13,17 @@ namespace LBM
 {
     namespace string
     {
-        struct functionNameLines_t
-        {
-        public:
-            /**
-             * @brief Reads a std::vector of std::strings for functionName
-             * @return A functionNameLines_t object
-             * @param fileString A std::vector of std::strings read from a file to be scanned
-             * @param functionName The function name for which fileString is to be scanned
-             **/
-            [[nodiscard]] inline functionNameLines_t(const std::vector<std::string> &fileString, const std::string &functionName) noexcept
-                : functionNameLine(scanFor(fileString, functionName)),
-                  openBracketLine(scanFor(fileString, "{")),
-                  closeBracketLine(scanFor(fileString, "}")),
-                  nLines(closeBracketLine - openBracketLine - 1) {};
-
-            /**
-             * @brief The line on which the function name appears
-             **/
-            const label_t functionNameLine;
-
-            /**
-             * @brief The line on which the first open curly brace after functionName appears
-             **/
-            const label_t openBracketLine;
-
-            /**
-             * @brief The line on which the curly braces are closed
-             **/
-            const label_t closeBracketLine;
-
-            /**
-             * @brief The number of lines read
-             **/
-            const label_t nLines;
-
-        private:
-            /**
-             * @brief Scans fileString for a substring of characters and returns the line on which it is found
-             * @return The line on which functionName is found
-             * @param fileString A std::vector of std::strings read from a file to be scanned
-             * @param functionName The function name for which fileString is to be scanned
-             **/
-            [[nodiscard]] label_t scanFor(const std::vector<std::string> &fileString, const std::string &functionName) const noexcept
-            {
-                for (label_t i = 0; i < fileString.size(); i++)
-                {
-                    if (fileString[i].find(functionName) != std::string::npos)
-                    {
-                        return i;
-                    }
-                }
-                return 0;
-            }
-        };
-
         /**
          * @brief Reads the caseInfo file in the current directory into a vector of strings
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
-        [[nodiscard]] std::vector<std::string> readCaseDirectory(const std::string_view &fileName) noexcept
+        [[nodiscard]] std::vector<std::string> readCaseDirectory(const std::string_view &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
             {
-                exceptions::program_exit(-1, std::string(fileName) + std::string(" file not opened"));
+                throw std::runtime_error(std::string(fileName) + std::string(" file not opened"));
             }
 
             // Read the caseInfo file contained within the directory
@@ -125,7 +69,7 @@ namespace LBM
          * @return A std::vector of std::string_view objects split from s by delim
          * @note This function can be used to, for example, split a string by commas, spaces, etc
          **/
-        [[nodiscard]] std::vector<std::string> split(const std::string_view &s, const char delim, const bool removeWhitespace = true) noexcept
+        [[nodiscard]] const std::vector<std::string> split(const std::string_view &s, const char delim, const bool removeWhitespace = true) noexcept
         {
             std::vector<std::string> result;
             const char *left = s.begin();
@@ -161,7 +105,7 @@ namespace LBM
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
         template <typename T>
-        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name) noexcept
+        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
         {
             // Loop over S
             for (label_t i = 0; i < S.size(); i++)
@@ -206,7 +150,7 @@ namespace LBM
             }
             // Otherwise return 0
             // Should theoretically never get to this point because we have checked already that the string exists
-            exceptions::program_exit(-1, "Parameter " + std::string(name) + " not found");
+            throw std::runtime_error("Parameter " + std::string(name) + " not found");
             return 0;
         }
 
@@ -216,7 +160,7 @@ namespace LBM
          * @param name The argument to be searched for
          * @return A std::string_view of the value argument corresponding to name
          **/
-        [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name) noexcept
+        [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name)
         {
             // Loop over the input arguments and search for name
             for (label_t i = 0; i < args.size(); i++)
@@ -232,12 +176,12 @@ namespace LBM
                     // Otherwise it is out of bounds: the supplied argument is the last argument and no value pair has been supplied
                     else
                     {
-                        exceptions::program_exit(-1, "Input argument " + std::string(name) + std::string(" has not been supplied with a value; the correct syntax is -GPU 0,1 for example"));
+                        throw std::runtime_error("Input argument " + std::string(name) + std::string(" has not been supplied with a value; the correct syntax is -GPU 0,1 for example"));
                         return "";
                     }
                 }
             }
-            exceptions::program_exit(-1, "Input argument " + std::string(name) + std::string(" has not been supplied"));
+            throw std::runtime_error("Input argument " + std::string(name) + std::string(" has not been supplied"));
             return "";
         }
 
@@ -249,7 +193,7 @@ namespace LBM
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/
         template <typename T>
-        [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name) noexcept
+        [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name)
         {
             const std::vector<std::string> s_v = string::split(parseNameValuePair(args, name), ","[0], true);
 
@@ -267,7 +211,7 @@ namespace LBM
                     }
                     else
                     {
-                        exceptions::program_exit(-1, std::string(name) + std::string(" is not numeric"));
+                        throw std::runtime_error(std::string(name) + std::string(" is not numeric"));
                     }
                 }
                 else
@@ -278,7 +222,7 @@ namespace LBM
                     }
                     else
                     {
-                        exceptions::program_exit(-1, std::string("Value supplied to argument ") + std::string(name) + std::string(" is not numeric"));
+                        throw std::runtime_error(std::string("Value supplied to argument ") + std::string(name) + std::string(" is not numeric"));
                     }
                 }
                 arrLength = arrLength + 1;

@@ -18,7 +18,7 @@ namespace LBM
 {
     namespace host
     {
-        template <typename T>
+        template <typename T, const ctorType::type cType>
         class array
         {
         public:
@@ -26,13 +26,9 @@ namespace LBM
              * @brief Constructor for the host array class
              * @param programCtrl The program control dictionary
              * @param mesh The mesh
-             * @param constructorType The type of constructor
              **/
-            [[nodiscard]] array(
-                const programControl &programCtrl,
-                const host::latticeMesh &mesh,
-                const ctorType::type constructorType)
-                : arr_(initialiseVector(programCtrl, mesh, constructorType)) {};
+            [[nodiscard]] array(const programControl &programCtrl, const host::latticeMesh &mesh)
+                : arr_(initialiseVector(programCtrl, mesh)) {};
 
             /**
              * @brief Destructor for the host array class
@@ -58,30 +54,26 @@ namespace LBM
              * @brief Initialises the std::vector
              * @param programCtrl The program control dictionary
              * @param mesh The mesh
-             * @param constructorType The type of constructor
              **/
-            [[nodiscard]] const std::vector<T> initialiseVector(
-                const programControl &programCtrl,
-                const host::latticeMesh &mesh,
-                const ctorType::type constructorType) const
+            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
             {
-                std::cout << "Entered initialiseVector" << std::endl;
+                static_assert(cType == ctorType::NO_READ || cType == ctorType::MUST_READ || cType == ctorType::READ_IF_PRESENT, "Invalid constructor type");
 
                 // Forced to read the file
-                if (constructorType == ctorType::MUST_READ)
+                if constexpr (cType == ctorType::MUST_READ)
                 {
                     // Get the latest time step
-                    std::cout << "Found file. Reading" << std::endl;
+                    // std::cout << "Found file. Reading" << std::endl;
                     return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
                 }
 
-                if (constructorType == ctorType::READ_IF_PRESENT)
+                if constexpr (cType == ctorType::READ_IF_PRESENT)
                 {
                     // Check if the files exist
                     if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                     {
                         // Construct from file
-                        std::cout << "Found file. Reading" << std::endl;
+                        // std::cout << "Found file. Reading" << std::endl;
                         return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
                     }
                     else
@@ -93,7 +85,7 @@ namespace LBM
                 }
 
                 // Construct default
-                if (constructorType == ctorType::NO_READ)
+                if constexpr (cType == ctorType::NO_READ)
                 {
                     std::cout << "Not reading" << std::endl;
                     return host::moments(mesh, programCtrl.u_inf());
@@ -116,10 +108,7 @@ namespace LBM
              * @param f The std::vector to be allocated on the device
              * @return An array object constructed from f
              **/
-            [[nodiscard]] array(
-                const std::vector<T> &f,
-                const std::vector<std::string> &varNames,
-                const host::latticeMesh &mesh)
+            [[nodiscard]] array(const std::vector<T> &f, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
                 : ptr_(device::allocateArray<T>(f)),
                   varNames_(varNames),
                   mesh_(mesh) {};
@@ -192,10 +181,7 @@ namespace LBM
              * @param fields Object containing the solution variables encoded in interleaved AoS format
              * @param timeStep The current time step
              **/
-            // template <typename T, class F>
-            __host__ void write(
-                const std::string &filePrefix,
-                const std::size_t timeStep)
+            __host__ void write(const std::string &filePrefix, const std::size_t timeStep)
             {
                 const std::size_t nVars = varNames_.size();
                 const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;

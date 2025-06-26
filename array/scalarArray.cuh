@@ -15,7 +15,8 @@ namespace LBM
 {
     namespace host
     {
-        // typedef array<scalar_t> scalarArray;
+        template <const ctorType::type CType>
+        using scalarArray = array<scalar_t, CType>;
     }
 
     namespace device

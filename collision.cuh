@@ -9,9 +9,7 @@ Contents: Definition of the collision GPU kernel
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "velocitySet/velocitySet.cuh"
-#include "boundaryConditions.cuh"
 #include "globalFunctions.cuh"
-#include "boundaryConditions.cuh"
 
 namespace LBM
 {

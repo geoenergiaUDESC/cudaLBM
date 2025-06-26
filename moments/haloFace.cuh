@@ -35,9 +35,7 @@ namespace LBM
              * @param fMom An std::vector containing the 10 interlaced moments
              * @param mesh The mesh
              **/
-            [[nodiscard]] haloFace(
-                const std::vector<scalar_t> &fMom,
-                const host::latticeMesh &mesh) noexcept
+            [[nodiscard]] haloFace(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
                 : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
                   x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(fMom, mesh))),
                   y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(fMom, mesh))),

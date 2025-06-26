@@ -15,7 +15,8 @@ namespace LBM
 {
     namespace host
     {
-        // typedef array<label_t> labelArray;
+        template <const ctorType::type CType>
+        using labelArray = array<label_t, CType>;
     }
 
     namespace device

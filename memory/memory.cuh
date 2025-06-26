@@ -9,47 +9,11 @@ Contents: Memory management routines for the LBM code
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "globalFunctions.cuh"
-#include "exceptionHandler.cuh"
 
 namespace LBM
 {
     namespace host
     {
-        // /**
-        //  * @brief Allocates nPoints worth of T to ptr
-        //  * @param ptr The pointer to which the memory is to be allocated
-        //  * @param size The number of elements to be allocated to T
-        //  **/
-        // template <typename T>
-        // __host__ void allocateMemory(T **ptr, const std::size_t nPoints) noexcept
-        // {
-        //     const cudaError_t i = cudaMallocHost(ptr, sizeof(T) * nPoints);
-
-        //     if (i != cudaSuccess)
-        //     {
-        //         exceptions::program_exit(i, "Unable to allocate array");
-        //     }
-        // }
-
-        //         /**
-        //          * @brief Allocates a block of memory on the host and returns its pointer
-        //          * @return A raw pointer to a block of memory
-        //          * @param size The amount of memory to be allocated
-        //          **/
-        //         template <typename T>
-        //         __host__ [[nodiscard]] T *allocate(const std::size_t nPoints) noexcept
-        //         {
-        //             T *ptr;
-
-        //             allocateMemory(&ptr, nPoints);
-
-        // #ifdef VERBOSE
-        //             std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocHost to address " << ptr << std::endl;
-        // #endif
-
-        //             return ptr;
-        //         }
-
         /**
          * @brief Copies a device pointer of type T into an std::vector of type T on the host
          * @param devPtr Pointer to the array on the device
@@ -62,17 +26,11 @@ namespace LBM
         {
             std::vector<T> hostFields(nPoints, 0);
 
-            const cudaError_t err = cudaMemcpy(
-                hostFields.data(),
-                devPtr,
-                nPoints * sizeof(T),
-                cudaMemcpyDeviceToHost);
+            const cudaError_t err = cudaMemcpy(hostFields.data(), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost);
 
             if (err != cudaSuccess)
             {
-                throw std::runtime_error(
-                    "CUDA copy failed: " +
-                    std::string(cudaGetErrorString(err)));
+                throw std::runtime_error("cudaMemcpyDeviceToHost failed: " + std::string(cudaGetErrorString(err)));
             }
 
             return hostFields;
@@ -85,9 +43,7 @@ namespace LBM
          * @return An std::vector of type T, de-interlaced from fMom
          **/
         template <const label_t variableIndex, typename T, class M>
-        __host__ [[nodiscard]] const std::vector<T> save(
-            const T *const fMom,
-            const M &mesh) noexcept
+        __host__ [[nodiscard]] const std::vector<T> save(const T *const fMom, const M &mesh) noexcept
         {
             std::vector<T> f(mesh.nx() * mesh.ny() * mesh.nz(), 0);
 
@@ -114,12 +70,13 @@ namespace LBM
          * @param size The number of elements to be allocated to T
          **/
         template <typename T>
-        __host__ void allocateMemory(T **ptr, const std::size_t nPoints) noexcept
+        __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
         {
-            const cudaError_t i = cudaMallocManaged(ptr, sizeof(T) * nPoints);
-            if (i != cudaSuccess)
+            const cudaError_t err = cudaMallocManaged(ptr, sizeof(T) * nPoints);
+
+            if (err != cudaSuccess)
             {
-                exceptions::program_exit(i, "Unable to allocate array");
+                throw std::runtime_error("cudaMallocManaged failed: " + std::string(cudaGetErrorString(err)));
             }
         }
 
@@ -129,7 +86,7 @@ namespace LBM
          * @param size The amount of memory to be allocated
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocate(const std::size_t nPoints) noexcept
+        __host__ [[nodiscard]] T *const allocate(const std::size_t nPoints) noexcept
         {
             T *ptr;
 
@@ -148,13 +105,13 @@ namespace LBM
          * @param f The vector which is to be copied to ptr
          **/
         template <typename T>
-        __host__ void copy(T *ptr, const std::vector<T> &f) noexcept
+        __host__ void copy(T *const ptr, const std::vector<T> &f)
         {
-            const cudaError_t i = cudaMemcpy(ptr, f.data(), f.size() * sizeof(T), cudaMemcpyHostToDevice);
+            const cudaError_t err = cudaMemcpy(ptr, f.data(), f.size() * sizeof(T), cudaMemcpyHostToDevice);
 
-            if (i != cudaSuccess)
+            if (err != cudaSuccess)
             {
-                exceptions::program_exit(i, "Unable to copy array");
+                throw std::runtime_error("cudaMemcpyHostToDevice failed: " + std::string(cudaGetErrorString(err)));
             }
             else
             {
@@ -170,9 +127,9 @@ namespace LBM
          * @param f The pre-existing array on the host to be copied to the GPU
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
+        __host__ [[nodiscard]] T *const allocateArray(const std::vector<T> &f) noexcept
         {
-            T *ptr = allocate<T>(f.size());
+            T *const ptr = allocate<T>(f.size());
 
             copy(ptr, f);
 
@@ -186,9 +143,9 @@ namespace LBM
          * @param val The value set
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const label_t nPoints, const T val) noexcept
+        __host__ [[nodiscard]] T *const allocateArray(const label_t nPoints, const T val) noexcept
         {
-            T *ptr = allocate<T>(nPoints);
+            T *const ptr = allocate<T>(nPoints);
 
             copy(ptr, std::vector<T>(nPoints, val));
 

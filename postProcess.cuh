@@ -8,33 +8,6 @@ namespace LBM
 {
     namespace postProcess
     {
-        // /**
-        //  * @brief Copies a device variable to the host
-        //  * @param fMom The device variable array
-        //  * @param mesh The mesh
-        //  * @return An std::vector of type T, de-interlaced from fMom
-        //  **/
-        // template <const label_t variableIndex, typename T>
-        // __host__ [[nodiscard]] const std::vector<T> save(
-        //     const T *const fMom,
-        //     const host::latticeMesh &mesh) noexcept
-        // {
-        //     std::vector<T> f(mesh.nx() * mesh.ny() * mesh.nz(), 0);
-
-        //     for (label_t z = 0; z < mesh.nz(); z++)
-        //     {
-        //         for (label_t y = 0; y < mesh.ny(); y++)
-        //         {
-        //             for (label_t x = 0; x < mesh.nx(); x++)
-        //             {
-        //                 f[host::idxScalarGlobal(x, y, z, mesh.nx(), mesh.ny())] = fMom[host::idxMom<variableIndex>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())];
-        //             }
-        //         }
-        //     }
-
-        //     return f;
-        // }
-
         /**
          * @brief Writes a solution variable to a file
          * @param solutionVars An std::vector of std::vectors containing the solution variable to be written
@@ -45,7 +18,7 @@ namespace LBM
          **/
         void writeTecplotHexahedralData(
             const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &filename,
+            const std::string &fileName,
             const host::latticeMesh &mesh,
             const std::vector<std::string> &solutionVarNames,
             const std::string &title) noexcept
@@ -75,10 +48,10 @@ namespace LBM
                 }
             }
 
-            std::ofstream outFile(filename);
+            std::ofstream outFile(fileName);
             if (!outFile)
             {
-                std::cerr << "Error opening file: " << filename << "\n";
+                std::cerr << "Error opening file: " << fileName << "\n";
                 return;
             }
 
@@ -168,7 +141,7 @@ namespace LBM
             }
 
             outFile.close();
-            std::cout << "Successfully wrote Tecplot file: " << filename << "\n";
+            std::cout << "Successfully wrote Tecplot file: " << fileName << "\n";
         }
     }
 }

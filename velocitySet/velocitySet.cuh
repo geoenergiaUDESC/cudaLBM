@@ -6,6 +6,10 @@ Contents: Base class used for definition of the velocity set
 #ifndef __MBLBM_VELOCITYSET_CUH
 #define __MBLBM_VELOCITYSET_CUH
 
+#include "LBMIncludes.cuh"
+#include "LBMTypedefs.cuh"
+#include "globalFunctions.cuh"
+
 namespace LBM
 {
     namespace VelocitySet
@@ -18,7 +22,7 @@ namespace LBM
              * @return A velocitySet object
              * @note This constructor is consteval
              **/
-            [[nodiscard]] inline consteval velocitySet() {};
+            [[nodiscard]] inline consteval velocitySet() noexcept {};
 
             /**
              * @brief Parameters used by both D3Q19 and D3Q27 velocity sets
@@ -32,7 +36,7 @@ namespace LBM
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t cs2() noexcept
             {
-                return static_cast<double>(1.0) / static_cast<double>(3.0);
+                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(3.0));
                 // return static_cast<scalar_t>(1.0) / as2();
             }
 
@@ -55,7 +59,7 @@ namespace LBM
             /**
              * @brief Scale the moments by constant values
              **/
-            __device__ static inline void scale(scalar_t *const ptrRestrict moms)
+            __device__ static inline void scale(scalar_t *const ptrRestrict moms) noexcept
             {
                 // Scale the moments correctly
                 moms[1] = scale_i() * moms[1];

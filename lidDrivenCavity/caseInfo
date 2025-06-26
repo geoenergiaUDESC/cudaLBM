@@ -17,6 +17,10 @@ Re              500;
 
 u_inf           0.0256;
 
+startFrom       latestTime;
+
+startTime       0;
+
 nTimeSteps      100001;
 
 saveInterval    100000;

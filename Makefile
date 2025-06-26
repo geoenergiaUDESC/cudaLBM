@@ -15,14 +15,14 @@ endif
 
 NVCXX_MFLAGS = --m64 -arch compute_$(GPU_ARCH_CODE)
 
-NVCXX_DFLAGS = -DSCALAR_PRECISION_32 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19 -DVERBOSE
+NVCXX_DFLAGS = -DSCALAR_PRECISION_32 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19
 
 CXX = g++
 CXX_STANDARD = -std=c++20
 CXX_OPTFLAGS = -O3 -flto -funroll-loops 
 CXX_MFLAGS = -march=native -mtune=native
 CXX_WFLAGS = -Wall -Wextra -Wpedantic -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings
-CXX_DFLAGS = -DSCALAR_PRECISION_32 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19 -DVERBOSE
+CXX_DFLAGS = -DSCALAR_PRECISION_32 -DLABEL_SIZE_64 -DSTENCIL_TYPE_D3Q19
 
 # MPI_INCLUDE_DIR = $(MPI_DIR)/include
 # MPI_LIB_DIR = $(MPI_DIR)/lib

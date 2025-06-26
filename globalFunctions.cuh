@@ -222,6 +222,14 @@ namespace LBM
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz))))));
         }
 
+        template <const label_t mom>
+        __device__ [[nodiscard]] inline label_t idxMom(
+            const dim3 &tx,
+            const dim3 &bx)
+        {
+            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (mom + NUMBER_MOMENTS() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z))))));
+        }
+
         __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
         {
             return x + d_nx * (y + d_ny * (z));
@@ -236,6 +244,13 @@ namespace LBM
             const label_t bz)
         {
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz)))));
+        }
+
+        __device__ [[nodiscard]] inline label_t idxScalarBlock(
+            const dim3 &tx,
+            const dim3 &bx)
+        {
+            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z)))));
         }
 
         template <const label_t pop>

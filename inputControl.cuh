@@ -49,12 +49,12 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] label_t nArgsCheck(int argc) const noexcept
+        [[nodiscard]] label_t nArgsCheck(int argc) const
         {
             // Check for a bad number of supplied arguments
             if (argc < 0)
             {
-                exceptions::program_exit(-1, "Bad value of argc: cannot be negative");
+                throw std::runtime_error("Bad value of argc: cannot be negative");
                 return std::numeric_limits<label_t>::max();
             }
             else
@@ -74,12 +74,12 @@ namespace LBM
          * @return An std::vector of deviceIndex_t representing the indices of the devices
          * @note Checks that the number of GPUs supplied on the command line is valid
          **/
-        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const noexcept
+        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const
         {
             const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
             if (deviceList.size() > static_cast<label_t>(nAvailableDevices()) | nAvailableDevices() < 1)
             {
-                exceptions::program_exit(-1, "Number of GPUs requested is greater than the number available");
+                throw std::runtime_error("Number of GPUs requested is greater than the number available");
             }
             return deviceList;
         }

@@ -8,7 +8,6 @@ Contents: A class handling the setup of the solver
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
-#include "exceptionHandler.cuh"
 #include "strings.cuh"
 #include "inputControl.cuh"
 #include "fileIO/fileIO.cuh"
@@ -60,22 +59,24 @@ namespace LBM
             std::cout << "    Ly = " << Ly_ << ";" << std::endl;
             std::cout << "    Lz = " << Lz_ << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
+            std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
+            std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
+            std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
-
-            // checkCudaErrors(cudaMemcpyToSymbol(d_Re, &Re_, sizeof(d_Re)));
-            // checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_)));
-            // const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
-            // const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
-
-            // const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
-
-            // checkCudaErrors(cudaMemcpyToSymbol(d_tau, &tau, sizeof(tau)));
-            // checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));
 
             cudaDeviceSynchronize();
         };
 
+        /**
+         * @brief Destructor for the programControl class
+         **/
+        ~programControl() noexcept {};
+
+        /**
+         * @brief Copies constants initialised on the host to the device constant memory
+         * @param nx The number of lattices in the x direction
+         **/
         void copyDeviceSymbols(const label_t nx) const noexcept
         {
             const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
@@ -94,11 +95,6 @@ namespace LBM
             checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));
             cudaDeviceSynchronize();
         }
-
-        /**
-         * @brief Destructor for the programControl class
-         **/
-        ~programControl() noexcept {};
 
         /**
          * @brief Returns the name of the case
@@ -193,7 +189,7 @@ namespace LBM
         const scalar_t Lz_;
 
         /**
-         * @brief Total number of simulation time steps, the save interval and the info output interval
+         * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
          **/
         const label_t nTimeSteps_;
         const label_t saveInterval_;

@@ -1,6 +1,7 @@
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
 #include "momentBasedD3Q19.cuh"
+#include "fieldAverage.cuh"
 
 using namespace LBM;
 
@@ -24,11 +25,11 @@ int main(int argc, char *argv[])
     device::halo blockHalo(hostMoments.arr(), mesh);
     const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
 
-    // // Set up time averaging
-    // // device::array<scalar_t> momentsMean(
-    // //     host::moments(mesh, programCtrl.u_inf()),
-    // //     {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"},
-    // //     mesh);
+    // Set up time averaging
+    device::array<scalar_t> momentsMean(
+        host::moments(mesh, programCtrl.u_inf()),
+        {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"},
+        mesh);
 
     // Setup Streams
     cudaStream_t streamsLBM[1];
@@ -53,16 +54,27 @@ int main(int argc, char *argv[])
             std::cout << "Time: " << timeStep << std::endl;
         }
 
+        // This is inside the for loop in LBM.cu
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
             deviceMoments.ptr(),
             nodeTypes.ptr(),
             blockHalo);
 
-        // fieldAverage::calculate<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
-        //     moments.ptr(),
-        //     momentsMean.ptr(),
-        //     nodeTypes.ptr(),
-        //     timeStep);
+        // --- START: This is the new, corrected block ---
+
+        // 1. Calculate invCount ONCE here on the CPU (host)
+        const scalar_t invCount = static_cast<scalar_t>(1.0) / (static_cast<scalar_t>(timeStep) + static_cast<scalar_t>(1.0));
+        const scalar_t meanCounterScalar = static_cast<scalar_t>(timeStep);
+
+        // 2. Launch the kernel with the new 5-argument signature
+        fieldAverage::calculatePipelined<<<mesh.gridBlock(), mesh.threadBlock(), 0, 0>>>(
+            deviceMoments.ptr(),
+            momentsMean.ptr(),
+            timeStep,
+            invCount,
+            meanCounterScalar);
+
+        // --- END: Replacement block ---
 
         blockHalo.swap();
 

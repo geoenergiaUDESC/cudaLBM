@@ -214,11 +214,13 @@ namespace LBM
             return (nodeType == 0b11111111);
         }
 
-        template <const label_t mom>
+        // This is the new, more flexible version
         __device__ [[nodiscard]] inline label_t idxMom(
+            const label_t mom, // 'mom' is now a regular function argument
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz)
         {
+            // The function body remains exactly the same
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz))))));
         }
 

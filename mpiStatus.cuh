@@ -17,25 +17,25 @@ namespace LBM
         /**
          * @brief Constructor for the mpiStatus class
          **/
-        [[nodiscard]] mpiStatus(int argc, char *argv[]) noexcept
+        [[nodiscard]] mpiStatus(int argc, char *argv[])
             : mpiStatus_(mpiInitialise(argc, argv))
         {
             if (!mpiStatus_ == MPI_SUCCESS)
             {
-                exceptions::program_exit(mpiStatus_, "MPI failed to initialise, returned code " + std::to_string(static_cast<int>(mpiStatus_)));
+                throw std::runtime_error("MPI failed to initialise, returned code " + std::to_string(static_cast<int>(mpiStatus_)));
             }
         };
 
         /**
          * @brief Destructor for the mpiStatus class
          **/
-        ~mpiStatus() noexcept
+        ~mpiStatus()
         {
             const mpiError_t i = static_cast<mpiError_t>(MPI_Finalize());
 
             if (!i == mpiError_t::SUCCESS)
             {
-                exceptions::program_exit(i, "MPI failed to finalise, returned code " + std::to_string(static_cast<int>(i)));
+                throw std::runtime_error("MPI failed to finalise, returned code " + std::to_string(static_cast<int>(i)));
             }
         };
 

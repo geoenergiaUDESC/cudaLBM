@@ -19,12 +19,7 @@ namespace LBM
          * @param timeStep The current time step
          **/
         template <typename T, class M>
-        __host__ void writeFile(
-            const std::string &filename,
-            const M &mesh,
-            const std::vector<std::string> &varNames,
-            const std::vector<T> &fields,
-            const std::size_t timeStep)
+        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const std::size_t timeStep)
         {
             static_assert(std::is_floating_point<T>::value, "T must be floating point");
 
@@ -41,10 +36,10 @@ namespace LBM
                 throw std::invalid_argument("Data vector size mismatch");
             }
 
-            std::ofstream out(filename, std::ios::binary);
+            std::ofstream out(fileName, std::ios::binary);
             if (!out)
             {
-                throw std::runtime_error("Cannot open file: " + filename);
+                throw std::runtime_error("Cannot open file: " + fileName);
             }
 
             // Write the system information: binary endianness

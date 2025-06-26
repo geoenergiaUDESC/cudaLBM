@@ -239,22 +239,8 @@ namespace LBM
             READ_IF_PRESENT = 2
         } type;
     }
-
-    /**
-     * @brief Ranks of tensor
-     **/
-    // namespace tensorComponent
-    // {
-    //     typedef enum Enum : label_t
-    //     {
-    //         m_0 = 0,  // Scalar
-    //         m_i = 1,  // Vector
-    //         m_ii = 2, // Diagonal component of a symmetric tensor
-    //         m_ij = 3  // Off-diagonal component of a symmetric tensor
-    //     } type;
-    // }
-    // template <const tensorComponent::type m>
-    // using tensor_component = const std::integral_constant<tensorComponent::type, m>;
+    template <const ctorType::type T>
+    using constructorType = const std::integral_constant<ctorType::type, T>;
 
     __device__ __constant__ label_t d_nx;
     __device__ __constant__ label_t d_ny;

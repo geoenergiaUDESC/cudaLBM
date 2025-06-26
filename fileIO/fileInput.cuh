@@ -39,12 +39,12 @@ namespace LBM
          * @param fileName The name of the file to be parsed
          * @return The parsed header information
          **/
-        [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &filename)
+        [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &fileName)
         {
-            std::ifstream in(filename, std::ios::binary);
+            std::ifstream in(fileName, std::ios::binary);
             if (!in)
             {
-                throw std::runtime_error("Cannot open file: " + filename);
+                throw std::runtime_error("Cannot open file: " + fileName);
             }
 
             std::string line;
@@ -189,13 +189,13 @@ namespace LBM
          * @param fileName The name of the file to be read
          **/
         template <typename T>
-        [[nodiscard]] const std::vector<T> readFieldFile(const std::string &filename)
+        [[nodiscard]] const std::vector<T> readFieldFile(const std::string &fileName)
         {
             static_assert(std::is_floating_point_v<T>, "T must be floating point");
             static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
 
             // Parse header metadata
-            const fieldFileHeader header = parseFieldFileHeader(filename);
+            const fieldFileHeader header = parseFieldFileHeader(fileName);
 
             // Validate scalar size
             if (sizeof(T) != header.scalarSize)
@@ -208,10 +208,10 @@ namespace LBM
             const std::size_t totalDataCount = totalPoints * header.nVars;
 
             // Open file and jump to binary data
-            std::ifstream in(filename, std::ios::binary);
+            std::ifstream in(fileName, std::ios::binary);
             if (!in)
             {
-                throw std::runtime_error("Cannot open file: " + filename);
+                throw std::runtime_error("Cannot open file: " + fileName);
             }
 
             // Safe conversion for seekg
@@ -253,9 +253,7 @@ namespace LBM
          * @param mesh The mesh
          **/
         template <typename T, class M>
-        [[nodiscard]] std::vector<std::vector<T>> deinterleaveAoS(
-            const std::vector<T> &fMom,
-            const M &mesh)
+        [[nodiscard]] std::vector<std::vector<T>> deinterleaveAoS(const std::vector<T> &fMom, const M &mesh)
         {
             return {
                 host::save<index::rho()>(fMom.data(), mesh),

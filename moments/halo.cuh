@@ -26,9 +26,7 @@ namespace LBM
              * @param f The std::vector to be allocated on the device
              * @return An array object constructed from f
              **/
-            [[nodiscard]] halo(
-                const std::vector<scalar_t> &fMom,
-                const host::latticeMesh &mesh) noexcept
+            [[nodiscard]] halo(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
                 : fGhost_(haloFace(fMom, mesh)),
                   gGhost_(haloFace(fMom, mesh)) {};
 

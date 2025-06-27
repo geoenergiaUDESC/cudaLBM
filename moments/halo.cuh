@@ -1,40 +1,32 @@
 /**
 Filename: halo.cuh
-Contents: A class handling the device halo
+Contents: A class handling the device halo (Optimized with Shared Memory)
 This class is used to exchange the microscopic velocity components at the edge of a CUDA block
 **/
+// PASTE THIS CODE INTO: halo.cuh (Complete File)
 
 #ifndef __MBLBM_HALO_CUH
 #define __MBLBM_HALO_CUH
 
+#include "LBMIncludes.cuh"
+#include "LBMTypedefs.cuh"
+#include "globalFunctions.cuh"
 #include "haloFace.cuh"
 
 namespace LBM
 {
-    namespace host
-    {
-
-    }
-
     namespace device
     {
         class halo
         {
         public:
-            /**
-             * @brief Constructs the block halo from a host array and a latticeMesh object
-             * @param f The std::vector to be allocated on the device
-             * @return An array object constructed from f
-             **/
+            // --- Constructor and Swap function are UNCHANGED ---
             [[nodiscard]] halo(
                 const std::vector<scalar_t> &fMom,
                 const host::latticeMesh &mesh) noexcept
                 : fGhost_(haloFace(fMom, mesh)),
                   gGhost_(haloFace(fMom, mesh)) {};
 
-            /**
-             * @brief Swaps the halo pointers
-             **/
             __host__ inline void swap() noexcept
             {
                 interfaceSwap(fGhost().x0Ref(), gGhost().x0Ref());
@@ -45,231 +37,324 @@ namespace LBM
                 interfaceSwap(fGhost().z1Ref(), gGhost().z1Ref());
             }
 
-            /**
-             * @brief Provides read-only access to the halos
-             * @return A const-qualified reference to the halos
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &fGhost() const noexcept
-            {
-                return fGhost_;
-            }
-            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &gGhost() const noexcept
-            {
-                return gGhost_;
-            }
+            // --- Accessors are UNCHANGED ---
+            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &fGhost() const noexcept { return fGhost_; }
+            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &gGhost() const noexcept { return gGhost_; }
+            __device__ __host__ [[nodiscard]] inline constexpr haloFace &fGhost() noexcept { return fGhost_; }
+            __device__ __host__ [[nodiscard]] inline constexpr haloFace &gGhost() noexcept { return gGhost_; }
 
-            /**
-             * @brief Provides mutable access to the halos
-             * @return A reference to the halos
-             **/
-            __device__ __host__ [[nodiscard]] inline constexpr haloFace &fGhost() noexcept
-            {
-                return fGhost_;
-            }
-            __device__ __host__ [[nodiscard]] inline constexpr haloFace &gGhost() noexcept
-            {
-                return gGhost_;
-            }
+            // --- OPTIMIZATION: NEW TWO-STAGE HALO EXCHANGE FUNCTIONS ---
 
-            /**
-             * @brief Loads the populations at the halo points into pop
-             * @param pop The population density array into which the halo points are to be loaded
-             **/
             template <class VSet>
-            __device__ inline void popLoad(scalar_t (&ptrRestrict pop)[VSet::Q()]) const noexcept
+            __device__ void halo_global_to_shared_load(scalar_t *s_buffer) const noexcept
             {
+                constexpr label_t QF = VSet::QF();
+                constexpr label_t NX = block::nx();
+                constexpr label_t NY = block::ny();
+                constexpr label_t NZ = block::nz();
+
+                scalar_t *s_load_west = s_buffer;
+                scalar_t *s_load_east = s_load_west + QF * NY * NZ;
+                scalar_t *s_load_south = s_load_east + QF * NY * NZ;
+                scalar_t *s_load_north = s_load_south + QF * NX * NZ;
+                scalar_t *s_load_back = s_load_north + QF * NX * NZ;
+                scalar_t *s_load_front = s_load_back + QF * NX * NY;
+
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
                 const label_t tz = threadIdx.z;
-
                 const label_t bx = blockIdx.x;
                 const label_t by = blockIdx.y;
                 const label_t bz = blockIdx.z;
-
-                const label_t txp1 = (tx + 1 + block::nx()) % block::nx();
-                const label_t txm1 = (tx - 1 + block::nx()) % block::nx();
-
-                const label_t typ1 = (ty + 1 + block::ny()) % block::ny();
-                const label_t tym1 = (ty - 1 + block::ny()) % block::ny();
-
-                const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
-                const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
-
                 const label_t bxm1 = (bx - 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
                 const label_t bxp1 = (bx + 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-
                 const label_t bym1 = (by - 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
                 const label_t byp1 = (by + 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-
                 const label_t bzm1 = (bz - 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
                 const label_t bzp1 = (bz + 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
+                const label_t txp1 = (tx + 1 + NX) % NX;
+                const label_t txm1 = (tx - 1 + NX) % NX;
+                const label_t typ1 = (ty + 1 + NY) % NY;
+                const label_t tym1 = (ty - 1 + NY) % NY;
+                const label_t tzp1 = (tz + 1 + NZ) % NZ;
+                const label_t tzm1 = (tz - 1 + NZ) % NZ;
 
                 if (tx == 0)
-                { // w
-                    pop[1] = fGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)];
-                    pop[7] = fGhost_.x1()[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[9] = fGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = fGhost_.x1()[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[15] = fGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                {
+                    s_load_west[0 * NY * NZ + tz * NY + ty] = fGhost().x1()[idxPopX<0, QF>(ty, tz, bxm1, by, bz)];
+                    s_load_west[1 * NY * NZ + tz * NY + ty] = fGhost().x1()[idxPopX<1, QF>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
+                    s_load_west[2 * NY * NZ + tz * NY + ty] = fGhost().x1()[idxPopX<2, QF>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
+                    s_load_west[3 * NY * NZ + tz * NY + ty] = fGhost().x1()[idxPopX<3, QF>(typ1, tz, bxm1, ((ty == (NY - 1)) ? byp1 : by), bz)];
+                    s_load_west[4 * NY * NZ + tz * NY + ty] = fGhost().x1()[idxPopX<4, QF>(ty, tzp1, bxm1, by, ((tz == (NZ - 1)) ? bzp1 : bz))];
                 }
-                else if (tx == (block::nx() - 1))
-                { // e
-                    pop[2] = fGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)];
-                    pop[8] = fGhost_.x0()[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[10] = fGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[14] = fGhost_.x0()[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[16] = fGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
+                else if (tx == (NX - 1))
+                {
+                    s_load_east[0 * NY * NZ + tz * NY + ty] = fGhost().x0()[idxPopX<0, QF>(ty, tz, bxp1, by, bz)];
+                    s_load_east[1 * NY * NZ + tz * NY + ty] = fGhost().x0()[idxPopX<1, QF>(typ1, tz, bxp1, ((ty == (NY - 1)) ? byp1 : by), bz)];
+                    s_load_east[2 * NY * NZ + tz * NY + ty] = fGhost().x0()[idxPopX<2, QF>(ty, tzp1, bxp1, by, ((tz == (NZ - 1)) ? bzp1 : bz))];
+                    s_load_east[3 * NY * NZ + tz * NY + ty] = fGhost().x0()[idxPopX<3, QF>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
+                    s_load_east[4 * NY * NZ + tz * NY + ty] = fGhost().x0()[idxPopX<4, QF>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
                 }
-
                 if (ty == 0)
-                { // s
-                    pop[3] = fGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)];
-                    pop[7] = fGhost_.y1()[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
-                    pop[11] = fGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = fGhost_.y1()[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = fGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                {
+                    s_load_south[0 * NX * NZ + tz * NX + tx] = fGhost().y1()[idxPopY<0, QF>(tx, tz, bx, bym1, bz)];
+                    s_load_south[1 * NX * NZ + tz * NX + tx] = fGhost().y1()[idxPopY<1, QF>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
+                    s_load_south[2 * NX * NZ + tz * NX + tx] = fGhost().y1()[idxPopY<2, QF>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
+                    s_load_south[3 * NX * NZ + tz * NX + tx] = fGhost().y1()[idxPopY<3, QF>(txp1, tz, ((tx == (NX - 1)) ? bxp1 : bx), bym1, bz)];
+                    s_load_south[4 * NX * NZ + tz * NX + tx] = fGhost().y1()[idxPopY<4, QF>(tx, tzp1, bx, bym1, ((tz == (NZ - 1)) ? bzp1 : bz))];
                 }
-                else if (ty == (block::ny() - 1))
-                { // n
-                    pop[4] = fGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)];
-                    pop[8] = fGhost_.y0()[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = fGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[13] = fGhost_.y0()[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
-                    pop[18] = fGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
+                else if (ty == (NY - 1))
+                {
+                    s_load_north[0 * NX * NZ + tz * NX + tx] = fGhost().y0()[idxPopY<0, QF>(tx, tz, bx, byp1, bz)];
+                    s_load_north[1 * NX * NZ + tz * NX + tx] = fGhost().y0()[idxPopY<1, QF>(txp1, tz, ((tx == (NX - 1)) ? bxp1 : bx), byp1, bz)];
+                    s_load_north[2 * NX * NZ + tz * NX + tx] = fGhost().y0()[idxPopY<2, QF>(tx, tzp1, bx, byp1, ((tz == (NZ - 1)) ? bzp1 : bz))];
+                    s_load_north[3 * NX * NZ + tz * NX + tx] = fGhost().y0()[idxPopY<3, QF>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
+                    s_load_north[4 * NX * NZ + tz * NX + tx] = fGhost().y0()[idxPopY<4, QF>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
                 }
-
                 if (tz == 0)
-                { // b
-                    pop[5] = fGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)];
-                    pop[9] = fGhost_.z1()[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
-                    pop[11] = fGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = fGhost_.z1()[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = fGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
+                {
+                    s_load_back[0 * NX * NY + ty * NX + tx] = fGhost().z1()[idxPopZ<0, QF>(tx, ty, bx, by, bzm1)];
+                    s_load_back[1 * NX * NY + ty * NX + tx] = fGhost().z1()[idxPopZ<1, QF>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
+                    s_load_back[2 * NX * NY + ty * NX + tx] = fGhost().z1()[idxPopZ<2, QF>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
+                    s_load_back[3 * NX * NY + ty * NX + tx] = fGhost().z1()[idxPopZ<3, QF>(txp1, ty, ((tx == (NX - 1)) ? bxp1 : bx), by, bzm1)];
+                    s_load_back[4 * NX * NY + ty * NX + tx] = fGhost().z1()[idxPopZ<4, QF>(tx, typ1, bx, ((ty == (NY - 1)) ? byp1 : by), bzm1)];
                 }
-                else if (tz == (block::nz() - 1))
-                { // f
-                    pop[6] = fGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)];
-                    pop[10] = fGhost_.z0()[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = fGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
-                    pop[15] = fGhost_.z0()[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
-                    pop[17] = fGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
+                else if (tz == (NZ - 1))
+                {
+                    s_load_front[0 * NX * NY + ty * NX + tx] = fGhost().z0()[idxPopZ<0, QF>(tx, ty, bx, by, bzp1)];
+                    s_load_front[1 * NX * NY + ty * NX + tx] = fGhost().z0()[idxPopZ<1, QF>(txp1, ty, ((tx == (NX - 1)) ? bxp1 : bx), by, bzp1)];
+                    s_load_front[2 * NX * NY + ty * NX + tx] = fGhost().z0()[idxPopZ<2, QF>(tx, typ1, bx, ((ty == (NY - 1)) ? byp1 : by), bzp1)];
+                    s_load_front[3 * NX * NY + ty * NX + tx] = fGhost().z0()[idxPopZ<3, QF>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
+                    s_load_front[4 * NX * NY + ty * NX + tx] = fGhost().z0()[idxPopZ<4, QF>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
                 }
             }
 
-            /**
-             * @brief Saves the populations in pop to the halo
-             * @param pop The population density array from which the halo points are to be saved
-             **/
             template <class VSet>
-            __device__ inline void popSave(const scalar_t (&ptrRestrict pop)[VSet::Q()]) noexcept
+            __device__ void popLoad_from_shared(scalar_t (&pop)[VSet::Q()], const scalar_t *s_buffer) const noexcept
             {
-                const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
-                const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
-                const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
+                constexpr label_t QF = VSet::QF();
+                constexpr label_t NX = block::nx();
+                constexpr label_t NY = block::ny();
+                constexpr label_t NZ = block::nz();
+
+                const scalar_t *s_load_west = s_buffer;
+                const scalar_t *s_load_east = s_load_west + QF * NY * NZ;
+                const scalar_t *s_load_south = s_load_east + QF * NY * NZ;
+                const scalar_t *s_load_north = s_load_south + QF * NX * NZ;
+                const scalar_t *s_load_back = s_load_north + QF * NX * NZ;
+                const scalar_t *s_load_front = s_load_back + QF * NX * NY;
 
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
                 const label_t tz = threadIdx.z;
 
+                if (tx == 0)
+                {
+                    pop[1] = s_load_west[0 * NY * NZ + tz * NY + ty];
+                    pop[7] = s_load_west[1 * NY * NZ + tz * NY + ty];
+                    pop[9] = s_load_west[2 * NY * NZ + tz * NY + ty];
+                    pop[13] = s_load_west[3 * NY * NZ + tz * NY + ty];
+                    pop[15] = s_load_west[4 * NY * NZ + tz * NY + ty];
+                }
+                else if (tx == (NX - 1))
+                {
+                    pop[2] = s_load_east[0 * NY * NZ + tz * NY + ty];
+                    pop[8] = s_load_east[1 * NY * NZ + tz * NY + ty];
+                    pop[10] = s_load_east[2 * NY * NZ + tz * NY + ty];
+                    pop[14] = s_load_east[3 * NY * NZ + tz * NY + ty];
+                    pop[16] = s_load_east[4 * NY * NZ + tz * NY + ty];
+                }
+                if (ty == 0)
+                {
+                    pop[3] = s_load_south[0 * NX * NZ + tz * NX + tx];
+                    pop[7] = s_load_south[1 * NX * NZ + tz * NX + tx];
+                    pop[11] = s_load_south[2 * NX * NZ + tz * NX + tx];
+                    pop[14] = s_load_south[3 * NX * NZ + tz * NX + tx];
+                    pop[17] = s_load_south[4 * NX * NZ + tz * NX + tx];
+                }
+                else if (ty == (NY - 1))
+                {
+                    pop[4] = s_load_north[0 * NX * NZ + tz * NX + tx];
+                    pop[8] = s_load_north[1 * NX * NZ + tz * NX + tx];
+                    pop[12] = s_load_north[2 * NX * NZ + tz * NX + tx];
+                    pop[13] = s_load_north[3 * NX * NZ + tz * NX + tx];
+                    pop[18] = s_load_north[4 * NX * NZ + tz * NX + tx];
+                }
+                if (tz == 0)
+                {
+                    pop[5] = s_load_back[0 * NX * NY + ty * NX + tx];
+                    pop[9] = s_load_back[1 * NX * NY + ty * NX + tx];
+                    pop[11] = s_load_back[2 * NX * NY + ty * NX + tx];
+                    pop[16] = s_load_back[3 * NX * NY + ty * NX + tx];
+                    pop[18] = s_load_back[4 * NX * NY + ty * NX + tx];
+                }
+                else if (tz == (NZ - 1))
+                {
+                    pop[6] = s_load_front[0 * NX * NY + ty * NX + tx];
+                    pop[10] = s_load_front[1 * NX * NY + ty * NX + tx];
+                    pop[12] = s_load_front[2 * NX * NY + ty * NX + tx];
+                    pop[15] = s_load_front[3 * NX * NY + ty * NX + tx];
+                    pop[17] = s_load_front[4 * NX * NY + ty * NX + tx];
+                }
+            }
+
+            template <class VSet>
+            __device__ void popSave_to_shared(const scalar_t (&pop)[VSet::Q()], scalar_t *s_buffer) noexcept
+            {
+                constexpr label_t QF = VSet::QF();
+                constexpr label_t NX = block::nx();
+                constexpr label_t NY = block::ny();
+                constexpr label_t NZ = block::nz();
+
+                scalar_t *s_save_west = s_buffer;
+                scalar_t *s_save_east = s_save_west + QF * NY * NZ;
+                scalar_t *s_save_south = s_save_east + QF * NY * NZ;
+                scalar_t *s_save_north = s_save_south + QF * NX * NZ;
+                scalar_t *s_save_back = s_save_north + QF * NX * NZ;
+                scalar_t *s_save_front = s_save_back + QF * NX * NY;
+
+                const label_t tx = threadIdx.x;
+                const label_t ty = threadIdx.y;
+                const label_t tz = threadIdx.z;
+
+                if (tx == 0)
+                {
+                    s_save_west[0 * NY * NZ + tz * NY + ty] = pop[2];
+                    s_save_west[1 * NY * NZ + tz * NY + ty] = pop[8];
+                    s_save_west[2 * NY * NZ + tz * NY + ty] = pop[10];
+                    s_save_west[3 * NY * NZ + tz * NY + ty] = pop[14];
+                    s_save_west[4 * NY * NZ + tz * NY + ty] = pop[16];
+                }
+                if (tx == (NX - 1))
+                {
+                    s_save_east[0 * NY * NZ + tz * NY + ty] = pop[1];
+                    s_save_east[1 * NY * NZ + tz * NY + ty] = pop[7];
+                    s_save_east[2 * NY * NZ + tz * NY + ty] = pop[9];
+                    s_save_east[3 * NY * NZ + tz * NY + ty] = pop[13];
+                    s_save_east[4 * NY * NZ + tz * NY + ty] = pop[15];
+                }
+                if (ty == 0)
+                {
+                    s_save_south[0 * NX * NZ + tz * NX + tx] = pop[4];
+                    s_save_south[1 * NX * NZ + tz * NX + tx] = pop[8];
+                    s_save_south[2 * NX * NZ + tz * NX + tx] = pop[12];
+                    s_save_south[3 * NX * NZ + tz * NX + tx] = pop[13];
+                    s_save_south[4 * NX * NZ + tz * NX + tx] = pop[18];
+                }
+                if (ty == (NY - 1))
+                {
+                    s_save_north[0 * NX * NZ + tz * NX + tx] = pop[3];
+                    s_save_north[1 * NX * NZ + tz * NX + tx] = pop[7];
+                    s_save_north[2 * NX * NZ + tz * NX + tx] = pop[11];
+                    s_save_north[3 * NX * NZ + tz * NX + tx] = pop[14];
+                    s_save_north[4 * NX * NZ + tz * NX + tx] = pop[17];
+                }
+                if (tz == 0)
+                {
+                    s_save_back[0 * NX * NY + ty * NX + tx] = pop[6];
+                    s_save_back[1 * NX * NY + ty * NX + tx] = pop[10];
+                    s_save_back[2 * NX * NY + ty * NX + tx] = pop[12];
+                    s_save_back[3 * NX * NY + ty * NX + tx] = pop[15];
+                    s_save_back[4 * NX * NY + ty * NX + tx] = pop[17];
+                }
+                if (tz == (NZ - 1))
+                {
+                    s_save_front[0 * NX * NY + ty * NX + tx] = pop[5];
+                    s_save_front[1 * NX * NY + ty * NX + tx] = pop[9];
+                    s_save_front[2 * NX * NY + ty * NX + tx] = pop[11];
+                    s_save_front[3 * NX * NY + ty * NX + tx] = pop[16];
+                    s_save_front[4 * NX * NY + ty * NX + tx] = pop[18];
+                }
+            }
+
+            template <class VSet>
+            __device__ void halo_shared_to_global_save(const scalar_t *s_buffer) noexcept
+            {
+                // --- Buffer Partitioning (Unchanged) ---
+                constexpr label_t QF = VSet::QF();
+                constexpr label_t NX = block::nx();
+                constexpr label_t NY = block::ny();
+                constexpr label_t NZ = block::nz();
+
+                const scalar_t *s_save_west = s_buffer;
+                const scalar_t *s_save_east = s_save_west + QF * NY * NZ;
+                const scalar_t *s_save_south = s_save_east + QF * NY * NZ;
+                const scalar_t *s_save_north = s_save_south + QF * NX * NZ;
+                const scalar_t *s_save_back = s_save_north + QF * NX * NZ;
+                const scalar_t *s_save_front = s_save_back + QF * NX * NY;
+
+                // --- Index Calculation (Unchanged) ---
+                const label_t tx = threadIdx.x;
+                const label_t ty = threadIdx.y;
+                const label_t tz = threadIdx.z;
+                const label_t x = tx + blockDim.x * blockIdx.x;
+                const label_t y = ty + blockDim.y * blockIdx.y;
+                const label_t z = tz + blockDim.z * blockIdx.z;
                 const label_t bx = blockIdx.x;
                 const label_t by = blockIdx.y;
                 const label_t bz = blockIdx.z;
 
-                /* write to global pop */
+                // --- Shared to Global Write (FIXED: Loop unrolled) ---
                 if (West(x))
-                { // w
-                    gGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz)] = pop[2];
-                    gGhost_.x0()[idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz)] = pop[8];
-                    gGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz)] = pop[10];
-                    gGhost_.x0()[idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz)] = pop[14];
-                    gGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz)] = pop[16];
+                {
+                    gGhost().x0()[idxPopX<0, QF>(ty, tz, bx, by, bz)] = s_save_west[0 * NY * NZ + tz * NY + ty];
+                    gGhost().x0()[idxPopX<1, QF>(ty, tz, bx, by, bz)] = s_save_west[1 * NY * NZ + tz * NY + ty];
+                    gGhost().x0()[idxPopX<2, QF>(ty, tz, bx, by, bz)] = s_save_west[2 * NY * NZ + tz * NY + ty];
+                    gGhost().x0()[idxPopX<3, QF>(ty, tz, bx, by, bz)] = s_save_west[3 * NY * NZ + tz * NY + ty];
+                    gGhost().x0()[idxPopX<4, QF>(ty, tz, bx, by, bz)] = s_save_west[4 * NY * NZ + tz * NY + ty];
                 }
                 if (East(x))
-                { // e
-                    gGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz)] = pop[1];
-                    gGhost_.x1()[idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz)] = pop[7];
-                    gGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz)] = pop[9];
-                    gGhost_.x1()[idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz)] = pop[13];
-                    gGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz)] = pop[15];
+                {
+                    gGhost().x1()[idxPopX<0, QF>(ty, tz, bx, by, bz)] = s_save_east[0 * NY * NZ + tz * NY + ty];
+                    gGhost().x1()[idxPopX<1, QF>(ty, tz, bx, by, bz)] = s_save_east[1 * NY * NZ + tz * NY + ty];
+                    gGhost().x1()[idxPopX<2, QF>(ty, tz, bx, by, bz)] = s_save_east[2 * NY * NZ + tz * NY + ty];
+                    gGhost().x1()[idxPopX<3, QF>(ty, tz, bx, by, bz)] = s_save_east[3 * NY * NZ + tz * NY + ty];
+                    gGhost().x1()[idxPopX<4, QF>(ty, tz, bx, by, bz)] = s_save_east[4 * NY * NZ + tz * NY + ty];
                 }
-
                 if (South(y))
-                { // s
-                    gGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz)] = pop[4];
-                    gGhost_.y0()[idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz)] = pop[8];
-                    gGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz)] = pop[12];
-                    gGhost_.y0()[idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz)] = pop[13];
-                    gGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz)] = pop[18];
+                {
+                    gGhost().y0()[idxPopY<0, QF>(tx, tz, bx, by, bz)] = s_save_south[0 * NX * NZ + tz * NX + tx];
+                    gGhost().y0()[idxPopY<1, QF>(tx, tz, bx, by, bz)] = s_save_south[1 * NX * NZ + tz * NX + tx];
+                    gGhost().y0()[idxPopY<2, QF>(tx, tz, bx, by, bz)] = s_save_south[2 * NX * NZ + tz * NX + tx];
+                    gGhost().y0()[idxPopY<3, QF>(tx, tz, bx, by, bz)] = s_save_south[3 * NX * NZ + tz * NX + tx];
+                    gGhost().y0()[idxPopY<4, QF>(tx, tz, bx, by, bz)] = s_save_south[4 * NX * NZ + tz * NX + tx];
                 }
                 if (North(y))
-                { // n
-                    gGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz)] = pop[3];
-                    gGhost_.y1()[idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz)] = pop[7];
-                    gGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz)] = pop[11];
-                    gGhost_.y1()[idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz)] = pop[14];
-                    gGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz)] = pop[17];
+                {
+                    gGhost().y1()[idxPopY<0, QF>(tx, tz, bx, by, bz)] = s_save_north[0 * NX * NZ + tz * NX + tx];
+                    gGhost().y1()[idxPopY<1, QF>(tx, tz, bx, by, bz)] = s_save_north[1 * NX * NZ + tz * NX + tx];
+                    gGhost().y1()[idxPopY<2, QF>(tx, tz, bx, by, bz)] = s_save_north[2 * NX * NZ + tz * NX + tx];
+                    gGhost().y1()[idxPopY<3, QF>(tx, tz, bx, by, bz)] = s_save_north[3 * NX * NZ + tz * NX + tx];
+                    gGhost().y1()[idxPopY<4, QF>(tx, tz, bx, by, bz)] = s_save_north[4 * NX * NZ + tz * NX + tx];
                 }
-
                 if (Back(z))
-                { // b
-                    gGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz)] = pop[6];
-                    gGhost_.z0()[idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz)] = pop[10];
-                    gGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz)] = pop[12];
-                    gGhost_.z0()[idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz)] = pop[15];
-                    gGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz)] = pop[17];
+                {
+                    gGhost().z0()[idxPopZ<0, QF>(tx, ty, bx, by, bz)] = s_save_back[0 * NX * NY + ty * NX + tx];
+                    gGhost().z0()[idxPopZ<1, QF>(tx, ty, bx, by, bz)] = s_save_back[1 * NX * NY + ty * NX + tx];
+                    gGhost().z0()[idxPopZ<2, QF>(tx, ty, bx, by, bz)] = s_save_back[2 * NX * NY + ty * NX + tx];
+                    gGhost().z0()[idxPopZ<3, QF>(tx, ty, bx, by, bz)] = s_save_back[3 * NX * NY + ty * NX + tx];
+                    gGhost().z0()[idxPopZ<4, QF>(tx, ty, bx, by, bz)] = s_save_back[4 * NX * NY + ty * NX + tx];
                 }
                 if (Front(z))
                 {
-                    gGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz)] = pop[5];
-                    gGhost_.z1()[idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz)] = pop[9];
-                    gGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz)] = pop[11];
-                    gGhost_.z1()[idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz)] = pop[16];
-                    gGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz)] = pop[18];
+                    gGhost().z1()[idxPopZ<0, QF>(tx, ty, bx, by, bz)] = s_save_front[0 * NX * NY + ty * NX + tx];
+                    gGhost().z1()[idxPopZ<1, QF>(tx, ty, bx, by, bz)] = s_save_front[1 * NX * NY + ty * NX + tx];
+                    gGhost().z1()[idxPopZ<2, QF>(tx, ty, bx, by, bz)] = s_save_front[2 * NX * NY + ty * NX + tx];
+                    gGhost().z1()[idxPopZ<3, QF>(tx, ty, bx, by, bz)] = s_save_front[3 * NX * NY + ty * NX + tx];
+                    gGhost().z1()[idxPopZ<4, QF>(tx, ty, bx, by, bz)] = s_save_front[4 * NX * NY + ty * NX + tx];
                 }
             }
 
         private:
-            /**
-             * @brief The individual halo objects
-             **/
             haloFace fGhost_;
             haloFace gGhost_;
+            __device__ [[nodiscard]] inline bool West(const label_t x) const noexcept { return (threadIdx.x == 0 && x != 0); }
+            __device__ [[nodiscard]] inline bool East(const label_t x) const noexcept { return (threadIdx.x == (block::nx() - 1) && x != (d_nx - 1)); }
+            __device__ [[nodiscard]] inline bool South(const label_t y) const noexcept { return (threadIdx.y == 0 && y != 0); }
+            __device__ [[nodiscard]] inline bool North(const label_t y) const noexcept { return (threadIdx.y == (block::ny() - 1) && y != (d_ny - 1)); }
+            __device__ [[nodiscard]] inline bool Back(const label_t z) const noexcept { return (threadIdx.z == 0 && z != 0); }
+            __device__ [[nodiscard]] inline bool Front(const label_t z) const noexcept { return (threadIdx.z == (block::nz() - 1) && z != (d_nz - 1)); }
 
-            /**
-             * @brief Check whether the current x, y or z index is at a block boundary
-             * @param xyz The coordinate in the x, y or z directions
-             * @return True if x, y or z is at a block boundary, false otherwise
-             **/
-            __device__ [[nodiscard]] inline bool West(const label_t x) const noexcept
-            {
-                return (threadIdx.x == 0 && x != 0);
-            }
-            __device__ [[nodiscard]] inline bool East(const label_t x) const noexcept
-            {
-                return (threadIdx.x == (block::nx() - 1) && x != (d_nx - 1));
-            }
-            __device__ [[nodiscard]] inline bool South(const label_t y) const noexcept
-            {
-                return (threadIdx.y == 0 && y != 0);
-            }
-            __device__ [[nodiscard]] inline bool North(const label_t y) const noexcept
-            {
-                return (threadIdx.y == (block::ny() - 1) && y != (d_ny - 1));
-            }
-            __device__ [[nodiscard]] inline bool Back(const label_t z) const noexcept
-            {
-                return (threadIdx.z == 0 && z != 0);
-            }
-            __device__ [[nodiscard]] inline bool Front(const label_t z) const noexcept
-            {
-                return (threadIdx.z == (block::nz() - 1) && z != (d_nz - 1));
-            }
-
-            /**
-             * @brief Swaps two pointers of type T
-             * @param pt1 The first pointer to be swapped with pt2
-             * @param pt2 The second pointer to be swapped with pt1
-             **/
             template <typename T>
             __host__ void interfaceSwap(T *ptrRestrict &pt1, T *ptrRestrict &pt2) const noexcept
             {
@@ -281,4 +366,4 @@ namespace LBM
     }
 }
 
-#endif
+#endif // __MBLBM_HALO_CUH

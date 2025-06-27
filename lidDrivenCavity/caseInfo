@@ -17,7 +17,7 @@ Re              500;
 
 u_inf           0.0256;
 
-nTimeSteps      3001;
+nTimeSteps      40;
 
 saveInterval    3002;
 

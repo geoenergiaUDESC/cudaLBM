@@ -259,6 +259,12 @@ namespace LBM
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
         }
 
+        template <const label_t pop>
+        __device__ [[nodiscard]] inline label_t idxPopBlock(const dim3 &tx)
+        {
+            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (pop)));
+        }
+
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopX(
             const label_t ty,
@@ -268,6 +274,15 @@ namespace LBM
             const label_t bz)
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
+        }
+
+        template <const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPopX(
+            const label_t ty,
+            const label_t tz,
+            const dim3 &bx)
+        {
+            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }
 
         template <const label_t pop, const label_t QF>
@@ -282,6 +297,15 @@ namespace LBM
         }
 
         template <const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPopY(
+            const label_t tx,
+            const label_t tz,
+            const dim3 &bx)
+        {
+            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
+        }
+
+        template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopZ(
             const label_t tx,
             const label_t ty,
@@ -290,6 +314,15 @@ namespace LBM
             const label_t bz)
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
+        }
+
+        template <const label_t pop, const label_t QF>
+        __device__ [[nodiscard]] inline label_t idxPopZ(
+            const label_t tx,
+            const label_t ty,
+            const dim3 &bx)
+        {
+            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }
     }
 

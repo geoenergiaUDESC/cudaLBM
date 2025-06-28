@@ -21,8 +21,8 @@ namespace LBM
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBounds __global__ void momentBasedD3Q19(
-        scalar_t *const fMom,
-        const nodeType_t *const dNodeType,
+        scalar_t *ptrRestrict const fMom,
+        const nodeType_t *ptrRestrict const dNodeType,
         device::halo blockHalo)
     {
         const nodeType_t nodeType = dNodeType[device::idxScalarBlock(threadIdx, blockIdx)];

@@ -29,24 +29,24 @@ namespace LBM
             const scalar_t (&ptrRestrict pop)[VSet::Q()],
             scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
         {
-            s_pop[device::idxPopBlock<0>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[1];
-            s_pop[device::idxPopBlock<1>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[2];
-            s_pop[device::idxPopBlock<2>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[3];
-            s_pop[device::idxPopBlock<3>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[4];
-            s_pop[device::idxPopBlock<4>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[5];
-            s_pop[device::idxPopBlock<5>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[6];
-            s_pop[device::idxPopBlock<6>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[7];
-            s_pop[device::idxPopBlock<7>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[8];
-            s_pop[device::idxPopBlock<8>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[9];
-            s_pop[device::idxPopBlock<9>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[10];
-            s_pop[device::idxPopBlock<10>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[11];
-            s_pop[device::idxPopBlock<11>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[12];
-            s_pop[device::idxPopBlock<12>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[13];
-            s_pop[device::idxPopBlock<13>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[14];
-            s_pop[device::idxPopBlock<14>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[15];
-            s_pop[device::idxPopBlock<15>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[16];
-            s_pop[device::idxPopBlock<16>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[17];
-            s_pop[device::idxPopBlock<17>(threadIdx.x, threadIdx.y, threadIdx.z)] = pop[18];
+            s_pop[device::idxPopBlock<0>(threadIdx)] = pop[1];
+            s_pop[device::idxPopBlock<1>(threadIdx)] = pop[2];
+            s_pop[device::idxPopBlock<2>(threadIdx)] = pop[3];
+            s_pop[device::idxPopBlock<3>(threadIdx)] = pop[4];
+            s_pop[device::idxPopBlock<4>(threadIdx)] = pop[5];
+            s_pop[device::idxPopBlock<5>(threadIdx)] = pop[6];
+            s_pop[device::idxPopBlock<6>(threadIdx)] = pop[7];
+            s_pop[device::idxPopBlock<7>(threadIdx)] = pop[8];
+            s_pop[device::idxPopBlock<8>(threadIdx)] = pop[9];
+            s_pop[device::idxPopBlock<9>(threadIdx)] = pop[10];
+            s_pop[device::idxPopBlock<10>(threadIdx)] = pop[11];
+            s_pop[device::idxPopBlock<11>(threadIdx)] = pop[12];
+            s_pop[device::idxPopBlock<12>(threadIdx)] = pop[13];
+            s_pop[device::idxPopBlock<13>(threadIdx)] = pop[14];
+            s_pop[device::idxPopBlock<14>(threadIdx)] = pop[15];
+            s_pop[device::idxPopBlock<15>(threadIdx)] = pop[16];
+            s_pop[device::idxPopBlock<16>(threadIdx)] = pop[17];
+            s_pop[device::idxPopBlock<17>(threadIdx)] = pop[18];
 
             __syncthreads();
         }

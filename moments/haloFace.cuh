@@ -45,6 +45,7 @@ namespace LBM
 
             /**
              * @brief Destructor for the haloFace class
+             * @note Causes a crash (illegal memory access) if cudaFree is uncommented
              * @note FIX THIS!!!!
              **/
             ~haloFace() noexcept

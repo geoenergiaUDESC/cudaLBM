@@ -741,19 +741,35 @@ namespace LBM
             }
             else if (y == (ny - 1) && x == 0 && z == 0) // NWB
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_WEST_BACK;
+#else
                 return NORTH;
+#endif
             }
             else if (y == (ny - 1) && x == 0 && z == (nz - 1)) // NWF
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_WEST_FRONT;
+#else
                 return NORTH;
+#endif
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == 0) // NEB
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_EAST_BACK;
+#else
                 return NORTH;
+#endif
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == (nz - 1)) // NEF
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_EAST_FRONT;
+#else
                 return NORTH;
+#endif
             }
             else if (y == 0 && x == 0) // SW
             {
@@ -765,11 +781,19 @@ namespace LBM
             }
             else if (y == (ny - 1) && x == 0) // NW
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_WEST;
+#else
                 return NORTH;
+#endif
             }
             else if (y == (ny - 1) && x == (nx - 1)) // NE
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_EAST;
+#else
                 return NORTH;
+#endif
             }
             else if (y == 0 && z == 0) // SB
             {
@@ -781,11 +805,19 @@ namespace LBM
             }
             else if (y == (ny - 1) && z == 0) // NB
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_BACK;
+#else
                 return NORTH;
+#endif
             }
             else if (y == (ny - 1) && z == (nz - 1)) // NF
             {
+#ifdef NORTH_BCS_READY
+                return NORTH_FRONT;
+#else
                 return NORTH;
+#endif
             }
             else if (x == 0 && z == 0) // WB
             {

@@ -31,16 +31,22 @@ namespace LBM
                   gGhost_(haloFace(fMom, mesh)) {};
 
             /**
+             * @brief Default desructor for the halo class
+             **/
+            ~halo() {};
+
+            /**
              * @brief Swaps the halo pointers
              **/
             __host__ inline void swap() noexcept
             {
-                interfaceSwap(fGhost().x0Ref(), gGhost().x0Ref());
-                interfaceSwap(fGhost().x1Ref(), gGhost().x1Ref());
-                interfaceSwap(fGhost().y0Ref(), gGhost().y0Ref());
-                interfaceSwap(fGhost().y1Ref(), gGhost().y1Ref());
-                interfaceSwap(fGhost().z0Ref(), gGhost().z0Ref());
-                interfaceSwap(fGhost().z1Ref(), gGhost().z1Ref());
+                checkCudaErrors(cudaDeviceSynchronize());
+                std::swap(fGhost_.x0Ref(), gGhost_.x0Ref());
+                std::swap(fGhost_.x1Ref(), gGhost_.x1Ref());
+                std::swap(fGhost_.y0Ref(), gGhost_.y0Ref());
+                std::swap(fGhost_.y1Ref(), gGhost_.y1Ref());
+                std::swap(fGhost_.z0Ref(), gGhost_.z0Ref());
+                std::swap(fGhost_.z1Ref(), gGhost_.z1Ref());
             }
 
             /**
@@ -169,60 +175,60 @@ namespace LBM
                 const label_t ty = threadIdx.y;
                 const label_t tz = threadIdx.z;
 
-                const label_t bx = blockIdx.x;
-                const label_t by = blockIdx.y;
-                const label_t bz = blockIdx.z;
+                // const label_t bx = blockIdx.x;
+                // const label_t by = blockIdx.y;
+                // const label_t bz = blockIdx.z;
 
                 /* write to global pop */
                 if (West(x))
                 { // w
-                    gGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz)] = pop[2];
-                    gGhost_.x0()[idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz)] = pop[8];
-                    gGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz)] = pop[10];
-                    gGhost_.x0()[idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz)] = pop[14];
-                    gGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz)] = pop[16];
+                    gGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[2];
+                    gGhost_.x0()[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[8];
+                    gGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[10];
+                    gGhost_.x0()[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[14];
+                    gGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[16];
                 }
                 if (East(x))
                 { // e
-                    gGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz)] = pop[1];
-                    gGhost_.x1()[idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz)] = pop[7];
-                    gGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz)] = pop[9];
-                    gGhost_.x1()[idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz)] = pop[13];
-                    gGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz)] = pop[15];
+                    gGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[1];
+                    gGhost_.x1()[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[7];
+                    gGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[9];
+                    gGhost_.x1()[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[13];
+                    gGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[15];
                 }
 
                 if (South(y))
                 { // s
-                    gGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz)] = pop[4];
-                    gGhost_.y0()[idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz)] = pop[8];
-                    gGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz)] = pop[12];
-                    gGhost_.y0()[idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz)] = pop[13];
-                    gGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz)] = pop[18];
+                    gGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[4];
+                    gGhost_.y0()[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[8];
+                    gGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[12];
+                    gGhost_.y0()[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[13];
+                    gGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[18];
                 }
                 if (North(y))
                 { // n
-                    gGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz)] = pop[3];
-                    gGhost_.y1()[idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz)] = pop[7];
-                    gGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz)] = pop[11];
-                    gGhost_.y1()[idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz)] = pop[14];
-                    gGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz)] = pop[17];
+                    gGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[3];
+                    gGhost_.y1()[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[7];
+                    gGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[11];
+                    gGhost_.y1()[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[14];
+                    gGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[17];
                 }
 
                 if (Back(z))
                 { // b
-                    gGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz)] = pop[6];
-                    gGhost_.z0()[idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz)] = pop[10];
-                    gGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz)] = pop[12];
-                    gGhost_.z0()[idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz)] = pop[15];
-                    gGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz)] = pop[17];
+                    gGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[6];
+                    gGhost_.z0()[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[10];
+                    gGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[12];
+                    gGhost_.z0()[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[15];
+                    gGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[17];
                 }
                 if (Front(z))
                 {
-                    gGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz)] = pop[5];
-                    gGhost_.z1()[idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz)] = pop[9];
-                    gGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz)] = pop[11];
-                    gGhost_.z1()[idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz)] = pop[16];
-                    gGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz)] = pop[18];
+                    gGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[5];
+                    gGhost_.z1()[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[9];
+                    gGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[11];
+                    gGhost_.z1()[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[16];
+                    gGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[18];
                 }
             }
 
@@ -261,19 +267,6 @@ namespace LBM
             __device__ [[nodiscard]] inline bool Front(const label_t z) const noexcept
             {
                 return (threadIdx.z == (block::nz() - 1) && z != (d_nz - 1));
-            }
-
-            /**
-             * @brief Swaps two pointers of type T
-             * @param pt1 The first pointer to be swapped with pt2
-             * @param pt2 The second pointer to be swapped with pt1
-             **/
-            template <typename T>
-            __host__ void interfaceSwap(T *ptrRestrict &pt1, T *ptrRestrict &pt2) const noexcept
-            {
-                T *ptrRestrict temp = pt1;
-                pt1 = pt2;
-                pt2 = temp;
             }
         };
     }

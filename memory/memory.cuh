@@ -72,11 +72,11 @@ namespace LBM
         template <typename T>
         __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
         {
-            const cudaError_t err = cudaMallocManaged(ptr, sizeof(T) * nPoints);
+            const cudaError_t err = cudaMalloc(ptr, sizeof(T) * nPoints);
 
             if (err != cudaSuccess)
             {
-                throw std::runtime_error("cudaMallocManaged failed: " + std::string(cudaGetErrorString(err)));
+                throw std::runtime_error("cudaMalloc failed: " + std::string(cudaGetErrorString(err)));
             }
         }
 
@@ -93,7 +93,7 @@ namespace LBM
             allocateMemory(&ptr, nPoints);
 
 #ifdef VERBOSE
-            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocManaged to address " << ptr << std::endl;
+            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
 #endif
 
             return ptr;

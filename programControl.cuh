@@ -88,8 +88,6 @@ namespace LBM
             cudaDeviceSynchronize();
             checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_)));
             cudaDeviceSynchronize();
-            cudaDeviceSynchronize();
-            cudaDeviceSynchronize();
             checkCudaErrors(cudaMemcpyToSymbol(d_tau, &tau, sizeof(tau)));
             cudaDeviceSynchronize();
             checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));

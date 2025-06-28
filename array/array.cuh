@@ -116,9 +116,9 @@ namespace LBM
             /**
              * @brief Destructor for the array class
              **/
-            ~array()
+            ~array() noexcept
             {
-                cudaFree(ptr_);
+                checkCudaErrors(cudaFree(ptr_));
             }
 
             /**

@@ -15,15 +15,15 @@ nz              128;
 
 Re              10000;
 
-u_inf           0.0064;
+u_inf           0.0128;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      200001;
+nTimeSteps      20001;
 
-saveInterval    200000;
+saveInterval    20000;
 
 infoInterval    100;
 

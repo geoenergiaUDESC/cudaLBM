@@ -11,10 +11,55 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 
 namespace LBM
 {
+    template <typename T>
+    struct normalVector
+    {
+    public:
+        __device__ [[nodiscard]] inline normalVector() noexcept
+            : x(x_normal()),
+              y(y_normal()),
+              z(z_normal()){};
+
+        const T x;
+        const T y;
+        const T z;
+
+    private:
+        __device__ [[nodiscard]] static inline T x_normal() noexcept
+        {
+            const label_t x_index = threadIdx.x + blockDim.x * blockIdx.x;
+            return static_cast<T>((x_index == d_nx - 1) - (x_index == 0));
+        }
+
+        __device__ [[nodiscard]] static inline T y_normal() noexcept
+        {
+            const label_t y_index = threadIdx.y + blockDim.y * blockIdx.y;
+            return static_cast<T>((y_index == d_ny - 1) - (y_index == 0));
+        }
+
+        __device__ [[nodiscard]] static inline T z_normal() noexcept
+        {
+            const label_t z_index = threadIdx.z + blockDim.z * blockIdx.z;
+            return static_cast<T>((z_index == d_nz - 1) - (z_index == 0));
+        }
+    };
+
     class boundaryConditions
     {
     public:
         [[nodiscard]] inline consteval boundaryConditions() {};
+
+        template <class VSet, const label_t q_>
+        __device__ [[nodiscard]] static inline scalar_t rho_coefficient(const lattice_constant<q_> q) noexcept
+        {
+            const normalVector<int16_t> b_n;
+
+            const bool cond_x = (b_n.x > 0 & VSet::nxNeg(q)) | (b_n.x < 0 & VSet::nxPos(q));
+            const bool cond_y = (b_n.y > 0 & VSet::nyNeg(q)) | (b_n.y < 0 & VSet::nyPos(q));
+            const bool cond_z = (b_n.z > 0 & VSet::nzNeg(q)) | (b_n.z < 0 & VSet::nzPos(q));
+
+            return static_cast<scalar_t>(cond_x | cond_y | cond_z);
+        }
 
         template <class VSet>
         __device__ static inline void calculateMoments(
@@ -22,696 +67,546 @@ namespace LBM
             scalar_t (&ptrRestrict moments)[10],
             const nodeType_t nodeType) noexcept
         {
-            scalar_t rho_I;
-            scalar_t inv_rho_I;
 
-            scalar_t m_xx_I;
-            scalar_t m_xy_I;
-            scalar_t m_xz_I;
-            scalar_t m_yy_I;
-            scalar_t m_yz_I;
-            scalar_t m_zz_I;
-
-            scalar_t rho;
+            const scalar_t rho_I =
+                ((rho_coefficient<VSet>(lattice_constant<0>()) * pop[0]) +
+                 (rho_coefficient<VSet>(lattice_constant<1>()) * pop[1]) +
+                 (rho_coefficient<VSet>(lattice_constant<2>()) * pop[2]) +
+                 (rho_coefficient<VSet>(lattice_constant<3>()) * pop[3]) +
+                 (rho_coefficient<VSet>(lattice_constant<4>()) * pop[4]) +
+                 (rho_coefficient<VSet>(lattice_constant<5>()) * pop[5]) +
+                 (rho_coefficient<VSet>(lattice_constant<6>()) * pop[6]) +
+                 (rho_coefficient<VSet>(lattice_constant<7>()) * pop[7]) +
+                 (rho_coefficient<VSet>(lattice_constant<8>()) * pop[8]) +
+                 (rho_coefficient<VSet>(lattice_constant<9>()) * pop[9]) +
+                 (rho_coefficient<VSet>(lattice_constant<10>()) * pop[10]) +
+                 (rho_coefficient<VSet>(lattice_constant<11>()) * pop[11]) +
+                 (rho_coefficient<VSet>(lattice_constant<12>()) * pop[12]) +
+                 (rho_coefficient<VSet>(lattice_constant<13>()) * pop[13]) +
+                 (rho_coefficient<VSet>(lattice_constant<14>()) * pop[14]) +
+                 (rho_coefficient<VSet>(lattice_constant<15>()) * pop[15]) +
+                 (rho_coefficient<VSet>(lattice_constant<16>()) * pop[16]) +
+                 (rho_coefficient<VSet>(lattice_constant<17>()) * pop[17]) +
+                 (rho_coefficient<VSet>(lattice_constant<18>()) * pop[18]));
+            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
             switch (nodeType)
             {
+            // Static boundaries
             case SOUTH_WEST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12]);
-                m_xy_I = inv_rho_I * (pop[8]);
-                m_xz_I = inv_rho_I * (pop[10]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12]);
-                m_yz_I = inv_rho_I * (pop[12]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I - 2 * m_xy_I * rho_I - 2 * m_xz_I * rho_I + m_yy_I * rho_I - 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I + 2 * d_omega * m_xy_I * rho_I + 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I + 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = -(14 * m_xy_I - 14 * m_xx_I + 14 * m_xz_I - 2 * m_yy_I + 2 * m_yz_I - 2 * m_zz_I - 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I + 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I + 9 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = -(14 * m_xx_I - 50 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I - 69 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = -(14 * m_xx_I - 14 * m_xy_I - 50 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I + 21 * d_omega * m_xy_I - 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I + 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = -(14 * m_xy_I - 2 * m_xx_I + 2 * m_xz_I - 14 * m_yy_I + 14 * m_yz_I - 2 * m_zz_I + 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I - 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 9 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = -(2 * m_xx_I - 14 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I - 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I + 21 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = -(2 * m_xy_I - 2 * m_xx_I + 14 * m_xz_I - 2 * m_yy_I + 14 * m_yz_I - 14 * m_zz_I + 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I + 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 21 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case SOUTH_WEST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[8] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8]);
-                m_xz_I = inv_rho_I * (-pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (-pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I - 2 * m_xy_I * rho_I + 2 * m_xz_I * rho_I + m_yy_I * rho_I + 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I + 2 * d_omega * m_xy_I * rho_I - 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I - 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I - 14 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I + 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I - 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = -(14 * m_xx_I - 50 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I - 69 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = (14 * m_xx_I - 14 * m_xy_I + 50 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I + 21 * d_omega * m_xy_I + 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I - 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I - 14 * m_xy_I + 2 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I - 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = (2 * m_xx_I - 14 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I + 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I + 21 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I - 2 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I + 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[8] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH_WEST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[6] + pop[10] + pop[14] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (-pop[14]);
-                m_xz_I = inv_rho_I * (pop[10]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (-pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[17]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I + 2 * m_xy_I * rho_I - 2 * m_xz_I * rho_I + m_yy_I * rho_I + 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I - 2 * d_omega * m_xy_I * rho_I + 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I - 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I + 14 * m_xy_I - 14 * m_xz_I + 2 * m_yy_I + 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = (14 * m_xx_I + 50 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I + 69 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = -(14 * m_xx_I + 14 * m_xy_I - 50 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I - 21 * d_omega * m_xy_I - 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I - 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I + 14 * m_xy_I - 2 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = (2 * m_xx_I + 14 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I + 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I - 21 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I + 2 * m_xy_I - 14 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I - 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
-                moments[0] = rho;
-
-                break;
-            case NORTH_WEST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[5] + pop[11] + pop[14] + pop[16];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16]);
-                m_xy_I = inv_rho_I * (-pop[14]);
-                m_xz_I = inv_rho_I * (-pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16]);
-                m_yz_I = inv_rho_I * (pop[11]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I + 2 * m_xy_I * rho_I + 2 * m_xz_I * rho_I + m_yy_I * rho_I - 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I - 2 * d_omega * m_xy_I * rho_I - 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I + 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I + 14 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I - 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = (14 * m_xx_I + 50 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I + 69 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = (14 * m_xx_I + 14 * m_xy_I + 50 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I - 21 * d_omega * m_xy_I + 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I + 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I + 14 * m_xy_I + 2 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I - 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = -(2 * m_xx_I + 14 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I - 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I - 21 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I + 2 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case SOUTH_EAST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15]);
-                m_xy_I = inv_rho_I * (-pop[13]);
-                m_xz_I = inv_rho_I * (-pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15]);
-                m_yz_I = inv_rho_I * (pop[12]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I + 2 * m_xy_I * rho_I + 2 * m_xz_I * rho_I + m_yy_I * rho_I - 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I - 2 * d_omega * m_xy_I * rho_I - 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I + 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I + 14 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I - 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = (14 * m_xx_I + 50 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I + 69 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = (14 * m_xx_I + 14 * m_xy_I + 50 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I - 21 * d_omega * m_xy_I + 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I + 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I + 14 * m_xy_I + 2 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I - 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = -(2 * m_xx_I + 14 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I - 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I - 21 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I + 2 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I + 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case SOUTH_EAST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (-pop[13]);
-                m_xz_I = inv_rho_I * (pop[9]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (-pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[18]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I + 2 * m_xy_I * rho_I - 2 * m_xz_I * rho_I + m_yy_I * rho_I + 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I - 2 * d_omega * m_xy_I * rho_I + 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I - 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I + 14 * m_xy_I - 14 * m_xz_I + 2 * m_yy_I + 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = (14 * m_xx_I + 50 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I + 69 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = -(14 * m_xx_I + 14 * m_xy_I - 50 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I - 21 * d_omega * m_xy_I - 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I - 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I + 14 * m_xy_I - 2 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = (2 * m_xx_I + 14 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I + 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I - 21 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I + 2 * m_xy_I - 14 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I - 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I + 2 * m_xy_I - 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I - 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH_EAST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7]);
-                m_xz_I = inv_rho_I * (-pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (-pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I - 2 * m_xy_I * rho_I + 2 * m_xz_I * rho_I + m_yy_I * rho_I + 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I + 2 * d_omega * m_xy_I * rho_I - 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I - 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = (14 * m_xx_I - 14 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I + 2 * m_yz_I + 2 * m_zz_I + 21 * d_omega * m_xx_I - 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = -(14 * m_xx_I - 50 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I - 69 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = (14 * m_xx_I - 14 * m_xy_I + 50 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I + 21 * d_omega * m_xy_I + 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I - 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = (2 * m_xx_I - 14 * m_xy_I + 2 * m_xz_I + 14 * m_yy_I + 14 * m_yz_I + 2 * m_zz_I - 9 * d_omega * m_xx_I - 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I + 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 9 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = (2 * m_xx_I - 14 * m_xy_I + 14 * m_xz_I + 14 * m_yy_I + 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I + 21 * d_omega * m_xy_I - 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = (2 * m_xx_I - 2 * m_xy_I + 14 * m_xz_I + 2 * m_yy_I + 14 * m_yz_I + 14 * m_zz_I - 9 * d_omega * m_xx_I + 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I - 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 21 * d_omega * m_zz_I + 4) / (18 * (m_xx_I - 2 * m_xy_I + 2 * m_xz_I + m_yy_I + 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I - 2 * d_omega * m_xz_I - d_omega * m_yy_I - 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
-                moments[0] = rho;
-
-                break;
-            case NORTH_EAST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11]);
-                m_xy_I = inv_rho_I * (pop[7]);
-                m_xz_I = inv_rho_I * (pop[9]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11]);
-                m_yz_I = inv_rho_I * (pop[11]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11]);
-
-                rho = (12 * (rho_I + m_xx_I * rho_I - 2 * m_xy_I * rho_I - 2 * m_xz_I * rho_I + m_yy_I * rho_I - 2 * m_yz_I * rho_I + m_zz_I * rho_I - d_omega * m_xx_I * rho_I + 2 * d_omega * m_xy_I * rho_I + 2 * d_omega * m_xz_I * rho_I - d_omega * m_yy_I * rho_I + 2 * d_omega * m_yz_I * rho_I - d_omega * m_zz_I * rho_I)) / (5 * d_omega + 2);
-
-                moments[4] = -(14 * m_xy_I - 14 * m_xx_I + 14 * m_xz_I - 2 * m_yy_I + 2 * m_yz_I - 2 * m_zz_I - 21 * d_omega * m_xx_I + 7 * d_omega * m_xy_I + 7 * d_omega * m_xz_I + 9 * d_omega * m_yy_I - 23 * d_omega * m_yz_I + 9 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[5] = -(14 * m_xx_I - 50 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I - 14 * m_yz_I + 2 * m_zz_I + 7 * d_omega * m_xx_I - 69 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I + 21 * d_omega * m_yz_I - 23 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[6] = -(14 * m_xx_I - 14 * m_xy_I - 50 * m_xz_I + 2 * m_yy_I - 14 * m_yz_I + 14 * m_zz_I + 7 * d_omega * m_xx_I + 21 * d_omega * m_xy_I - 69 * d_omega * m_xz_I - 23 * d_omega * m_yy_I + 21 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[7] = -(14 * m_xy_I - 2 * m_xx_I + 2 * m_xz_I - 14 * m_yy_I + 14 * m_yz_I - 2 * m_zz_I + 9 * d_omega * m_xx_I + 7 * d_omega * m_xy_I - 23 * d_omega * m_xz_I - 21 * d_omega * m_yy_I + 7 * d_omega * m_yz_I + 9 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[8] = -(2 * m_xx_I - 14 * m_xy_I - 14 * m_xz_I + 14 * m_yy_I - 50 * m_yz_I + 14 * m_zz_I - 23 * d_omega * m_xx_I + 21 * d_omega * m_xy_I + 21 * d_omega * m_xz_I + 7 * d_omega * m_yy_I - 69 * d_omega * m_yz_I + 7 * d_omega * m_zz_I + 8) / (36 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-                moments[9] = -(2 * m_xy_I - 2 * m_xx_I + 14 * m_xz_I - 2 * m_yy_I + 14 * m_yz_I - 14 * m_zz_I + 9 * d_omega * m_xx_I - 23 * d_omega * m_xy_I + 7 * d_omega * m_xz_I + 9 * d_omega * m_yy_I + 7 * d_omega * m_yz_I - 21 * d_omega * m_zz_I - 4) / (18 * (m_xx_I - 2 * m_xy_I - 2 * m_xz_I + m_yy_I - 2 * m_yz_I + m_zz_I - d_omega * m_xx_I + 2 * d_omega * m_xy_I + 2 * d_omega * m_xz_I - d_omega * m_yy_I + 2 * d_omega * m_yz_I - d_omega * m_zz_I + 1));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case SOUTH_WEST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[12] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I - 57 * m_xy_I * rho_I + 24 * m_yy_I * rho_I - 6 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I + 57 * d_omega * m_xy_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 6 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I - 1008 * m_xy_I + 216 * m_yy_I - 144 * m_zz_I + 239 * d_omega * m_xx_I + 158 * d_omega * m_xy_I - 191 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[5] = (2412 * m_xy_I - 504 * m_xx_I - 504 * m_yy_I + 216 * m_zz_I + 79 * d_omega * m_xx_I + 538 * d_omega * m_xy_I + 79 * d_omega * m_yy_I + 34 * d_omega * m_zz_I - 228) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[7] = (216 * m_xx_I - 1008 * m_xy_I + 936 * m_yy_I - 144 * m_zz_I - 191 * d_omega * m_xx_I + 158 * d_omega * m_xy_I + 239 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[9] = -(72 * m_xx_I - 216 * m_xy_I + 72 * m_yy_I - 288 * m_zz_I + 3 * d_omega * m_xx_I - 34 * d_omega * m_xy_I + 3 * d_omega * m_yy_I - 162 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[12] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * pop[8];
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                // moments[5] = (static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1)));
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH_WEST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[5] + pop[6] + pop[10] + pop[11] + pop[14] + pop[16] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (-pop[14]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I + 57 * m_xy_I * rho_I + 24 * m_yy_I * rho_I - 6 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I - 57 * d_omega * m_xy_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 6 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I + 1008 * m_xy_I + 216 * m_yy_I - 144 * m_zz_I + 239 * d_omega * m_xx_I - 158 * d_omega * m_xy_I - 191 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[5] = (504 * m_xx_I + 2412 * m_xy_I + 504 * m_yy_I - 216 * m_zz_I - 79 * d_omega * m_xx_I + 538 * d_omega * m_xy_I - 79 * d_omega * m_yy_I - 34 * d_omega * m_zz_I + 228) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[7] = (216 * m_xx_I + 1008 * m_xy_I + 936 * m_yy_I - 144 * m_zz_I - 191 * d_omega * m_xx_I - 158 * d_omega * m_xy_I + 239 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[9] = -(72 * m_xx_I + 216 * m_xy_I + 72 * m_yy_I - 288 * m_zz_I + 3 * d_omega * m_xx_I + 34 * d_omega * m_xy_I + 3 * d_omega * m_yy_I - 162 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case SOUTH_EAST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[6] + pop[9] + pop[12] + pop[13] + pop[15] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (-pop[13]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[18]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I + 57 * m_xy_I * rho_I + 24 * m_yy_I * rho_I - 6 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I - 57 * d_omega * m_xy_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 6 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I + 1008 * m_xy_I + 216 * m_yy_I - 144 * m_zz_I + 239 * d_omega * m_xx_I - 158 * d_omega * m_xy_I - 191 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[5] = (504 * m_xx_I + 2412 * m_xy_I + 504 * m_yy_I - 216 * m_zz_I - 79 * d_omega * m_xx_I + 538 * d_omega * m_xy_I - 79 * d_omega * m_yy_I - 34 * d_omega * m_zz_I + 228) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[7] = (216 * m_xx_I + 1008 * m_xy_I + 936 * m_yy_I - 144 * m_zz_I - 191 * d_omega * m_xx_I - 158 * d_omega * m_xy_I + 239 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[9] = -(72 * m_xx_I + 216 * m_xy_I + 72 * m_yy_I - 288 * m_zz_I + 3 * d_omega * m_xx_I + 34 * d_omega * m_xy_I + 3 * d_omega * m_yy_I - 162 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I + 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[6] + pop[9] + pop[12] + pop[13] + pop[15] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (-pop[13]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xy_I - d_omega * m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                // moments[5] = (static_cast<scalar_t>(25) * m_xy_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xy_I - d_omega * m_xy_I + static_cast<scalar_t>(1)));
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH_EAST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I - 57 * m_xy_I * rho_I + 24 * m_yy_I * rho_I - 6 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I + 57 * d_omega * m_xy_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 6 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I - 1008 * m_xy_I + 216 * m_yy_I - 144 * m_zz_I + 239 * d_omega * m_xx_I + 158 * d_omega * m_xy_I - 191 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[5] = (2412 * m_xy_I - 504 * m_xx_I - 504 * m_yy_I + 216 * m_zz_I + 79 * d_omega * m_xx_I + 538 * d_omega * m_xy_I + 79 * d_omega * m_yy_I + 34 * d_omega * m_zz_I - 228) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[7] = (216 * m_xx_I - 1008 * m_xy_I + 936 * m_yy_I - 144 * m_zz_I - 191 * d_omega * m_xx_I + 158 * d_omega * m_xy_I + 239 * d_omega * m_yy_I - 6 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-                moments[9] = -(72 * m_xx_I - 216 * m_xy_I + 72 * m_yy_I - 288 * m_zz_I + 3 * d_omega * m_xx_I - 34 * d_omega * m_xy_I + 3 * d_omega * m_yy_I - 162 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I - 57 * m_xy_I + 24 * m_yy_I - 6 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xy_I - 24 * d_omega * m_yy_I + 6 * d_omega * m_zz_I + 23));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case WEST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[14] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[10]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[17]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I - 57 * m_xz_I * rho_I - 6 * m_yy_I * rho_I + 24 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I + 57 * d_omega * m_xz_I * rho_I + 6 * d_omega * m_yy_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I - 1008 * m_xz_I - 144 * m_yy_I + 216 * m_zz_I + 239 * d_omega * m_xx_I + 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (2412 * m_xz_I - 504 * m_xx_I + 216 * m_yy_I - 504 * m_zz_I + 79 * d_omega * m_xx_I + 538 * d_omega * m_xz_I + 34 * d_omega * m_yy_I + 79 * d_omega * m_zz_I - 228) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = -(72 * m_xx_I - 216 * m_xz_I - 288 * m_yy_I + 72 * m_zz_I + 3 * d_omega * m_xx_I - 34 * d_omega * m_xz_I - 162 * d_omega * m_yy_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_xx_I - 1008 * m_xz_I - 144 * m_yy_I + 936 * m_zz_I - 191 * d_omega * m_xx_I + 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[14] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (pop[10]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case WEST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[8] + pop[11] + pop[14] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[14]);
-                m_xz_I = inv_rho_I * (-pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I + 57 * m_xz_I * rho_I - 6 * m_yy_I * rho_I + 24 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I - 57 * d_omega * m_xz_I * rho_I + 6 * d_omega * m_yy_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I + 1008 * m_xz_I - 144 * m_yy_I + 216 * m_zz_I + 239 * d_omega * m_xx_I - 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (504 * m_xx_I + 2412 * m_xz_I - 216 * m_yy_I + 504 * m_zz_I - 79 * d_omega * m_xx_I + 538 * d_omega * m_xz_I - 34 * d_omega * m_yy_I - 79 * d_omega * m_zz_I + 228) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = -(72 * m_xx_I + 216 * m_xz_I - 288 * m_yy_I + 72 * m_zz_I + 3 * d_omega * m_xx_I + 34 * d_omega * m_xz_I - 162 * d_omega * m_yy_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_xx_I + 1008 * m_xz_I - 144 * m_yy_I + 936 * m_zz_I - 191 * d_omega * m_xx_I - 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[8] + pop[11] + pop[14] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (-pop[16]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1)));
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case EAST_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[6] + pop[7] + pop[12] + pop[13] + pop[15] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[13]);
-                m_xz_I = inv_rho_I * (-pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I + 57 * m_xz_I * rho_I - 6 * m_yy_I * rho_I + 24 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I - 57 * d_omega * m_xz_I * rho_I + 6 * d_omega * m_yy_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I + 1008 * m_xz_I - 144 * m_yy_I + 216 * m_zz_I + 239 * d_omega * m_xx_I - 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (504 * m_xx_I + 2412 * m_xz_I - 216 * m_yy_I + 504 * m_zz_I - 79 * d_omega * m_xx_I + 538 * d_omega * m_xz_I - 34 * d_omega * m_yy_I - 79 * d_omega * m_zz_I + 228) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = -(72 * m_xx_I + 216 * m_xz_I - 288 * m_yy_I + 72 * m_zz_I + 3 * d_omega * m_xx_I + 34 * d_omega * m_xz_I - 162 * d_omega * m_yy_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_xx_I + 1008 * m_xz_I - 144 * m_yy_I + 936 * m_zz_I - 191 * d_omega * m_xx_I - 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I + 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I - 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[6] + pop[7] + pop[12] + pop[13] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (-pop[15]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1)));
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case EAST_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[7] + pop[9] + pop[11] + pop[13] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[13]);
-                m_xz_I = inv_rho_I * (pop[9]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[18]);
-
-                rho = (36 * (23 * rho_I + 24 * m_xx_I * rho_I - 57 * m_xz_I * rho_I - 6 * m_yy_I * rho_I + 24 * m_zz_I * rho_I - 24 * d_omega * m_xx_I * rho_I + 57 * d_omega * m_xz_I * rho_I + 6 * d_omega * m_yy_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = (936 * m_xx_I - 1008 * m_xz_I - 144 * m_yy_I + 216 * m_zz_I + 239 * d_omega * m_xx_I + 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (2412 * m_xz_I - 504 * m_xx_I + 216 * m_yy_I - 504 * m_zz_I + 79 * d_omega * m_xx_I + 538 * d_omega * m_xz_I + 34 * d_omega * m_yy_I + 79 * d_omega * m_zz_I - 228) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = -(72 * m_xx_I - 216 * m_xz_I - 288 * m_yy_I + 72 * m_zz_I + 3 * d_omega * m_xx_I - 34 * d_omega * m_xz_I - 162 * d_omega * m_yy_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (5 * m_yz_I * (43 * d_omega + 72)) / (18 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_xx_I - 1008 * m_xz_I - 144 * m_yy_I + 936 * m_zz_I - 191 * d_omega * m_xx_I + 158 * d_omega * m_xz_I - 6 * d_omega * m_yy_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_xx_I - 57 * m_xz_I - 6 * m_yy_I + 24 * m_zz_I - 24 * d_omega * m_xx_I + 57 * d_omega * m_xz_I + 6 * d_omega * m_yy_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[7] + pop[9] + pop[11] + pop[13] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (pop[9]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case SOUTH_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[13] + pop[15];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[13]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15]);
-                m_yz_I = inv_rho_I * (pop[12]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15]);
-
-                rho = (36 * (23 * rho_I - 6 * m_xx_I * rho_I + 24 * m_yy_I * rho_I - 57 * m_yz_I * rho_I + 24 * m_zz_I * rho_I + 6 * d_omega * m_xx_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 57 * d_omega * m_yz_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = -(72 * m_yy_I - 288 * m_xx_I - 216 * m_yz_I + 72 * m_zz_I - 162 * d_omega * m_xx_I + 3 * d_omega * m_yy_I - 34 * d_omega * m_yz_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = (936 * m_yy_I - 144 * m_xx_I - 1008 * m_yz_I + 216 * m_zz_I - 6 * d_omega * m_xx_I + 239 * d_omega * m_yy_I + 158 * d_omega * m_yz_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (216 * m_xx_I - 504 * m_yy_I + 2412 * m_yz_I - 504 * m_zz_I + 34 * d_omega * m_xx_I + 79 * d_omega * m_yy_I + 538 * d_omega * m_yz_I + 79 * d_omega * m_zz_I - 228) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_yy_I - 144 * m_xx_I - 1008 * m_yz_I + 936 * m_zz_I - 6 * d_omega * m_xx_I - 191 * d_omega * m_yy_I + 158 * d_omega * m_yz_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[13] + pop[15];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_yz_I = inv_rho_I * (pop[12]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (static_cast<scalar_t>(25) * m_yz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case SOUTH_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[8] + pop[9] + pop[13] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[13]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (-pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (36 * (23 * rho_I - 6 * m_xx_I * rho_I + 24 * m_yy_I * rho_I + 57 * m_yz_I * rho_I + 24 * m_zz_I * rho_I + 6 * d_omega * m_xx_I * rho_I - 24 * d_omega * m_yy_I * rho_I - 57 * d_omega * m_yz_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = -(72 * m_yy_I - 288 * m_xx_I + 216 * m_yz_I + 72 * m_zz_I - 162 * d_omega * m_xx_I + 3 * d_omega * m_yy_I + 34 * d_omega * m_yz_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = (936 * m_yy_I - 144 * m_xx_I + 1008 * m_yz_I + 216 * m_zz_I - 6 * d_omega * m_xx_I + 239 * d_omega * m_yy_I - 158 * d_omega * m_yz_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (504 * m_yy_I - 216 * m_xx_I + 2412 * m_yz_I + 504 * m_zz_I - 34 * d_omega * m_xx_I - 79 * d_omega * m_yy_I + 538 * d_omega * m_yz_I - 79 * d_omega * m_zz_I + 228) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_yy_I - 144 * m_xx_I + 1008 * m_yz_I + 936 * m_zz_I - 6 * d_omega * m_xx_I - 191 * d_omega * m_yy_I - 158 * d_omega * m_yz_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[8] + pop[9] + pop[13] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_yz_I = inv_rho_I * (-pop[18]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (static_cast<scalar_t>(25) * m_yz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH_BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[6] + pop[7] + pop[10] + pop[14] + pop[15] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (-pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-
-                rho = (36 * (23 * rho_I - 6 * m_xx_I * rho_I + 24 * m_yy_I * rho_I + 57 * m_yz_I * rho_I + 24 * m_zz_I * rho_I + 6 * d_omega * m_xx_I * rho_I - 24 * d_omega * m_yy_I * rho_I - 57 * d_omega * m_yz_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = -(72 * m_yy_I - 288 * m_xx_I + 216 * m_yz_I + 72 * m_zz_I - 162 * d_omega * m_xx_I + 3 * d_omega * m_yy_I + 34 * d_omega * m_yz_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = (936 * m_yy_I - 144 * m_xx_I + 1008 * m_yz_I + 216 * m_zz_I - 6 * d_omega * m_xx_I + 239 * d_omega * m_yy_I - 158 * d_omega * m_yz_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (504 * m_yy_I - 216 * m_xx_I + 2412 * m_yz_I + 504 * m_zz_I - 34 * d_omega * m_xx_I - 79 * d_omega * m_yy_I + 538 * d_omega * m_yz_I - 79 * d_omega * m_zz_I + 228) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_yy_I - 144 * m_xx_I + 1008 * m_yz_I + 936 * m_zz_I - 6 * d_omega * m_xx_I - 191 * d_omega * m_yy_I - 158 * d_omega * m_yz_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I + 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I - 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-
-                moments[0] = rho;
-
-                break;
-            case NORTH_FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[14] + pop[16];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16]);
-                m_yz_I = inv_rho_I * (pop[11]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16]);
-
-                rho = (36 * (23 * rho_I - 6 * m_xx_I * rho_I + 24 * m_yy_I * rho_I - 57 * m_yz_I * rho_I + 24 * m_zz_I * rho_I + 6 * d_omega * m_xx_I * rho_I - 24 * d_omega * m_yy_I * rho_I + 57 * d_omega * m_yz_I * rho_I - 24 * d_omega * m_zz_I * rho_I)) / (5 * (43 * d_omega + 72));
-
-                moments[4] = -(72 * m_yy_I - 288 * m_xx_I - 216 * m_yz_I + 72 * m_zz_I - 162 * d_omega * m_xx_I + 3 * d_omega * m_yy_I - 34 * d_omega * m_yz_I + 3 * d_omega * m_zz_I + 24) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[5] = (5 * m_xy_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[6] = (5 * m_xz_I * (43 * d_omega + 72)) / (18 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[7] = (936 * m_yy_I - 144 * m_xx_I - 1008 * m_yz_I + 216 * m_zz_I - 6 * d_omega * m_xx_I + 239 * d_omega * m_yy_I + 158 * d_omega * m_yz_I - 191 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[8] = (216 * m_xx_I - 504 * m_yy_I + 2412 * m_yz_I - 504 * m_zz_I + 34 * d_omega * m_xx_I + 79 * d_omega * m_yy_I + 538 * d_omega * m_yz_I + 79 * d_omega * m_zz_I - 228) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-                moments[9] = (216 * m_yy_I - 144 * m_xx_I - 1008 * m_yz_I + 936 * m_zz_I - 6 * d_omega * m_xx_I - 191 * d_omega * m_yy_I + 158 * d_omega * m_yz_I + 239 * d_omega * m_zz_I + 192) / (36 * (24 * m_yy_I - 6 * m_xx_I - 57 * m_yz_I + 24 * m_zz_I + 6 * d_omega * m_xx_I - 24 * d_omega * m_yy_I + 57 * d_omega * m_yz_I - 24 * d_omega * m_zz_I + 23));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case WEST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[11] + pop[12] + pop[14] + pop[16] + pop[17] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[17] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[11] + pop[12] - pop[17] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17] + (2.0 / 3.0) * pop[18]);
-
-                rho = (3 * rho_I * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4)) / (d_omega + 9);
-
-                moments[4] = (15 * m_xx_I + 2) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[5] = (2 * m_xy_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[6] = (2 * m_xz_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[7] = (4 * (d_omega + 9) * (10 * m_yy_I - m_zz_I)) / (99 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[8] = (m_yz_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[9] = -(4 * (m_yy_I - 10 * m_zz_I) * (d_omega + 9)) / (99 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[11] + pop[12] + pop[14] + pop[16] + pop[17] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[14]);
+                const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[16]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+                moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case EAST:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[12] + pop[13] + pop[15] + pop[17] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[13]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[11] + pop[12] - pop[17] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17] + (2.0 / 3.0) * pop[18]);
-
-                rho = (3 * rho_I * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4)) / (d_omega + 9);
-
-                moments[4] = (15 * m_xx_I + 2) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[5] = (2 * m_xy_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[6] = (2 * m_xz_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[7] = (4 * (d_omega + 9) * (10 * m_yy_I - m_zz_I)) / (99 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[8] = (m_yz_I * (d_omega + 9)) / (3 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-                moments[9] = -(4 * (m_yy_I - 10 * m_zz_I) * (d_omega + 9)) / (99 * (3 * m_xx_I - 3 * d_omega * m_xx_I + 4));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[12] + pop[13] + pop[15] + pop[17] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[13]);
+                const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[15]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+                moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case SOUTH:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[9] + pop[10] + pop[12] + pop[13] + pop[15] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[8] - pop[13]);
-                m_xz_I = inv_rho_I * (pop[9] + pop[10] - pop[15] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (3 * rho_I * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4)) / (d_omega + 9);
-
-                moments[4] = (4 * (d_omega + 9) * (10 * m_xx_I - m_zz_I)) / (99 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[5] = (2 * m_xy_I * (d_omega + 9)) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[6] = (m_xz_I * (d_omega + 9)) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[7] = (15 * m_yy_I + 2) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[8] = (2 * m_yz_I * (d_omega + 9)) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[9] = -(4 * (m_xx_I - 10 * m_zz_I) * (d_omega + 9)) / (99 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[9] + pop[10] + pop[12] + pop[13] + pop[15] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[13]);
+                const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[18]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
-            case NORTH:
-                moments[1] = d_u_inf;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[10] + pop[11] + pop[14] + pop[15] + pop[16] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[9] + pop[10] - pop[15] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[17]);
-
-                rho = (3 * rho_I * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4)) / (d_omega + 9);
-
-                moments[4] = (4 * (d_omega + 9) * (10 * m_xx_I - m_zz_I)) / (99 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[5] = (18 * m_xy_I - 4 * d_u_inf + 2 * d_omega * m_xy_I - 3 * d_u_inf * m_yy_I + 3 * d_omega * d_u_inf * m_yy_I) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[6] = (m_xz_I * (d_omega + 9)) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[7] = (15 * m_yy_I + 2) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[8] = (2 * m_yz_I * (d_omega + 9)) / (3 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-                moments[9] = -(4 * (m_xx_I - 10 * m_zz_I) * (d_omega + 9)) / (99 * (3 * m_yy_I - 3 * d_omega * m_yy_I + 4));
-
-                moments[0] = rho;
-
-                break;
+                return;
+            }
             case BACK:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] - (1.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] - (1.0 / 3.0) * pop[17]);
-                m_xy_I = inv_rho_I * (pop[7] + pop[8] - pop[13] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[10] - pop[15]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[6] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-                m_yz_I = inv_rho_I * (pop[12] - pop[17]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[6] - (1.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[10] + (2.0 / 3.0) * pop[12] - (1.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[15] + (2.0 / 3.0) * pop[17]);
-
-                rho = (3 * rho_I * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4)) / (d_omega + 9);
-
-                moments[4] = (4 * (d_omega + 9) * (10 * m_xx_I - m_yy_I)) / (99 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[5] = (m_xy_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[6] = (2 * m_xz_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[7] = -(4 * (m_xx_I - 10 * m_yy_I) * (d_omega + 9)) / (99 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[8] = (2 * m_yz_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[9] = (15 * m_zz_I + 2) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[15]);
+                const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[17]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
             case FRONT:
-                moments[1] = 0;
-                moments[2] = 0;
-                moments[3] = 0;
-
-                rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18];
-                inv_rho_I = 1.0 / rho_I;
-                m_xx_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] + (2.0 / 3.0) * pop[1] + (2.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] - (1.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] - (1.0 / 3.0) * pop[18]);
-                m_xy_I = inv_rho_I * (pop[7] + pop[8] - pop[13] - pop[14]);
-                m_xz_I = inv_rho_I * (pop[9] - pop[16]);
-                m_yy_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] + (2.0 / 3.0) * pop[3] + (2.0 / 3.0) * pop[4] - (1.0 / 3.0) * pop[5] + (2.0 / 3.0) * pop[7] + (2.0 / 3.0) * pop[8] - (1.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] + (2.0 / 3.0) * pop[13] + (2.0 / 3.0) * pop[14] - (1.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-                m_yz_I = inv_rho_I * (pop[11] - pop[18]);
-                m_zz_I = inv_rho_I * (-(1.0 / 3.0) * pop[0] - (1.0 / 3.0) * pop[1] - (1.0 / 3.0) * pop[2] - (1.0 / 3.0) * pop[3] - (1.0 / 3.0) * pop[4] + (2.0 / 3.0) * pop[5] - (1.0 / 3.0) * pop[7] - (1.0 / 3.0) * pop[8] + (2.0 / 3.0) * pop[9] + (2.0 / 3.0) * pop[11] - (1.0 / 3.0) * pop[13] - (1.0 / 3.0) * pop[14] + (2.0 / 3.0) * pop[16] + (2.0 / 3.0) * pop[18]);
-
-                rho = (3 * rho_I * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4)) / (d_omega + 9);
-
-                moments[4] = (4 * (d_omega + 9) * (10 * m_xx_I - m_yy_I)) / (99 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[5] = (m_xy_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[6] = (2 * m_xz_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[7] = -(4 * (m_xx_I - 10 * m_yy_I) * (d_omega + 9)) / (99 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[8] = (2 * m_yz_I * (d_omega + 9)) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-                moments[9] = (15 * m_zz_I + 2) / (3 * (3 * m_zz_I - 3 * d_omega * m_zz_I + 4));
-
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[16]);
+                const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[18]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
                 moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = static_cast<scalar_t>(0);
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+                moments[9] = static_cast<scalar_t>(0);
 
-                break;
+                return;
+            }
+
+            // Lid boundaries
+            case NORTH:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[10] + pop[11] + pop[14] + pop[15] + pop[16] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[14]);
+                const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[17]);
+                const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+                moments[0] = rho;
+                moments[1] = d_u_inf;
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                moments[4] = (static_cast<scalar_t>(6) * d_u_inf * d_u_inf * rho_I) / static_cast<scalar_t>(5);
+                moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3) - d_u_inf / static_cast<scalar_t>(3);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_WEST_BACK:
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[6] + pop[10] + pop[14] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0); // At the corner, all moments vanish
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_WEST_FRONT:
+            {
+                // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[5] + pop[11] + pop[14] + pop[16];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0); // At the corner, all moments vanish
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_EAST_BACK:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0); // At the corner, all moments vanish
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_EAST_FRONT:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0); // At the corner, all moments vanish
+                moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                moments[8] = static_cast<scalar_t>(0);
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_BACK:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[6] + pop[7] + pop[10] + pop[14] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_yz_I = inv_rho_I * (-pop[17]);
+                const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * d_omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0);                           // At the intersection of front and back, only z derivative exists
+                moments[5] = -VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of front and back, only z derivative exists
+                // moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_FRONT:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[14] + pop[16];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_yz_I = inv_rho_I * (pop[11]);
+                const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * d_omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[4] = static_cast<scalar_t>(0);                          // At the intersection of front and back, only z derivative exists
+                moments[5] = VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of front and back, only z derivative exists
+                // moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_EAST:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[7]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * d_u_inf - static_cast<scalar_t>(18) * d_u_inf * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[5] = -static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of East and West, only x derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                      // At the intersection of East and West, only x derivative exists
+                // moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
+            case NORTH_WEST:
+            {
+                // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
+                // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+                const scalar_t m_xy_I = inv_rho_I * (pop[7]);
+                const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * d_u_inf - static_cast<scalar_t>(18) * d_u_inf * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0);
+                moments[2] = static_cast<scalar_t>(0);
+                moments[3] = static_cast<scalar_t>(0);
+                // moments[4] = d_u_inf * d_u_inf * rho;
+                moments[5] = static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of East and West, only x derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                     // At the intersection of East and West, only x derivative exists
+                // moments[5] = static_cast<scalar_t>(0);
+                moments[6] = static_cast<scalar_t>(0);
+                moments[7] = static_cast<scalar_t>(0);
+                // moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+                moments[9] = static_cast<scalar_t>(0);
+
+                return;
+            }
             }
         }
 
@@ -741,35 +636,47 @@ namespace LBM
             }
             else if (y == (ny - 1) && x == 0 && z == 0) // NWB
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_WEST_BACK;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_WEST_BACK;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == (ny - 1) && x == 0 && z == (nz - 1)) // NWF
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_WEST_FRONT;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_WEST_FRONT;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == 0) // NEB
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_EAST_BACK;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_EAST_BACK;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == (nz - 1)) // NEF
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_EAST_FRONT;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_EAST_FRONT;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == 0 && x == 0) // SW
             {
@@ -781,19 +688,25 @@ namespace LBM
             }
             else if (y == (ny - 1) && x == 0) // NW
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_WEST;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_WEST;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == (ny - 1) && x == (nx - 1)) // NE
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_EAST;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_EAST;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == 0 && z == 0) // SB
             {
@@ -805,19 +718,25 @@ namespace LBM
             }
             else if (y == (ny - 1) && z == 0) // NB
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_BACK;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_BACK;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (y == (ny - 1) && z == (nz - 1)) // NF
             {
-#ifdef NORTH_BCS_READY
-                return NORTH_FRONT;
-#else
-                return NORTH;
-#endif
+                if constexpr (NORTH_BCS_READY)
+                {
+                    return NORTH_FRONT;
+                }
+                else
+                {
+                    return NORTH;
+                }
             }
             else if (x == 0 && z == 0) // WB
             {

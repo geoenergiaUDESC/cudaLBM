@@ -8,6 +8,8 @@ Contains: A list of typedefs used throughout the cudaLBM source code
 
 #include "LBMIncludes.cuh"
 
+static constexpr const bool NORTH_BCS_READY = true;
+
 namespace LBM
 {
 #define checkCudaErrors(err) __checkCudaErrors(err, #err, __FILE__, __LINE__)
@@ -19,23 +21,27 @@ namespace LBM
             // fprintf(stderr, "CUDA error at %s(%d)\"%s\": [%d] %s.\n",
             //         file, line, func, (int)err, cudaGetErrorString(err));
 
-            std::cerr
-                << "CUDA error at "
-                << file
-                << "("
-                << line
-                << ")\""
-                << func
-                << "\": ["
-                << static_cast<int>(err)
-                << "] "
-                << cudaGetErrorString(err)
-                << "." << std::endl;
+            std::cerr << "CUDA error at " << file << "(" << line << ")\"" << func << "\": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
 
             // fflush(stderr);
             std::exit(-1);
         }
     }
+
+    /**
+     * @brief CUDA implementation of a std::integral constant
+     * @param T The type of integral value
+     * @param v The value
+     **/
+    template <typename T, T v>
+    struct integralConstant
+    {
+        static constexpr const T value = v;
+        using value_type = T;
+        using type = integralConstant;
+        __host__ __device__ constexpr operator value_type() const noexcept { return value; }
+        __host__ __device__ constexpr value_type operator()() const noexcept { return value; }
+    };
 
     /**
      * @brief Launch bounds information

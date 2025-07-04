@@ -193,6 +193,15 @@ namespace LBM
                 fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);
             }
 
+            /**
+             * @brief Returns the total size of the array, i.e. the number of points * number of variables
+             * @return The total size of the array as a label_t
+             **/
+            __host__ [[nodiscard]] inline constexpr label_t size() const noexcept
+            {
+                return mesh_.nPoints() * varNames_.size();
+            }
+
         private:
             /**
              * @brief Pointer to the data

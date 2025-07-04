@@ -11,6 +11,30 @@ Contents: Functions used throughout the source code
 
 namespace LBM
 {
+    /**
+     * @brief Recursively defined compile-time for loop
+     * @param f The work to be done at each loop iteration
+     * @param Start The index at which the loop will start
+     * @param End The index at which the loop will end
+     * @note The length of the loop is End - Start, the index End is not performed
+     * @note This function effectively unrolls loops at compile time and allows for the use of if constexpr
+     **/
+    template <const label_t Start, const label_t End, typename F>
+    __host__ __device__ inline constexpr void constexpr_for(F &&f)
+    {
+        if constexpr (Start < End)
+        {
+            // Execute current iteration
+            f(integralConstant<label_t, Start>());
+
+            // Process next iteration
+            if constexpr (Start + 1 < End)
+            {
+                constexpr_for<Start + 1, End>(std::forward<F>(f));
+            }
+        }
+    }
+
     [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
     constexpr const label_t BULK = (0b00000000000000000000000000000000);

@@ -50,7 +50,7 @@ namespace LBM
         [[nodiscard]] inline consteval boundaryConditions() {};
 
         template <class VSet, const label_t q_>
-        __device__ [[nodiscard]] static inline scalar_t rho_coefficient(const lattice_constant<q_> q) noexcept
+        __device__ [[nodiscard]] static inline scalar_t incomingSwitch(const lattice_constant<q_> q) noexcept
         {
             const normalVector<int16_t> b_n;
 
@@ -58,7 +58,7 @@ namespace LBM
             const bool cond_y = (b_n.y > 0 & VSet::nyNeg(q)) | (b_n.y < 0 & VSet::nyPos(q));
             const bool cond_z = (b_n.z > 0 & VSet::nzNeg(q)) | (b_n.z < 0 & VSet::nzPos(q));
 
-            return static_cast<scalar_t>(cond_x | cond_y | cond_z);
+            return static_cast<scalar_t>(!(cond_x | cond_y | cond_z));
         }
 
         template <class VSet>
@@ -69,25 +69,25 @@ namespace LBM
         {
 
             const scalar_t rho_I =
-                ((rho_coefficient<VSet>(lattice_constant<0>()) * pop[0]) +
-                 (rho_coefficient<VSet>(lattice_constant<1>()) * pop[1]) +
-                 (rho_coefficient<VSet>(lattice_constant<2>()) * pop[2]) +
-                 (rho_coefficient<VSet>(lattice_constant<3>()) * pop[3]) +
-                 (rho_coefficient<VSet>(lattice_constant<4>()) * pop[4]) +
-                 (rho_coefficient<VSet>(lattice_constant<5>()) * pop[5]) +
-                 (rho_coefficient<VSet>(lattice_constant<6>()) * pop[6]) +
-                 (rho_coefficient<VSet>(lattice_constant<7>()) * pop[7]) +
-                 (rho_coefficient<VSet>(lattice_constant<8>()) * pop[8]) +
-                 (rho_coefficient<VSet>(lattice_constant<9>()) * pop[9]) +
-                 (rho_coefficient<VSet>(lattice_constant<10>()) * pop[10]) +
-                 (rho_coefficient<VSet>(lattice_constant<11>()) * pop[11]) +
-                 (rho_coefficient<VSet>(lattice_constant<12>()) * pop[12]) +
-                 (rho_coefficient<VSet>(lattice_constant<13>()) * pop[13]) +
-                 (rho_coefficient<VSet>(lattice_constant<14>()) * pop[14]) +
-                 (rho_coefficient<VSet>(lattice_constant<15>()) * pop[15]) +
-                 (rho_coefficient<VSet>(lattice_constant<16>()) * pop[16]) +
-                 (rho_coefficient<VSet>(lattice_constant<17>()) * pop[17]) +
-                 (rho_coefficient<VSet>(lattice_constant<18>()) * pop[18]));
+                ((incomingSwitch<VSet>(lattice_constant<0>()) * pop[0]) +
+                 (incomingSwitch<VSet>(lattice_constant<1>()) * pop[1]) +
+                 (incomingSwitch<VSet>(lattice_constant<2>()) * pop[2]) +
+                 (incomingSwitch<VSet>(lattice_constant<3>()) * pop[3]) +
+                 (incomingSwitch<VSet>(lattice_constant<4>()) * pop[4]) +
+                 (incomingSwitch<VSet>(lattice_constant<5>()) * pop[5]) +
+                 (incomingSwitch<VSet>(lattice_constant<6>()) * pop[6]) +
+                 (incomingSwitch<VSet>(lattice_constant<7>()) * pop[7]) +
+                 (incomingSwitch<VSet>(lattice_constant<8>()) * pop[8]) +
+                 (incomingSwitch<VSet>(lattice_constant<9>()) * pop[9]) +
+                 (incomingSwitch<VSet>(lattice_constant<10>()) * pop[10]) +
+                 (incomingSwitch<VSet>(lattice_constant<11>()) * pop[11]) +
+                 (incomingSwitch<VSet>(lattice_constant<12>()) * pop[12]) +
+                 (incomingSwitch<VSet>(lattice_constant<13>()) * pop[13]) +
+                 (incomingSwitch<VSet>(lattice_constant<14>()) * pop[14]) +
+                 (incomingSwitch<VSet>(lattice_constant<15>()) * pop[15]) +
+                 (incomingSwitch<VSet>(lattice_constant<16>()) * pop[16]) +
+                 (incomingSwitch<VSet>(lattice_constant<17>()) * pop[17]) +
+                 (incomingSwitch<VSet>(lattice_constant<18>()) * pop[18]));
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
             switch (nodeType)

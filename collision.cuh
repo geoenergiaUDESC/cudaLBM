@@ -21,8 +21,8 @@ namespace LBM
         scalar_t (&ptrRestrict moments)[10]) noexcept
     {
         // const scalar_t omegaVar = d_omega;
-        const scalar_t t_omegaVar = 1 - d_omega;
-        const scalar_t omegaVar_d2 = d_omega / 2;
+        const scalar_t t_omegaVar = static_cast<scalar_t>(1) - d_omega;
+        const scalar_t omegaVar_d2 = d_omega * static_cast<scalar_t>(0.5);
 
         // Velocity updates are removed since force terms are zero
         // Diagonal moment updates (remove force terms)

@@ -32,7 +32,7 @@ namespace LBM
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t as2() noexcept
             {
                 // return static_cast<scalar_t>(3.0);
-                return 3;
+                return 3.0;
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t cs2() noexcept
             {

@@ -95,6 +95,30 @@ namespace LBM
                 // Return the component
                 return CX[q()];
             }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nxNeg(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cx(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CX[Q_] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+
+                // Return the component
+                return CX[q()] < 0;
+            }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nxPos(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cx(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CX[Q_] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+
+                // Return the component
+                return CX[q()] > 0;
+            }
 
             /**
              * @brief Returns the y lattice coefficient for a given lattice point
@@ -113,6 +137,30 @@ namespace LBM
                 // Return the component
                 return CY[q()];
             }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nyNeg(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cy(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CY[Q_] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+
+                // Return the component
+                return CY[q()] < 0;
+            }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nyPos(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cy(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CY[Q_] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+
+                // Return the component
+                return CY[q()] > 0;
+            }
 
             /**
              * @brief Returns the z lattice coefficient for a given lattice point
@@ -130,6 +178,30 @@ namespace LBM
 
                 // Return the component
                 return CZ[q()];
+            }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nzNeg(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CZ[Q_] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+
+                // Return the component
+                return CZ[q()] < 0;
+            }
+            template <const label_t q_>
+            [[nodiscard]] static inline consteval bool nzPos(const lattice_constant<q_> q) noexcept
+            {
+                // Check that we are accessing a valid member
+                static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
+
+                // This will be eliminated by the compiler because the function is consteval
+                constexpr const int CZ[Q_] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+
+                // Return the component
+                return CZ[q()] > 0;
             }
 
             /**

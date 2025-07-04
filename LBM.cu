@@ -81,33 +81,38 @@ int main(int argc, char *argv[])
 
         blockHalo.swap();
 
-        // if (programCtrl.save(timeStep))
-        // {
-        //     deviceMoments.write(programCtrl.caseName(), timeStep);
+        if (programCtrl.save(timeStep))
+        {
+            deviceMoments.write(programCtrl.caseName(), timeStep);
 
-        //     postProcess::writeTecplotHexahedralData(
-        //         fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), mesh.nPoints() * 10), mesh),
-        //         programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
-        //         mesh,
-        //         deviceMoments.varNames(),
-        //         "Title");
+            // if (timeStep > 0)
+            {
+                postProcess::writeTecplotHexahedralData(
+                    fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
+                    programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
+                    mesh,
+                    deviceMoments.varNames(),
+                    "Title");
+            }
 
-        //     // momentsMean.write(programCtrl.caseName(), timeStep);
+            // momentsMean.write(programCtrl.caseName(), timeStep);
 
-        //     // postProcess::writeTecplotHexahedralData(
-        //     //     fileIO::deinterleaveAoS(host::copyToHost(momentsMean.ptr(), mesh.nPoints() * 10), mesh),
-        //     //     programCtrl.caseName() + "Mean_" + std::to_string(timeStep) + ".dat",
-        //     //     mesh,
-        //     //     momentsMean.varNames(),
-        //     //     "Title");
-        // }
+            // postProcess::writeTecplotHexahedralData(
+            //     fileIO::deinterleaveAoS(host::copyToHost(momentsMean.ptr(), mesh.nPoints() * 10), mesh),
+            //     programCtrl.caseName() + "Mean_" + std::to_string(timeStep) + ".dat",
+            //     mesh,
+            //     momentsMean.varNames(),
+            //     "Title");
+        }
 
         // checkCudaErrors(cudaDeviceSynchronize());
     }
 
     // Get ending time point and output the elapsed time
     const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    std::cout << std::endl;
     std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
+    std::cout << std::endl;
     std::cout << "MLUPS: " << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
     std::cout << "End" << std::endl;
 

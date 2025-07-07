@@ -85,7 +85,7 @@ namespace LBM
     typedef std::size_t label_t;
 #endif
 
-    typedef uint32_t nodeType_t;
+    typedef uint8_t nodeType_t;
 
     /**
      * @brief Type used for arrays of labels
@@ -196,41 +196,41 @@ namespace LBM
     } mpiError_t;
 
     // Store node types as an enumerated type
-    namespace nodeType
-    {
-        typedef enum Enum : nodeType_t
-        {
-            UNDEFINED = static_cast<nodeType_t>(-1),
-            BULK = 0,
-            NORTH = 1,
-            SOUTH = 2,
-            WEST = 3,
-            EAST = 4,
-            FRONT = 5,
-            BACK = 6,
-            NORTHWEST = 7,
-            NORTHEAST = 8,
-            NORTHFRONT = 9,
-            NORTHBACK = 10,
-            SOUTHWEST = 11,
-            SOUTHEAST = 12,
-            SOUTHFRONT = 13,
-            SOUTHBACK = 14,
-            WESTFRONT = 15,
-            WESTBACK = 16,
-            EASTFRONT = 17,
-            EASTBACK = 18,
-            NORTHWESTFRONT = 19,
-            NORTHWESTBACK = 20,
-            NORTHEASTFRONT = 21,
-            NORTHEASTBACK = 22,
-            SOUTHWESTFRONT = 23,
-            SOUTHWESTBACK = 24,
-            SOUTHEASTFRONT = 25,
-            SOUTHEASTBACK = 26
-        } type;
-    }
-    typedef std::vector<nodeType::type> nodeTypeArray_t;
+    // namespace nodeType
+    // {
+    //     typedef enum Enum : nodeType_t
+    //     {
+    //         UNDEFINED = static_cast<nodeType_t>(-1),
+    //         BULK = 0,
+    //         NORTH = 1,
+    //         SOUTH = 2,
+    //         WEST = 3,
+    //         EAST = 4,
+    //         FRONT = 5,
+    //         BACK = 6,
+    //         NORTHWEST = 7,
+    //         NORTHEAST = 8,
+    //         NORTHFRONT = 9,
+    //         NORTHBACK = 10,
+    //         SOUTHWEST = 11,
+    //         SOUTHEAST = 12,
+    //         SOUTHFRONT = 13,
+    //         SOUTHBACK = 14,
+    //         WESTFRONT = 15,
+    //         WESTBACK = 16,
+    //         EASTFRONT = 17,
+    //         EASTBACK = 18,
+    //         NORTHWESTFRONT = 19,
+    //         NORTHWESTBACK = 20,
+    //         NORTHEASTFRONT = 21,
+    //         NORTHEASTBACK = 22,
+    //         SOUTHWESTFRONT = 23,
+    //         SOUTHWESTBACK = 24,
+    //         SOUTHEASTFRONT = 25,
+    //         SOUTHEASTBACK = 26
+    //     } type;
+    // }
+    // typedef std::vector<nodeType::type> nodeTypeArray_t;
 
     /**
      * @brief Constructor read types

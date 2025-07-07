@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
         mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
-    const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
+    // const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
 
     // Set up time averaging
     // device::array<scalar_t> momentsMean(
@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
 
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
             deviceMoments.ptr(),
-            nodeTypes.ptr(),
             blockHalo);
 
         // checkCudaErrors(cudaDeviceSynchronize());
@@ -85,7 +84,7 @@ int main(int argc, char *argv[])
         {
             deviceMoments.write(programCtrl.caseName(), timeStep);
 
-            // if (timeStep > 0)
+            if (timeStep > 0)
             {
                 postProcess::writeTecplotHexahedralData(
                     fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),

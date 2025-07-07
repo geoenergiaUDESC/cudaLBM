@@ -37,33 +37,33 @@ namespace LBM
 
     [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
-    constexpr const label_t BULK = (0b00000000000000000000000000000000);
-    constexpr const label_t NORTH = (0b00000000000000000000000011001100);
-    constexpr const label_t SOUTH = (0b00000000000000000000000000110011);
-    constexpr const label_t WEST = (0b00000000000000000000000001010101);
-    constexpr const label_t EAST = (0b00000000000000000000000010101010);
-    constexpr const label_t FRONT = (0b00000000000000000000000011110000);
-    constexpr const label_t BACK = (0b00000000000000000000000000001111);
-    constexpr const label_t NORTH_WEST = (0b00000000000000000000000011011101);
-    constexpr const label_t NORTH_EAST = (0b00000000000000000000000011101110);
-    constexpr const label_t NORTH_FRONT = (0b00000000000000000000000011111100);
-    constexpr const label_t NORTH_BACK = (0b00000000000000000000000011001111);
-    constexpr const label_t SOUTH_WEST = (0b00000000000000000000000001110111);
-    constexpr const label_t SOUTH_EAST = (0b00000000000000000000000010111011);
-    constexpr const label_t SOUTH_FRONT = (0b00000000000000000000000011110011);
-    constexpr const label_t SOUTH_BACK = (0b00000000000000000000000000111111);
-    constexpr const label_t WEST_FRONT = (0b00000000000000000000000011110101);
-    constexpr const label_t WEST_BACK = (0b00000000000000000000000001011111);
-    constexpr const label_t EAST_FRONT = (0b00000000000000000000000011111010);
-    constexpr const label_t EAST_BACK = (0b00000000000000000000000010101111);
-    constexpr const label_t NORTH_WEST_FRONT = (0b00000000000000000000000011111101);
-    constexpr const label_t NORTH_WEST_BACK = (0b00000000000000000000000011011111);
-    constexpr const label_t NORTH_EAST_FRONT = (0b00000000000000000000000011111110);
-    constexpr const label_t NORTH_EAST_BACK = (0b00000000000000000000000011101111);
-    constexpr const label_t SOUTH_WEST_FRONT = (0b00000000000000000000000011110111);
-    constexpr const label_t SOUTH_WEST_BACK = (0b00000000000000000000000001111111);
-    constexpr const label_t SOUTH_EAST_FRONT = (0b00000000000000000000000011111011);
-    constexpr const label_t SOUTH_EAST_BACK = (0b00000000000000000000000010111111);
+    // constexpr const label_t BULK = (0b00000000000000000000000000000000);
+    // constexpr const label_t NORTH = (0b00000000000000000000000011001100);
+    // constexpr const label_t SOUTH = (0b00000000000000000000000000110011);
+    // constexpr const label_t WEST = (0b00000000000000000000000001010101);
+    // constexpr const label_t EAST = (0b00000000000000000000000010101010);
+    // constexpr const label_t FRONT = (0b00000000000000000000000011110000);
+    // constexpr const label_t BACK = (0b00000000000000000000000000001111);
+    // constexpr const label_t NORTH_WEST = (0b00000000000000000000000011011101);
+    // constexpr const label_t NORTH_EAST = (0b00000000000000000000000011101110);
+    // constexpr const label_t NORTH_FRONT = (0b00000000000000000000000011111100);
+    // constexpr const label_t NORTH_BACK = (0b00000000000000000000000011001111);
+    // constexpr const label_t SOUTH_WEST = (0b00000000000000000000000001110111);
+    // constexpr const label_t SOUTH_EAST = (0b00000000000000000000000010111011);
+    // constexpr const label_t SOUTH_FRONT = (0b00000000000000000000000011110011);
+    // constexpr const label_t SOUTH_BACK = (0b00000000000000000000000000111111);
+    // constexpr const label_t WEST_FRONT = (0b00000000000000000000000011110101);
+    // constexpr const label_t WEST_BACK = (0b00000000000000000000000001011111);
+    // constexpr const label_t EAST_FRONT = (0b00000000000000000000000011111010);
+    // constexpr const label_t EAST_BACK = (0b00000000000000000000000010101111);
+    // constexpr const label_t NORTH_WEST_FRONT = (0b00000000000000000000000011111101);
+    // constexpr const label_t NORTH_WEST_BACK = (0b00000000000000000000000011011111);
+    // constexpr const label_t NORTH_EAST_FRONT = (0b00000000000000000000000011111110);
+    // constexpr const label_t NORTH_EAST_BACK = (0b00000000000000000000000011101111);
+    // constexpr const label_t SOUTH_WEST_FRONT = (0b00000000000000000000000011110111);
+    // constexpr const label_t SOUTH_WEST_BACK = (0b00000000000000000000000001111111);
+    // constexpr const label_t SOUTH_EAST_FRONT = (0b00000000000000000000000011111011);
+    // constexpr const label_t SOUTH_EAST_BACK = (0b00000000000000000000000010111111);
 
     /**
      * @brief Struct holding the number of lattice elements in three dimensions
@@ -100,7 +100,6 @@ namespace LBM
          * @brief CUDA block size parameters
          * @return Dimensions of CUDA blocks
          **/
-
         __device__ __host__ [[nodiscard]] inline consteval label_t nx() noexcept
         {
 #ifdef SCALAR_PRECISION_32
@@ -109,7 +108,6 @@ namespace LBM
             return 4;
 #endif
         }
-
         __device__ __host__ [[nodiscard]] inline consteval label_t ny() noexcept
         {
 #ifdef SCALAR_PRECISION_32
@@ -118,7 +116,6 @@ namespace LBM
             return 4;
 #endif
         }
-
         __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
@@ -127,7 +124,6 @@ namespace LBM
             return 4;
 #endif
         }
-
         __device__ __host__ [[nodiscard]] inline consteval label_t size() noexcept
         {
             return nx() * ny() * nz();

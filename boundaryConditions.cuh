@@ -11,36 +11,104 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 
 namespace LBM
 {
-    template <typename T>
+    // Basic boundary flags
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t WEST() { return 0x01; }  // 1 << 0
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t EAST() { return 0x02; }  // 1 << 1
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH() { return 0x04; } // 1 << 2
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH() { return 0x08; } // 1 << 3
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t BACK() { return 0x10; }  // 1 << 4
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t FRONT() { return 0x20; } // 1 << 5
+
+    // Corner boundary types (8)
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_WEST_BACK() { return SOUTH() | WEST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_WEST_FRONT() { return SOUTH() | WEST() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_EAST_BACK() { return SOUTH() | EAST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_EAST_FRONT() { return SOUTH() | EAST() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_WEST_BACK() { return NORTH() | WEST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_WEST_FRONT() { return NORTH() | WEST() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_EAST_BACK() { return NORTH() | EAST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_EAST_FRONT() { return NORTH() | EAST() | FRONT(); }
+
+    // Edge boundary types (12)
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_WEST() { return SOUTH() | WEST(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_EAST() { return SOUTH() | EAST(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_WEST() { return NORTH() | WEST(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_EAST() { return NORTH() | EAST(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t WEST_BACK() { return WEST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t WEST_FRONT() { return WEST() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t EAST_BACK() { return EAST() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t EAST_FRONT() { return EAST() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_BACK() { return SOUTH() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t SOUTH_FRONT() { return SOUTH() | FRONT(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_BACK() { return NORTH() | BACK(); }
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t NORTH_FRONT() { return NORTH() | FRONT(); }
+
+    // Special types
+    __host__ __device__ [[nodiscard]] inline consteval uint8_t INTERIOR() { return 0x00; } // No boundaries
+
     struct normalVector
     {
     public:
+        /**
+         * @brief Constructs a normalVector from the current threadIdx
+         * @return A normalVector for the current threadIdx
+         **/
         __device__ [[nodiscard]] inline normalVector() noexcept
-            : x(x_normal()),
-              y(y_normal()),
-              z(z_normal()){};
+            : bitmask_(computeBitmask()){};
 
-        const T x;
-        const T y;
-        const T z;
+        /**
+         * @brief Constructs a normalVector from the current threadIdx
+         * @return A normalVector for the current threadIdx
+         **/
+        __device__ [[nodiscard]] inline normalVector(const label_t x, const label_t y, const label_t z) noexcept
+            : bitmask_(computeBitmask(x, y, z)) {}
+
+        /**
+         * @brief Determine whether or not the current threadIdx lies on a certain boundary
+         * @return Boolean true if it lies on the boundary, boolean false otherwise
+         **/
+        __device__ [[nodiscard]] inline bool isWest() const noexcept { return bitmask_ & WEST(); }
+        __device__ [[nodiscard]] inline bool isEast() const noexcept { return bitmask_ & EAST(); }
+        __device__ [[nodiscard]] inline bool isSouth() const noexcept { return bitmask_ & SOUTH(); }
+        __device__ [[nodiscard]] inline bool isNorth() const noexcept { return bitmask_ & NORTH(); }
+        __device__ [[nodiscard]] inline bool isBack() const noexcept { return bitmask_ & BACK(); }
+        __device__ [[nodiscard]] inline bool isFront() const noexcept { return bitmask_ & FRONT(); }
+        __device__ [[nodiscard]] inline bool isBoundary() const noexcept { return bitmask_ & 0x40; }
+        __device__ [[nodiscard]] inline bool isInterior() const noexcept { return !isBoundary(); }
+
+        /**
+         * @brief Return the bit mask, i.e. the lattice node type
+         * @return The lattice node type
+         **/
+        __device__ [[nodiscard]] inline uint8_t nodeType() const noexcept { return bitmask_ & 0x3F; }
 
     private:
-        __device__ [[nodiscard]] static inline T x_normal() noexcept
-        {
-            const label_t x_index = threadIdx.x + blockDim.x * blockIdx.x;
-            return static_cast<T>((x_index == d_nx - 1) - (x_index == 0));
-        }
+        /**
+         * @brief The underlying bit mask
+         **/
+        const uint8_t bitmask_;
 
-        __device__ [[nodiscard]] static inline T y_normal() noexcept
+        /**
+         * @brief Compute the bit mask from the current threadIdx
+         * @return The bit mask
+         **/
+        __device__ [[nodiscard]] inline static uint8_t computeBitmask() noexcept
         {
-            const label_t y_index = threadIdx.y + blockDim.y * blockIdx.y;
-            return static_cast<T>((y_index == d_ny - 1) - (y_index == 0));
+            return computeBitmask(threadIdx.x + blockDim.x * blockIdx.x, threadIdx.y + blockDim.y * blockIdx.y, threadIdx.z + blockDim.z * blockIdx.z);
         }
-
-        __device__ [[nodiscard]] static inline T z_normal() noexcept
+        __device__ [[nodiscard]] inline static uint8_t computeBitmask(const label_t x, const label_t y, const label_t z) noexcept
         {
-            const label_t z_index = threadIdx.z + blockDim.z * blockIdx.z;
-            return static_cast<T>((z_index == d_nz - 1) - (z_index == 0));
+            return static_cast<uint8_t>(
+                (x == 0) << 0 |                // West (bit0)
+                (x == d_nx - 1) << 1 |         // East (bit1)
+                (y == 0) << 2 |                // South (bit2)
+                (y == d_ny - 1) << 3 |         // North (bit3)
+                (z == 0) << 4 |                // Back (bit4)
+                (z == d_nz - 1) << 5 |         // Front (bit5)
+                (!!(x == 0 || x == d_nx - 1 || //
+                    y == 0 || y == d_ny - 1 || //
+                    z == 0 || z == d_nz - 1))  //
+                    << 6);                     // Any boundary (bit6)
         }
     };
 
@@ -49,51 +117,70 @@ namespace LBM
     public:
         [[nodiscard]] inline consteval boundaryConditions() {};
 
-        template <class VSet, const label_t q_>
-        __device__ [[nodiscard]] static inline scalar_t incomingSwitch(const lattice_constant<q_> q) noexcept
+        /**
+         * @brief Determine whether or not a component of the velocity set is incoming or outgoing based upon the boundary normal
+         * @return 1 as type T if it is an incoming velocity component, 0 otherwise
+         * @param q The index of the velocity set
+         * @param b_n The boundary normal vector at the current lattice node
+         **/
+        template <class VSet, typename T, const label_t q_>
+        __device__ [[nodiscard]] static inline T incomingSwitch(
+            const lattice_constant<q_> q,
+            const normalVector &b_n) noexcept
         {
-            const normalVector<int16_t> b_n;
+            // b_n.x > 0  => EAST boundary
+            // b_n.x < 0  => WEST boundary
+            const bool cond_x = (b_n.isEast() & VSet::nxNeg(q)) | (b_n.isWest() & VSet::nxPos(q));
 
-            const bool cond_x = (b_n.x > 0 & VSet::nxNeg(q)) | (b_n.x < 0 & VSet::nxPos(q));
-            const bool cond_y = (b_n.y > 0 & VSet::nyNeg(q)) | (b_n.y < 0 & VSet::nyPos(q));
-            const bool cond_z = (b_n.z > 0 & VSet::nzNeg(q)) | (b_n.z < 0 & VSet::nzPos(q));
+            // b_n.y > 0  => NORTH boundary
+            // b_n.y < 0  => SOUTH boundary
+            const bool cond_y = (b_n.isNorth() & VSet::nyNeg(q)) | (b_n.isSouth() & VSet::nyPos(q));
 
-            return static_cast<scalar_t>(!(cond_x | cond_y | cond_z));
+            // b_n.z > 0  => FRONT boundary
+            // b_n.z < 0  => BACK boundary
+            const bool cond_z = (b_n.isFront() & VSet::nzNeg(q)) | (b_n.isBack() & VSet::nzPos(q));
+
+            return static_cast<T>(!(cond_x | cond_y | cond_z));
         }
 
+        /**
+         * @brief Calculate the moment variables at the boundary
+         * @param pop The population density at the current lattice node
+         * @param moments The moment variables at the current lattice node
+         * @param b_n The boundary normal vector at the current lattice node
+         **/
         template <class VSet>
         __device__ static inline void calculateMoments(
             const scalar_t pop[VSet::Q()],
             scalar_t (&ptrRestrict moments)[10],
-            const nodeType_t nodeType) noexcept
+            const normalVector &b_n) noexcept
         {
-
             const scalar_t rho_I =
-                ((incomingSwitch<VSet>(lattice_constant<0>()) * pop[0]) +
-                 (incomingSwitch<VSet>(lattice_constant<1>()) * pop[1]) +
-                 (incomingSwitch<VSet>(lattice_constant<2>()) * pop[2]) +
-                 (incomingSwitch<VSet>(lattice_constant<3>()) * pop[3]) +
-                 (incomingSwitch<VSet>(lattice_constant<4>()) * pop[4]) +
-                 (incomingSwitch<VSet>(lattice_constant<5>()) * pop[5]) +
-                 (incomingSwitch<VSet>(lattice_constant<6>()) * pop[6]) +
-                 (incomingSwitch<VSet>(lattice_constant<7>()) * pop[7]) +
-                 (incomingSwitch<VSet>(lattice_constant<8>()) * pop[8]) +
-                 (incomingSwitch<VSet>(lattice_constant<9>()) * pop[9]) +
-                 (incomingSwitch<VSet>(lattice_constant<10>()) * pop[10]) +
-                 (incomingSwitch<VSet>(lattice_constant<11>()) * pop[11]) +
-                 (incomingSwitch<VSet>(lattice_constant<12>()) * pop[12]) +
-                 (incomingSwitch<VSet>(lattice_constant<13>()) * pop[13]) +
-                 (incomingSwitch<VSet>(lattice_constant<14>()) * pop[14]) +
-                 (incomingSwitch<VSet>(lattice_constant<15>()) * pop[15]) +
-                 (incomingSwitch<VSet>(lattice_constant<16>()) * pop[16]) +
-                 (incomingSwitch<VSet>(lattice_constant<17>()) * pop[17]) +
-                 (incomingSwitch<VSet>(lattice_constant<18>()) * pop[18]));
+                ((incomingSwitch<VSet, scalar_t>(lattice_constant<0>(), b_n) * pop[0]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<1>(), b_n) * pop[1]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<2>(), b_n) * pop[2]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<3>(), b_n) * pop[3]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<4>(), b_n) * pop[4]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<5>(), b_n) * pop[5]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<6>(), b_n) * pop[6]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<7>(), b_n) * pop[7]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<8>(), b_n) * pop[8]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<9>(), b_n) * pop[9]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<10>(), b_n) * pop[10]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<11>(), b_n) * pop[11]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<12>(), b_n) * pop[12]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<13>(), b_n) * pop[13]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<14>(), b_n) * pop[14]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<15>(), b_n) * pop[15]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<16>(), b_n) * pop[16]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<17>(), b_n) * pop[17]) +
+                 (incomingSwitch<VSet, scalar_t>(lattice_constant<18>(), b_n) * pop[18]));
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
-            switch (nodeType)
+            switch (b_n.nodeType())
             {
             // Static boundaries
-            case SOUTH_WEST_BACK:
+            case SOUTH_WEST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -111,7 +198,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_WEST_FRONT:
+            case SOUTH_WEST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[8] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -129,7 +216,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_EAST_BACK:
+            case SOUTH_EAST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -147,7 +234,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_EAST_FRONT:
+            case SOUTH_EAST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -165,7 +252,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_WEST:
+            case SOUTH_WEST():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[12] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -185,7 +272,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_EAST:
+            case SOUTH_EAST():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[6] + pop[9] + pop[12] + pop[13] + pop[15] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -205,7 +292,7 @@ namespace LBM
 
                 return;
             }
-            case WEST_BACK:
+            case WEST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[14] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -224,7 +311,7 @@ namespace LBM
 
                 return;
             }
-            case WEST_FRONT:
+            case WEST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[8] + pop[11] + pop[14] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -243,7 +330,7 @@ namespace LBM
 
                 return;
             }
-            case EAST_BACK:
+            case EAST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[6] + pop[7] + pop[12] + pop[13] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -262,7 +349,7 @@ namespace LBM
 
                 return;
             }
-            case EAST_FRONT:
+            case EAST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[7] + pop[9] + pop[11] + pop[13] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -281,7 +368,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_BACK:
+            case SOUTH_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[13] + pop[15];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -301,7 +388,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH_FRONT:
+            case SOUTH_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[8] + pop[9] + pop[13] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -321,7 +408,7 @@ namespace LBM
 
                 return;
             }
-            case WEST:
+            case WEST():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[11] + pop[12] + pop[14] + pop[16] + pop[17] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -341,7 +428,7 @@ namespace LBM
 
                 return;
             }
-            case EAST:
+            case EAST():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[12] + pop[13] + pop[15] + pop[17] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -361,7 +448,7 @@ namespace LBM
 
                 return;
             }
-            case SOUTH:
+            case SOUTH():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[9] + pop[10] + pop[12] + pop[13] + pop[15] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -381,7 +468,7 @@ namespace LBM
 
                 return;
             }
-            case BACK:
+            case BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -401,7 +488,7 @@ namespace LBM
 
                 return;
             }
-            case FRONT:
+            case FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -423,7 +510,7 @@ namespace LBM
             }
 
             // Lid boundaries
-            case NORTH:
+            case NORTH():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[10] + pop[11] + pop[14] + pop[15] + pop[16] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -443,7 +530,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_WEST_BACK:
+            case NORTH_WEST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[6] + pop[10] + pop[14] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -462,7 +549,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_WEST_FRONT:
+            case NORTH_WEST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[5] + pop[11] + pop[14] + pop[16];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -481,7 +568,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_EAST_BACK:
+            case NORTH_EAST_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -500,7 +587,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_EAST_FRONT:
+            case NORTH_EAST_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -519,7 +606,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_BACK:
+            case NORTH_BACK():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[6] + pop[7] + pop[10] + pop[14] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -541,7 +628,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_FRONT:
+            case NORTH_FRONT():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[14] + pop[16];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -563,7 +650,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_EAST:
+            case NORTH_EAST():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -585,7 +672,7 @@ namespace LBM
 
                 return;
             }
-            case NORTH_WEST:
+            case NORTH_WEST():
             {
                 // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
                 // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -620,167 +707,167 @@ namespace LBM
         {
             if (y == 0 && x == 0 && z == 0) // SWB
             {
-                return SOUTH_WEST_BACK;
+                return SOUTH_WEST_BACK();
             }
             else if (y == 0 && x == 0 && z == (nz - 1)) // SWF
             {
-                return SOUTH_WEST_FRONT;
+                return SOUTH_WEST_FRONT();
             }
             else if (y == 0 && x == (nx - 1) && z == 0) // SEB
             {
-                return SOUTH_EAST_BACK;
+                return SOUTH_EAST_BACK();
             }
             else if (y == 0 && x == (nx - 1) && z == (nz - 1)) // SEF
             {
-                return SOUTH_EAST_FRONT;
+                return SOUTH_EAST_FRONT();
             }
             else if (y == (ny - 1) && x == 0 && z == 0) // NWB
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_WEST_BACK;
+                    return NORTH_WEST_BACK();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == (ny - 1) && x == 0 && z == (nz - 1)) // NWF
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_WEST_FRONT;
+                    return NORTH_WEST_FRONT();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == 0) // NEB
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_EAST_BACK;
+                    return NORTH_EAST_BACK();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == (ny - 1) && x == (nx - 1) && z == (nz - 1)) // NEF
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_EAST_FRONT;
+                    return NORTH_EAST_FRONT();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == 0 && x == 0) // SW
             {
-                return SOUTH_WEST;
+                return SOUTH_WEST();
             }
             else if (y == 0 && x == (nx - 1)) // SE
             {
-                return SOUTH_EAST;
+                return SOUTH_EAST();
             }
             else if (y == (ny - 1) && x == 0) // NW
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_WEST;
+                    return NORTH_WEST();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == (ny - 1) && x == (nx - 1)) // NE
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_EAST;
+                    return NORTH_EAST();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == 0 && z == 0) // SB
             {
-                return SOUTH_BACK;
+                return SOUTH_BACK();
             }
             else if (y == 0 && z == (nz - 1)) // SF
             {
-                return SOUTH_FRONT;
+                return SOUTH_FRONT();
             }
             else if (y == (ny - 1) && z == 0) // NB
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_BACK;
+                    return NORTH_BACK();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (y == (ny - 1) && z == (nz - 1)) // NF
             {
                 if constexpr (NORTH_BCS_READY)
                 {
-                    return NORTH_FRONT;
+                    return NORTH_FRONT();
                 }
                 else
                 {
-                    return NORTH;
+                    return NORTH();
                 }
             }
             else if (x == 0 && z == 0) // WB
             {
-                return WEST_BACK;
+                return WEST_BACK();
             }
             else if (x == 0 && z == (nz - 1)) // WF
             {
-                return WEST_FRONT;
+                return WEST_FRONT();
             }
             else if (x == (nx - 1) && z == 0) // EB
             {
-                return EAST_BACK;
+                return EAST_BACK();
             }
             else if (x == (nx - 1) && z == (nz - 1)) // EF
             {
-                return EAST_FRONT;
+                return EAST_FRONT();
             }
             else if (y == 0) // S
             {
-                return SOUTH;
+                return SOUTH();
             }
             else if (y == (ny - 1)) // N
             {
-                return NORTH;
+                return NORTH();
             }
             else if (x == 0) // W
             {
-                return WEST;
+                return WEST();
             }
             else if (x == (nx - 1)) // E
             {
-                return EAST;
+                return EAST();
             }
             else if (z == 0) // B
             {
-                return BACK;
+                return BACK();
             }
             else if (z == (nz - 1)) // F
             {
-                return FRONT;
+                return FRONT();
             }
             else
             {
-                return BULK;
+                return INTERIOR();
             }
         }
 

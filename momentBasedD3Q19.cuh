@@ -22,12 +22,16 @@ namespace LBM
      **/
     launchBounds __global__ void momentBasedD3Q19(
         scalar_t *ptrRestrict const fMom,
-        const nodeType_t *ptrRestrict const dNodeType,
         device::halo blockHalo)
     {
-        const nodeType_t nodeType = dNodeType[device::idxScalarBlock(threadIdx, blockIdx)];
+        // const nodeType_t nodeType = dNodeType[device::idxScalarBlock(threadIdx, blockIdx)];
 
-        if (device::out_of_bounds() || device::bad_node_type(nodeType))
+        // if (device::out_of_bounds() || device::bad_node_type(nodeType))
+        // {
+        //     return;
+        // }
+
+        if (device::out_of_bounds())
         {
             return;
         }
@@ -60,9 +64,10 @@ namespace LBM
         blockHalo.popLoad<VelocitySet::D3Q19>(pop);
 
         // Calculate the moments either at the boundary or interior
-        if (nodeType != BULK)
+        const normalVector b_n;
+        if (b_n.isBoundary())
         {
-            boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop, moments, nodeType);
+            boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop, moments, b_n);
         }
         else
         {

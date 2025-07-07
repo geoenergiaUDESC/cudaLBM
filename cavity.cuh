@@ -81,7 +81,7 @@ namespace LBM
 
         __host__ [[nodiscard]] const std::vector<nodeType_t> nodeType(const latticeMesh &mesh) noexcept
         {
-            std::vector<nodeType_t> nodeTypes(mesh.nx() * mesh.ny() * mesh.nz(), BULK);
+            std::vector<nodeType_t> nodeTypes(mesh.nx() * mesh.ny() * mesh.nz(), INTERIOR());
 
             for (label_t x = 0; x < mesh.nx(); x++)
             {

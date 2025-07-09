@@ -6,9 +6,9 @@ Contents: Includes needed for the file IO
 #ifndef __MBLBM_FILEIO_CUH
 #define __MBLBM_FILEIO_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "memory/memory.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../memory/memory.cuh"
 
 namespace LBM
 {

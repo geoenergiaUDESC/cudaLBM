@@ -6,8 +6,8 @@ Contents: Handles the use of shared memory on the GPU
 #ifndef __MBLBM_SHAREDMEMORY_CUH
 #define __MBLBM_SHAREDMEMORY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 
 namespace LBM
 {

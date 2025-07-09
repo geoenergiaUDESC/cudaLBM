@@ -8,8 +8,8 @@ partition the mesh prior to distribution to the devices
 #ifndef __MBLBM_LABELARRAYS_CUH
 #define __MBLBM_LABELARRAYS_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 
 namespace LBM
 {

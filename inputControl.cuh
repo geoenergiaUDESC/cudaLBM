@@ -29,9 +29,33 @@ namespace LBM
         ~inputControl() noexcept {};
 
         /**
-         * @brief Returns the array of device indices
-         * @return A read-only reference to deviceList_
+         * @brief Return a vector of string views of the arguments passed to the solver at the command line
+         * @return A vector of string views of the arguments passed to the solver at the command line
+         * @param argc First argument passed to main
+         * @param argv Second argument passed to main
          **/
+        [[nodiscard]] const std::vector<std::string> parseCommandLine(int argc, char *argv[]) const noexcept
+        {
+            if (argc > 0)
+            {
+                std::vector<std::string> arr;
+                label_t arrLength = 0;
+
+                for (label_t i = 0; i < static_cast<label_t>(argc); i++)
+                {
+                    arr.push_back(argv[i]);
+                    arrLength = arrLength + 1;
+                }
+
+                arr.resize(arrLength);
+                return arr;
+            }
+            else
+            {
+                return std::vector<std::string>{""};
+            }
+        }
+
         [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return deviceList_;
@@ -77,10 +101,12 @@ namespace LBM
         [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const
         {
             const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
+
             if (deviceList.size() > static_cast<label_t>(nAvailableDevices()) | nAvailableDevices() < 1)
             {
                 throw std::runtime_error("Number of GPUs requested is greater than the number available");
             }
+
             return deviceList;
         }
 
@@ -93,34 +119,6 @@ namespace LBM
             deviceIndex_t deviceCount = -1;
             cudaGetDeviceCount(&deviceCount);
             return deviceCount;
-        }
-
-        /**
-         * @brief Return a vector of string views of the arguments passed to the solver at the command line
-         * @return A vector of string views of the arguments passed to the solver at the command line
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
-         **/
-        [[nodiscard]] std::vector<std::string> parseCommandLine(int argc, char *argv[]) const noexcept
-        {
-            if (argc > 0)
-            {
-                std::vector<std::string> arr;
-                label_t arrLength = 0;
-
-                for (label_t i = 0; i < static_cast<label_t>(argc); i++)
-                {
-                    arr.push_back(argv[i]);
-                    arrLength = arrLength + 1;
-                }
-
-                arr.resize(arrLength);
-                return arr;
-            }
-            else
-            {
-                return std::vector<std::string>{""};
-            }
         }
     };
 }

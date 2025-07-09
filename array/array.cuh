@@ -6,13 +6,13 @@ Contents: A templated class for various different types of arrays
 #ifndef __MBLBM_ARRAY_CUH
 #define __MBLBM_ARRAY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "latticeMesh/latticeMesh.cuh"
-#include "programControl.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../latticeMesh/latticeMesh.cuh"
+#include "../programControl.cuh"
 // #include "memory/memory.cuh"
-#include "fileIO/fileIO.cuh"
-#include "cavity.cuh"
+#include "../fileIO/fileIO.cuh"
+#include "../cavity.cuh"
 
 namespace LBM
 {
@@ -27,8 +27,23 @@ namespace LBM
              * @param programCtrl The program control dictionary
              * @param mesh The mesh
              **/
-            [[nodiscard]] array(const programControl &programCtrl, const host::latticeMesh &mesh)
-                : arr_(initialiseVector(programCtrl, mesh)) {};
+            [[nodiscard]] array(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
+                : arr_(initialiseVector(programCtrl, mesh)),
+                  varNames_(varNames) {};
+
+            /**
+             * @brief Constructs the device array from an std::vector of type T
+             * @param programCtrl Immutable reference to the program control
+             * @param varNames The names of the variables
+             * @param timeIndex The index of the time step
+             * @return An array object constructed from f
+             **/
+            [[nodiscard]] array(
+                const programControl &programCtrl,
+                const std::vector<std::string> &varNames,
+                const label_t timeIndex)
+                : arr_(initialiseVector(programCtrl, timeIndex)),
+                  varNames_(varNames) {};
 
             /**
              * @brief Destructor for the host array class
@@ -44,11 +59,25 @@ namespace LBM
                 return arr_;
             }
 
+            /**
+             * @brief Provides access to the variable names
+             * @return An immutable reference to an std::vector of std::strings
+             **/
+            __host__ [[nodiscard]] inline const std::vector<std::string> &varNames() const noexcept
+            {
+                return varNames_;
+            }
+
         private:
             /**
              * @brief The underlying std::vector
              **/
             const std::vector<T> arr_;
+
+            /**
+             * @brief Names of the solution variables
+             **/
+            const std::vector<std::string> varNames_;
 
             /**
              * @brief Initialises the std::vector
@@ -93,6 +122,20 @@ namespace LBM
 
                 // Fallback
                 return host::moments(mesh, programCtrl.u_inf());
+            }
+
+            /**
+             * @brief Initialises the std::vector
+             * @param programCtrl The program control dictionary
+             * @param mesh The mesh
+             * @param timeIndex The index of the file
+             **/
+            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const label_t timeIndex) const
+            {
+                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
+
+                // Get the correct time index
+                return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin");
             }
         };
     }

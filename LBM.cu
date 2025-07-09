@@ -27,7 +27,10 @@ int main(int argc, char *argv[])
 
     VelocitySet::D3Q19::print();
 
-    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(programCtrl, mesh);
+    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(
+        programCtrl,
+        {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+        mesh);
 
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());
@@ -40,7 +43,7 @@ int main(int argc, char *argv[])
     // Perform device memory allocation
     device::array<scalar_t> deviceMoments(
         hostMoments.arr(),
-        {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+        hostMoments.varNames(),
         mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
     // const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
@@ -84,15 +87,15 @@ int main(int argc, char *argv[])
         {
             deviceMoments.write(programCtrl.caseName(), timeStep);
 
-            if (timeStep > 0)
-            {
-                postProcess::writeTecplotHexahedralData(
-                    fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
-                    programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
-                    mesh,
-                    deviceMoments.varNames(),
-                    "Title");
-            }
+            // if (timeStep > 0)
+            // {
+            //     postProcess::writeTecplotHexahedralData(
+            //         fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
+            //         programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
+            //         mesh,
+            //         deviceMoments.varNames(),
+            //         "Title");
+            // }
 
             // momentsMean.write(programCtrl.caseName(), timeStep);
 

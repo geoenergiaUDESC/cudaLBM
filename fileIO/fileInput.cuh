@@ -267,7 +267,52 @@ namespace LBM
                 host::save<index::yz()>(fMom.data(), mesh),
                 host::save<index::zz()>(fMom.data(), mesh)};
         }
+
+        /**
+         * @brief De-interleave an array of structures (AoS) into a structure of arrays (SoA).
+         * @param fMom The array of structures to be de-interleaved (AoS).
+         * @param mesh The mesh
+         * @return A vector of vectors, where each inside vector contains all the values for a unique variable (SoA).
+         **/
+        template <typename T, class M>
+        [[nodiscard]] std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
+        {
+            const size_t nFields = 10;
+            const size_t nNodes = static_cast<size_t>(mesh.nx()) * mesh.ny() * mesh.nz();
+
+            std::vector<std::vector<T>> soa(nFields);
+
+            // It utilizes .reserve to pre-allocate memory and maximize performance
+            for (size_t i = 0; i < nFields; ++i)
+            {
+                soa[i].reserve(nNodes);
+            }
+
+            for (label_t z = 0; z < mesh.nz(); ++z)
+            {
+                for (label_t y = 0; y < mesh.ny(); ++y)
+                {
+                    for (label_t x = 0; x < mesh.nx(); ++x)
+                    {
+                        soa[index::rho()].push_back(fMom[host::idxMom<index::rho()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::u()].push_back(fMom[host::idxMom<index::u()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::v()].push_back(fMom[host::idxMom<index::v()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::w()].push_back(fMom[host::idxMom<index::w()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::xx()].push_back(fMom[host::idxMom<index::xx()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::xy()].push_back(fMom[host::idxMom<index::xy()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::xz()].push_back(fMom[host::idxMom<index::xz()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::yy()].push_back(fMom[host::idxMom<index::yy()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::yz()].push_back(fMom[host::idxMom<index::yz()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                        soa[index::zz()].push_back(fMom[host::idxMom<index::zz()>(x % block::nx(), y % block::ny(), z % block::nz(), x / block::nx(), y / block::ny(), z / block::nz(), mesh.nxBlocks(), mesh.nyBlocks())]);
+                    }
+                }
+            }
+
+            return soa;
+        }
+
     }
+
 }
 
 #endif

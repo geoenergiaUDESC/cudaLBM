@@ -6,9 +6,9 @@ Contents: Base class used for definition of the velocity set
 #ifndef __MBLBM_VELOCITYSET_CUH
 #define __MBLBM_VELOCITYSET_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "globalFunctions.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../globalFunctions.cuh"
 
 namespace LBM
 {

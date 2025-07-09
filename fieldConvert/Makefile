@@ -35,17 +35,17 @@ CXX_FLAGS = $(CXX_STANDARD) $(CXX_OPTFLAGS) $(CXX_MFLAGS) $(CXX_WFLAGS) $(CXX_DF
 
 default:
 	make clean
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19
+	$(NVCXX) $(NVCXX_FLAGS) fieldConvert.cu -o fieldConvert
 
 install:
 	make clean
 	make uninstall
-	$(NVCXX) $(NVCXX_FLAGS) LBM.cu -o momentBasedD3Q19
-	cp -rf momentBasedD3Q19 build/bin/momentBasedD3Q19
-	rm -rf momentBasedD3Q19
+	$(NVCXX) $(NVCXX_FLAGS) fieldConvert.cu -o fieldConvert
+	cp -rf fieldConvert ../build/bin/fieldConvert
+	rm -rf fieldConvert
 
 clean:
-	rm -rf momentBasedD3Q19
+	rm -rf fieldConvert
 
 uninstall:
-	rm -rf build/bin/momentBasedD3Q19
+	rm -rf ../build/bin/fieldConvert

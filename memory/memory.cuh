@@ -6,9 +6,9 @@ Contents: Memory management routines for the LBM code
 #ifndef __MBLBM_MEMORY_CUH
 #define __MBLBM_MEMORY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "globalFunctions.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../globalFunctions.cuh"
 
 namespace LBM
 {
@@ -86,7 +86,7 @@ namespace LBM
          * @param size The amount of memory to be allocated
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *const allocate(const std::size_t nPoints) noexcept
+        __host__ [[nodiscard]] T *allocate(const std::size_t nPoints) noexcept
         {
             T *ptr;
 
@@ -127,9 +127,9 @@ namespace LBM
          * @param f The pre-existing array on the host to be copied to the GPU
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *const allocateArray(const std::vector<T> &f) noexcept
+        __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
         {
-            T *const ptr = allocate<T>(f.size());
+            T *ptr = allocate<T>(f.size());
 
             copy(ptr, f);
 
@@ -143,9 +143,9 @@ namespace LBM
          * @param val The value set
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *const allocateArray(const label_t nPoints, const T val) noexcept
+        __host__ [[nodiscard]] T *allocateArray(const label_t nPoints, const T val) noexcept
         {
-            T *const ptr = allocate<T>(nPoints);
+            T *ptr = allocate<T>(nPoints);
 
             copy(ptr, std::vector<T>(nPoints, val));
 

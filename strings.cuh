@@ -227,6 +227,7 @@ namespace LBM
                 }
                 arrLength = arrLength + 1;
             }
+
             arr.resize(arrLength);
 
             return arr;

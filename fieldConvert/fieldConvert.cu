@@ -15,7 +15,7 @@ using namespace LBM;
  * @param argc First argument passed to main
  * @param argv Second argument passed to main
  **/
-__host__ [[nodiscard]] bool isLatestTime(int argc, char *argv[])
+__host__ [[nodiscard]] bool isLatestTime(const int argc, const char *const argv[])
 {
     const inputControl inputCtrl(argc, argv);
 
@@ -32,13 +32,11 @@ __host__ [[nodiscard]] bool isLatestTime(int argc, char *argv[])
     return false;
 }
 
-int main(int argc, char *argv[])
+int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
     const host::latticeMesh mesh;
-
-    // VelocitySet::D3Q19::print();
 
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 

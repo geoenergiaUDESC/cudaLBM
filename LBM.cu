@@ -46,17 +46,13 @@ int main(int argc, char *argv[])
         hostMoments.varNames(),
         mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
-    // const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
-
-    // Set up time averaging
-    // device::array<scalar_t> momentsMean(
-    //     host::moments(mesh, programCtrl.u_inf()),
-    //     {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"},
-    //     mesh);
 
     // Copy symbols to device
     mesh.copyDeviceSymbols();
     programCtrl.copyDeviceSymbols(mesh.nx());
+
+    // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
+    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferL1));
 
     std::cout << "Time loop start" << std::endl;
     std::cout << std::endl;
@@ -74,40 +70,12 @@ int main(int argc, char *argv[])
             deviceMoments.ptr(),
             blockHalo);
 
-        // checkCudaErrors(cudaDeviceSynchronize());
-        // fieldAverage::calculate<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
-        //     deviceMoments.ptr(),
-        //     momentsMean.ptr(),
-        //     nodeTypes.ptr(),
-        //     timeStep);
-
         blockHalo.swap();
 
         if (programCtrl.save(timeStep))
         {
             deviceMoments.write(programCtrl.caseName(), timeStep);
-
-            // if (timeStep > 0)
-            // {
-            //     postProcess::writeTecplotHexahedralData(
-            //         fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
-            //         programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
-            //         mesh,
-            //         deviceMoments.varNames(),
-            //         "Title");
-            // }
-
-            // momentsMean.write(programCtrl.caseName(), timeStep);
-
-            // postProcess::writeTecplotHexahedralData(
-            //     fileIO::deinterleaveAoS(host::copyToHost(momentsMean.ptr(), mesh.nPoints() * 10), mesh),
-            //     programCtrl.caseName() + "Mean_" + std::to_string(timeStep) + ".dat",
-            //     mesh,
-            //     momentsMean.varNames(),
-            //     "Title");
         }
-
-        // checkCudaErrors(cudaDeviceSynchronize());
     }
 
     // Get ending time point and output the elapsed time

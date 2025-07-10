@@ -17,10 +17,11 @@ namespace LBM
      * @param Start The index at which the loop will start
      * @param End The index at which the loop will end
      * @note The length of the loop is End - Start, the index End is not performed
+     * @note The loop is equivalent to: for (label_t i = Start; i < end; i++)
      * @note This function effectively unrolls loops at compile time and allows for the use of if constexpr
      **/
     template <const label_t Start, const label_t End, typename F>
-    __host__ __device__ inline constexpr void constexpr_for(F &&f)
+    __device__ inline constexpr void constexpr_for(F &&f)
     {
         if constexpr (Start < End)
         {
@@ -147,12 +148,14 @@ namespace LBM
         __host__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
-            const label_t nBlockx, const label_t nBlocky)
+            const label_t nBlockx, const label_t nBlocky) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + nBlockx * (by + nBlocky * (bz))))));
+            // return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + nBlockx * (by + nBlocky * (bz))))));
+
+            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
         }
 
-        __host__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z, const label_t nx, const label_t ny)
+        __host__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z, const label_t nx, const label_t ny) noexcept
         {
             return x + nx * (y + ny * (z));
         }
@@ -165,7 +168,7 @@ namespace LBM
             const label_t by,
             const label_t bz,
             const label_t nx,
-            const label_t ny)
+            const label_t ny) noexcept
         {
             const label_t nBlockx = nx / block::nx();
             const label_t nBlocky = ny / block::ny();
@@ -174,7 +177,7 @@ namespace LBM
         }
 
         template <const label_t pop>
-        __host__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz)
+        __host__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
         }
@@ -187,7 +190,7 @@ namespace LBM
             const label_t by,
             const label_t bz,
             const label_t nBlockx,
-            const label_t nBlocky)
+            const label_t nBlocky) noexcept
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
@@ -200,7 +203,7 @@ namespace LBM
             const label_t by,
             const label_t bz,
             const label_t nBlockx,
-            const label_t nBlocky)
+            const label_t nBlocky) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
@@ -213,7 +216,7 @@ namespace LBM
             const label_t by,
             const label_t bz,
             const label_t nBlockx,
-            const label_t nBlocky)
+            const label_t nBlocky) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
@@ -237,23 +240,37 @@ namespace LBM
         template <const label_t mom>
         __device__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz)
+            const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz))))));
+            // return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz))))));
+
+            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz)))));
         }
 
         template <const label_t mom>
         __device__ [[nodiscard]] inline label_t idxMom(
             const dim3 &tx,
-            const dim3 &bx)
+            const dim3 &bx) noexcept
         {
-            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (mom + NUMBER_MOMENTS() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z))))));
+            // return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (mom + NUMBER_MOMENTS() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z))))));
+
+            return mom + NUMBER_MOMENTS() * (tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z)))));
         }
 
-        __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
+        __device__ [[nodiscard]] inline label_t idxSpatial(const dim3 &tx, const dim3 &bx) noexcept
         {
-            return x + d_nx * (y + d_ny * (z));
+            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }
+
+        // __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
+        // {
+        //     return x + d_nx * (y + d_ny * (z));
+        // }
+
+        // __device__ [[nodiscard]] inline label_t idxScalarGlobal(const dim3 &tx)
+        // {
+        //     return tx.x + d_nx * (tx.y + d_ny * (tx.z));
+        // }
 
         __device__ [[nodiscard]] inline label_t idxScalarBlock(
             const label_t tx,
@@ -261,26 +278,26 @@ namespace LBM
             const label_t tz,
             const label_t bx,
             const label_t by,
-            const label_t bz)
+            const label_t bz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz)))));
         }
 
         __device__ [[nodiscard]] inline label_t idxScalarBlock(
             const dim3 &tx,
-            const dim3 &bx)
+            const dim3 &bx) noexcept
         {
             return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z)))));
         }
 
         template <const label_t pop>
-        __device__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz)
+        __device__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
         }
 
         template <const label_t pop>
-        __device__ [[nodiscard]] inline label_t idxPopBlock(const dim3 &tx)
+        __device__ [[nodiscard]] inline label_t idxPopBlock(const dim3 &tx) noexcept
         {
             return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (pop)));
         }
@@ -291,7 +308,7 @@ namespace LBM
             const label_t tz,
             const label_t bx,
             const label_t by,
-            const label_t bz)
+            const label_t bz) noexcept
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
@@ -300,7 +317,7 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxPopX(
             const label_t ty,
             const label_t tz,
-            const dim3 &bx)
+            const dim3 &bx) noexcept
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }
@@ -311,7 +328,7 @@ namespace LBM
             const label_t tz,
             const label_t bx,
             const label_t by,
-            const label_t bz)
+            const label_t bz) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
@@ -320,7 +337,7 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxPopY(
             const label_t tx,
             const label_t tz,
-            const dim3 &bx)
+            const dim3 &bx) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }
@@ -331,7 +348,7 @@ namespace LBM
             const label_t ty,
             const label_t bx,
             const label_t by,
-            const label_t bz)
+            const label_t bz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
@@ -340,7 +357,7 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxPopZ(
             const label_t tx,
             const label_t ty,
-            const dim3 &bx)
+            const dim3 &bx) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
         }

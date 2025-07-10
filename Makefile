@@ -3,7 +3,7 @@ NVCXX_STANDARD = -std c++20
 NVCXX_OPTFLAGS = -O3 --restrict
 # NVCXX_OPTFLAGS = -O3
 # NVCXX_WFLAGS = --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this -Werror all-warnings
-NVCXX_WFLAGS = --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this
+NVCXX_WFLAGS = --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this -Xptxas -v
 NVCXX_COMPILER_WFLAGS = -Xcompiler "-O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings"
 # NVCXX_COMPILER_WFLAGS = -Xcompiler "-Wall -Wextra -Wpedantic -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings"
 

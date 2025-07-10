@@ -19,7 +19,7 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] inputControl(int argc, char *argv[]) noexcept
+        [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
             : nArgs_(nArgsCheck(argc)),
               deviceList_(initialiseDeviceList(argc, argv)) {};
 
@@ -34,7 +34,7 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] const std::vector<std::string> parseCommandLine(int argc, char *argv[]) const noexcept
+        [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
         {
             if (argc > 0)
             {
@@ -73,7 +73,7 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] label_t nArgsCheck(int argc) const
+        [[nodiscard]] label_t nArgsCheck(const int argc) const
         {
             // Check for a bad number of supplied arguments
             if (argc < 0)
@@ -98,7 +98,7 @@ namespace LBM
          * @return An std::vector of deviceIndex_t representing the indices of the devices
          * @note Checks that the number of GPUs supplied on the command line is valid
          **/
-        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(int argc, char *argv[]) const
+        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(const int argc, const char *const argv[]) const
         {
             const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
 

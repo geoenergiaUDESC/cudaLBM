@@ -73,7 +73,7 @@ namespace LBM
      * @brief Type used to contain the moments within a given stack frame
      **/
     using momentArray_t = scalar_t[10];
-    using momentArray_t_v2 = scalar_t[16];
+    // using momentArray_t_v2 = scalar_t[16];
 
     /**
      * @brief Label type used for scalar types

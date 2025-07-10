@@ -1,7 +1,14 @@
 /**
-Filename: globalFunctions.cuh
-Contents: Functions used throughout the source code
-**/
+ * @file globalFunctions.cuh
+ * @brief Global utility functions and structures for LBM simulations
+ *
+ * Contains core functionalities used throughout the LBM implementation including:
+ * - Compile-time loop unrolling
+ * - Memory indexing utilities
+ * - Block/thread dimension constants
+ * - Physical constant definitions
+ * - Node type handling
+ **/
 
 #ifndef __MBLBM_GLOBALFUNCTIONS_CUH
 #define __MBLBM_GLOBALFUNCTIONS_CUH
@@ -12,23 +19,30 @@ Contents: Functions used throughout the source code
 namespace LBM
 {
     /**
-     * @brief Recursively defined compile-time for loop
-     * @param f The work to be done at each loop iteration
-     * @param Start The index at which the loop will start
-     * @param End The index at which the loop will end
-     * @note The length of the loop is End - Start, the index End is not performed
-     * @note The loop is equivalent to: for (label_t i = Start; i < end; i++)
-     * @note This function effectively unrolls loops at compile time and allows for the use of if constexpr
+     * @brief Compile-time recursive loop unroller
+     * @tparam Start Starting index (inclusive)
+     * @tparam End Ending index (exclusive)
+     * @tparam F Callable type accepting integral_constant<label_t>
+     * @param f Function object to execute per iteration
+     *
+     * @note Equivalent to runtime loop: `for(label_t i=Start; i<End; ++i)`
+     * @note Enables `if constexpr` usage in loop bodies
+     * @warning Recursion depth limited by compiler constraints
+     *
+     * Example usage:
+     * @code
+     * constexpr_for<0, 5>([](auto i) {
+     *     // i is integral_constant<label_t, N>
+     *     if constexpr (i.value % 2 == 0) { ... }
+     * });
+     * @endcode
      **/
     template <const label_t Start, const label_t End, typename F>
     __device__ inline constexpr void constexpr_for(F &&f)
     {
         if constexpr (Start < End)
         {
-            // Execute current iteration
             f(integralConstant<label_t, Start>());
-
-            // Process next iteration
             if constexpr (Start + 1 < End)
             {
                 constexpr_for<Start + 1, End>(std::forward<F>(f));
@@ -36,70 +50,50 @@ namespace LBM
         }
     }
 
+    /**
+     * @brief Number of hydrodynamic moments
+     **/
     [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
-    // constexpr const label_t BULK = (0b00000000000000000000000000000000);
-    // constexpr const label_t NORTH = (0b00000000000000000000000011001100);
-    // constexpr const label_t SOUTH = (0b00000000000000000000000000110011);
-    // constexpr const label_t WEST = (0b00000000000000000000000001010101);
-    // constexpr const label_t EAST = (0b00000000000000000000000010101010);
-    // constexpr const label_t FRONT = (0b00000000000000000000000011110000);
-    // constexpr const label_t BACK = (0b00000000000000000000000000001111);
-    // constexpr const label_t NORTH_WEST = (0b00000000000000000000000011011101);
-    // constexpr const label_t NORTH_EAST = (0b00000000000000000000000011101110);
-    // constexpr const label_t NORTH_FRONT = (0b00000000000000000000000011111100);
-    // constexpr const label_t NORTH_BACK = (0b00000000000000000000000011001111);
-    // constexpr const label_t SOUTH_WEST = (0b00000000000000000000000001110111);
-    // constexpr const label_t SOUTH_EAST = (0b00000000000000000000000010111011);
-    // constexpr const label_t SOUTH_FRONT = (0b00000000000000000000000011110011);
-    // constexpr const label_t SOUTH_BACK = (0b00000000000000000000000000111111);
-    // constexpr const label_t WEST_FRONT = (0b00000000000000000000000011110101);
-    // constexpr const label_t WEST_BACK = (0b00000000000000000000000001011111);
-    // constexpr const label_t EAST_FRONT = (0b00000000000000000000000011111010);
-    // constexpr const label_t EAST_BACK = (0b00000000000000000000000010101111);
-    // constexpr const label_t NORTH_WEST_FRONT = (0b00000000000000000000000011111101);
-    // constexpr const label_t NORTH_WEST_BACK = (0b00000000000000000000000011011111);
-    // constexpr const label_t NORTH_EAST_FRONT = (0b00000000000000000000000011111110);
-    // constexpr const label_t NORTH_EAST_BACK = (0b00000000000000000000000011101111);
-    // constexpr const label_t SOUTH_WEST_FRONT = (0b00000000000000000000000011110111);
-    // constexpr const label_t SOUTH_WEST_BACK = (0b00000000000000000000000001111111);
-    // constexpr const label_t SOUTH_EAST_FRONT = (0b00000000000000000000000011111011);
-    // constexpr const label_t SOUTH_EAST_BACK = (0b00000000000000000000000010111111);
-
     /**
-     * @brief Struct holding the number of lattice elements in three dimensions
+     * @brief Block dimensions descriptor
+     * @details Stores lattice dimensions in 3D space
      **/
     struct blockLabel_t
     {
-        const label_t nx;
-        const label_t ny;
-        const label_t nz;
+        const label_t nx; ///< Lattice points in x-direction
+        const label_t ny; ///< Lattice points in y-direction
+        const label_t nz; ///< Lattice points in z-direction
     };
 
     /**
-     * @brief Struct holding the first and last indices of a particular dimension of a block
+     * @brief 1D range descriptor [begin, end)
      **/
     struct blockPartitionRange_t
     {
-        const label_t begin;
-        const label_t end;
+        const label_t begin; ///< Inclusive start index
+        const label_t end;   ///< Exclusive end index
     };
 
     /**
-     * @brief Struct holding first and last indices of all dimensions of a block
+     * @brief 3D block range descriptor
+     * @details Defines a rectangular region in lattice space
      **/
     struct blockRange_t
     {
-        const blockPartitionRange_t xRange;
-        const blockPartitionRange_t yRange;
-        const blockPartitionRange_t zRange;
+        const blockPartitionRange_t xRange; ///< X-dimension range
+        const blockPartitionRange_t yRange; ///< Y-dimension range
+        const blockPartitionRange_t zRange; ///< Z-dimension range
     };
 
+    /**
+     * @brief CUDA block dimension configuration
+     * @details Compile-time constants defining thread block dimensions
+     **/
     namespace block
     {
         /**
-         * @brief CUDA block size parameters
-         * @return Dimensions of CUDA blocks
+         * @brief Threads per block in x-dimension (compile-time constant)
          **/
         __device__ __host__ [[nodiscard]] inline consteval label_t nx() noexcept
         {
@@ -109,6 +103,10 @@ namespace LBM
             return 4;
 #endif
         }
+
+        /**
+         * @brief Threads per block in y-dimension (compile-time constant)
+         **/
         __device__ __host__ [[nodiscard]] inline consteval label_t ny() noexcept
         {
 #ifdef SCALAR_PRECISION_32
@@ -117,6 +115,10 @@ namespace LBM
             return 4;
 #endif
         }
+
+        /**
+         * @brief Threads per block in z-dimension (compile-time constant)
+         **/
         __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
@@ -125,6 +127,10 @@ namespace LBM
             return 4;
 #endif
         }
+
+        /**
+         * @brief Total threads per block (nx * ny * nz)
+         **/
         __device__ __host__ [[nodiscard]] inline consteval label_t size() noexcept
         {
             return nx() * ny() * nz();
@@ -132,254 +138,224 @@ namespace LBM
     }
 
     /**
-     * @brief Host-side indexing functions
+     * @brief Host-side indexing operations
      **/
     namespace host
     {
-        __host__ [[nodiscard]] inline bool out_of_bounds(
-            const label_t nx, const label_t ny, const label_t nz,
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz) noexcept
-        {
-            return ((tx + bx * bx >= nx) || (ty + by * by >= ny) || (tz + bz * bz >= nz));
-        }
-
+        /**
+         * @brief Compute moment memory index
+         * @tparam mom Moment index [0, NUMBER_MOMENTS())
+         * @param tx,ty,tz Thread-local coordinates
+         * @param bx,by,bz Block indices
+         * @param nBlockx Number of blocks in x-direction
+         * @param nBlocky Number of blocks in y-direction
+         * @return Linearized index in moment array
+         *
+         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
+         **/
         template <const label_t mom>
-        __host__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz,
-            const label_t nBlockx, const label_t nBlocky) noexcept
+        __host__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz, const label_t nBlockx, const label_t nBlocky) noexcept
         {
-            // return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + nBlockx * (by + nBlocky * (bz))))));
-
             return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
         }
 
-        __host__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z, const label_t nx, const label_t ny) noexcept
+        /**
+         * @brief Global scalar field index (collapsed 3D)
+         * @param x,y,z Global coordinates
+         * @param nx,ny Global dimensions
+         * @return Linearized index: x + nx*(y + ny*z)
+         **/
+        __host__ [[nodiscard]] inline label_t idxScalarGlobal(
+            const label_t x, const label_t y, const label_t z,
+            const label_t nx, const label_t ny) noexcept
         {
             return x + nx * (y + ny * (z));
         }
 
-        __host__ [[nodiscard]] inline label_t idxScalarBlock(
-            const label_t tx,
-            const label_t ty,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz,
-            const label_t nx,
-            const label_t ny) noexcept
-        {
-            const label_t nBlockx = nx / block::nx();
-            const label_t nBlocky = ny / block::ny();
-
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * (bz)))));
-        }
-
-        template <const label_t pop>
-        __host__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
-        {
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
-        }
-
+        /**
+         * @brief Index for X-aligned population arrays
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @param ty,tz Thread-local y/z coordinates
+         * @param bx,by,bz Block indices
+         * @param nBlockx Number of blocks in x-direction
+         * @param nBlocky Number of blocks in y-direction
+         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + nBlockx*(by + nBlocky*bz)))
+         * @note Optimized for coalesced memory access in X-direction
+         **/
         template <const label_t pop, const label_t QF>
         __host__ [[nodiscard]] inline label_t idxPopX(
-            const label_t ty,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz,
-            const label_t nBlockx,
-            const label_t nBlocky) noexcept
+            const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nBlockx, const label_t nBlocky) noexcept
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
 
+        /**
+         * @brief Index for Y-aligned population arrays
+         * @copydetails idxPopX
+         * @param tx,tz Thread-local x/z coordinates
+         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + nBlockx*(by + nBlocky*bz)))
+         **/
         template <const label_t pop, const label_t QF>
         __host__ [[nodiscard]] inline label_t idxPopY(
-            const label_t tx,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz,
-            const label_t nBlockx,
-            const label_t nBlocky) noexcept
+            const label_t tx, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nBlockx, const label_t nBlocky) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
 
+        /**
+         * @brief Index for Z-aligned population arrays
+         * @copydetails idxPopX
+         * @param tx,ty Thread-local x/y coordinates
+         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + nBlockx*(by + nBlocky*bz)))
+         **/
         template <const label_t pop, const label_t QF>
         __host__ [[nodiscard]] inline label_t idxPopZ(
-            const label_t tx,
-            const label_t ty,
-            const label_t bx,
-            const label_t by,
-            const label_t bz,
-            const label_t nBlockx,
-            const label_t nBlocky) noexcept
+            const label_t tx, const label_t ty,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nBlockx, const label_t nBlocky) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
     }
 
     /**
-     * @brief Device-side indexing functions
+     * @brief Device-side indexing operations
      **/
     namespace device
     {
+        /**
+         * @brief Check if current thread exceeds global bounds
+         * @note Uses device constants d_nx, d_ny, d_nz
+         * @return True if thread is outside domain boundaries
+         **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
             return ((threadIdx.x + blockDim.x * blockIdx.x >= d_nx) || (threadIdx.y + blockDim.y * blockIdx.y >= d_ny) || (threadIdx.z + blockDim.z * blockIdx.z >= d_nz));
         }
 
-        __device__ [[nodiscard]] inline bool bad_node_type(const nodeType_t nodeType) noexcept
-        {
-            return (nodeType == 0b11111111);
-        }
-
+        /**
+         * @brief Moment memory index (device version)
+         * @tparam mom Moment index [0, NUMBER_MOMENTS())
+         * @param tx,ty,tz Thread-local coordinates
+         * @param bx,by,bz Block indices
+         * @return Linearized index using device constants d_NUM_BLOCK_X/Y
+         *
+         * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
+         **/
         template <const label_t mom>
-        __device__ [[nodiscard]] inline label_t idxMom(
-            const label_t tx, const label_t ty, const label_t tz,
-            const label_t bx, const label_t by, const label_t bz) noexcept
+        __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            // return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (mom + NUMBER_MOMENTS() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz))))));
-
             return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz)))));
         }
 
+        /**
+         * @overload
+         * @param tx Thread coordinates (dim3)
+         * @param bx Block indices (dim3)
+         **/
         template <const label_t mom>
-        __device__ [[nodiscard]] inline label_t idxMom(
-            const dim3 &tx,
-            const dim3 &bx) noexcept
+        __device__ [[nodiscard]] inline label_t idxMom(const dim3 &tx, const dim3 &bx) noexcept
         {
-            // return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (mom + NUMBER_MOMENTS() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z))))));
-
-            return mom + NUMBER_MOMENTS() * (tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z)))));
+            return idxMom<mom>(tx.x, tx.y, tx.z, bx.x, bx.y, bx.z);
         }
 
-        __device__ [[nodiscard]] inline label_t idxSpatial(const dim3 &tx, const dim3 &bx) noexcept
-        {
-            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
-        }
-
-        // __device__ [[nodiscard]] inline label_t idxScalarGlobal(const label_t x, const label_t y, const label_t z)
-        // {
-        //     return x + d_nx * (y + d_ny * (z));
-        // }
-
-        // __device__ [[nodiscard]] inline label_t idxScalarGlobal(const dim3 &tx)
-        // {
-        //     return tx.x + d_nx * (tx.y + d_ny * (tx.z));
-        // }
-
-        __device__ [[nodiscard]] inline label_t idxScalarBlock(
-            const label_t tx,
-            const label_t ty,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz) noexcept
-        {
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * (bz)))));
-        }
-
-        __device__ [[nodiscard]] inline label_t idxScalarBlock(
-            const dim3 &tx,
-            const dim3 &bx) noexcept
-        {
-            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * (bx.z)))));
-        }
-
-        template <const label_t pop>
-        __device__ [[nodiscard]] inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
-        {
-            return tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (pop)));
-        }
-
-        template <const label_t pop>
-        __device__ [[nodiscard]] inline label_t idxPopBlock(const dim3 &tx) noexcept
-        {
-            return tx.x + block::nx() * (tx.y + block::ny() * (tx.z + block::nz() * (pop)));
-        }
-
+        /**
+         * @brief Population index for X-aligned arrays (device version)
+         * @tparam pop Population index
+         * @tparam QF Number of populations
+         * @param ty,tz Thread-local y/z coordinates
+         * @param bx,by,bz Block indices
+         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopX(
-            const label_t ty,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
             return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
 
+        /**
+         * @overload
+         * @param ty,tz Thread-local y/z coordinates
+         * @param bx Block indices (dim3)
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopX(
-            const label_t ty,
-            const label_t tz,
-            const dim3 &bx) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const dim3 &bx) noexcept
         {
-            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
+            return idxPopX<pop, QF>(ty, tz, bx.x, bx.y, bx.z);
         }
 
+        /**
+         * @brief Population index for Y-aligned arrays (device version)
+         * @copydetails idxPopX
+         * @param tx,tz Thread-local x/z coordinates
+         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopY(
-            const label_t tx,
-            const label_t tz,
-            const label_t bx,
-            const label_t by,
-            const label_t bz) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
             return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
 
+        /**
+         * @overload
+         * @param tx,tz Thread-local x/z coordinates
+         * @param bx Block indices (dim3)
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopY(
-            const label_t tx,
-            const label_t tz,
-            const dim3 &bx) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const dim3 &bx) noexcept
         {
-            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
+            return idxPopY<pop, QF>(tx, tz, bx.x, bx.y, bx.z);
         }
 
+        /**
+         * @brief Population index for Z-aligned arrays (device version)
+         * @copydetails idxPopX
+         * @param tx,ty Thread-local x/y coordinates
+         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopZ(
-            const label_t tx,
-            const label_t ty,
-            const label_t bx,
-            const label_t by,
-            const label_t bz) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const label_t bx, const label_t by, const label_t bz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
         }
 
+        /**
+         * @overload
+         * @param tx,ty Thread-local x/y coordinates
+         * @param bx Block indices (dim3)
+         **/
         template <const label_t pop, const label_t QF>
-        __device__ [[nodiscard]] inline label_t idxPopZ(
-            const label_t tx,
-            const label_t ty,
-            const dim3 &bx) noexcept
+        __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const dim3 &bx) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx.x + d_NUM_BLOCK_X * (bx.y + d_NUM_BLOCK_Y * bx.z))));
+            return idxPopZ<pop, QF>(tx, ty, bx.x, bx.y, bx.z);
         }
     }
 
     /**
-     * @brief Variable indices
+     * @brief Moment indices for hydrodynamic variables
      **/
     namespace index
     {
-        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }
-        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }
+        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } ///< Density
+        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   ///< X-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   ///< Y-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   ///< Z-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  ///< XX-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  ///< XY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  ///< XZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  ///< YY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  ///< YZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  ///< ZZ-stress component
     }
 
+    /**
+     * @brief Reference density \f$ \rho_0 \f$ (default 1.0)
+     **/
     __device__ __host__ [[nodiscard]] inline consteval scalar_t rho0() noexcept
     {
         return 1.0;

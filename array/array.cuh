@@ -92,7 +92,7 @@ namespace LBM
                 if constexpr (cType == ctorType::MUST_READ)
                 {
                     // Get the latest time step
-                    // std::cout << "Found file. Reading" << std::endl;
+                    std::cout << "Found moments file. Reading" << std::endl;
                     return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
                 }
 
@@ -102,13 +102,13 @@ namespace LBM
                     if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                     {
                         // Construct from file
-                        // std::cout << "Found file. Reading" << std::endl;
+                        std::cout << "Found moments file. Reading" << std::endl;
                         return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
                     }
                     else
                     {
                         // Construct default
-                        std::cout << "Not reading" << std::endl;
+                        std::cout << "Did not find moments file. Constructing from default" << std::endl;
                         return host::moments(mesh, programCtrl.u_inf());
                     }
                 }
@@ -116,11 +116,12 @@ namespace LBM
                 // Construct default
                 if constexpr (cType == ctorType::NO_READ)
                 {
-                    std::cout << "Not reading" << std::endl;
+                    std::cout << "Constructor type is no read" << std::endl;
                     return host::moments(mesh, programCtrl.u_inf());
                 }
 
                 // Fallback
+                std::cout << "Doing fallback initialisation: constructing as if from default" << std::endl;
                 return host::moments(mesh, programCtrl.u_inf());
             }
 
@@ -155,6 +156,18 @@ namespace LBM
                 : ptr_(device::allocateArray<T>(f)),
                   varNames_(varNames),
                   mesh_(mesh) {};
+
+            /**
+             * @brief Constructs the device array from a host array
+             * @tparam cType The constructor type of the host array
+             * @param hostArray The array allocated on the host
+             * @param mesh The lattice mesh
+             **/
+            template <const ctorType::type cType>
+            [[nodiscard]] array(const host::array<T, cType> &hostArray, const host::latticeMesh &mesh)
+                : ptr_(device::allocateArray<T>(hostArray.arr())),
+                  varNames_(hostArray.varNames()),
+                  mesh_(mesh){};
 
             /**
              * @brief Destructor for the array class

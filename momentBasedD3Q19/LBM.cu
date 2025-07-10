@@ -1,10 +1,10 @@
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 #include "momentBasedD3Q19.cuh"
-#include "fileIO/fileIO.cuh"
-#include "runTimeIO/runTimeIO.cuh"
-#include "postProcess.cuh"
-#include "fieldAverage.cuh"
+#include "../fileIO/fileIO.cuh"
+#include "../runTimeIO/runTimeIO.cuh"
+#include "../postProcess.cuh"
+// #include "../fieldAverage.cuh"
 
 using namespace LBM;
 
@@ -42,8 +42,7 @@ int main(const int argc, const char *const argv[])
 
     // Perform device memory allocation
     device::array<scalar_t> deviceMoments(
-        hostMoments.arr(),
-        hostMoments.varNames(),
+        hostMoments,
         mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
 
@@ -72,10 +71,10 @@ int main(const int argc, const char *const argv[])
 
         blockHalo.swap();
 
-        // if (programCtrl.save(timeStep))
-        // {
-        //     deviceMoments.write(programCtrl.caseName(), timeStep);
-        // }
+        if (programCtrl.save(timeStep))
+        {
+            deviceMoments.write(programCtrl.caseName(), timeStep);
+        }
     }
 
     // Get ending time point and output the elapsed time

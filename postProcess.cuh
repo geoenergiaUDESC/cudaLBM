@@ -273,6 +273,7 @@ namespace LBM
             }
 
             outFile.close();
+
             std::cout << "Successfully wrote Tecplot file: " << fileName << "\n";
         }
     }

@@ -24,6 +24,7 @@ Contents: A list of header files necessary for compilation
 #include <limits>
 #include <memory>
 // #include <mpi.h>
+#include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>

@@ -14,17 +14,18 @@ Contents: A list of header files necessary for compilation
 #include <bit>
 #include <cctype>
 #include <charconv>
+#include <cstdio>
+#include <cstring>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <nvrtc.h>
 // #include <mpi.h>
-#include <cstdio>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>

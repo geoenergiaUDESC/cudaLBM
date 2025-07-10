@@ -264,7 +264,7 @@ namespace LBM
                 // const label_t by = blockIdx.y;
                 // const label_t bz = blockIdx.z;
 
-                /* write to global pop */
+                /* write to global pop **/
                 if (West(x))
                 { // w
                     gGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[2];

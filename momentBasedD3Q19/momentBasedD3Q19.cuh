@@ -6,33 +6,41 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 #ifndef __MBLBM_MOMENTBASEDD319_CUH
 #define __MBLBM_MOMENTBASEDD319_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "array/array.cuh"
-#include "collision.cuh"
-#include "moments/moments.cuh"
-
-#include <nvrtc.h>
-#include <cuda.h>
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../array/array.cuh"
+#include "../collision.cuh"
+#include "../moments/moments.cuh"
 
 namespace LBM
 {
-    // [[nodiscard]] inline consteval label_t PREFETCH_DISTANCE() noexcept { return 1; }
-
+    /**
+     * @brief Enumerated type of cache eviction policies
+     **/
     typedef enum GPUCacheEvictionPolicyEnum : label_t
     {
         evictFirst = 0,
         evictLast = 1
     } GPUCacheEvictionPolicy;
 
+    /**
+     * @brief Enumerated type of cache levels
+     **/
     typedef enum GPUCacheLevelEnum : label_t
     {
         L1 = 0,
         L2 = 1
     } GPUCacheLevel;
 
+    /**
+     * @brief Perform a prefetch to a particular level of cache
+     * @tparam cacheLevel The cache level to prefetch to
+     * @tparam evictionPolicy The cache eviction policy
+     * @tparam prefetchDistance The number of cycles ahead to prefetch
+     * @param fMom Pointer to the interleaved moment variables on the GPU
+     **/
     template <const GPUCacheLevel cacheLevel, const GPUCacheEvictionPolicy evictionPolicy, const label_t prefetchDistance>
-    __device__ __forceinline__ void prefetch(scalar_t *const ptrRestrict fMom) noexcept
+    __device__ inline void prefetch(const scalar_t *const ptrRestrict fMom) noexcept
     {
         static_assert((cacheLevel == L1) | (cacheLevel == L2), "Prefetch cache level must be 1 or 2");
         static_assert((evictionPolicy == evictFirst) | (evictionPolicy == evictLast), "Cache eviction policy must be evictFirst or evictLast");
@@ -126,168 +134,6 @@ namespace LBM
         // #endif
     }
 
-    // launchBounds __global__ void momentBasedD3Q19_v2(
-    //     scalar_t *const ptrRestrict rho,
-    //     scalar_t *const ptrRestrict u,
-    //     scalar_t *const ptrRestrict v,
-    //     scalar_t *const ptrRestrict w,
-    //     scalar_t *const ptrRestrict m_xx,
-    //     scalar_t *const ptrRestrict m_xy,
-    //     scalar_t *const ptrRestrict m_xz,
-    //     scalar_t *const ptrRestrict m_yy,
-    //     scalar_t *const ptrRestrict m_yz,
-    //     scalar_t *const ptrRestrict m_zz,
-    //     device::halo blockHalo)
-    // {
-
-    //     prefetch<L1, evictFirst, 1>(rho);
-    //     prefetch<L1, evictFirst, 1>(u);
-    //     prefetch<L1, evictFirst, 1>(v);
-    //     prefetch<L1, evictFirst, 1>(w);
-    //     prefetch<L1, evictFirst, 1>(m_xx);
-    //     prefetch<L1, evictFirst, 1>(m_xy);
-    //     prefetch<L1, evictFirst, 1>(m_xz);
-    //     prefetch<L1, evictFirst, 1>(m_yy);
-    //     prefetch<L1, evictFirst, 1>(m_yz);
-    //     prefetch<L1, evictFirst, 1>(m_zz);
-
-    //     if (device::out_of_bounds())
-    //     {
-    //         return;
-    //     }
-
-    //     scalar_t pop[VelocitySet::D3Q19::Q()];
-    //     __shared__ scalar_t s_pop[(VelocitySet::D3Q19::Q() - 1)][block::size()];
-
-    //     //  label_t base_idx = device::idxMom<0>(threadIdx, blockIdx);
-
-    //     // const float2 *const ptrRestrict momPtr = reinterpret_cast<float2 *>(&fMom[base_idx]);
-    //     // momentArray_t moments = {
-    //     //     rho0() + momPtr[0].x,
-    //     //     momPtr[0].y,
-    //     //     momPtr[1].x,
-    //     //     momPtr[1].y,
-    //     //     momPtr[2].x,
-    //     //     momPtr[2].y,
-    //     //     momPtr[3].x,
-    //     //     momPtr[3].y,
-    //     //     momPtr[4].x,
-    //     //     momPtr[4].y};
-
-    //     // Use __ldg for read-only access to improve caching
-    //     // #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
-    //     // momentArray_t moments = {
-    //     //     rho0() + __ldg(&fMom[base_idx + index::rho()]),
-    //     //     __ldg(&fMom[base_idx + index::u()]),
-    //     //     __ldg(&fMom[base_idx + index::v()]),
-    //     //     __ldg(&fMom[base_idx + index::w()]),
-    //     //     __ldg(&fMom[base_idx + index::xx()]),
-    //     //     __ldg(&fMom[base_idx + index::xy()]),
-    //     //     __ldg(&fMom[base_idx + index::xz()]),
-    //     //     __ldg(&fMom[base_idx + index::yy()]),
-    //     //     __ldg(&fMom[base_idx + index::yz()]),
-    //     //     __ldg(&fMom[base_idx + index::zz()])};
-    //     // #else
-    //     // Fallback for older architectures
-    //     // momentArray_t moments = {
-    //     //     rho0() + fMom[base_idx + index::rho()],
-    //     //     fMom[base_idx + index::u()],
-    //     //     fMom[base_idx + index::v()],
-    //     //     fMom[base_idx + index::w()],
-    //     //     fMom[base_idx + index::xx()],
-    //     //     fMom[base_idx + index::xy()],
-    //     //     fMom[base_idx + index::xz()],
-    //     //     fMom[base_idx + index::yy()],
-    //     //     fMom[base_idx + index::yz()],
-    //     //     fMom[base_idx + index::zz()]};
-    //     // #endif
-
-    //     const label_t base_idx = device::idxSpatial(threadIdx, blockIdx);
-
-    //     momentArray_t_v2 moments = {
-    //         rho0() + rho[base_idx],
-    //         u[base_idx],
-    //         v[base_idx],
-    //         w[base_idx],
-    //         m_xx[base_idx],
-    //         m_xy[base_idx],
-    //         m_xz[base_idx],
-    //         m_yy[base_idx],
-    //         m_yz[base_idx],
-    //         m_zz[base_idx],
-    //         0, 0, 0, 0, 0, 0};
-
-    //     // momentArray_t moments = {
-    //     //     rho0() + fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::u()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::v()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::w()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::xx()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::xy()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::xz()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::yy()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::yz()>(threadIdx, blockIdx)],
-    //     //     fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)]};
-
-    //     // Reconstruct the population from the moments
-    //     VelocitySet::D3Q19::reconstruct(pop, moments);
-
-    //     // Save populations in shared memory
-    //     sharedMemory::save<VelocitySet::D3Q19>(pop, s_pop);
-
-    //     // Pull from shared memory
-    //     sharedMemory::pull<VelocitySet::D3Q19>(pop, s_pop);
-
-    //     // Load pop from global memory in cover nodes
-    //     blockHalo.popLoad<VelocitySet::D3Q19>(pop);
-
-    //     // Calculate the moments either at the boundary or interior
-    //     const normalVector b_n;
-    //     if (b_n.isBoundary())
-    //     {
-    //         boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop, moments, b_n);
-    //     }
-    //     else
-    //     {
-    //         VelocitySet::D3Q19::calculateMoments(pop, moments);
-    //     }
-
-    //     // Scale the moments correctly
-    //     VelocitySet::velocitySet::scale(moments);
-
-    //     // Collide
-    //     collide(moments);
-
-    //     // Calculate post collision populations
-    //     VelocitySet::D3Q19::reconstruct(pop, moments);
-
-    //     // Write the moments to global memory
-    //     // fMom[base_idx + index::rho()] = moments[0] - rho0();
-    //     // fMom[base_idx + index::u()] = moments[1];
-    //     // fMom[base_idx + index::v()] = moments[2];
-    //     // fMom[base_idx + index::w()] = moments[3];
-    //     // fMom[base_idx + index::xx()] = moments[4];
-    //     // fMom[base_idx + index::xy()] = moments[5];
-    //     // fMom[base_idx + index::xz()] = moments[6];
-    //     // fMom[base_idx + index::yy()] = moments[7];
-    //     // fMom[base_idx + index::yz()] = moments[8];
-    //     // fMom[base_idx + index::zz()] = moments[9];
-
-    //     rho[base_idx] = moments[0] - rho0();
-    //     u[base_idx] = moments[1];
-    //     v[base_idx] = moments[2];
-    //     w[base_idx] = moments[3];
-    //     m_xx[base_idx] = moments[4];
-    //     m_xy[base_idx] = moments[5];
-    //     m_xz[base_idx] = moments[6];
-    //     m_yy[base_idx] = moments[7];
-    //     m_yz[base_idx] = moments[8];
-    //     m_zz[base_idx] = moments[9];
-
-    //     // Save the populations to the block halo
-    //     blockHalo.popSave<VelocitySet::D3Q19>(pop);
-    // }
-
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
      * @param fMom Pointer to the interleaved moment variables on the GPU
@@ -298,19 +144,12 @@ namespace LBM
         scalar_t *const ptrRestrict fMom,
         device::halo blockHalo)
     {
-
-        // prefetch<L1, evictFirst, 1>(fMom);
+        prefetch<L1, evictFirst, 1>(fMom);
 
         if (device::out_of_bounds())
         {
             return;
         }
-
-        // scalar_t pop[VelocitySet::D3Q19::Q()];
-        // __shared__ scalar_t s_pop[(VelocitySet::D3Q19::Q() - 1)][block::size()];
-        // __shared__ scalar_t s_pop[block::size()][(VelocitySet::D3Q19::Q() - 1)];
-
-        // const label_t base_idx = device::idxMom<0>(threadIdx, blockIdx);
 
         scalar_t pop[VelocitySet::D3Q19::Q()];
         __shared__ scalar_t s_pop[block::size() * (VelocitySet::D3Q19::Q() - 1)];
@@ -359,8 +198,7 @@ namespace LBM
         // Calculate post collision populations
         VelocitySet::D3Q19::reconstruct(pop, moments);
 
-        // --- SECTION 2: CORRECTED FINAL WRITE ---
-        // All calls to device::idxMom have been changed here as well.
+        // Write to global memory
         fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)] = moments[0] - rho0();
         fMom[device::idxMom<index::u()>(threadIdx, blockIdx)] = moments[1];
         fMom[device::idxMom<index::v()>(threadIdx, blockIdx)] = moments[2];

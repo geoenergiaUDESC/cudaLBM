@@ -8,6 +8,10 @@ ifeq ($(GPU_ARCH_CODE),)
     GPU_ARCH_CODE := 86  # Fallback to default
 endif
 
+# Common build directories (relative to project root)
+BUILD_DIR = ../build
+BIN_DIR = $(BUILD_DIR)/bin
+
 # CUDA Compiler Flags
 NVCXX_STANDARD = -std c++20
 NVCXX_OPTFLAGS = -O3 --restrict

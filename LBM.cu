@@ -19,7 +19,7 @@ using namespace LBM;
     return streamsLBM;
 }
 
-int main(int argc, char *argv[])
+int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
 
         blockHalo.swap();
 
-        if (programCtrl.save(timeStep))
-        {
-            deviceMoments.write(programCtrl.caseName(), timeStep);
-        }
+        // if (programCtrl.save(timeStep))
+        // {
+        //     deviceMoments.write(programCtrl.caseName(), timeStep);
+        // }
     }
 
     // Get ending time point and output the elapsed time

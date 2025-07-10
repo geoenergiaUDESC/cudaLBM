@@ -39,6 +39,11 @@ namespace LBM
         template <typename T>
         [[nodiscard]] inline constexpr T MLUPS(const host::latticeMesh &mesh, const programControl &programCtrl, const std::chrono::high_resolution_clock::time_point &start, const std::chrono::high_resolution_clock::time_point &end) noexcept
         {
+            if ((programCtrl.nt() == programCtrl.latestTime() - 1) | mesh.nPoints() == 0)
+            {
+                return 0;
+            }
+
             return static_cast<T>(mesh.nPoints() * (programCtrl.nt() - programCtrl.latestTime() - 1)) / static_cast<double>(1000000 * std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
         }
     }

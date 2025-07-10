@@ -27,6 +27,21 @@ int main(int argc, char *argv[])
 
     VelocitySet::D3Q19::print();
 
+    // const std::vector<std::vector<scalar_t>> hostMoments = host::moments_v2(mesh, programCtrl.u_inf());
+
+    // device::array<scalar_t> rho(hostMoments[0], {"rho"}, mesh);
+    // device::array<scalar_t> u(hostMoments[1], {"u"}, mesh);
+    // device::array<scalar_t> v(hostMoments[2], {"v"}, mesh);
+    // device::array<scalar_t> w(hostMoments[3], {"w"}, mesh);
+    // device::array<scalar_t> m_xx(hostMoments[4], {"m_xx"}, mesh);
+    // device::array<scalar_t> m_xy(hostMoments[5], {"m_xy"}, mesh);
+    // device::array<scalar_t> m_xz(hostMoments[6], {"m_xz"}, mesh);
+    // device::array<scalar_t> m_yy(hostMoments[7], {"m_yy"}, mesh);
+    // device::array<scalar_t> m_yz(hostMoments[8], {"m_yz"}, mesh);
+    // device::array<scalar_t> m_zz(hostMoments[9], {"m_zz"}, mesh);
+
+    // const host::array<scalar_t, ctorType::NO_READ> uHost(programCtrl, mesh);
+
     const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(programCtrl, mesh);
 
     // Set cuda device
@@ -55,6 +70,9 @@ int main(int argc, char *argv[])
     mesh.copyDeviceSymbols();
     programCtrl.copyDeviceSymbols(mesh.nx());
 
+    // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
+    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferL1));
+
     std::cout << "Time loop start" << std::endl;
     std::cout << std::endl;
 
@@ -71,6 +89,19 @@ int main(int argc, char *argv[])
             deviceMoments.ptr(),
             blockHalo);
 
+        // momentBasedD3Q19_v2<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
+        //     rho.ptr(),
+        //     u.ptr(),
+        //     v.ptr(),
+        //     w.ptr(),
+        //     m_xx.ptr(),
+        //     m_xy.ptr(),
+        //     m_xz.ptr(),
+        //     m_yy.ptr(),
+        //     m_yz.ptr(),
+        //     m_zz.ptr(),
+        //     blockHalo);
+
         // checkCudaErrors(cudaDeviceSynchronize());
         // fieldAverage::calculate<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
         //     deviceMoments.ptr(),
@@ -80,31 +111,20 @@ int main(int argc, char *argv[])
 
         blockHalo.swap();
 
-        if (programCtrl.save(timeStep))
-        {
-            deviceMoments.write(programCtrl.caseName(), timeStep);
+        // if (programCtrl.save(timeStep))
+        // {
+        //     // deviceMoments.write(programCtrl.caseName(), timeStep);
 
-            if (timeStep > 0)
-            {
-                postProcess::writeTecplotHexahedralData(
-                    fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
-                    programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
-                    mesh,
-                    deviceMoments.varNames(),
-                    "Title");
-            }
-
-            // momentsMean.write(programCtrl.caseName(), timeStep);
-
-            // postProcess::writeTecplotHexahedralData(
-            //     fileIO::deinterleaveAoS(host::copyToHost(momentsMean.ptr(), mesh.nPoints() * 10), mesh),
-            //     programCtrl.caseName() + "Mean_" + std::to_string(timeStep) + ".dat",
-            //     mesh,
-            //     momentsMean.varNames(),
-            //     "Title");
-        }
-
-        // checkCudaErrors(cudaDeviceSynchronize());
+        //     if (timeStep > 0)
+        //     {
+        //         postProcess::writeTecplotHexahedralData(
+        //             fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
+        //             programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
+        //             mesh,
+        //             deviceMoments.varNames(),
+        //             "Title");
+        //     }
+        // }
     }
 
     // Get ending time point and output the elapsed time
@@ -112,7 +132,7 @@ int main(int argc, char *argv[])
     std::cout << std::endl;
     std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
     std::cout << std::endl;
-    std::cout << "MLUPS: " << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
+    std::cout << "MLUPS: " << std::setprecision(15) << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
     std::cout << "End" << std::endl;
 
     return 0;

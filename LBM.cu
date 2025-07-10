@@ -27,22 +27,10 @@ int main(int argc, char *argv[])
 
     VelocitySet::D3Q19::print();
 
-    // const std::vector<std::vector<scalar_t>> hostMoments = host::moments_v2(mesh, programCtrl.u_inf());
-
-    // device::array<scalar_t> rho(hostMoments[0], {"rho"}, mesh);
-    // device::array<scalar_t> u(hostMoments[1], {"u"}, mesh);
-    // device::array<scalar_t> v(hostMoments[2], {"v"}, mesh);
-    // device::array<scalar_t> w(hostMoments[3], {"w"}, mesh);
-    // device::array<scalar_t> m_xx(hostMoments[4], {"m_xx"}, mesh);
-    // device::array<scalar_t> m_xy(hostMoments[5], {"m_xy"}, mesh);
-    // device::array<scalar_t> m_xz(hostMoments[6], {"m_xz"}, mesh);
-    // device::array<scalar_t> m_yy(hostMoments[7], {"m_yy"}, mesh);
-    // device::array<scalar_t> m_yz(hostMoments[8], {"m_yz"}, mesh);
-    // device::array<scalar_t> m_zz(hostMoments[9], {"m_zz"}, mesh);
-
-    // const host::array<scalar_t, ctorType::NO_READ> uHost(programCtrl, mesh);
-
-    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(programCtrl, mesh);
+    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(
+        programCtrl,
+        {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+        mesh);
 
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());
@@ -55,7 +43,7 @@ int main(int argc, char *argv[])
     // Perform device memory allocation
     device::array<scalar_t> deviceMoments(
         hostMoments.arr(),
-        {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+        hostMoments.varNames(),
         mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
     // const device::array<nodeType_t> nodeTypes(host::nodeType(mesh), {"nodeTypes"}, mesh);
@@ -115,25 +103,36 @@ int main(int argc, char *argv[])
         // {
         //     // deviceMoments.write(programCtrl.caseName(), timeStep);
 
-        //     if (timeStep > 0)
-        //     {
-        //         postProcess::writeTecplotHexahedralData(
-        //             fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
-        //             programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
-        //             mesh,
-        //             deviceMoments.varNames(),
-        //             "Title");
-        //     }
+        // if (timeStep > 0)
+        // {
+        //     postProcess::writeTecplotHexahedralData(
+        //         fileIO::deinterleaveAoS(host::copyToHost(deviceMoments.ptr(), deviceMoments.size()), mesh),
+        //         programCtrl.caseName() + "_" + std::to_string(timeStep) + ".dat",
+        //         mesh,
+        //         deviceMoments.varNames(),
+        //         "Title");
         // }
+
+        // momentsMean.write(programCtrl.caseName(), timeStep);
+
+        // postProcess::writeTecplotHexahedralData(
+        //     fileIO::deinterleaveAoS(host::copyToHost(momentsMean.ptr(), mesh.nPoints() * 10), mesh),
+        //     programCtrl.caseName() + "Mean_" + std::to_string(timeStep) + ".dat",
+        //     mesh,
+        //     momentsMean.varNames(),
+        //     "Title");
     }
 
-    // Get ending time point and output the elapsed time
-    const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    std::cout << std::endl;
-    std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
-    std::cout << std::endl;
-    std::cout << "MLUPS: " << std::setprecision(15) << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
-    std::cout << "End" << std::endl;
+    // checkCudaErrors(cudaDeviceSynchronize());
+}
 
-    return 0;
+// Get ending time point and output the elapsed time
+const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+std::cout << std::endl;
+std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
+std::cout << std::endl;
+std::cout << "MLUPS: " << std::setprecision(15) << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
+std::cout << "End" << std::endl;
+
+return 0;
 }

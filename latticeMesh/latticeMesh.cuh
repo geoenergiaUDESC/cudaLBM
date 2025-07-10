@@ -6,10 +6,10 @@ Contents: A class holding information about the solution grid
 #ifndef __MBLBM_LATTICEMESH_CUH
 #define __MBLBM_LATTICEMESH_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "globalFunctions.cuh"
-#include "programControl.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../globalFunctions.cuh"
+#include "../programControl.cuh"
 
 namespace LBM
 {

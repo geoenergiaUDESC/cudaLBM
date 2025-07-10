@@ -6,8 +6,8 @@ Contents: Functions handling runtime IO
 #ifndef __MBLBM_RUNTIMEIO_CUH
 #define __MBLBM_RUNTIMEIO_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
 
 namespace LBM
 {

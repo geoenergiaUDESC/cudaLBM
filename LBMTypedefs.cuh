@@ -47,8 +47,8 @@ namespace LBM
      * @brief Launch bounds information
      * @note These variables are device specific - enable modification later
      **/
-    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 1024; }
-    [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 8; }
+    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 512; }
+    [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 4; }
 #define launchBounds __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP())
 
     /**
@@ -73,6 +73,7 @@ namespace LBM
      * @brief Type used to contain the moments within a given stack frame
      **/
     using momentArray_t = scalar_t[10];
+    using momentArray_t_v2 = scalar_t[16];
 
     /**
      * @brief Label type used for scalar types

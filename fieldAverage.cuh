@@ -22,12 +22,9 @@ namespace LBM
         launchBounds __global__ void calculate(
             const scalar_t *const ptrRestrict fMom,
             scalar_t *const ptrRestrict fMomMean,
-            const nodeType_t *const nodeTypes,
             const label_t step)
         {
-            const nodeType_t nodeType = nodeTypes[device::idxScalarBlock(threadIdx, blockIdx)];
-
-            if (device::out_of_bounds() || device::bad_node_type(nodeType))
+            if (device::out_of_bounds())
             {
                 return;
             }

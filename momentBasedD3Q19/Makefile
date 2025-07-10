@@ -1,7 +1,7 @@
 include ../common.mk
 
-EXECUTABLE = fieldConvert
-SOURCE = fieldConvert.cu
+EXECUTABLE = momentBasedD3Q19
+SOURCE = LBM.cu
 
 default: clean $(EXECUTABLE)
 

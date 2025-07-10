@@ -43,13 +43,13 @@ namespace LBM
                   z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(fMom, mesh))),
                   z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(fMom, mesh))) {};
 
-            [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
-                : x0_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 0>(fMom, mesh))),
-                  x1_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 1>(fMom, mesh))),
-                  y0_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 0>(fMom, mesh))),
-                  y1_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 1>(fMom, mesh))),
-                  z0_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 0>(fMom, mesh))),
-                  z1_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 1>(fMom, mesh))) {};
+            // [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
+            //     : x0_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 0>(fMom, mesh))),
+            //       x1_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 1>(fMom, mesh))),
+            //       y0_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 0>(fMom, mesh))),
+            //       y1_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 1>(fMom, mesh))),
+            //       z0_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 0>(fMom, mesh))),
+            //       z1_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 1>(fMom, mesh))) {};
 
             /**
              * @brief Destructor for the haloFace class

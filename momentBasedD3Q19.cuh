@@ -299,59 +299,21 @@ namespace LBM
         device::halo blockHalo)
     {
 
-        prefetch<L1, evictFirst, 1>(fMom);
+        // prefetch<L1, evictFirst, 1>(fMom);
 
         if (device::out_of_bounds())
         {
             return;
         }
 
-        scalar_t pop[VelocitySet::D3Q19::Q()];
+        // scalar_t pop[VelocitySet::D3Q19::Q()];
         // __shared__ scalar_t s_pop[(VelocitySet::D3Q19::Q() - 1)][block::size()];
-        __shared__ scalar_t s_pop[block::size()][(VelocitySet::D3Q19::Q() - 1)];
+        // __shared__ scalar_t s_pop[block::size()][(VelocitySet::D3Q19::Q() - 1)];
 
-        const label_t base_idx = device::idxMom<0>(threadIdx, blockIdx);
+        // const label_t base_idx = device::idxMom<0>(threadIdx, blockIdx);
 
-        // const float2 *const ptrRestrict momPtr = reinterpret_cast<float2 *>(&fMom[base_idx]);
-        // momentArray_t moments = {
-        //     rho0() + momPtr[0].x,
-        //     momPtr[0].y,
-        //     momPtr[1].x,
-        //     momPtr[1].y,
-        //     momPtr[2].x,
-        //     momPtr[2].y,
-        //     momPtr[3].x,
-        //     momPtr[3].y,
-        //     momPtr[4].x,
-        //     momPtr[4].y};
-
-        // Use __ldg for read-only access to improve caching
-        // #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 350
-        // momentArray_t moments = {
-        //     rho0() + __ldg(&fMom[base_idx + index::rho()]),
-        //     __ldg(&fMom[base_idx + index::u()]),
-        //     __ldg(&fMom[base_idx + index::v()]),
-        //     __ldg(&fMom[base_idx + index::w()]),
-        //     __ldg(&fMom[base_idx + index::xx()]),
-        //     __ldg(&fMom[base_idx + index::xy()]),
-        //     __ldg(&fMom[base_idx + index::xz()]),
-        //     __ldg(&fMom[base_idx + index::yy()]),
-        //     __ldg(&fMom[base_idx + index::yz()]),
-        //     __ldg(&fMom[base_idx + index::zz()])};
-        // #else
-        // Fallback for older architectures
-        // momentArray_t moments = {
-        //     rho0() + fMom[base_idx + index::rho()],
-        //     fMom[base_idx + index::u()],
-        //     fMom[base_idx + index::v()],
-        //     fMom[base_idx + index::w()],
-        //     fMom[base_idx + index::xx()],
-        //     fMom[base_idx + index::xy()],
-        //     fMom[base_idx + index::xz()],
-        //     fMom[base_idx + index::yy()],
-        //     fMom[base_idx + index::yz()],
-        //     fMom[base_idx + index::zz()]};
-        // #endif
+        scalar_t pop[VelocitySet::D3Q19::Q()];
+        __shared__ scalar_t s_pop[block::size() * (VelocitySet::D3Q19::Q() - 1)];
 
         momentArray_t moments = {
             rho0() + fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)],
@@ -372,7 +334,7 @@ namespace LBM
         sharedMemory::save<VelocitySet::D3Q19>(pop, s_pop);
 
         // Pull from shared memory
-        sharedMemory::pull_v2<VelocitySet::D3Q19>(pop, s_pop);
+        sharedMemory::pull<VelocitySet::D3Q19>(pop, s_pop);
 
         // Load pop from global memory in cover nodes
         blockHalo.popLoad<VelocitySet::D3Q19>(pop);
@@ -397,17 +359,18 @@ namespace LBM
         // Calculate post collision populations
         VelocitySet::D3Q19::reconstruct(pop, moments);
 
-        // Write the moments to global memory
-        fMom[base_idx + index::rho()] = moments[0] - rho0();
-        fMom[base_idx + index::u()] = moments[1];
-        fMom[base_idx + index::v()] = moments[2];
-        fMom[base_idx + index::w()] = moments[3];
-        fMom[base_idx + index::xx()] = moments[4];
-        fMom[base_idx + index::xy()] = moments[5];
-        fMom[base_idx + index::xz()] = moments[6];
-        fMom[base_idx + index::yy()] = moments[7];
-        fMom[base_idx + index::yz()] = moments[8];
-        fMom[base_idx + index::zz()] = moments[9];
+        // --- SECTION 2: CORRECTED FINAL WRITE ---
+        // All calls to device::idxMom have been changed here as well.
+        fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)] = moments[0] - rho0();
+        fMom[device::idxMom<index::u()>(threadIdx, blockIdx)] = moments[1];
+        fMom[device::idxMom<index::v()>(threadIdx, blockIdx)] = moments[2];
+        fMom[device::idxMom<index::w()>(threadIdx, blockIdx)] = moments[3];
+        fMom[device::idxMom<index::xx()>(threadIdx, blockIdx)] = moments[4];
+        fMom[device::idxMom<index::xy()>(threadIdx, blockIdx)] = moments[5];
+        fMom[device::idxMom<index::xz()>(threadIdx, blockIdx)] = moments[6];
+        fMom[device::idxMom<index::yy()>(threadIdx, blockIdx)] = moments[7];
+        fMom[device::idxMom<index::yz()>(threadIdx, blockIdx)] = moments[8];
+        fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)] = moments[9];
 
         // Save the populations to the block halo
         blockHalo.popSave<VelocitySet::D3Q19>(pop);

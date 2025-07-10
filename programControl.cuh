@@ -22,7 +22,7 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] programControl(int argc, char *argv[]) noexcept
+        [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
               caseName_(string::extractParameter<std::string>(string::readCaseDirectory("caseInfo"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),

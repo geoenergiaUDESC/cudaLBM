@@ -8,22 +8,42 @@ Contains: A list of typedefs used throughout the cudaLBM source code
 
 #include "LBMIncludes.cuh"
 
-static constexpr const bool NORTH_BCS_READY = true;
-
 namespace LBM
 {
-#define checkCudaErrors(err) __checkCudaErrors(err, #err, __FILE__, __LINE__)
-
-    void __checkCudaErrors(const cudaError_t err, const char *const func, const char *const file, const int line) noexcept
+    /**
+     * @brief Checks CUDA API call result and terminates on error
+     * @param err CUDA error code to verify
+     * @param loc Automatically captured call location (C++20)
+     *
+     * If error occurs, prints diagnostic message to stderr and exits program.
+     * @n Example: checkCudaErrors(cudaMalloc(&ptr, size));
+     **/
+    void checkCudaErrors(
+        const cudaError_t err,
+        const std::source_location &loc = std::source_location::current()) noexcept
     {
         if (err != cudaSuccess)
         {
-            // fprintf(stderr, "CUDA error at %s(%d)\"%s\": [%d] %s.\n",
-            //         file, line, func, (int)err, cudaGetErrorString(err));
+            std::cerr << "CUDA error at " << loc.file_name() << "(" << loc.line() << "):" << loc.function_name() << ": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
+            std::exit(-1);
+        }
+    }
 
-            std::cerr << "CUDA error at " << file << "(" << line << ")\"" << func << "\": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
-
-            // fflush(stderr);
+    /**
+     * @brief Checks CUDA API call result and terminates on error
+     * @param err CUDA error code to verify
+     * @param loc Automatically captured call location (C++20)
+     *
+     * If error occurs, prints diagnostic message to stderr and exits program.
+     * @n Example: checkCudaErrors(cudaMalloc(&ptr, size));
+     **/
+    inline void checkCudaErrorsInline(
+        const cudaError_t err,
+        const std::source_location &loc = std::source_location::current()) noexcept
+    {
+        if (err != cudaSuccess)
+        {
+            std::cerr << "CUDA error at " << loc.file_name() << "(" << loc.line() << "):" << loc.function_name() << ": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
             std::exit(-1);
         }
     }

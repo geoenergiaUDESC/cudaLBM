@@ -30,7 +30,7 @@ namespace LBM
                   nz_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nz")),
                   nPoints_(nx_ * ny_ * nz_)
             {
-                // #ifdef VERBOSE
+#ifdef VERBOSE
                 std::cout << "Allocated global latticeMesh object:" << std::endl;
                 std::cout << "{" << std::endl;
                 std::cout << "    nx = " << nx_ << ";" << std::endl;
@@ -38,7 +38,7 @@ namespace LBM
                 std::cout << "    nz = " << nz_ << ";" << std::endl;
                 std::cout << "};" << std::endl;
                 std::cout << std::endl;
-                // #endif
+#endif
 
                 // Allocate symbols on the GPU, temporary workaround
                 checkCudaErrors(cudaMemcpyToSymbol(d_nx, &nx_, sizeof(label_t)));

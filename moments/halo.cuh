@@ -44,7 +44,7 @@ namespace LBM
              **/
             __host__ inline void swap() noexcept
             {
-                checkCudaErrors(cudaDeviceSynchronize());
+                checkCudaErrorsInline(cudaDeviceSynchronize());
                 std::swap(fGhost_.x0Ref(), gGhost_.x0Ref());
                 std::swap(fGhost_.x1Ref(), gGhost_.x1Ref());
                 std::swap(fGhost_.y0Ref(), gGhost_.y0Ref());

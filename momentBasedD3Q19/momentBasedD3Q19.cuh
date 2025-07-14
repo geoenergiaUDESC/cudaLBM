@@ -11,6 +11,9 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 #include "../array/array.cuh"
 #include "../collision.cuh"
 #include "../moments/moments.cuh"
+#include "../fileIO/fileIO.cuh"
+#include "../runTimeIO/runTimeIO.cuh"
+#include "../postProcess.cuh"
 
 namespace LBM
 {
@@ -50,26 +53,40 @@ namespace LBM
         const label_t current_block_index = blockIdx.z * (d_NUM_BLOCK_X * d_NUM_BLOCK_Y) + blockIdx.y * d_NUM_BLOCK_X + blockIdx.x;
 
         // Prefetch multiple blocks ahead
-        constexpr_for<1, prefetchDistance> //
-            (                              //
-                [&](const auto lookahead)  //
+        constexpr_for<1, prefetchDistance>(
+            [&](const auto lookahead)
+            {
+                const label_t target_block_index = current_block_index + lookahead;
+
+                if (target_block_index < total_blocks)
                 {
-                    const label_t target_block_index = current_block_index + lookahead;
+                    // Calculate target block coordinates
+                    const label_t target_bz = target_block_index / (d_NUM_BLOCK_X * d_NUM_BLOCK_Y);
+                    const label_t target_by = (target_block_index % (d_NUM_BLOCK_X * d_NUM_BLOCK_Y)) / d_NUM_BLOCK_X;
+                    const label_t target_bx = target_block_index % d_NUM_BLOCK_X;
 
-                    if (target_block_index < total_blocks)
+                    // Calculate base index for target block
+                    const label_t target_base_idx = NUMBER_MOMENTS() * (threadIdx.x + block::nx() * (threadIdx.y + block::ny() * threadIdx.z) + block::size() * (target_bx + d_NUM_BLOCK_X * (target_by + d_NUM_BLOCK_Y * target_bz)));
+
+                    // Prefetch the moments
+                    if constexpr (cacheLevel == L1)
                     {
-                        // Calculate target block coordinates
-                        const label_t target_bz = target_block_index / (d_NUM_BLOCK_X * d_NUM_BLOCK_Y);
-                        const label_t target_by = (target_block_index % (d_NUM_BLOCK_X * d_NUM_BLOCK_Y)) / d_NUM_BLOCK_X;
-                        const label_t target_bx = target_block_index % d_NUM_BLOCK_X;
+                        asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx]));
 
-                        // Calculate base index for target block
-                        const label_t target_base_idx = NUMBER_MOMENTS() * (threadIdx.x + block::nx() * (threadIdx.y + block::ny() * threadIdx.z) + block::size() * (target_bx + d_NUM_BLOCK_X * (target_by + d_NUM_BLOCK_Y * target_bz)));
-
-                        // Prefetch the moments
-                        if constexpr (cacheLevel == L1)
+                        if constexpr (evictionPolicy == evictLast)
                         {
-                            asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx]));
+                            asm volatile("prefetch.global.L1::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
+                        }
+
+                        if constexpr (evictionPolicy == evictFirst)
+                        {
+                            asm volatile("prefetch.global.L1::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
+                        }
+
+                        // For 64-bit precision, prefetch the next cache line
+                        if constexpr (sizeof(scalar_t) == 8)
+                        {
+                            asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx + 8]));
 
                             if constexpr (evictionPolicy == evictLast)
                             {
@@ -80,27 +97,27 @@ namespace LBM
                             {
                                 asm volatile("prefetch.global.L1::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
                             }
+                        }
+                    }
 
-                            // For 64-bit precision, prefetch the next cache line
-                            if constexpr (sizeof(scalar_t) == 8)
-                            {
-                                asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx + 8]));
+                    if constexpr (cacheLevel == L2)
+                    {
+                        asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx]));
 
-                                if constexpr (evictionPolicy == evictLast)
-                                {
-                                    asm volatile("prefetch.global.L1::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-
-                                if constexpr (evictionPolicy == evictFirst)
-                                {
-                                    asm volatile("prefetch.global.L1::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-                            }
+                        if constexpr (evictionPolicy == evictLast)
+                        {
+                            asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
                         }
 
-                        if constexpr (cacheLevel == L2)
+                        if constexpr (evictionPolicy == evictFirst)
                         {
-                            asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx]));
+                            asm volatile("prefetch.global.L2::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
+                        }
+
+                        // For 64-bit precision, prefetch the next cache line
+                        if constexpr (sizeof(scalar_t) == 8)
+                        {
+                            asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx + 8]));
 
                             if constexpr (evictionPolicy == evictLast)
                             {
@@ -111,27 +128,10 @@ namespace LBM
                             {
                                 asm volatile("prefetch.global.L2::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
                             }
-
-                            // For 64-bit precision, prefetch the next cache line
-                            if constexpr (sizeof(scalar_t) == 8)
-                            {
-                                asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx + 8]));
-
-                                if constexpr (evictionPolicy == evictLast)
-                                {
-                                    asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-
-                                if constexpr (evictionPolicy == evictFirst)
-                                {
-                                    asm volatile("prefetch.global.L2::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-                            }
                         }
                     }
-                } //
-            ); //
-        // #endif
+                }
+            });
     }
 
     /**
@@ -212,6 +212,17 @@ namespace LBM
 
         // Save the populations to the block halo
         blockHalo.popSave<VelocitySet::D3Q19>(pop);
+    }
+
+    [[nodiscard]] const std::array<cudaStream_t, 1> createCudaStream() noexcept
+    {
+        std::array<cudaStream_t, 1> streamsLBM;
+
+        checkCudaErrors(cudaDeviceSynchronize());
+        checkCudaErrors(cudaStreamCreate(&streamsLBM[0]));
+        checkCudaErrors(cudaDeviceSynchronize());
+
+        return streamsLBM;
     }
 }
 

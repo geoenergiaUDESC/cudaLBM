@@ -10,7 +10,6 @@ Contents: A templated class for various different types of arrays
 #include "../LBMTypedefs.cuh"
 #include "../latticeMesh/latticeMesh.cuh"
 #include "../programControl.cuh"
-// #include "memory/memory.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../cavity.cuh"
 

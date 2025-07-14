@@ -1,23 +1,8 @@
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 #include "momentBasedD3Q19.cuh"
-#include "../fileIO/fileIO.cuh"
-#include "../runTimeIO/runTimeIO.cuh"
-#include "../postProcess.cuh"
-// #include "../fieldAverage.cuh"
 
 using namespace LBM;
-
-[[nodiscard]] const std::array<cudaStream_t, 1> createCudaStream() noexcept
-{
-    std::array<cudaStream_t, 1> streamsLBM;
-
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaStreamCreate(&streamsLBM[0]));
-    checkCudaErrors(cudaDeviceSynchronize());
-
-    return streamsLBM;
-}
 
 int main(const int argc, const char *const argv[])
 {

@@ -1,7 +1,7 @@
 include ../common.mk
 
 EXECUTABLE = momentBasedD3Q19
-SOURCE = LBM.cu
+SOURCE = momentBasedD3Q19.cu
 
 default: clean $(EXECUTABLE)
 

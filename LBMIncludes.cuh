@@ -15,6 +15,7 @@ Contents: A list of header files necessary for compilation
 #include <cctype>
 #include <charconv>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
@@ -26,6 +27,7 @@ Contents: A list of header files necessary for compilation
 #include <memory>
 #include <nvrtc.h>
 // #include <mpi.h>
+#include <source_location>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>

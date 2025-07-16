@@ -703,6 +703,554 @@ namespace LBM
             }
         }
 
+        // template <class VSet>
+        // __device__ static inline constexpr void calculateMoments_v2(
+        //     const scalar_t pop[VSet::Q()],
+        //     momentArray &ptrRestrict moments,
+        //     const normalVector &b_n) noexcept
+        // {
+        //     const scalar_t rho_I =
+        //         ((incomingSwitch<VSet, scalar_t>(lattice_constant<0>(), b_n) * pop[0]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<1>(), b_n) * pop[1]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<2>(), b_n) * pop[2]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<3>(), b_n) * pop[3]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<4>(), b_n) * pop[4]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<5>(), b_n) * pop[5]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<6>(), b_n) * pop[6]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<7>(), b_n) * pop[7]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<8>(), b_n) * pop[8]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<9>(), b_n) * pop[9]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<10>(), b_n) * pop[10]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<11>(), b_n) * pop[11]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<12>(), b_n) * pop[12]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<13>(), b_n) * pop[13]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<14>(), b_n) * pop[14]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<15>(), b_n) * pop[15]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<16>(), b_n) * pop[16]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<17>(), b_n) * pop[17]) +
+        //          (incomingSwitch<VSet, scalar_t>(lattice_constant<18>(), b_n) * pop[18]));
+        //     const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+
+        //     switch (b_n.nodeType())
+        //     {
+        //     // Static boundaries
+        //     case normalVector::SOUTH_WEST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_WEST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[8] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_EAST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_EAST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_WEST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[12] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * pop[8];
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         // moments.m_xy = (static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1)));
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_EAST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[6] + pop[9] + pop[12] + pop[13] + pop[15] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (-pop[13]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xy_I - d_omega * m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         // moments.m_xy = (static_cast<scalar_t>(25) * m_xy_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xy_I - d_omega * m_xy_I + static_cast<scalar_t>(1)));
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::WEST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[14] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[10]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::WEST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[8] + pop[11] + pop[14] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (-pop[16]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::EAST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[6] + pop[7] + pop[12] + pop[13] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (-pop[15]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - d_omega * m_xz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::EAST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[7] + pop[9] + pop[11] + pop[13] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[9]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[13] + pop[15];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[12]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (static_cast<scalar_t>(25) * m_yz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[8] + pop[9] + pop[13] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_yz_I = inv_rho_I * (-pop[18]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24));
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (static_cast<scalar_t>(25) * m_yz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::WEST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[8] + pop[10] + pop[11] + pop[12] + pop[14] + pop[16] + pop[17] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[14]);
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[16]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+        //         moments.m_xz = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::EAST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[12] + pop[13] + pop[15] + pop[17] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[13]);
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[15]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+        //         moments.m_xz = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::SOUTH():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[4] + pop[5] + pop[6] + pop[8] + pop[9] + pop[10] + pop[12] + pop[13] + pop[15] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[13]);
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[18]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[15]);
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[17]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[16]);
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[18]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = static_cast<scalar_t>(0);
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+
+        //     // Lid boundaries
+        //     case normalVector::NORTH():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[10] + pop[11] + pop[14] + pop[15] + pop[16] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[14]);
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[17]);
+        //         const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+        //         moments.rho = rho;
+        //         moments.u = d_u_inf;
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         moments.m_xx = (static_cast<scalar_t>(6) * d_u_inf * d_u_inf * rho_I) / static_cast<scalar_t>(5);
+        //         moments.m_xy = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3) - d_u_inf / static_cast<scalar_t>(3);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_WEST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[6] + pop[10] + pop[14] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0); // At the corner, all moments vanish
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_WEST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[2] + pop[3] + pop[5] + pop[11] + pop[14] + pop[16];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0); // At the corner, all moments vanish
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_EAST_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0); // At the corner, all moments vanish
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_EAST_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * d_u_inf - static_cast<scalar_t>(9) * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0); // At the corner, all moments vanish
+        //         moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         moments.m_yz = static_cast<scalar_t>(0);
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_BACK():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[6] + pop[7] + pop[10] + pop[14] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_yz_I = inv_rho_I * (-pop[17]);
+        //         const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * d_omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0);                           // At the intersection of front and back, only z derivative exists
+        //         moments.m_xy = -VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of front and back, only z derivative exists
+        //         // moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_FRONT():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[2] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[14] + pop[16];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_yz_I = inv_rho_I * (pop[11]);
+        //         const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (d_omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * d_omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xx = static_cast<scalar_t>(0);                          // At the intersection of front and back, only z derivative exists
+        //         moments.m_xy = VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of front and back, only z derivative exists
+        //         // moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_EAST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[7]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * d_u_inf - static_cast<scalar_t>(18) * d_u_inf * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xy = -static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of East and West, only x derivative exists
+        //         moments.m_xx = static_cast<scalar_t>(0);                                                      // At the intersection of East and West, only x derivative exists
+        //         // moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     case normalVector::NORTH_WEST():
+        //     {
+        //         // const scalar_t rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[15] + pop[17];
+        //         // const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+        //         const scalar_t m_xy_I = inv_rho_I * (pop[7]);
+        //         const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (d_omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (d_omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * d_u_inf - static_cast<scalar_t>(18) * d_u_inf * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf + static_cast<scalar_t>(3) * d_omega * d_u_inf * d_u_inf);
+        //         moments.rho = rho;
+        //         moments.u = static_cast<scalar_t>(0);
+        //         moments.v = static_cast<scalar_t>(0);
+        //         moments.w = static_cast<scalar_t>(0);
+        //         // moments.m_xx = d_u_inf * d_u_inf * rho;
+        //         moments.m_xy = static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * d_tau * d_u_inf; // At the intersection of East and West, only x derivative exists
+        //         moments.m_xx = static_cast<scalar_t>(0);                                                     // At the intersection of East and West, only x derivative exists
+        //         // moments.m_xy = static_cast<scalar_t>(0);
+        //         moments.m_xz = static_cast<scalar_t>(0);
+        //         moments.m_yy = static_cast<scalar_t>(0);
+        //         // moments.m_yz = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf) - static_cast<scalar_t>(3) * d_u_inf * d_u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - d_omega * m_yz_I + static_cast<scalar_t>(1)));
+        //         moments.m_yz = static_cast<scalar_t>(0); // At the lip, this moment vanishes
+        //         moments.m_zz = static_cast<scalar_t>(0);
+
+        //         return;
+        //     }
+        //     }
+        // }
+
     private:
     };
 }

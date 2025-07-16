@@ -159,6 +159,14 @@ namespace LBM
             return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
         }
 
+        __host__ [[nodiscard]] inline label_t idx(
+            const label_t tx, const label_t ty, const label_t tz,
+            const label_t bx, const label_t by, const label_t bz,
+            const label_t nBlockx, const label_t nBlocky) noexcept
+        {
+            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
+        }
+
         /**
          * @brief Global scalar field index (collapsed 3D)
          * @param x,y,z Global coordinates
@@ -262,6 +270,16 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxMom(const dim3 &tx, const dim3 &bx) noexcept
         {
             return idxMom<mom>(tx.x, tx.y, tx.z, bx.x, bx.y, bx.z);
+        }
+
+        __device__ [[nodiscard]] inline label_t idx(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
+        {
+            return (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz)))));
+        }
+
+        __device__ [[nodiscard]] inline label_t idx(const dim3 &tx, const dim3 &bx) noexcept
+        {
+            return idx(tx.x, tx.y, tx.z, bx.x, bx.y, bx.z);
         }
 
         /**

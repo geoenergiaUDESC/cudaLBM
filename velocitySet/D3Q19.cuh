@@ -267,6 +267,36 @@ namespace LBM
                 pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
             }
 
+            // __device__ static inline void reconstruct_v2(scalar_t (&ptrRestrict pop)[19], const momentArray &ptrRestrict moments) noexcept
+            // {
+            //     const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments.m_xx + moments.m_yy + moments.m_zz);
+
+            //     const scalar_t multiplyTerm_0 = moments.rho * w_0();
+            //     pop[0] = multiplyTerm_0 * pics2;
+
+            //     const scalar_t multiplyTerm_1 = moments.rho * w_1();
+            //     pop[1] = multiplyTerm_1 * (pics2 + moments.u + moments.m_xx);
+            //     pop[2] = multiplyTerm_1 * (pics2 - moments.u + moments.m_xx);
+            //     pop[3] = multiplyTerm_1 * (pics2 + moments.v + moments.m_yy);
+            //     pop[4] = multiplyTerm_1 * (pics2 - moments.v + moments.m_yy);
+            //     pop[5] = multiplyTerm_1 * (pics2 + moments.w + moments.m_zz);
+            //     pop[6] = multiplyTerm_1 * (pics2 - moments.w + moments.m_zz);
+
+            //     const scalar_t multiplyTerm_2 = moments.rho * w_2();
+            //     pop[7] = multiplyTerm_2 * (pics2 + moments.u + moments.v + moments.m_xx + moments.m_yy + moments.m_xy);
+            //     pop[8] = multiplyTerm_2 * (pics2 - moments.u - moments.v + moments.m_xx + moments.m_yy + moments.m_xy);
+            //     pop[9] = multiplyTerm_2 * (pics2 + moments.u + moments.w + moments.m_xx + moments.m_zz + moments.m_xz);
+            //     pop[10] = multiplyTerm_2 * (pics2 - moments.u - moments.w + moments.m_xx + moments.m_zz + moments.m_xz);
+            //     pop[11] = multiplyTerm_2 * (pics2 + moments.v + moments.w + moments.m_yy + moments.m_zz + moments.m_yz);
+            //     pop[12] = multiplyTerm_2 * (pics2 - moments.v - moments.w + moments.m_yy + moments.m_zz + moments.m_yz);
+            //     pop[13] = multiplyTerm_2 * (pics2 + moments.u - moments.v + moments.m_xx + moments.m_yy - moments.m_xy);
+            //     pop[14] = multiplyTerm_2 * (pics2 - moments.u + moments.v + moments.m_xx + moments.m_yy - moments.m_xy);
+            //     pop[15] = multiplyTerm_2 * (pics2 + moments.u - moments.w + moments.m_xx + moments.m_zz - moments.m_xz);
+            //     pop[16] = multiplyTerm_2 * (pics2 - moments.u + moments.w + moments.m_xx + moments.m_zz - moments.m_xz);
+            //     pop[17] = multiplyTerm_2 * (pics2 + moments.v - moments.w + moments.m_yy + moments.m_zz - moments.m_yz);
+            //     pop[18] = multiplyTerm_2 * (pics2 - moments.v + moments.w + moments.m_yy + moments.m_zz - moments.m_yz);
+            // }
+
             /**
              * @brief Reconstructs the population at a given lattice point
              * @param moments The moments from which the population is to be reconstructed
@@ -331,6 +361,26 @@ namespace LBM
                 moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
                 moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
             }
+
+            // __device__ inline static void calculateMoments_v2(const scalar_t (&ptrRestrict pop)[19], momentArray &ptrRestrict moments) noexcept
+            // {
+            //     // Equation 3
+            //     moments.rho = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+            //     const scalar_t invRho = static_cast<scalar_t>(1) / moments.rho;
+
+            //     // Equation 4 + force correction
+            //     moments.u = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
+            //     moments.v = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
+            //     moments.w = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
+
+            //     // Equation 5
+            //     moments.m_xx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
+            //     moments.m_xy = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
+            //     moments.m_xz = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
+            //     moments.m_yy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
+            //     moments.m_yz = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
+            //     moments.m_zz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
+            // }
 
             /**
              * @brief Prints information about the velocity set to the terminal

@@ -95,6 +95,29 @@ namespace LBM
     using momentArray_t = scalar_t[10];
     // using momentArray_t_v2 = scalar_t[16];
 
+    // #ifdef SCALAR_PRECISION_32
+    //     struct alignas(64) momentArray
+    // #elif #ifdef SCALAR_PRECISION_64
+    //     struct alignas(128) momentArray
+    // #endif
+
+    [[nodiscard]] inline consteval std::size_t VEC_SIZE() { return 32; }
+
+    // template <const std::size_t vecSize>
+    struct momentArray
+    {
+        scalar_t rho[VEC_SIZE()];
+        scalar_t u[VEC_SIZE()];
+        scalar_t v[VEC_SIZE()];
+        scalar_t w[VEC_SIZE()];
+        scalar_t m_xx[VEC_SIZE()];
+        scalar_t m_xy[VEC_SIZE()];
+        scalar_t m_xz[VEC_SIZE()];
+        scalar_t m_yy[VEC_SIZE()];
+        scalar_t m_yz[VEC_SIZE()];
+        scalar_t m_zz[VEC_SIZE()];
+    };
+
     /**
      * @brief Label type used for scalar types
      * @note Types are either 32 bit or 64 bit unsigned integers

@@ -173,6 +173,12 @@ namespace LBM
              **/
             ~array() noexcept
             {
+                std::cout << "Freeing ";
+                for (std::size_t i = 0; i < varNames_.size() - 1; i++)
+                {
+                    std::cout << varNames_[i] << ", ";
+                }
+                std::cout << varNames_[varNames_.size() - 1] << std::endl;
                 checkCudaErrors(cudaFree(ptr_));
             }
 
@@ -238,14 +244,61 @@ namespace LBM
              **/
             __host__ void write(const std::string &filePrefix, const std::size_t timeStep)
             {
-                const std::size_t nVars = varNames_.size();
-                const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;
+                // const std::size_t nVars = varNames_.size();
+                // const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;
 
-                // Copy device -> host
-                const std::vector<T> hostFields = host::copyToHost(ptr_, nTotal);
+                // // Copy device -> host
+                // const std::vector<T> hostFields = host::copyToHost(ptr_, nTotal);
+
+                const std::size_t nVars = varNames_.size();
+                const std::size_t nPoints = static_cast<std::size_t>(mesh_.nx()) *
+                                            static_cast<std::size_t>(mesh_.ny()) *
+                                            static_cast<std::size_t>(mesh_.nz());
+                constexpr std::size_t vec_size = VEC_SIZE();
+
+                // Calculate number of chunks (round up)
+                const std::size_t num_chunks = (nPoints + vec_size - 1) / vec_size;
+
+                // Copy device AoSoA -> host AoSoA
+                std::vector<momentArray> hostAoSoA(num_chunks);
+                cudaMemcpy(hostAoSoA.data(), ptr_,
+                           num_chunks * sizeof(momentArray),
+                           cudaMemcpyDeviceToHost);
+
+                // De-interleave AoSoA into flat array
+                std::vector<scalar_t> hostFields(nPoints * nVars);
+
+                // #pragma omp parallel for collapse(3)
+                for (label_t z = 0; z < mesh_.nz(); z++)
+                {
+                    for (label_t y = 0; y < mesh_.ny(); y++)
+                    {
+                        for (label_t x = 0; x < mesh_.nx(); x++)
+                        {
+                            // Compute global index (matches kernel indexing)
+                            const size_t gid = x + mesh_.nx() * (y + mesh_.ny() * z);
+                            const size_t chunk_idx = gid / vec_size;
+                            const size_t lane = gid % vec_size;
+                            const size_t field_idx = gid * nVars;
+
+                            // De-interleave moments
+                            hostFields[field_idx + 0] = hostAoSoA[chunk_idx].rho[lane];
+                            hostFields[field_idx + 1] = hostAoSoA[chunk_idx].u[lane];
+                            hostFields[field_idx + 2] = hostAoSoA[chunk_idx].v[lane];
+                            hostFields[field_idx + 3] = hostAoSoA[chunk_idx].w[lane];
+                            hostFields[field_idx + 4] = hostAoSoA[chunk_idx].m_xx[lane];
+                            hostFields[field_idx + 5] = hostAoSoA[chunk_idx].m_xy[lane];
+                            hostFields[field_idx + 6] = hostAoSoA[chunk_idx].m_xz[lane];
+                            hostFields[field_idx + 7] = hostAoSoA[chunk_idx].m_yy[lane];
+                            hostFields[field_idx + 8] = hostAoSoA[chunk_idx].m_yz[lane];
+                            hostFields[field_idx + 9] = hostAoSoA[chunk_idx].m_zz[lane];
+                        }
+                    }
+                }
 
                 // Write to file
-                fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);
+                // fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);
+                postProcess::writeTecplotHexahedralData()
             }
 
             /**

@@ -59,19 +59,33 @@ namespace LBM
             /**
              * @brief Scale the moments by constant values
              **/
-            __device__ static inline void scale(scalar_t *const ptrRestrict moms) noexcept
+            __device__ static inline void scale(scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 // Scale the moments correctly
-                moms[1] = scale_i() * moms[1];
-                moms[2] = scale_i() * moms[2];
-                moms[3] = scale_i() * moms[3];
-                moms[4] = scale_ii() * (moms[4]);
-                moms[5] = scale_ij() * (moms[5]);
-                moms[6] = scale_ij() * (moms[6]);
-                moms[7] = scale_ii() * (moms[7]);
-                moms[8] = scale_ij() * (moms[8]);
-                moms[9] = scale_ii() * (moms[9]);
+                moments[1] = scale_i() * moments[1];
+                moments[2] = scale_i() * moments[2];
+                moments[3] = scale_i() * moments[3];
+                moments[4] = scale_ii() * (moments[4]);
+                moments[5] = scale_ij() * (moments[5]);
+                moments[6] = scale_ij() * (moments[6]);
+                moments[7] = scale_ii() * (moments[7]);
+                moments[8] = scale_ij() * (moments[8]);
+                moments[9] = scale_ii() * (moments[9]);
             }
+
+            // __device__ static inline void scale_v2(momentArray &ptrRestrict moments) noexcept
+            // {
+            //     // Scale the moments correctly
+            //     moments.u = scale_i() * moments.u;
+            //     moments.v = scale_i() * moments.v;
+            //     moments.w = scale_i() * moments.w;
+            //     moments.m_xx = scale_ii() * moments.m_xx;
+            //     moments.m_xy = scale_ij() * moments.m_xy;
+            //     moments.m_xz = scale_ij() * moments.m_xz;
+            //     moments.m_yy = scale_ii() * moments.m_yy;
+            //     moments.m_yz = scale_ij() * moments.m_yz;
+            //     moments.m_zz = scale_ii() * moments.m_zz;
+            // }
         };
     }
 }

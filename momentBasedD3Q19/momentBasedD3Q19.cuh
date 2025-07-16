@@ -498,6 +498,17 @@ namespace LBM
         VelocitySet::D3Q19::reconstruct(pop, moments);
 
         // // Write to global memory
+        fMom[chunk_idx].rho[lane] = moments[0];
+        fMom[chunk_idx].u[lane] = moments[1];
+        fMom[chunk_idx].v[lane] = moments[2];
+        fMom[chunk_idx].w[lane] = moments[3];
+        fMom[chunk_idx].m_xx[lane] = moments[4];
+        fMom[chunk_idx].m_xy[lane] = moments[5];
+        fMom[chunk_idx].m_xz[lane] = moments[6];
+        fMom[chunk_idx].m_yy[lane] = moments[7];
+        fMom[chunk_idx].m_yz[lane] = moments[8];
+        fMom[chunk_idx].m_zz[lane] = moments[9];
+
         // fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)] = moments[0] - rho0();
         // fMom[device::idxMom<index::u()>(threadIdx, blockIdx)] = moments[1];
         // fMom[device::idxMom<index::v()>(threadIdx, blockIdx)] = moments[2];

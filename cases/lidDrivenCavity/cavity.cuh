@@ -6,11 +6,11 @@ Contents: Case setup specific to the lid driven cavity case
 #ifndef __MBLBM_CAVITY_CUH
 #define __MBLBM_CAVITY_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
+#include "../../LBMIncludes.cuh"
+#include "../../LBMTypedefs.cuh"
 
-#include "velocitySet/velocitySet.cuh"
-#include "boundaryConditions.cuh"
+#include "../../velocitySet/velocitySet.cuh"
+#include "../../boundaryConditions/boundaryConditions.cuh"
 
 namespace LBM
 {

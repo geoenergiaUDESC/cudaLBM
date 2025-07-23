@@ -1,12 +1,11 @@
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 #include "../array/array.cuh"
-#include "../collision.cuh"
+#include "../collision/collision.cuh"
 #include "../moments/moments.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../runTimeIO/runTimeIO.cuh"
 #include "../postProcess.cuh"
-#include "../fieldAverage.cuh"
 #include "../inputControl.cuh"
 
 using namespace LBM;
@@ -38,7 +37,7 @@ int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
-    const host::latticeMesh mesh;
+    const host::latticeMesh mesh(programCtrl);
 
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 

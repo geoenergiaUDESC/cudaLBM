@@ -31,33 +31,29 @@ namespace LBM
              **/
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t as2() noexcept
             {
-                // return static_cast<scalar_t>(3.0);
-                return 3.0;
+                return static_cast<scalar_t>(3.0);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t cs2() noexcept
             {
                 return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(3.0));
-                // return static_cast<scalar_t>(1.0) / as2();
             }
 
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_i() noexcept
             {
-                return 3.0;
-                // return as2();
+                return static_cast<scalar_t>(3.0);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_ii() noexcept
             {
-                return 4.5;
-                // return as2() * as2() / static_cast<scalar_t>(2.0);
+                return static_cast<scalar_t>(4.5);
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t scale_ij() noexcept
             {
-                return 9.0;
-                // return as2() * as2();
+                return static_cast<scalar_t>(9.0);
             }
 
             /**
              * @brief Scale the moments by constant values
+             * @param moms The moment variables
              **/
             __device__ static inline void scale(scalar_t *const ptrRestrict moms) noexcept
             {
@@ -72,22 +68,12 @@ namespace LBM
                 moms[8] = scale_ij() * (moms[8]);
                 moms[9] = scale_ii() * (moms[9]);
             }
+
+        private:
         };
     }
 }
 
 #include "D3Q19.cuh"
-
-namespace LBM
-{
-    /**
-     * @brief Velocity set used throughout the code
-     * @note For now only D3Q19 is implemented
-     * @note These types are supplied via command line defines during compilation
-     **/
-#ifdef STENCIL_TYPE_D3Q19
-    typedef VelocitySet::D3Q19 vSet;
-#endif
-}
 
 #endif

@@ -77,22 +77,28 @@ namespace LBM
          * @brief Copies constants initialised on the host to the device constant memory
          * @param nx The number of lattices in the x direction
          **/
-        void copyDeviceSymbols(const label_t nx) const noexcept
-        {
-            const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
-            const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
-            const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
+        // void copyDeviceSymbols(const label_t nx) const noexcept
+        // {
+        //     const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
+        //     const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
+        //     const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
+        //     const scalar_t t_omegaVar = static_cast<scalar_t>(1) - omega;
+        //     const scalar_t omegaVar_d2 = omega * static_cast<scalar_t>(0.5);
 
-            cudaDeviceSynchronize();
-            checkCudaErrors(cudaMemcpyToSymbol(d_Re, &Re_, sizeof(d_Re)));
-            cudaDeviceSynchronize();
-            checkCudaErrors(cudaMemcpyToSymbol(d_u_inf, &u_inf_, sizeof(u_inf_)));
-            cudaDeviceSynchronize();
-            checkCudaErrors(cudaMemcpyToSymbol(d_tau, &tau, sizeof(tau)));
-            cudaDeviceSynchronize();
-            checkCudaErrors(cudaMemcpyToSymbol(d_omega, &omega, sizeof(omega)));
-            cudaDeviceSynchronize();
-        }
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::Re, &Re_, sizeof(device::Re)));
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::u_inf, &u_inf_, sizeof(device::u_inf)));
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::tau, &tau, sizeof(device::tau)));
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::omega, &omega, sizeof(device::omega)));
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::t_omegaVar, &t_omegaVar, sizeof(device::t_omegaVar)));
+        //     cudaDeviceSynchronize();
+        //     checkCudaErrors(cudaMemcpyToSymbol(device::omegaVar_d2, &omegaVar_d2, sizeof(device::omegaVar_d2)));
+        //     cudaDeviceSynchronize();
+        // }
 
         /**
          * @brief Returns the name of the case

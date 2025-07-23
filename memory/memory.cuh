@@ -155,5 +155,6 @@ namespace LBM
 }
 
 #include "sharedMemory.cuh"
+#include "cache.cuh"
 
 #endif

@@ -43,14 +43,6 @@ namespace LBM
                   z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(fMom, mesh))),
                   z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(fMom, mesh))) {};
 
-            // [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
-            //     : x0_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 0>(fMom, mesh))),
-            //       x1_(device::allocateArray(initialise_pop_v2<device::haloFaces::x(), 1>(fMom, mesh))),
-            //       y0_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 0>(fMom, mesh))),
-            //       y1_(device::allocateArray(initialise_pop_v2<device::haloFaces::y(), 1>(fMom, mesh))),
-            //       z0_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 0>(fMom, mesh))),
-            //       z1_(device::allocateArray(initialise_pop_v2<device::haloFaces::z(), 1>(fMom, mesh))) {};
-
             /**
              * @brief Destructor for the haloFace class
              * @note Causes a crash (illegal memory access) if cudaFree is uncommented
@@ -202,24 +194,7 @@ namespace LBM
                 const label_t nBlocky = mesh.nyBlocks();
                 const label_t nBlockz = mesh.nzBlocks();
 
-                // New helper function for cell base index
-                auto cellBaseIdx = [&](label_t tx, label_t ty, label_t tz, label_t bx, label_t by, label_t bz)
-                {
-                    return NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
-                };
-
                 // Loop over all blocks and threads
-                // for (label_t bz = 0; bz < nBlockz; ++bz)
-                // {
-                //     for (label_t by = 0; by < nBlocky; ++by)
-                //     {
-                //         for (label_t bx = 0; bx < nBlockx; ++bx)
-                //         {
-                //             for (label_t tz = 0; tz < block::nz(); ++tz)
-                //             {
-                //                 for (label_t ty = 0; ty < block::ny(); ++ty)
-                //                 {
-                //                     for (label_t tx = 0; tx < block::nx(); ++tx)
                 for (label_t bz = 0; bz < nBlockz; ++bz)
                 {
                     for (label_t by = 0; by < nBlocky; ++by)
@@ -239,10 +214,10 @@ namespace LBM
                                             continue;
                                         }
 
-                                        const label_t base = cellBaseIdx(tx, ty, tz, bx, by, bz);
+                                        const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky);
 
                                         // Contiguous moment access
-                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(
+                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::host_reconstruct(
                                             {rho0() + fMom[base + index::rho()],
                                              fMom[base + index::u()],
                                              fMom[base + index::v()],
@@ -253,183 +228,6 @@ namespace LBM
                                              fMom[base + index::yy()],
                                              fMom[base + index::yz()],
                                              fMom[base + index::zz()]});
-
-                                        // // Reconstruct from the moments
-                                        // const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(std::array<scalar_t, 10>{
-                                        //     rho0() + fMom[host::idxMom<index::rho()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::u()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::v()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::w()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::xx()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::xy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::xz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::yy()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::yz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)],
-                                        //     fMom[host::idxMom<index::zz()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)]});
-
-                                        // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
-                                        if constexpr (faceIndex == device::haloFaces::x())
-                                        {
-                                            if constexpr (side == 0)
-                                            {
-                                                if (tx == 0)
-                                                { // w
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[2];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[16];
-                                                }
-                                            }
-                                            if constexpr (side == 1)
-                                            {
-                                                if (tx == (block::nx() - 1))
-                                                {
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[1];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[15];
-                                                }
-                                            }
-                                        }
-
-                                        if constexpr (faceIndex == device::haloFaces::y())
-                                        {
-                                            if constexpr (side == 0)
-                                            {
-                                                if (ty == 0)
-                                                { // s
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[4];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[18];
-                                                }
-                                            }
-                                            if constexpr (side == 1)
-                                            {
-                                                if (ty == (block::ny() - 1))
-                                                {
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[3];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[17];
-                                                }
-                                            }
-                                        }
-
-                                        if constexpr (faceIndex == device::haloFaces::z())
-                                        {
-                                            if constexpr (side == 0)
-                                            {
-                                                if (tz == 0)
-                                                { // b
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[6];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[15];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[17];
-                                                }
-                                            }
-                                            if constexpr (side == 1)
-                                            {
-                                                if (tz == (block::nz() - 1))
-                                                {
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[5];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[16];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[18];
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return face;
-            }
-
-            template <const std::size_t faceIndex, const std::size_t side>
-            __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop_v2(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) const noexcept
-            {
-                std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
-
-                const label_t nBlockx = mesh.nxBlocks();
-                const label_t nBlocky = mesh.nyBlocks();
-                const label_t nBlockz = mesh.nzBlocks();
-
-                // New helper function for spatial index (without moments dimension)
-                auto spatialIdx = [&](label_t tx, label_t ty, label_t tz, label_t bx, label_t by, label_t bz)
-                {
-                    return tx + block::nx() *
-                                    (ty + block::ny() *
-                                              (tz + block::nz() *
-                                                        (bx + nBlockx *
-                                                                  (by + nBlocky * bz))));
-                };
-
-                // const label_t nBlockx = mesh.nxBlocks();
-                // const label_t nBlocky = mesh.nyBlocks();
-                // const label_t nBlockz = mesh.nzBlocks();
-
-                // // New helper function for cell base index
-                // auto cellBaseIdx = [&](label_t tx, label_t ty, label_t tz, label_t bx, label_t by, label_t bz)
-                // {
-                //     return NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nBlockx * (by + nBlocky * bz)))));
-                // };
-
-                // Loop over all blocks and threads
-                // for (label_t bz = 0; bz < nBlockz; ++bz)
-                // {
-                //     for (label_t by = 0; by < nBlocky; ++by)
-                //     {
-                //         for (label_t bx = 0; bx < nBlockx; ++bx)
-                //         {
-                //             for (label_t tz = 0; tz < block::nz(); ++tz)
-                //             {
-                //                 for (label_t ty = 0; ty < block::ny(); ++ty)
-                //                 {
-                //                     for (label_t tx = 0; tx < block::nx(); ++tx)
-                for (label_t bz = 0; bz < nBlockz; ++bz)
-                {
-                    for (label_t by = 0; by < nBlocky; ++by)
-                    {
-                        for (label_t bx = 0; bx < nBlockx; ++bx)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); ++tz)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ++ty)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); ++tx)
-                                    {
-
-                                        // Skip out-of-bounds elements (equivalent to GPU version)
-                                        if (tx >= mesh.nx() || ty >= mesh.ny() || tz >= mesh.nz())
-                                        {
-                                            continue;
-                                        }
-
-                                        // Compute spatial index once (no moment dimension)
-                                        const label_t spatial_idx = spatialIdx(tx, ty, tz, bx, by, bz);
-
-                                        // Access moments from separate arrays
-                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop =
-                                            VelocitySet::D3Q19::reconstruct({rho0() + fMom[0][spatial_idx], // Separate array for rho
-                                                                             fMom[1][spatial_idx],          // Separate array for u
-                                                                             fMom[2][spatial_idx],          // Separate array for v
-                                                                             fMom[3][spatial_idx],          // ... and so on
-                                                                             fMom[4][spatial_idx],
-                                                                             fMom[5][spatial_idx],
-                                                                             fMom[6][spatial_idx],
-                                                                             fMom[7][spatial_idx],
-                                                                             fMom[8][spatial_idx],
-                                                                             fMom[9][spatial_idx]});
 
                                         // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
                                         if constexpr (faceIndex == device::haloFaces::x())

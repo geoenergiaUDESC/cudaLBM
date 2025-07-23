@@ -13,16 +13,16 @@ partition the mesh prior to distribution to the devices
 
 namespace LBM
 {
-    namespace host
-    {
-        template <const ctorType::type CType>
-        using scalarArray = array<scalar_t, CType>;
-    }
+    // namespace host
+    // {
+    //     template <const ctorType::type CType>
+    //     using scalarArray = array<scalar_t, CType>;
+    // }
 
-    namespace device
-    {
-        typedef array<scalar_t> scalarArray;
-    }
+    // namespace device
+    // {
+    //     typedef array<scalar_t> scalarArray;
+    // }
 }
 
 #endif

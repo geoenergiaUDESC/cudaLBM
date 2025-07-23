@@ -11,7 +11,7 @@ Contents: A templated class for various different types of arrays
 #include "../latticeMesh/latticeMesh.cuh"
 #include "../programControl.cuh"
 #include "../fileIO/fileIO.cuh"
-#include "../cavity.cuh"
+#include "../cases/lidDrivenCavity/cavity.cuh"
 
 namespace LBM
 {

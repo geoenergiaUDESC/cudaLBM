@@ -24,7 +24,7 @@ namespace LBM
              * @note This constructor requires that a mesh file be present in the working directory
              * @note This constructor reads from the caseInfo file and is used primarily to construct the global mesh
              **/
-            [[nodiscard]] latticeMesh() noexcept
+            [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
                 : nx_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "ny")),
                   nz_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nz")),
@@ -40,44 +40,47 @@ namespace LBM
                 std::cout << std::endl;
 #endif
 
-                // Allocate symbols on the GPU, temporary workaround
-                checkCudaErrors(cudaMemcpyToSymbol(d_nx, &nx_, sizeof(label_t)));
-                checkCudaErrors(cudaMemcpyToSymbol(d_ny, &ny_, sizeof(label_t)));
-                checkCudaErrors(cudaMemcpyToSymbol(d_nz, &nz_, sizeof(label_t)));
+                const scalar_t ReTemp = programCtrl.Re();
+                const scalar_t u_infTemp = programCtrl.u_inf();
+                const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
+                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                const label_t d_NUM_BLOCK_X_tmp = nx_ / block::nx();
-                const label_t d_NUM_BLOCK_Y_tmp = ny_ / block::ny();
-                const label_t d_NUM_BLOCK_Z_tmp = nz_ / block::nz();
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::Re, &ReTemp, sizeof(device::Re)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::u_inf, &u_infTemp, sizeof(device::u_inf)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::tau, &tauTemp, sizeof(device::tau)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::omega, &omegaTemp, sizeof(device::omega)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::t_omegaVar, &t_omegaVarTemp, sizeof(device::t_omegaVar)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::omegaVar_d2, &omegaVar_d2Temp, sizeof(device::omegaVar_d2)));
+                cudaDeviceSynchronize();
 
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_X, &d_NUM_BLOCK_X_tmp, sizeof(label_t)));
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Y, &d_NUM_BLOCK_Y_tmp, sizeof(label_t)));
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Z, &d_NUM_BLOCK_Z_tmp, sizeof(label_t)));
+                const label_t nxBlocksTemp = nxBlocks();
+                const label_t nyBlocksTemp = nyBlocks();
+                const label_t nzBlocksTemp = nzBlocks();
+
+                // Allocate symbols on the GPU
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::nx, &nx_, sizeof(device::nx)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::ny, &ny_, sizeof(device::ny)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::nz, &nz_, sizeof(device::nz)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_X, &nxBlocksTemp, sizeof(device::NUM_BLOCK_X)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Y, &nyBlocksTemp, sizeof(device::NUM_BLOCK_Y)));
+                cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Z, &nzBlocksTemp, sizeof(device::NUM_BLOCK_Z)));
+                cudaDeviceSynchronize();
             };
-
-            /**
-             * @brief Copy the defined symbols to the device constant memory
-             **/
-            void copyDeviceSymbols() const noexcept
-            {
-                const label_t d_NUM_BLOCK_X_tmp = nx_ / block::nx();
-                const label_t d_NUM_BLOCK_Y_tmp = ny_ / block::ny();
-                const label_t d_NUM_BLOCK_Z_tmp = nz_ / block::nz();
-
-                // Allocate symbols on the GPU, temporary workaround
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_nx, &nx_, sizeof(label_t)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_ny, &ny_, sizeof(label_t)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_nz, &nz_, sizeof(label_t)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_X, &d_NUM_BLOCK_X_tmp, sizeof(label_t)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Y, &d_NUM_BLOCK_Y_tmp, sizeof(label_t)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(d_NUM_BLOCK_Z, &d_NUM_BLOCK_Z_tmp, sizeof(label_t)));
-                cudaDeviceSynchronize();
-            }
 
             /**
              * @brief Returns the number of lattices in the x, y and z directions

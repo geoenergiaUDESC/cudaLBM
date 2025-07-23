@@ -12,16 +12,16 @@ This is a temporary fix before the boundary condition function pointers are impl
 
 namespace LBM
 {
-    namespace host
-    {
-        template <const ctorType::type CType>
-        using nodeArray = array<nodeType_t, CType>;
-    }
+    // namespace host
+    // {
+    //     template <const ctorType::type CType>
+    //     using nodeArray = array<nodeType_t, CType>;
+    // }
 
-    namespace device
-    {
-        typedef array<nodeType_t> nodeTypeArray;
-    }
+    // namespace device
+    // {
+    //     typedef array<nodeType_t> nodeTypeArray;
+    // }
 }
 
 #endif

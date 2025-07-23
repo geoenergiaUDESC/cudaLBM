@@ -29,7 +29,7 @@ namespace LBM
             const scalar_t (&ptrRestrict pop)[VSet::Q()],
             scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
         {
-            constexpr_for<0, (VSet::Q() - 1)>(
+            device::constexpr_for<0, (VSet::Q() - 1)>(
                 [&](const auto q_)
                 {
                     s_pop[idxPopBlock<q_>(threadIdx)] = pop[q_ + 1];

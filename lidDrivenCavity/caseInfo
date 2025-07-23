@@ -25,7 +25,7 @@ nTimeSteps      20001;
 
 saveInterval    20000;
 
-infoInterval    100;
+infoInterval    1000;
 
 Lx              1.0;
 

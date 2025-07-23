@@ -30,10 +30,6 @@ namespace LBM
                 : fGhost_(haloFace(fMom, mesh)),
                   gGhost_(haloFace(fMom, mesh)) {};
 
-            // [[nodiscard]] halo(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
-            //     : fGhost_(haloFace(fMom, mesh)),
-            //       gGhost_(haloFace(fMom, mesh)) {};
-
             /**
              * @brief Default desructor for the halo class
              **/
@@ -103,14 +99,14 @@ namespace LBM
                 const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
                 const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
 
-                const label_t bxm1 = (bx - 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-                const label_t bxp1 = (bx + 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
+                const label_t bxm1 = (bx - 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
+                const label_t bxp1 = (bx + 1 + device::NUM_BLOCK_X) % device::NUM_BLOCK_X;
 
-                const label_t bym1 = (by - 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-                const label_t byp1 = (by + 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
+                const label_t bym1 = (by - 1 + device::NUM_BLOCK_Y) % device::NUM_BLOCK_Y;
+                const label_t byp1 = (by + 1 + device::NUM_BLOCK_Y) % device::NUM_BLOCK_Y;
 
-                const label_t bzm1 = (bz - 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
-                const label_t bzp1 = (bz + 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
+                const label_t bzm1 = (bz - 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
+                const label_t bzp1 = (bz + 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
 
                 if (tx == 0)
                 { // w
@@ -163,87 +159,6 @@ namespace LBM
                     pop[17] = fGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
                 }
             }
-
-            // template <class VSet>
-            // __device__ inline void popLoad_v2(scalar_t (&ptrRestrict pop)[VSet::Q()]) const noexcept
-            // {
-            //     const label_t tx = threadIdx.x;
-            //     const label_t ty = threadIdx.y;
-            //     const label_t tz = threadIdx.z;
-
-            //     const label_t bx = blockIdx.x;
-            //     const label_t by = blockIdx.y;
-            //     const label_t bz = blockIdx.z;
-
-            //     const label_t txp1 = (tx + 1 + block::nx()) % block::nx();
-            //     const label_t txm1 = (tx - 1 + block::nx()) % block::nx();
-
-            //     const label_t typ1 = (ty + 1 + block::ny()) % block::ny();
-            //     const label_t tym1 = (ty - 1 + block::ny()) % block::ny();
-
-            //     const label_t tzp1 = (tz + 1 + block::nz()) % block::nz();
-            //     const label_t tzm1 = (tz - 1 + block::nz()) % block::nz();
-
-            //     const label_t bxm1 = (bx - 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-            //     const label_t bxp1 = (bx + 1 + d_NUM_BLOCK_X) % d_NUM_BLOCK_X;
-
-            //     const label_t bym1 = (by - 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-            //     const label_t byp1 = (by + 1 + d_NUM_BLOCK_Y) % d_NUM_BLOCK_Y;
-
-            //     const label_t bzm1 = (bz - 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
-            //     const label_t bzp1 = (bz + 1 + d_NUM_BLOCK_Z) % d_NUM_BLOCK_Z;
-
-            //     if (tx == 0)
-            //     { // w
-            //         pop[1] = __ldg(&fGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)]);
-            //         pop[7] = __ldg(&fGhost_.x1()[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
-            //         pop[9] = __ldg(&fGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
-            //         pop[13] = __ldg(&fGhost_.x1()[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-            //         pop[15] = __ldg(&fGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-            //     }
-            //     else if (tx == (block::nx() - 1))
-            //     { // e
-            //         pop[2] = __ldg(&fGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)]);
-            //         pop[8] = __ldg(&fGhost_.x0()[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-            //         pop[10] = __ldg(&fGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-            //         pop[14] = __ldg(&fGhost_.x0()[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
-            //         pop[16] = __ldg(&fGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
-            //     }
-
-            //     if (ty == 0)
-            //     { // s
-            //         pop[3] = __ldg(&fGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)]);
-            //         pop[7] = __ldg(&fGhost_.y1()[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
-            //         pop[11] = __ldg(&fGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
-            //         pop[14] = __ldg(&fGhost_.y1()[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
-            //         pop[17] = __ldg(&fGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-            //     }
-            //     else if (ty == (block::ny() - 1))
-            //     { // n
-            //         pop[4] = __ldg(&fGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)]);
-            //         pop[8] = __ldg(&fGhost_.y0()[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
-            //         pop[12] = __ldg(&fGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-            //         pop[13] = __ldg(&fGhost_.y0()[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
-            //         pop[18] = __ldg(&fGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
-            //     }
-
-            //     if (tz == 0)
-            //     { // b
-            //         pop[5] = __ldg(&fGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)]);
-            //         pop[9] = __ldg(&fGhost_.z1()[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
-            //         pop[11] = __ldg(&fGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
-            //         pop[16] = __ldg(&fGhost_.z1()[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
-            //         pop[18] = __ldg(&fGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-            //     }
-            //     else if (tz == (block::nz() - 1))
-            //     { // f
-            //         pop[6] = __ldg(&fGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)]);
-            //         pop[10] = __ldg(&fGhost_.z0()[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
-            //         pop[12] = __ldg(&fGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-            //         pop[15] = __ldg(&fGhost_.z0()[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
-            //         pop[17] = __ldg(&fGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
-            //     }
-            // }
 
             /**
              * @brief Saves the populations in pop to the halo
@@ -335,7 +250,7 @@ namespace LBM
             }
             __device__ [[nodiscard]] inline bool East(const label_t x) const noexcept
             {
-                return (threadIdx.x == (block::nx() - 1) && x != (d_nx - 1));
+                return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
             }
             __device__ [[nodiscard]] inline bool South(const label_t y) const noexcept
             {
@@ -343,7 +258,7 @@ namespace LBM
             }
             __device__ [[nodiscard]] inline bool North(const label_t y) const noexcept
             {
-                return (threadIdx.y == (block::ny() - 1) && y != (d_ny - 1));
+                return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
             }
             __device__ [[nodiscard]] inline bool Back(const label_t z) const noexcept
             {
@@ -351,7 +266,7 @@ namespace LBM
             }
             __device__ [[nodiscard]] inline bool Front(const label_t z) const noexcept
             {
-                return (threadIdx.z == (block::nz() - 1) && z != (d_nz - 1));
+                return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));
             }
         };
     }

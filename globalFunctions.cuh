@@ -37,15 +37,34 @@ namespace LBM
      * });
      * @endcode
      **/
-    template <const label_t Start, const label_t End, typename F>
-    __device__ inline constexpr void constexpr_for(F &&f)
+    namespace host
     {
-        if constexpr (Start < End)
+        template <const label_t Start, const label_t End, typename F>
+        __host__ inline constexpr void constexpr_for(F &&f)
         {
-            f(integralConstant<label_t, Start>());
-            if constexpr (Start + 1 < End)
+            if constexpr (Start < End)
             {
-                constexpr_for<Start + 1, End>(std::forward<F>(f));
+                f(std::integral_constant<label_t, Start>());
+                if constexpr (Start + 1 < End)
+                {
+                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                }
+            }
+        }
+    }
+
+    namespace device
+    {
+        template <const label_t Start, const label_t End, typename F>
+        __device__ inline constexpr void constexpr_for(F &&f)
+        {
+            if constexpr (Start < End)
+            {
+                f(integralConstant<label_t, Start>());
+                if constexpr (Start + 1 < End)
+                {
+                    constexpr_for<Start + 1, End>(std::forward<F>(f));
+                }
             }
         }
     }
@@ -61,9 +80,9 @@ namespace LBM
      **/
     struct blockLabel_t
     {
-        const label_t nx; ///< Lattice points in x-direction
-        const label_t ny; ///< Lattice points in y-direction
-        const label_t nz; ///< Lattice points in z-direction
+        const label_t nx; // < Lattice points in x-direction
+        const label_t ny; // < Lattice points in y-direction
+        const label_t nz; // < Lattice points in z-direction
     };
 
     /**
@@ -71,8 +90,8 @@ namespace LBM
      **/
     struct blockPartitionRange_t
     {
-        const label_t begin; ///< Inclusive start index
-        const label_t end;   ///< Exclusive end index
+        const label_t begin; // < Inclusive start index
+        const label_t end;   // < Exclusive end index
     };
 
     /**
@@ -81,9 +100,9 @@ namespace LBM
      **/
     struct blockRange_t
     {
-        const blockPartitionRange_t xRange; ///< X-dimension range
-        const blockPartitionRange_t yRange; ///< Y-dimension range
-        const blockPartitionRange_t zRange; ///< Z-dimension range
+        const blockPartitionRange_t xRange; // < X-dimension range
+        const blockPartitionRange_t yRange; // < Y-dimension range
+        const blockPartitionRange_t zRange; // < Z-dimension range
     };
 
     /**
@@ -221,6 +240,17 @@ namespace LBM
         {
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nBlockx * (by + nBlocky * bz))));
         }
+
+        [[nodiscard]] const std::array<cudaStream_t, 1> createCudaStream() noexcept
+        {
+            std::array<cudaStream_t, 1> streamsLBM;
+
+            checkCudaErrors(cudaDeviceSynchronize());
+            checkCudaErrors(cudaStreamCreate(&streamsLBM[0]));
+            checkCudaErrors(cudaDeviceSynchronize());
+
+            return streamsLBM;
+        }
     }
 
     /**
@@ -230,12 +260,12 @@ namespace LBM
     {
         /**
          * @brief Check if current thread exceeds global bounds
-         * @note Uses device constants d_nx, d_ny, d_nz
+         * @note Uses device constants device::nx, device::ny, device::nz
          * @return True if thread is outside domain boundaries
          **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= d_nx) || (threadIdx.y + blockDim.y * blockIdx.y >= d_ny) || (threadIdx.z + blockDim.z * blockIdx.z >= d_nz));
+            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz));
         }
 
         /**
@@ -243,14 +273,14 @@ namespace LBM
          * @tparam mom Moment index [0, NUMBER_MOMENTS())
          * @param tx,ty,tz Thread-local coordinates
          * @param bx,by,bz Block indices
-         * @return Linearized index using device constants d_NUM_BLOCK_X/Y
+         * @return Linearized index using device constants device::NUM_BLOCK_X/Y
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
         template <const label_t mom>
         __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz)))));
+            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
         }
 
         /**
@@ -270,12 +300,12 @@ namespace LBM
          * @tparam QF Number of populations
          * @param ty,tz Thread-local y/z coordinates
          * @param bx,by,bz Block indices
-         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
+            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
         }
 
         /**
@@ -293,12 +323,12 @@ namespace LBM
          * @brief Population index for Y-aligned arrays (device version)
          * @copydetails idxPopX
          * @param tx,tz Thread-local x/z coordinates
-         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
+            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
         }
 
         /**
@@ -316,12 +346,12 @@ namespace LBM
          * @brief Population index for Z-aligned arrays (device version)
          * @copydetails idxPopX
          * @param tx,ty Thread-local x/y coordinates
-         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + d_NUM_BLOCK_X*(by + d_NUM_BLOCK_Y*bz)))
+         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + d_NUM_BLOCK_X * (by + d_NUM_BLOCK_Y * bz))));
+            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
         }
 
         /**
@@ -341,20 +371,20 @@ namespace LBM
      **/
     namespace index
     {
-        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } ///< Density
-        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   ///< X-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   ///< Y-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   ///< Z-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  ///< XX-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  ///< XY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  ///< XZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  ///< YY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  ///< YZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  ///< ZZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } // < Density
+        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   // < X-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   // < Y-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   // < Z-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  // < XX-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  // < XY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  // < XZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  // < YY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  // < YZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  // < ZZ-stress component
     }
 
     /**
-     * @brief Reference density \f$ \rho_0 \f$ (default 1.0)
+     * @brief Reference density 1.0
      **/
     __device__ __host__ [[nodiscard]] inline consteval scalar_t rho0() noexcept
     {

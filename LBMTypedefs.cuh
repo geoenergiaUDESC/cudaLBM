@@ -14,9 +14,8 @@ namespace LBM
      * @brief Checks CUDA API call result and terminates on error
      * @param err CUDA error code to verify
      * @param loc Automatically captured call location (C++20)
-     *
-     * If error occurs, prints diagnostic message to stderr and exits program.
-     * @n Example: checkCudaErrors(cudaMalloc(&ptr, size));
+     * @note If error occurs, prints diagnostic message to stderr and exits program.
+     * @note Example: checkCudaErrors(cudaMalloc(&ptr, size));
      **/
     void checkCudaErrors(
         const cudaError_t err,
@@ -33,9 +32,8 @@ namespace LBM
      * @brief Checks CUDA API call result and terminates on error
      * @param err CUDA error code to verify
      * @param loc Automatically captured call location (C++20)
-     *
-     * If error occurs, prints diagnostic message to stderr and exits program.
-     * @n Example: checkCudaErrors(cudaMalloc(&ptr, size));
+     * @note If error occurs, prints diagnostic message to stderr and exits program.
+     * @note Example: checkCudaErrors(cudaMalloc(&ptr, size));
      **/
     inline void checkCudaErrorsInline(
         const cudaError_t err,
@@ -59,8 +57,8 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        __host__ __device__ constexpr operator value_type() const noexcept { return value; }
-        __host__ __device__ constexpr value_type operator()() const noexcept { return value; }
+        __device__ __host__ inline consteval operator value_type() const noexcept { return value; }
+        __device__ __host__ inline consteval value_type operator()() const noexcept { return value; }
     };
 
     /**
@@ -90,12 +88,6 @@ namespace LBM
     typedef std::vector<scalar_t> scalarArray_t;
 
     /**
-     * @brief Type used to contain the moments within a given stack frame
-     **/
-    using momentArray_t = scalar_t[10];
-    // using momentArray_t_v2 = scalar_t[16];
-
-    /**
      * @brief Label type used for scalar types
      * @note Types are either 32 bit or 64 bit unsigned integers
      * @note These types are supplied via command line defines during compilation
@@ -106,7 +98,56 @@ namespace LBM
     typedef std::size_t label_t;
 #endif
 
-    typedef uint8_t nodeType_t;
+    /**
+     * @brief Type used to contain a variable or variables over a block of shared memory
+     * @param T The type of variable
+     * @param N The number of variables
+     * @param blockSize The number of lattice points in the shared memory block
+     **/
+    template <typename T, const label_t N, const label_t blockSize>
+    struct sharedArray
+    {
+        T arr[blockSize * N];
+    };
+
+    /**
+     * @brief Type used to contain a variable or variables in a single thread
+     * @param T The type of variable
+     * @param N The number of variables
+     **/
+    template <typename T, const label_t N>
+    struct threadArray
+    {
+        T arr[N];
+    };
+
+    /**
+     * @brief Type used to hold 6 pointers to const data
+     **/
+    struct deviceConstPointers_t
+    {
+        const scalar_t *const ptrRestrict x0;
+        const scalar_t *const ptrRestrict x1;
+        const scalar_t *const ptrRestrict y0;
+        const scalar_t *const ptrRestrict y1;
+        const scalar_t *const ptrRestrict z0;
+        const scalar_t *const ptrRestrict z1;
+    };
+
+    /**
+     * @brief Type used to hold 6 pointers to mutable data
+     **/
+    struct devicePointers_t
+    {
+        scalar_t *const ptrRestrict x0;
+        scalar_t *const ptrRestrict x1;
+        scalar_t *const ptrRestrict y0;
+        scalar_t *const ptrRestrict y1;
+        scalar_t *const ptrRestrict z0;
+        scalar_t *const ptrRestrict z1;
+    };
+
+    // typedef uint8_t nodeType_t;
 
     /**
      * @brief Type used for arrays of labels
@@ -232,16 +273,25 @@ namespace LBM
     template <const ctorType::type T>
     using constructorType = const std::integral_constant<ctorType::type, T>;
 
-    __device__ __constant__ label_t d_nx;
-    __device__ __constant__ label_t d_ny;
-    __device__ __constant__ label_t d_nz;
-    __device__ __constant__ scalar_t d_Re;
-    __device__ __constant__ scalar_t d_tau;
-    __device__ __constant__ scalar_t d_u_inf;
-    __device__ __constant__ scalar_t d_omega;
-    __device__ __constant__ label_t d_NUM_BLOCK_X;
-    __device__ __constant__ label_t d_NUM_BLOCK_Y;
-    __device__ __constant__ label_t d_NUM_BLOCK_Z;
+    /**
+     * @brief Device constant variables
+     * @note These variables MUST be initialised on the GPU at program start with cudaMemcpyToSymbol
+     **/
+    namespace device
+    {
+        __device__ __constant__ label_t nx;
+        __device__ __constant__ label_t ny;
+        __device__ __constant__ label_t nz;
+        __device__ __constant__ scalar_t Re;
+        __device__ __constant__ scalar_t tau;
+        __device__ __constant__ scalar_t u_inf;
+        __device__ __constant__ scalar_t omega;
+        __device__ __constant__ scalar_t t_omegaVar;
+        __device__ __constant__ scalar_t omegaVar_d2;
+        __device__ __constant__ label_t NUM_BLOCK_X;
+        __device__ __constant__ label_t NUM_BLOCK_Y;
+        __device__ __constant__ label_t NUM_BLOCK_Z;
+    }
 }
 
 #endif

@@ -8,7 +8,7 @@ int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
-    const host::latticeMesh mesh;
+    const host::latticeMesh mesh(programCtrl);
 
     VelocitySet::D3Q19::print();
 
@@ -23,17 +23,11 @@ int main(const int argc, const char *const argv[])
     checkCudaErrors(cudaDeviceSynchronize());
 
     // Setup Streams
-    const std::array<cudaStream_t, 1> streamsLBM = createCudaStream();
+    const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Perform device memory allocation
-    device::array<scalar_t> deviceMoments(
-        hostMoments,
-        mesh);
+    device::array<scalar_t> deviceMoments(hostMoments, mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
-
-    // Copy symbols to device
-    mesh.copyDeviceSymbols();
-    programCtrl.copyDeviceSymbols(mesh.nx());
 
     // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferL1));

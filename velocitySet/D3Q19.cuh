@@ -223,11 +223,18 @@ namespace LBM
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            __host__ [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
             {
                 std::array<scalar_t, Q_> pop;
 
-                f_eq_loop<0>(pop, u, v, w);
+                host::constexpr_for<0, (Q_ - 1)>(
+                    [&](const auto q_)
+                    {
+                        pop[q_] = f_eq(
+                            w_q(lattice_constant<q_>()),
+                            static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
+                            static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
+                    });
 
                 return pop;
             }
@@ -269,10 +276,49 @@ namespace LBM
 
             /**
              * @brief Reconstructs the population at a given lattice point
+             * @return The reconstructed population
+             * @param moments The moments from which the population is to be reconstructed
+             **/
+            __device__ static inline threadArray<scalar_t, 19> reconstruct(const threadArray<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+            {
+                threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop;
+
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments.arr[4] + moments.arr[7] + moments.arr[9]);
+
+                const scalar_t multiplyTerm_0 = moments.arr[0] * w_0();
+                pop.arr[0] = multiplyTerm_0 * pics2;
+
+                const scalar_t multiplyTerm_1 = moments.arr[0] * w_1();
+                pop.arr[1] = multiplyTerm_1 * (pics2 + moments.arr[1] + moments.arr[4]);
+                pop.arr[2] = multiplyTerm_1 * (pics2 - moments.arr[1] + moments.arr[4]);
+                pop.arr[3] = multiplyTerm_1 * (pics2 + moments.arr[2] + moments.arr[7]);
+                pop.arr[4] = multiplyTerm_1 * (pics2 - moments.arr[2] + moments.arr[7]);
+                pop.arr[5] = multiplyTerm_1 * (pics2 + moments.arr[3] + moments.arr[9]);
+                pop.arr[6] = multiplyTerm_1 * (pics2 - moments.arr[3] + moments.arr[9]);
+
+                const scalar_t multiplyTerm_2 = moments.arr[0] * w_2();
+                pop.arr[7] = multiplyTerm_2 * (pics2 + moments.arr[1] + moments.arr[2] + moments.arr[4] + moments.arr[7] + moments.arr[5]);
+                pop.arr[8] = multiplyTerm_2 * (pics2 - moments.arr[1] - moments.arr[2] + moments.arr[4] + moments.arr[7] + moments.arr[5]);
+                pop.arr[9] = multiplyTerm_2 * (pics2 + moments.arr[1] + moments.arr[3] + moments.arr[4] + moments.arr[9] + moments.arr[6]);
+                pop.arr[10] = multiplyTerm_2 * (pics2 - moments.arr[1] - moments.arr[3] + moments.arr[4] + moments.arr[9] + moments.arr[6]);
+                pop.arr[11] = multiplyTerm_2 * (pics2 + moments.arr[2] + moments.arr[3] + moments.arr[7] + moments.arr[9] + moments.arr[8]);
+                pop.arr[12] = multiplyTerm_2 * (pics2 - moments.arr[2] - moments.arr[3] + moments.arr[7] + moments.arr[9] + moments.arr[8]);
+                pop.arr[13] = multiplyTerm_2 * (pics2 + moments.arr[1] - moments.arr[2] + moments.arr[4] + moments.arr[7] - moments.arr[5]);
+                pop.arr[14] = multiplyTerm_2 * (pics2 - moments.arr[1] + moments.arr[2] + moments.arr[4] + moments.arr[7] - moments.arr[5]);
+                pop.arr[15] = multiplyTerm_2 * (pics2 + moments.arr[1] - moments.arr[3] + moments.arr[4] + moments.arr[9] - moments.arr[6]);
+                pop.arr[16] = multiplyTerm_2 * (pics2 - moments.arr[1] + moments.arr[3] + moments.arr[4] + moments.arr[9] - moments.arr[6]);
+                pop.arr[17] = multiplyTerm_2 * (pics2 + moments.arr[2] - moments.arr[3] + moments.arr[7] + moments.arr[9] - moments.arr[8]);
+                pop.arr[18] = multiplyTerm_2 * (pics2 - moments.arr[2] + moments.arr[3] + moments.arr[7] + moments.arr[9] - moments.arr[8]);
+
+                return pop;
+            }
+
+            /**
+             * @brief Reconstructs the population at a given lattice point
              * @param moments The moments from which the population is to be reconstructed
              * @return The reconstructed population
              **/
-            __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
+            __host__ [[nodiscard]] static const std::array<scalar_t, 19> host_reconstruct(const std::array<scalar_t, 10> &moments) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -363,22 +409,35 @@ namespace LBM
              * @param w The z-component of velocity
              * @note This function effectively unrolls the loop at compile-time and checks for its bounds
              **/
-            template <const label_t q_>
-            static inline constexpr void f_eq_loop(std::array<scalar_t, 19> &pop, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
-            {
-                // Check at compile time that the loop is correctly bounded
-                static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
+            // template <const label_t q_>
+            // static inline constexpr void f_eq_loop(std::array<scalar_t, 19> &pop, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            // {
+            //     // Check at compile time that the loop is correctly bounded
+            //     static_assert(q_ + 1 < 19, "Compile error in f_eq: Loop is incorrectly bounded");
 
-                pop[q_] = f_eq(
-                    w_q(lattice_constant<q_>()),
-                    static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
-                    static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
+            //     pop[q_] = f_eq(
+            //         w_q(lattice_constant<q_>()),
+            //         static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
+            //         static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
 
-                if constexpr (q_ < Q_ - 2)
-                {
-                    f_eq_loop<q_ + 1>(pop, u, v, w);
-                }
-            }
+            //     if constexpr (q_ < Q_ - 2)
+            //     {
+            //         f_eq_loop<q_ + 1>(pop, u, v, w);
+            //     }
+            // }
+
+            // template <const label_t q_>
+            // static inline constexpr void f_eq_loop(std::array<scalar_t, 19> &pop, const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            // {
+            //     host::constexpr_for<0, (Q_ - 1)>(
+            //         [&](const auto q_)
+            //         {
+            //             pop[q_] = f_eq(
+            //                 w_q(lattice_constant<q_>()),
+            //                 static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
+            //                 static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
+            //         });
+            // }
 
             /**
              * @brief Implementation of the print loop

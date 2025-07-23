@@ -13,16 +13,16 @@ partition the mesh prior to distribution to the devices
 
 namespace LBM
 {
-    namespace host
-    {
-        template <const ctorType::type CType>
-        using labelArray = array<label_t, CType>;
-    }
+    // namespace host
+    // {
+    //     template <const ctorType::type CType>
+    //     using labelArray = array<label_t, CType>;
+    // }
 
-    namespace device
-    {
-        typedef array<label_t> labelArray;
-    }
+    // namespace device
+    // {
+    //     typedef array<label_t> labelArray;
+    // }
 }
 
 #endif

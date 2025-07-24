@@ -48,6 +48,9 @@ namespace LBM
             scalar_t (&ptrRestrict pop)[VSet::Q()],
             const scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
         {
+            // Check for the size of the velocity set
+            static_assert((VSet::Q() == 19) | (VSet::Q() == 27), "Incorrectly sized velocity set in sharedMemory::pull");
+
             const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
             const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
             const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
@@ -55,24 +58,59 @@ namespace LBM
             const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
             const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
 
-            pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
-            pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
-            pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
-            pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
-            pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
-            pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
-            pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
-            pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
-            pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
-            pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
-            pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
-            pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
-            pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
-            pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
-            pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
-            pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
-            pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
-            pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+            if constexpr (VSet::Q() == 19)
+            {
+                pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
+                pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
+                pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
+                pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
+                pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
+                pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
+                pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
+                pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
+                pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
+                pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
+                pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
+                pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
+                pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
+                pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
+                pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
+                pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
+                pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
+                pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+            }
+
+            if constexpr (VSet::Q() == 27)
+            {
+                pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
+                pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
+                pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
+                pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
+                pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
+                pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
+                pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
+                pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
+                pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
+                pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
+                pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
+                pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
+                pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
+                pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
+                pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
+                pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
+                pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
+                pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+
+                // Add the rest of the elements here
+                pop[19] = s_pop[idxPopBlock<18>(xp1, yp1, zp1)];
+                pop[20] = s_pop[idxPopBlock<19>(xm1, ym1, zm1)];
+                pop[21] = s_pop[idxPopBlock<20>(xp1, yp1, zm1)];
+                pop[22] = s_pop[idxPopBlock<21>(xm1, ym1, zp1)];
+                pop[23] = s_pop[idxPopBlock<22>(xp1, ym1, zp1)];
+                pop[24] = s_pop[idxPopBlock<23>(xm1, yp1, zm1)];
+                pop[25] = s_pop[idxPopBlock<24>(xm1, yp1, zp1)];
+                pop[26] = s_pop[idxPopBlock<25>(xp1, ym1, zm1)];
+            }
         }
 
     private:

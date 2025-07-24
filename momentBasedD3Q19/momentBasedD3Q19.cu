@@ -10,7 +10,7 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    VelocitySet::D3Q19::print();
+    VSet::print();
 
     const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(
         programCtrl,

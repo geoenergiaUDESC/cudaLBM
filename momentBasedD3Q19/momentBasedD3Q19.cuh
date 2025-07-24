@@ -16,6 +16,9 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 
 namespace LBM
 {
+    using VSet = VelocitySet::D3Q19;
+    using Collision = secondOrder;
+
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
      * @param fMom Pointer to the interleaved moment variables on the GPU
@@ -47,42 +50,42 @@ namespace LBM
             fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)]};
 
         // Reconstruct the population from the moments
-        threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(moments);
+        threadArray<scalar_t, VSet::Q()> pop = VSet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
             // Declare shared memory
-            __shared__ sharedArray<scalar_t, VelocitySet::D3Q19::Q() - 1, block::size()> s_pop;
+            __shared__ sharedArray<scalar_t, VSet::Q() - 1, block::size()> s_pop;
 
             // Save populations in shared memory
-            sharedMemory::save<VelocitySet::D3Q19>(pop.arr, s_pop.arr);
+            sharedMemory::save<VSet>(pop.arr, s_pop.arr);
 
             // Pull from shared memory
-            sharedMemory::pull<VelocitySet::D3Q19>(pop.arr, s_pop.arr);
+            sharedMemory::pull<VSet>(pop.arr, s_pop.arr);
         }
 
         // Load pop from global memory in cover nodes
-        blockHalo.popLoad<VelocitySet::D3Q19>(pop.arr);
+        blockHalo.popLoad<VSet>(pop.arr);
 
         // Calculate the moments either at the boundary or interior
         const normalVector b_n;
         if (b_n.isBoundary())
         {
-            boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop.arr, moments.arr, b_n);
+            boundaryConditions::calculateMoments<VSet>(pop.arr, moments.arr, b_n);
         }
         else
         {
-            VelocitySet::D3Q19::calculateMoments(pop.arr, moments.arr);
+            VSet::calculateMoments(pop.arr, moments.arr);
         }
 
         // Scale the moments correctly
         VelocitySet::velocitySet::scale(moments.arr);
 
         // Collide
-        secondOrder::collide(moments.arr);
+        Collision::collide(moments.arr);
 
         // Calculate post collision populations
-        VelocitySet::D3Q19::reconstruct(pop.arr, moments.arr);
+        VSet::reconstruct(pop.arr, moments.arr);
 
         // Write to global memory
         fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)] = moments.arr[0] - rho0();
@@ -97,7 +100,7 @@ namespace LBM
         fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)] = moments.arr[9];
 
         // Save the populations to the block halo
-        blockHalo.popSave<VelocitySet::D3Q19>(pop.arr);
+        blockHalo.popSave<VSet>(pop.arr);
     }
 }
 

@@ -69,11 +69,24 @@ namespace LBM
                 moms[9] = scale_ii() * (moms[9]);
             }
 
+            /**
+             * @brief Returns the equilibrium distribution for a given lattice index
+             * @return f_eq[q]
+             * @param rhow w_q[q] * rho
+             * @param uc3 3 * ((u * cx[q]) + (v * cy[q]) + (w * [cz]))
+             * @param p1_muu 1 - 1.5 * ((u ^ 2) + (v ^ 2) + (w ^ 2))
+             **/
+            [[nodiscard]] static inline constexpr scalar_t f_eq(const scalar_t rhow, const scalar_t uc3, const scalar_t p1_muu) noexcept
+            {
+                return (rhow * (p1_muu + uc3 * (static_cast<scalar_t>(1.0) + uc3 * static_cast<scalar_t>(0.5))));
+            }
+
         private:
         };
     }
 }
 
 #include "D3Q19.cuh"
+#include "D3Q27.cuh"
 
 #endif

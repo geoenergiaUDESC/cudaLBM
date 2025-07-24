@@ -1,10 +1,10 @@
 /**
-Filename: D3Q19.cuh
-Contents: Definition of the D3Q19 velocity set
+Filename: D3Q27.cuh
+Contents: Definition of the D3Q27 velocity set
 **/
 
-#ifndef __MBLBM_D3Q19_CUH
-#define __MBLBM_D3Q19_CUH
+#ifndef __MBLBM_D3Q27_CUH
+#define __MBLBM_D3Q27_CUH
 
 #include "velocitySet.cuh"
 
@@ -12,19 +12,19 @@ namespace LBM
 {
     namespace VelocitySet
     {
-        class D3Q19 : private velocitySet
+        class D3Q27 : private velocitySet
         {
         public:
             /**
-             * @brief Constructor for the D3Q19 velocity set
-             * @return A D3Q19 velocity set
+             * @brief Constructor for the D3Q27 velocity set
+             * @return A D3Q27 velocity set
              * @note This constructor is consteval
              **/
-            [[nodiscard]] inline consteval D3Q19() {};
+            [[nodiscard]] inline consteval D3Q27() {};
 
             /**
              * @brief Number of velocity components
-             * @return 19
+             * @return 27
              **/
             [[nodiscard]] static inline consteval label_t Q() noexcept
             {
@@ -33,7 +33,7 @@ namespace LBM
 
             /**
              * @brief Number of velocity components on a lattice face
-             * @return 5
+             * @return 9
              **/
             [[nodiscard]] static inline consteval label_t QF() noexcept
             {
@@ -55,7 +55,8 @@ namespace LBM
                 constexpr const scalar_t W[Q_] =
                     {w_0(),
                      w_1(), w_1(), w_1(), w_1(), w_1(), w_1(),
-                     w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2()};
+                     w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(),
+                     w_3(), w_3(), w_3(), w_3(), w_3(), w_3(), w_3(), w_3()};
 
                 // Return the component
                 return W[q()];
@@ -63,19 +64,23 @@ namespace LBM
 
             /**
              * @brief Returns the unique lattice weights
-             * @return The unique lattice weights for the D3Q19 velocity set
+             * @return The unique lattice weights for the D3Q27 velocity set
              **/
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_0() noexcept
             {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(3.0));
+                return static_cast<scalar_t>(static_cast<double>(8) / static_cast<double>(27));
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_1() noexcept
             {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(18.0));
+                return static_cast<scalar_t>(static_cast<double>(2) / static_cast<double>(27));
             }
             __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_2() noexcept
             {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(36.0));
+                return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(54));
+            }
+            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_3() noexcept
+            {
+                return static_cast<scalar_t>(static_cast<double>(1) / static_cast<double>(216));
             }
 
             /**
@@ -184,7 +189,7 @@ namespace LBM
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            __host__ [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            __host__ [[nodiscard]] static inline constexpr const std::array<scalar_t, 27> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
             {
                 std::array<scalar_t, Q_> pop;
 
@@ -205,7 +210,7 @@ namespace LBM
              * @param pop The reconstructed population
              * @param moments The moments from which the population is to be reconstructed
              **/
-            __device__ static inline void reconstruct(scalar_t (&ptrRestrict pop)[19], const scalar_t (&ptrRestrict moments)[10]) noexcept
+            __device__ static inline void reconstruct(scalar_t (&ptrRestrict pop)[27], const scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
@@ -233,6 +238,16 @@ namespace LBM
                 pop[16] = multiplyTerm_2 * (pics2 - moments[1] + moments[3] + moments[4] + moments[9] - moments[6]);
                 pop[17] = multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
                 pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
+
+                const scalar_t multiplyTerm_3 = moments[0] * w_3();
+                pop[19] = multiplyTerm_3 * (pics2 + moments[1] + moments[2] + moments[3] + moments[4] + moments[5] + moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[20] = multiplyTerm_3 * (pics2 - moments[1] - moments[2] - moments[3] + moments[4] + moments[5] + moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[21] = multiplyTerm_3 * (pics2 + moments[1] + moments[2] - moments[3] + moments[4] + moments[5] - moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[22] = multiplyTerm_3 * (pics2 - moments[1] - moments[2] + moments[3] + moments[4] + moments[5] - moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[23] = multiplyTerm_3 * (pics2 + moments[1] - moments[2] + moments[3] + moments[4] - moments[5] + moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[24] = multiplyTerm_3 * (pics2 - moments[1] + moments[2] - moments[3] + moments[4] - moments[5] + moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[25] = multiplyTerm_3 * (pics2 - moments[1] + moments[2] + moments[3] + moments[4] - moments[5] - moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[26] = multiplyTerm_3 * (pics2 + moments[1] - moments[2] - moments[3] + moments[4] - moments[5] - moments[6] + moments[7] + moments[8] + moments[9]);
             }
 
             /**
@@ -240,9 +255,9 @@ namespace LBM
              * @return The reconstructed population
              * @param moments The moments from which the population is to be reconstructed
              **/
-            __device__ static inline threadArray<scalar_t, 19> reconstruct(const threadArray<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+            __device__ static inline threadArray<scalar_t, 27> reconstruct(const threadArray<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
             {
-                threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop;
+                threadArray<scalar_t, VelocitySet::D3Q27::Q()> pop;
 
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments.arr[4] + moments.arr[7] + moments.arr[9]);
 
@@ -271,6 +286,16 @@ namespace LBM
                 pop.arr[17] = multiplyTerm_2 * (pics2 + moments.arr[2] - moments.arr[3] + moments.arr[7] + moments.arr[9] - moments.arr[8]);
                 pop.arr[18] = multiplyTerm_2 * (pics2 - moments.arr[2] + moments.arr[3] + moments.arr[7] + moments.arr[9] - moments.arr[8]);
 
+                const scalar_t multiplyTerm_3 = moments.arr[0] * w_3();
+                pop.arr[19] = multiplyTerm_3 * (pics2 + moments.arr[1] + moments.arr[2] + moments.arr[3] + moments.arr[4] + moments.arr[5] + moments.arr[6] + moments.arr[7] + moments.arr[8] + moments.arr[9]);
+                pop.arr[20] = multiplyTerm_3 * (pics2 - moments.arr[1] - moments.arr[2] - moments.arr[3] + moments.arr[4] + moments.arr[5] + moments.arr[6] + moments.arr[7] + moments.arr[8] + moments.arr[9]);
+                pop.arr[21] = multiplyTerm_3 * (pics2 + moments.arr[1] + moments.arr[2] - moments.arr[3] + moments.arr[4] + moments.arr[5] - moments.arr[6] + moments.arr[7] - moments.arr[8] + moments.arr[9]);
+                pop.arr[22] = multiplyTerm_3 * (pics2 - moments.arr[1] - moments.arr[2] + moments.arr[3] + moments.arr[4] + moments.arr[5] - moments.arr[6] + moments.arr[7] - moments.arr[8] + moments.arr[9]);
+                pop.arr[23] = multiplyTerm_3 * (pics2 + moments.arr[1] - moments.arr[2] + moments.arr[3] + moments.arr[4] - moments.arr[5] + moments.arr[6] + moments.arr[7] - moments.arr[8] + moments.arr[9]);
+                pop.arr[24] = multiplyTerm_3 * (pics2 - moments.arr[1] + moments.arr[2] - moments.arr[3] + moments.arr[4] - moments.arr[5] + moments.arr[6] + moments.arr[7] - moments.arr[8] + moments.arr[9]);
+                pop.arr[25] = multiplyTerm_3 * (pics2 - moments.arr[1] + moments.arr[2] + moments.arr[3] + moments.arr[4] - moments.arr[5] - moments.arr[6] + moments.arr[7] + moments.arr[8] + moments.arr[9]);
+                pop.arr[26] = multiplyTerm_3 * (pics2 + moments.arr[1] - moments.arr[2] - moments.arr[3] + moments.arr[4] - moments.arr[5] - moments.arr[6] + moments.arr[7] + moments.arr[8] + moments.arr[9]);
+
                 return pop;
             }
 
@@ -279,13 +304,13 @@ namespace LBM
              * @param moments The moments from which the population is to be reconstructed
              * @return The reconstructed population
              **/
-            __host__ [[nodiscard]] static const std::array<scalar_t, 19> host_reconstruct(const std::array<scalar_t, 10> &moments) noexcept
+            __host__ [[nodiscard]] static const std::array<scalar_t, 27> host_reconstruct(const std::array<scalar_t, 10> &moments) noexcept
             {
                 const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
 
                 const scalar_t multiplyTerm_0 = moments[0] * w_0();
 
-                std::array<scalar_t, 19> pop;
+                std::array<scalar_t, 27> pop;
 
                 pop[0] = multiplyTerm_0 * pics2;
 
@@ -311,6 +336,16 @@ namespace LBM
                 pop[17] = multiplyTerm_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
                 pop[18] = multiplyTerm_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
 
+                const scalar_t multiplyTerm_3 = moments[0] * w_3();
+                pop[19] = multiplyTerm_3 * (pics2 + moments[1] + moments[2] + moments[3] + moments[4] + moments[5] + moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[20] = multiplyTerm_3 * (pics2 - moments[1] - moments[2] - moments[3] + moments[4] + moments[5] + moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[21] = multiplyTerm_3 * (pics2 + moments[1] + moments[2] - moments[3] + moments[4] + moments[5] - moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[22] = multiplyTerm_3 * (pics2 - moments[1] - moments[2] + moments[3] + moments[4] + moments[5] - moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[23] = multiplyTerm_3 * (pics2 + moments[1] - moments[2] + moments[3] + moments[4] - moments[5] + moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[24] = multiplyTerm_3 * (pics2 - moments[1] + moments[2] - moments[3] + moments[4] - moments[5] + moments[6] + moments[7] - moments[8] + moments[9]);
+                pop[25] = multiplyTerm_3 * (pics2 - moments[1] + moments[2] + moments[3] + moments[4] - moments[5] - moments[6] + moments[7] + moments[8] + moments[9]);
+                pop[26] = multiplyTerm_3 * (pics2 + moments[1] - moments[2] - moments[3] + moments[4] - moments[5] - moments[6] + moments[7] + moments[8] + moments[9]);
+
                 return pop;
             }
 
@@ -319,24 +354,24 @@ namespace LBM
              * @param pop The lattice population density
              * @param moments The lattice moments
              **/
-            __device__ inline static void calculateMoments(const scalar_t (&ptrRestrict pop)[19], scalar_t (&ptrRestrict moments)[10]) noexcept
+            __device__ inline static void calculateMoments(const scalar_t (&ptrRestrict pop)[27], scalar_t (&ptrRestrict moments)[10]) noexcept
             {
                 // Equation 3
-                moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+                moments[0] = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26];
                 const scalar_t invRho = static_cast<scalar_t>(1) / moments[0];
 
                 // Equation 4 + force correction
-                moments[1] = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16])) * invRho;
-                moments[2] = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18])) * invRho;
-                moments[3] = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
+                moments[1] = ((pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16] + pop[19] - pop[20] + pop[21] - pop[22] + pop[23] - pop[24] - pop[25] + pop[26])) * invRho;
+                moments[2] = ((pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18] + pop[19] - pop[20] + pop[21] - pop[22] - pop[23] + pop[24] + pop[25] - pop[26])) * invRho;
+                moments[3] = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17] + pop[19] - pop[20] - pop[21] + pop[22] + pop[23] - pop[24] + pop[25] - pop[26])) * invRho;
 
                 // Equation 5
-                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
-                moments[5] = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
-                moments[6] = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
-                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
-                moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
-                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
+                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) * invRho - cs2();
+                moments[5] = (pop[7] - pop[13] + pop[8] - pop[14] + pop[19] + pop[20] + pop[21] + pop[22] - pop[23] - pop[24] - pop[25] - pop[26]) * invRho;
+                moments[6] = (pop[9] - pop[15] + pop[10] - pop[16] + pop[19] + pop[20] - pop[21] - pop[22] + pop[23] + pop[24] - pop[25] - pop[26]) * invRho;
+                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) * invRho - cs2();
+                moments[8] = (pop[11] - pop[17] + pop[12] - pop[18] + pop[19] + pop[20] - pop[21] - pop[22] - pop[23] - pop[24] + pop[25] + pop[26]) * invRho;
+                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) * invRho - cs2();
             }
 
             /**
@@ -346,7 +381,7 @@ namespace LBM
              * @param b_n The boundary normal vector at the current lattice node
              **/
             template <class B_N>
-            __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const scalar_t (&ptrRestrict pop)[19], const B_N &b_n) noexcept
+            __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const scalar_t (&ptrRestrict pop)[27], const B_N &b_n) noexcept
             {
                 return (
                     (incomingSwitch<scalar_t>(lattice_constant<0>(), b_n) * pop[0]) +
@@ -367,7 +402,15 @@ namespace LBM
                     (incomingSwitch<scalar_t>(lattice_constant<15>(), b_n) * pop[15]) +
                     (incomingSwitch<scalar_t>(lattice_constant<16>(), b_n) * pop[16]) +
                     (incomingSwitch<scalar_t>(lattice_constant<17>(), b_n) * pop[17]) +
-                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[18]));
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[18]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[19]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[20]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[21]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[22]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[23]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[24]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[25]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[26]));
             }
 
             /**
@@ -375,7 +418,7 @@ namespace LBM
              **/
             static void print() noexcept
             {
-                std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
+                std::cout << "D3Q27 {w, cx, cy, cz}:" << std::endl;
                 std::cout << "{" << std::endl;
                 printAll();
                 std::cout << "};" << std::endl;
@@ -386,19 +429,19 @@ namespace LBM
             /**
              * @brief Number of velocity components in the lattice
              **/
-            static constexpr const label_t Q_ = 19;
+            static constexpr const label_t Q_ = 27;
 
             /**
              * @brief Number of velocity components on each lattice face
              **/
-            static constexpr const label_t QF_ = 5;
+            static constexpr const label_t QF_ = 9;
 
             /**
              * @brief Velocity sey coefficients
              **/
-            static constexpr const int cx_[19] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
-            static constexpr const int cy_[19] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
-            static constexpr const int cz_[19] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+            static constexpr const int cx_[27] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1};
+            static constexpr const int cy_[27] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1};
+            static constexpr const int cz_[27] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
 
             /**
              * @brief Implementation of the print loop

@@ -130,6 +130,12 @@ namespace LBM
                 }
             }
 
+            // Check that the indices are empty - if they are, it means no valid files were found
+            if (indices.empty())
+            {
+                throw std::runtime_error("No matching files found with prefix " + fileName + " and .LBMBin extension");
+            }
+
             std::sort(indices.begin(), indices.end());
 
             return indices;

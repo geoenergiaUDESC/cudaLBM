@@ -21,7 +21,8 @@ namespace LBM
          **/
         [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
             : nArgs_(nArgsCheck(argc)),
-              deviceList_(initialiseDeviceList(argc, argv)) {};
+              commandLine_(parseCommandLine(argc, argv)),
+              deviceList_(initialiseDeviceList()) {};
 
         /**
          * @brief Destructor for the inputControl class
@@ -29,36 +30,48 @@ namespace LBM
         ~inputControl() noexcept {};
 
         /**
-         * @brief Return a vector of string views of the arguments passed to the solver at the command line
-         * @return A vector of string views of the arguments passed to the solver at the command line
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
+         * @brief Returns the device list as a vector of ints
+         * @return The device list
          **/
-        [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
-        {
-            if (argc > 0)
-            {
-                std::vector<std::string> arr;
-                label_t arrLength = 0;
-
-                for (label_t i = 0; i < static_cast<label_t>(argc); i++)
-                {
-                    arr.push_back(argv[i]);
-                    arrLength = arrLength + 1;
-                }
-
-                arr.resize(arrLength);
-                return arr;
-            }
-            else
-            {
-                return std::vector<std::string>{""};
-            }
-        }
-
         [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return deviceList_;
+        }
+
+        /**
+         * @brief Verifies if an argument is present at the command line
+         * @return True if the argument is present at the command line, false otherwise
+         * @param name The argument to search for
+         **/
+        [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
+        {
+            for (std::size_t i = 0; i < commandLine_.size(); i++)
+            {
+                if (commandLine_[i] == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * @brief Returns the command line input as a vector of strings
+         * @return The command line input
+         **/
+        __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
+        {
+            return commandLine_;
+        }
+
+        /**
+         * @brief Returns the name of the currently running executable as a string
+         * @return The name of the currently running executable
+         **/
+        __host__ [[nodiscard]] inline constexpr const std::string &executableName() const noexcept
+        {
+            return commandLine_[0];
         }
 
     private:
@@ -88,6 +101,39 @@ namespace LBM
         }
 
         /**
+         * @brief The parsed command line
+         **/
+        const std::vector<std::string> commandLine_;
+
+        /**
+         * @brief Return a vector of string views of the arguments passed to the solver at the command line
+         * @return A vector of string views of the arguments passed to the solver at the command line
+         * @param argc First argument passed to main
+         * @param argv Second argument passed to main
+         **/
+        [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
+        {
+            if (argc > 0)
+            {
+                std::vector<std::string> arr;
+                label_t arrLength = 0;
+
+                for (label_t i = 0; i < static_cast<label_t>(argc); i++)
+                {
+                    arr.push_back(argv[i]);
+                    arrLength = arrLength + 1;
+                }
+
+                arr.resize(arrLength);
+                return arr;
+            }
+            else
+            {
+                return std::vector<std::string>{""};
+            }
+        }
+
+        /**
          * @brief A list (vector of int) of GPUs employed by the simulation
          * @note Must be int since cudaSetDevice works on int
          **/
@@ -96,18 +142,31 @@ namespace LBM
         /**
          * @brief Parses the command line for the -GPU argument, checking for valid inputs and converting to deviceList
          * @return An std::vector of deviceIndex_t representing the indices of the devices
-         * @note Checks that the number of GPUs supplied on the command line is valid
+         * @note Checks that the number of GPUs supplied on the command line is valid, and if the argument is "fieldConvert", the -GPU flag is not necessary
          **/
-        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList(const int argc, const char *const argv[]) const
+        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList() const
         {
-            const std::vector<deviceIndex_t> deviceList = string::parseValue<deviceIndex_t>(parseCommandLine(argc, argv), "-GPU");
-
-            if (deviceList.size() > static_cast<label_t>(nAvailableDevices()) | nAvailableDevices() < 1)
+            if (isArgPresent("-GPU"))
             {
-                throw std::runtime_error("Number of GPUs requested is greater than the number available");
-            }
+                const std::vector<deviceIndex_t> parsedList = string::parseValue<deviceIndex_t>(commandLine_, "-GPU");
 
-            return deviceList;
+                if (parsedList.size() > static_cast<label_t>(nAvailableDevices()) || nAvailableDevices() < 1)
+                {
+                    throw std::runtime_error("Number of GPUs requested is greater than the number available");
+                }
+                return parsedList;
+            }
+            else
+            {
+                if (executableName() == "fieldConvert")
+                {
+                    return {0};
+                }
+                else
+                {
+                    throw std::runtime_error("Error: The -GPU argument is mandatory for the " + executableName() + " executable.");
+                }
+            }
         }
 
         /**

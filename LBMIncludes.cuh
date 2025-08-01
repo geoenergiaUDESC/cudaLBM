@@ -14,6 +14,7 @@ Contents: A list of header files necessary for compilation
 #include <bit>
 #include <cctype>
 #include <charconv>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -33,7 +34,9 @@ Contents: A list of header files necessary for compilation
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <typeinfo>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 #endif

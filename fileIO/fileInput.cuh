@@ -194,6 +194,12 @@ namespace LBM
             static_assert(std::is_floating_point_v<T>, "T must be floating point");
             static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
 
+            // Check that the file exists - if it doesn't, throw an exception
+            if (!std::filesystem::exists(fileName))
+            {
+                throw std::runtime_error("File does not exist: " + fileName);
+            }
+
             // Parse header metadata
             const fieldFileHeader header = parseFieldFileHeader(fileName);
 

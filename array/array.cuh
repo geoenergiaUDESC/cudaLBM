@@ -45,6 +45,18 @@ namespace LBM
                   varNames_(varNames) {};
 
             /**
+             * @brief Constructs the device array from an std::vector of type T at the latest time
+             * @param programCtrl Immutable reference to the program control
+             * @param varNames The names of the variables
+             * @return An array object constructed from f
+             **/
+            [[nodiscard]] array(
+                const programControl &programCtrl,
+                const std::vector<std::string> &varNames)
+                : arr_(initialiseVector(programCtrl)),
+                  varNames_(varNames) {};
+
+            /**
              * @brief Destructor for the host array class
              **/
             ~array() {};
@@ -91,8 +103,15 @@ namespace LBM
                 if constexpr (cType == ctorType::MUST_READ)
                 {
                     // Get the latest time step
-                    std::cout << "Found moments file. Reading" << std::endl;
-                    return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
+                    if (!fileIO::hasIndexedFiles(programCtrl.caseName()))
+                    {
+                        throw std::runtime_error("Did not find indexed case files");
+                    }
+
+                    const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
+                    std::cout << "Reading from file " << fileName << std::endl;
+                    std::cout << std::endl;
+                    return fileIO::readFieldFile<T>(fileName);
                 }
 
                 if constexpr (cType == ctorType::READ_IF_PRESENT)
@@ -100,14 +119,16 @@ namespace LBM
                     // Check if the files exist
                     if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                     {
-                        // Construct from file
-                        std::cout << "Found moments file. Reading" << std::endl;
-                        return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin");
+                        const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
+                        std::cout << "Reading from file " << fileName << std::endl;
+                        std::cout << std::endl;
+                        return fileIO::readFieldFile<T>(fileName);
                     }
                     else
                     {
                         // Construct default
-                        std::cout << "Did not find moments file. Constructing from default" << std::endl;
+                        std::cout << "Constructing default" << std::endl;
+                        std::cout << std::endl;
                         return host::moments(mesh, programCtrl.u_inf());
                     }
                 }
@@ -115,19 +136,15 @@ namespace LBM
                 // Construct default
                 if constexpr (cType == ctorType::NO_READ)
                 {
-                    std::cout << "Constructor type is no read" << std::endl;
+                    std::cout << "Constructing default" << std::endl;
+                    std::cout << std::endl;
                     return host::moments(mesh, programCtrl.u_inf());
                 }
-
-                // Fallback
-                std::cout << "Doing fallback initialisation: constructing as if from default" << std::endl;
-                return host::moments(mesh, programCtrl.u_inf());
             }
 
             /**
              * @brief Initialises the std::vector
              * @param programCtrl The program control dictionary
-             * @param mesh The mesh
              * @param timeIndex The index of the file
              **/
             [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const label_t timeIndex) const
@@ -135,7 +152,26 @@ namespace LBM
                 static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
 
                 // Get the correct time index
-                return fileIO::readFieldFile<T>(programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin");
+                if (fileIO::hasIndexedFiles(programCtrl.caseName()))
+                {
+                    const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin";
+                    std::cout << "Reading from file " << fileName << std::endl;
+                    std::cout << std::endl;
+                    return fileIO::readFieldFile<T>(fileName);
+                }
+                else
+                {
+                    throw std::runtime_error("Did not find indexed case files");
+                }
+            }
+
+            /**
+             * @brief Initialises the std::vector from the latest time step
+             * @param programCtrl The program control dictionary
+             **/
+            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
+            {
+                return initialiseVector(programCtrl, fileIO::getStartIndex(programCtrl, true));
             }
         };
     }

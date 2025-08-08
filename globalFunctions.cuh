@@ -86,6 +86,17 @@ namespace LBM
     };
 
     /**
+     * @brief Point indices descriptor
+     * @details Stores point indices in 3D space
+     **/
+    struct pointLabel_t
+    {
+        const label_t x; // < Lattice point in x-direction
+        const label_t y; // < Lattice point in y-direction
+        const label_t z; // < Lattice point in z-direction
+    };
+
+    /**
      * @brief 1D range descriptor [begin, end)
      **/
     struct blockPartitionRange_t
@@ -188,7 +199,14 @@ namespace LBM
             const label_t x, const label_t y, const label_t z,
             const label_t nx, const label_t ny) noexcept
         {
-            return x + nx * (y + ny * (z));
+            return x + (nx * (y + (ny * z)));
+        }
+
+        __host__ [[nodiscard]] inline label_t idxScalarGlobal(
+            const pointLabel_t point,
+            const label_t nx, const label_t ny) noexcept
+        {
+            return point.x + (nx * (point.y + (ny * point.z)));
         }
 
         /**

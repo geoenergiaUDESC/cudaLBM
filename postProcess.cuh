@@ -8,6 +8,90 @@ namespace LBM
 {
     namespace postProcess
     {
+        template <typename T>
+        __host__ [[nodiscard]] const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
+        {
+            const label_t nx = mesh.nx();
+            const label_t ny = mesh.ny();
+            const label_t nz = mesh.nz();
+            const pointVector &L = mesh.L();
+
+            const label_t numNodes = nx * ny * nz;
+            std::vector<T> coords(numNodes * 3);
+
+            for (label_t k = 0; k < nz; ++k)
+            {
+                for (label_t j = 0; j < ny; ++j)
+                {
+                    for (label_t i = 0; i < nx; ++i)
+                    {
+                        const label_t idx = k * ny * nx + j * nx + i;
+                        // Do the conversion in double, then cast to the desired type
+                        coords[3 * idx + 0] = static_cast<T>((static_cast<double>(L.x) * static_cast<double>(i)) / static_cast<double>(nx - 1));
+                        coords[3 * idx + 1] = static_cast<T>((static_cast<double>(L.y) * static_cast<double>(j)) / static_cast<double>(ny - 1));
+                        coords[3 * idx + 2] = static_cast<T>((static_cast<double>(L.z) * static_cast<double>(k)) / static_cast<double>(nz - 1));
+                    }
+                }
+            }
+
+            return coords;
+        }
+
+        template <const bool one_based>
+        __host__ [[nodiscard]] const std::vector<label_t> meshConnectivity(const host::latticeMesh &mesh)
+        {
+            const label_t nx = mesh.nx();
+            const label_t ny = mesh.ny();
+            const label_t nz = mesh.nz();
+            const label_t numElements = (nx - 1) * (ny - 1) * (nz - 1);
+
+            std::vector<label_t> connectivity(numElements * 8);
+            label_t cell_idx = 0;
+            constexpr const label_t offset = one_based ? 1 : 0;
+
+            for (label_t k = 0; k < nz - 1; ++k)
+            {
+                for (label_t j = 0; j < ny - 1; ++j)
+                {
+                    for (label_t i = 0; i < nx - 1; ++i)
+                    {
+                        const label_t base = k * nx * ny + j * nx + i;
+                        const label_t stride_y = nx;
+                        const label_t stride_z = nx * ny;
+
+                        connectivity[cell_idx * 8 + 0] = base + offset;
+                        connectivity[cell_idx * 8 + 1] = base + 1 + offset;
+                        connectivity[cell_idx * 8 + 2] = base + stride_y + 1 + offset;
+                        connectivity[cell_idx * 8 + 3] = base + stride_y + offset;
+                        connectivity[cell_idx * 8 + 4] = base + stride_z + offset;
+                        connectivity[cell_idx * 8 + 5] = base + stride_z + 1 + offset;
+                        connectivity[cell_idx * 8 + 6] = base + stride_z + stride_y + 1 + offset;
+                        connectivity[cell_idx * 8 + 7] = base + stride_z + stride_y + offset;
+                        ++cell_idx;
+                    }
+                }
+            }
+
+            return connectivity;
+        }
+
+        __host__ [[nodiscard]] const std::vector<label_t> meshOffsets(const host::latticeMesh &mesh)
+        {
+            const label_t nx = mesh.nx();
+            const label_t ny = mesh.ny();
+            const label_t nz = mesh.nz();
+            const label_t numElements = (nx - 1) * (ny - 1) * (nz - 1);
+
+            std::vector<label_t> offsets(numElements);
+
+            for (label_t i = 0; i < numElements; ++i)
+            {
+                offsets[i] = (i + 1) * 8;
+            }
+
+            return offsets;
+        }
+
         /**
          * @brief Writes a solution variable to a file
          * @param solutionVars An std::vector of std::vectors containing the solution variable to be written
@@ -76,41 +160,25 @@ namespace LBM
                     << ", ELEMENTS=" << numElements
                     << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK\n";
 
+            const std::vector<double> coords = meshCoordinates<double>(mesh);
+
             // Write node coordinates (X, Y, Z blocks)
-            // X coordinates
-            for (label_t k = 0; k < mesh.nz(); k++)
+            // Write X
+            for (label_t n = 0; n < numNodes; ++n)
             {
-                for (label_t j = 0; j < mesh.ny(); j++)
-                {
-                    for (label_t i = 0; i < mesh.nx(); i++)
-                    {
-                        outFile << static_cast<double>(i) / static_cast<double>(mesh.nx() - 1) << "\n";
-                    }
-                }
+                outFile << coords[3 * n + 0] << "\n";
             }
 
-            // Y coordinates
-            for (label_t k = 0; k < mesh.nz(); k++)
+            // Write Y
+            for (label_t n = 0; n < numNodes; ++n)
             {
-                for (label_t j = 0; j < mesh.ny(); j++)
-                {
-                    for (label_t i = 0; i < mesh.nx(); i++)
-                    {
-                        outFile << static_cast<double>(j) / static_cast<double>(mesh.ny() - 1) << "\n";
-                    }
-                }
+                outFile << coords[3 * n + 1] << "\n";
             }
 
-            // Z coordinates
-            for (label_t k = 0; k < mesh.nz(); k++)
+            // Write Z
+            for (label_t n = 0; n < numNodes; ++n)
             {
-                for (label_t j = 0; j < mesh.ny(); j++)
-                {
-                    for (label_t i = 0; i < mesh.nx(); i++)
-                    {
-                        outFile << static_cast<double>(k) / static_cast<double>(mesh.nz() - 1) << "\n";
-                    }
-                }
+                outFile << coords[3 * n + 2] << "\n";
             }
 
             // Write solution variables (each as a separate block)
@@ -123,23 +191,12 @@ namespace LBM
             }
 
             // Write connectivity (1-based indexing)
-            for (label_t k = 0; k < mesh.nz() - 1; k++)
+            const std::vector<label_t> connectivity = meshConnectivity<true>(mesh);
+            for (label_t e = 0; e < numElements; ++e)
             {
-                for (label_t j = 0; j < mesh.ny() - 1; j++)
+                for (label_t n = 0; n < 8; ++n)
                 {
-                    for (label_t i = 0; i < mesh.nx() - 1; i++)
-                    {
-                        const label_t n0 = k * mesh.nx() * mesh.ny() + j * mesh.nx() + i + 1;
-                        const label_t n1 = k * mesh.nx() * mesh.ny() + j * mesh.nx() + (i + 1) + 1;
-                        const label_t n2 = k * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + (i + 1) + 1;
-                        const label_t n3 = k * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + i + 1;
-                        const label_t n4 = (k + 1) * mesh.nx() * mesh.ny() + j * mesh.nx() + i + 1;
-                        const label_t n5 = (k + 1) * mesh.nx() * mesh.ny() + j * mesh.nx() + (i + 1) + 1;
-                        const label_t n6 = (k + 1) * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + (i + 1) + 1;
-                        const label_t n7 = (k + 1) * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + i + 1;
-
-                        outFile << n0 << " " << n1 << " " << n2 << " " << n3 << " " << n4 << " " << n5 << " " << n6 << " " << n7 << "\n";
-                    }
+                    outFile << connectivity[e * 8 + n] << (n < 7 ? " " : "\n");
                 }
             }
 
@@ -154,7 +211,7 @@ namespace LBM
          * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
          **/
         template <typename T>
-        [[nodiscard]] inline constexpr std::string getVtkTypeName() noexcept
+        [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
         {
             if constexpr (std::is_same_v<T, float>)
             {
@@ -210,7 +267,7 @@ namespace LBM
             [[maybe_unused]] const std::string &title = "") noexcept
         {
             // Info on entering the function
-            std::cout << "Writing VTU unstructured grid to file" << fileName << std::endl;
+            std::cout << "Writing VTU unstructured grid to " << fileName << std::endl;
 
             const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
             const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
@@ -231,47 +288,11 @@ namespace LBM
                 }
             }
 
-            std::vector<scalar_t> points(numNodes * 3);
-            for (label_t k = 0; k < mesh.nz(); ++k)
-            {
-                for (label_t j = 0; j < mesh.ny(); ++j)
-                {
-                    for (label_t i = 0; i < mesh.nx(); ++i)
-                    {
-                        const label_t index = k * mesh.nx() * mesh.ny() + j * mesh.nx() + i;
-                        points[index * 3 + 0] = static_cast<scalar_t>(i) / static_cast<scalar_t>(mesh.nx() - 1);
-                        points[index * 3 + 1] = static_cast<scalar_t>(j) / static_cast<scalar_t>(mesh.ny() - 1);
-                        points[index * 3 + 2] = static_cast<scalar_t>(k) / static_cast<scalar_t>(mesh.nz() - 1);
-                    }
-                }
-            }
+            const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
 
-            std::vector<label_t> connectivity(numElements * 8);
-            label_t cell_idx = 0;
-            for (label_t k = 0; k < mesh.nz() - 1; ++k)
-            {
-                for (label_t j = 0; j < mesh.ny() - 1; ++j)
-                {
-                    for (label_t i = 0; i < mesh.nx() - 1; ++i)
-                    {
-                        connectivity[cell_idx * 8 + 0] = k * mesh.nx() * mesh.ny() + j * mesh.nx() + i;
-                        connectivity[cell_idx * 8 + 1] = k * mesh.nx() * mesh.ny() + j * mesh.nx() + (i + 1);
-                        connectivity[cell_idx * 8 + 2] = k * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + (i + 1);
-                        connectivity[cell_idx * 8 + 3] = k * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + i;
-                        connectivity[cell_idx * 8 + 4] = (k + 1) * mesh.nx() * mesh.ny() + j * mesh.nx() + i;
-                        connectivity[cell_idx * 8 + 5] = (k + 1) * mesh.nx() * mesh.ny() + j * mesh.nx() + (i + 1);
-                        connectivity[cell_idx * 8 + 6] = (k + 1) * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + (i + 1);
-                        connectivity[cell_idx * 8 + 7] = (k + 1) * mesh.nx() * mesh.ny() + (j + 1) * mesh.nx() + i;
-                        cell_idx++;
-                    }
-                }
-            }
+            const std::vector<label_t> connectivity = meshConnectivity<false>(mesh);
 
-            std::vector<label_t> offsets(numElements);
-            for (label_t i = 0; i < numElements; ++i)
-            {
-                offsets[i] = (i + 1) * 8;
-            }
+            const std::vector<label_t> offsets = meshOffsets(mesh);
 
             std::ofstream outFile(fileName, std::ios::binary);
             if (!outFile)

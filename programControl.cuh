@@ -35,6 +35,10 @@ namespace LBM
               infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
+            static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
+
+            static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
+
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
             std::cout << "{ UDESC LBM                                                               }" << std::endl;
@@ -63,6 +67,8 @@ namespace LBM
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
+            std::cout << "    Scalar type: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << std::endl;
+            std::cout << "    Label type: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
@@ -162,6 +168,11 @@ namespace LBM
         __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
         {
             return input_.commandLine();
+        }
+
+        __host__ [[nodiscard]] inline constexpr const pointVector L() const noexcept
+        {
+            return {Lx_, Ly_, Lz_};
         }
 
     private:

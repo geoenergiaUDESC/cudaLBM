@@ -12,7 +12,7 @@ int main(const int argc, const char *const argv[])
 
     const std::string conversion = getConversionType(programCtrl);
 
-    for (label_t timeStep = getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+    for (label_t timeStep = fileIO::getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
     {
         const host::array<scalar_t, ctorType::MUST_READ> hostMoments(
             programCtrl,
@@ -22,12 +22,15 @@ int main(const int argc, const char *const argv[])
         const std::vector<std::vector<scalar_t>> soa = fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh);
 
         auto it = writers.find(conversion);
+
         if (it != writers.end())
         {
             const std::string extension = (conversion == "vtu") ? ".vtu" : ".dat";
+
             const std::string filename = programCtrl.caseName() + "_" + std::to_string(fileNameIndices[timeStep]) + extension;
 
             const WriterFunction writer = it->second;
+
             writer(soa, filename, mesh, hostMoments.varNames(), "Title");
         }
         else

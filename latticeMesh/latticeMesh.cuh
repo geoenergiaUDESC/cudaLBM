@@ -28,7 +28,8 @@ namespace LBM
                 : nx_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "ny")),
                   nz_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nz")),
-                  nPoints_(nx_ * ny_ * nz_)
+                  nPoints_(nx_ * ny_ * nz_),
+                  L_(programCtrl.L())
             {
 #ifdef VERBOSE
                 std::cout << "Allocated global latticeMesh object:" << std::endl;
@@ -142,6 +143,11 @@ namespace LBM
                 return {static_cast<uint32_t>(nx_ / block::nx()), static_cast<uint32_t>(ny_ / block::ny()), static_cast<uint32_t>(nz_ / block::nz())};
             }
 
+            __host__ [[nodiscard]] inline constexpr const pointVector &L() const noexcept
+            {
+                return L_;
+            }
+
         private:
             /**
              * @brief The number of lattices in the x, y and z directions
@@ -150,6 +156,8 @@ namespace LBM
             const label_t ny_;
             const label_t nz_;
             const label_t nPoints_;
+
+            const pointVector L_;
         };
     }
 }

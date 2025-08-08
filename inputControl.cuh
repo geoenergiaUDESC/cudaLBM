@@ -158,7 +158,7 @@ namespace LBM
             }
             else
             {
-                if (executableName() == "fieldConvert")
+                if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate"))
                 {
                     return {0};
                 }

@@ -56,18 +56,6 @@ namespace LBM
     }
 
     /**
-     * @brief Gets the starting index of the fieldConvert loop
-     * @return The first index of the main loop
-     * @param programCtrl A programControl object
-     **/
-    __host__ [[nodiscard]] label_t getStartIndex(const programControl &programCtrl)
-    {
-        const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
-
-        return programCtrl.input().isArgPresent("-latestTime") ? (fileNameIndices.size() - 1) : 0;
-    }
-
-    /**
      * @brief Unordered map of the writer types to the appropriate functions
      **/
     const std::unordered_map<std::string, WriterFunction> writers = {

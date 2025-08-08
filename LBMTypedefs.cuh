@@ -79,6 +79,12 @@ namespace LBM
 #elif SCALAR_PRECISION_64
     typedef double scalar_t;
 #endif
+    struct pointVector
+    {
+        const scalar_t x;
+        const scalar_t y;
+        const scalar_t z;
+    };
 
 #define ptrRestrict __restrict__
 
@@ -95,7 +101,7 @@ namespace LBM
 #ifdef LABEL_SIZE_32
     typedef uint32_t label_t;
 #elif LABEL_SIZE_64
-    typedef std::size_t label_t;
+    typedef uint64_t label_t;
 #endif
 
     /**

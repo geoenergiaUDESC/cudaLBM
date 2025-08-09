@@ -51,8 +51,8 @@ namespace LBM
             static_assert((policy == evictionPolicy::first) | (policy == evictionPolicy::last), "Cache eviction policy must be evictFirst or evictLast");
             // static_assert((__CUDA_ARCH__ >= 350), "CUDA architecture must be >= 350");
 
-            const label_t total_blocks = device::NUM_BLOCK_X * device::NUM_BLOCK_Y * device::NUM_BLOCK_Z;
-            const label_t current_block_index = blockIdx.z * (device::NUM_BLOCK_X * device::NUM_BLOCK_Y) + blockIdx.y * device::NUM_BLOCK_X + blockIdx.x;
+            const label_t total_blocks = device_NUM_BLOCK_X * device_NUM_BLOCK_Y * device_NUM_BLOCK_Z;
+            const label_t current_block_index = blockIdx.z * (device_NUM_BLOCK_X * device_NUM_BLOCK_Y) + blockIdx.y * device_NUM_BLOCK_X + blockIdx.x;
 
             // Prefetch multiple blocks ahead
             constexpr_for<1, prefetchDistance>(
@@ -63,12 +63,12 @@ namespace LBM
                     if (target_block_index < total_blocks)
                     {
                         // Calculate target block coordinates
-                        const label_t target_bz = target_block_index / (device::NUM_BLOCK_X * device::NUM_BLOCK_Y);
-                        const label_t target_by = (target_block_index % (device::NUM_BLOCK_X * device::NUM_BLOCK_Y)) / device::NUM_BLOCK_X;
-                        const label_t target_bx = target_block_index % device::NUM_BLOCK_X;
+                        const label_t target_bz = target_block_index / (device_NUM_BLOCK_X * device_NUM_BLOCK_Y);
+                        const label_t target_by = (target_block_index % (device_NUM_BLOCK_X * device_NUM_BLOCK_Y)) / device_NUM_BLOCK_X;
+                        const label_t target_bx = target_block_index % device_NUM_BLOCK_X;
 
                         // Calculate base index for target block
-                        const label_t target_base_idx = NUMBER_MOMENTS() * (threadIdx.x + block::nx() * (threadIdx.y + block::ny() * threadIdx.z) + block::size() * (target_bx + device::NUM_BLOCK_X * (target_by + device::NUM_BLOCK_Y * target_bz)));
+                        const label_t target_base_idx = NUMBER_MOMENTS() * (threadIdx.x + block::nx() * (threadIdx.y + block::ny() * threadIdx.z) + block::size() * (target_bx + device_NUM_BLOCK_X * (target_by + device_NUM_BLOCK_Y * target_bz)));
 
                         // Prefetch the moments
                         if constexpr (level == cacheLevel::L1)

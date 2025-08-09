@@ -8,6 +8,7 @@ Contents: Handles the use of shared memory on the GPU
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+#include "../velocitySet/velocitySet.cuh"
 
 namespace LBM
 {
@@ -24,16 +25,49 @@ namespace LBM
          * @param pop The population density at the current thread
          * @param s_pop The population density in shared memory
          **/
-        template <class VSet>
+        template <const std::size_t N>
         __device__ static inline void save(
-            const scalar_t (&ptrRestrict pop)[VSet::Q()],
-            scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
+            const scalar_t (&ptrRestrict pop)[N],
+            scalar_t (&ptrRestrict s_pop)[block::size() * (N - 1)]) noexcept
         {
-            device::constexpr_for<0, (VSet::Q() - 1)>(
-                [&](const auto q_)
-                {
-                    s_pop[idxPopBlock<q_>(threadIdx)] = pop[q_ + 1];
-                });
+            if constexpr (N == 19)
+            {
+                device::constexpr_for<0, (N - 1)>(
+                    [&](const auto q_)
+                    {
+                        s_pop[idxPopBlock<q_>(threadIdx)] = pop[q_ + 1];
+                    });
+            }
+
+            if constexpr (N == 27)
+            {
+                s_pop[idxPopBlock<0>(threadIdx)] = pop[1];
+                s_pop[idxPopBlock<1>(threadIdx)] = pop[2];
+                s_pop[idxPopBlock<2>(threadIdx)] = pop[3];
+                s_pop[idxPopBlock<3>(threadIdx)] = pop[4];
+                s_pop[idxPopBlock<4>(threadIdx)] = pop[5];
+                s_pop[idxPopBlock<5>(threadIdx)] = pop[6];
+                s_pop[idxPopBlock<6>(threadIdx)] = pop[7];
+                s_pop[idxPopBlock<7>(threadIdx)] = pop[8];
+                s_pop[idxPopBlock<8>(threadIdx)] = pop[9];
+                s_pop[idxPopBlock<9>(threadIdx)] = pop[10];
+                s_pop[idxPopBlock<10>(threadIdx)] = pop[11];
+                s_pop[idxPopBlock<11>(threadIdx)] = pop[12];
+                s_pop[idxPopBlock<12>(threadIdx)] = pop[13];
+                s_pop[idxPopBlock<13>(threadIdx)] = pop[14];
+                s_pop[idxPopBlock<14>(threadIdx)] = pop[15];
+                s_pop[idxPopBlock<15>(threadIdx)] = pop[16];
+                s_pop[idxPopBlock<16>(threadIdx)] = pop[17];
+                s_pop[idxPopBlock<17>(threadIdx)] = pop[18];
+                s_pop[idxPopBlock<18>(threadIdx)] = pop[19];
+                s_pop[idxPopBlock<19>(threadIdx)] = pop[20];
+                s_pop[idxPopBlock<20>(threadIdx)] = pop[21];
+                s_pop[idxPopBlock<21>(threadIdx)] = pop[22];
+                s_pop[idxPopBlock<22>(threadIdx)] = pop[23];
+                s_pop[idxPopBlock<23>(threadIdx)] = pop[24];
+                s_pop[idxPopBlock<24>(threadIdx)] = pop[25];
+                s_pop[idxPopBlock<25>(threadIdx)] = pop[26];
+            }
 
             __syncthreads();
         }
@@ -43,23 +77,23 @@ namespace LBM
          * @param pop The population density at the current thread
          * @param s_pop The population density in shared memory
          **/
-        template <class VSet>
+        template <const std::size_t N>
         __device__ static inline void pull(
-            scalar_t (&ptrRestrict pop)[VSet::Q()],
-            const scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
+            scalar_t (&ptrRestrict pop)[N],
+            const scalar_t (&ptrRestrict s_pop)[block::size() * (N - 1)]) noexcept
         {
             // Check for the size of the velocity set
-            static_assert((VSet::Q() == 19) | (VSet::Q() == 27), "Incorrectly sized velocity set in sharedMemory::pull");
+            static_assert((N == VelocitySet::D3Q19::Q()) | (N == VelocitySet::D3Q27::Q()), "Must be either a D3Q19 or D3Q27 velocity set!");
 
-            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
-            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
-            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
-            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
-            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
-            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
-
-            if constexpr (VSet::Q() == 19)
+            if constexpr (N == VelocitySet::D3Q19::Q())
             {
+                const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
+                const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
+                const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
+                const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
+                const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
+                const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
+
                 pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
                 pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
                 pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
@@ -79,9 +113,15 @@ namespace LBM
                 pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
                 pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
             }
-
-            if constexpr (VSet::Q() == 27)
+            else if constexpr (N == VelocitySet::D3Q27::Q())
             {
+                const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
+                const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
+                const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
+                const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
+                const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
+                const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
+
                 pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
                 pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
                 pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
@@ -101,7 +141,6 @@ namespace LBM
                 pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
                 pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
 
-                // Add the rest of the elements here
                 pop[19] = s_pop[idxPopBlock<18>(xp1, yp1, zp1)];
                 pop[20] = s_pop[idxPopBlock<19>(xm1, ym1, zm1)];
                 pop[21] = s_pop[idxPopBlock<20>(xp1, yp1, zm1)];

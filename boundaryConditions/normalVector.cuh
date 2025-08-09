@@ -107,16 +107,16 @@ namespace LBM
         __device__ [[nodiscard]] inline static uint8_t computeBitmask(const label_t x, const label_t y, const label_t z) noexcept
         {
             return static_cast<uint8_t>(
-                (x == 0) << 0 |                      // West (bit0)
-                (x == device::nx - 1) << 1 |         // East (bit1)
-                (y == 0) << 2 |                      // South (bit2)
-                (y == device::ny - 1) << 3 |         // North (bit3)
-                (z == 0) << 4 |                      // Back (bit4)
-                (z == device::nz - 1) << 5 |         // Front (bit5)
-                (!!(x == 0 || x == device::nx - 1 || //
-                    y == 0 || y == device::ny - 1 || //
-                    z == 0 || z == device::nz - 1))  //
-                    << 6);                           // Any boundary (bit6)
+                (x == 0) << 0 |                     // West (bit0)
+                (x == device_nx - 1) << 1 |         // East (bit1)
+                (y == 0) << 2 |                     // South (bit2)
+                (y == device_ny - 1) << 3 |         // North (bit3)
+                (z == 0) << 4 |                     // Back (bit4)
+                (z == device_nz - 1) << 5 |         // Front (bit5)
+                (!!(x == 0 || x == device_nx - 1 || //
+                    y == 0 || y == device_ny - 1 || //
+                    z == 0 || z == device_nz - 1))  //
+                    << 6);                          // Any boundary (bit6)
         }
     };
 }

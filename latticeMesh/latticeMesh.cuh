@@ -41,7 +41,7 @@ namespace LBM
                 std::cout << std::endl;
 #endif
 
-                const scalar_t ReTemp = programCtrl.Re();
+                // const scalar_t ReTemp = programCtrl.Re();
                 const scalar_t u_infTemp = programCtrl.u_inf();
                 const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
                 const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
@@ -49,18 +49,18 @@ namespace LBM
                 const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
                 const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
+                // cudaDeviceSynchronize();
+                // checkCudaErrors(cudaMemcpyToSymbol(device::Re, &ReTemp, sizeof(device_Re)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::Re, &ReTemp, sizeof(device::Re)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_u_inf, &u_infTemp, sizeof(device_u_inf)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::u_inf, &u_infTemp, sizeof(device::u_inf)));
+                // checkCudaErrors(cudaMemcpyToSymbol(device_tau, &tauTemp, sizeof(device_tau)));
+                // cudaDeviceSynchronize();
+                checkCudaErrors(cudaMemcpyToSymbol(device_omega, &omegaTemp, sizeof(device_omega)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::tau, &tauTemp, sizeof(device::tau)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_t_omegaVar, &t_omegaVarTemp, sizeof(device_t_omegaVar)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::omega, &omegaTemp, sizeof(device::omega)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::t_omegaVar, &t_omegaVarTemp, sizeof(device::t_omegaVar)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::omegaVar_d2, &omegaVar_d2Temp, sizeof(device::omegaVar_d2)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_omegaVar_d2, &omegaVar_d2Temp, sizeof(device_omegaVar_d2)));
                 cudaDeviceSynchronize();
 
                 const label_t nxBlocksTemp = nxBlocks();
@@ -69,17 +69,17 @@ namespace LBM
 
                 // Allocate symbols on the GPU
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::nx, &nx_, sizeof(device::nx)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_nx, &nx_, sizeof(device_nx)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::ny, &ny_, sizeof(device::ny)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_ny, &ny_, sizeof(device_ny)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::nz, &nz_, sizeof(device::nz)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_nz, &nz_, sizeof(device_nz)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_X, &nxBlocksTemp, sizeof(device::NUM_BLOCK_X)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_NUM_BLOCK_X, &nxBlocksTemp, sizeof(device_NUM_BLOCK_X)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Y, &nyBlocksTemp, sizeof(device::NUM_BLOCK_Y)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_NUM_BLOCK_Y, &nyBlocksTemp, sizeof(device_NUM_BLOCK_Y)));
                 cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Z, &nzBlocksTemp, sizeof(device::NUM_BLOCK_Z)));
+                checkCudaErrors(cudaMemcpyToSymbol(device_NUM_BLOCK_Z, &nzBlocksTemp, sizeof(device_NUM_BLOCK_Z)));
                 cudaDeviceSynchronize();
             };
 

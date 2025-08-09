@@ -16,8 +16,11 @@ namespace LBM
 {
     namespace host
     {
+        template <class VSet>
         __host__ [[nodiscard]] const std::vector<scalar_t> moments(const host::latticeMesh &mesh, const scalar_t u_inf)
         {
+            static_assert((VSet::Q() == VelocitySet::D3Q19::Q()) | (VSet::Q() == VelocitySet::D3Q27::Q()), "Must be either a D3Q19 or D3Q27 velocity set!");
+
             const label_t nBlockx = mesh.nx() / block::nx();
             const label_t nBlocky = mesh.ny() / block::ny();
             std::vector<scalar_t> fMom(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), 0);
@@ -49,30 +52,65 @@ namespace LBM
                         fMom[idxMom<index::w()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = 0;
 
                         // Second moments: compute equilibrium populations
-                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::F_eq(ux, uy, uz);
+                        const std::array<scalar_t, VSet::Q()> pop = VSet::F_eq(ux, uy, uz);
 
                         // Compute second-order moments (reused terms)
-                        const scalar_t pop_7_8 = pop[7] + pop[8];
-                        const scalar_t pop_9_10 = pop[9] + pop[10];
-                        const scalar_t pop_13_14 = pop[13] + pop[14];
-                        const scalar_t pop_15_16 = pop[15] + pop[16];
-                        const scalar_t pop_11_12 = pop[11] + pop[12];
-                        const scalar_t pop_17_18 = pop[17] + pop[18];
+                        // const scalar_t pop_7_8 = pop[7] + pop[8];
+                        // const scalar_t pop_9_10 = pop[9] + pop[10];
+                        // const scalar_t pop_13_14 = pop[13] + pop[14];
+                        // const scalar_t pop_15_16 = pop[15] + pop[16];
+                        // const scalar_t pop_11_12 = pop[11] + pop[12];
+                        // const scalar_t pop_17_18 = pop[17] + pop[18];
 
-                        const scalar_t pixx = (pop[1] + pop[2] + pop_7_8 + pop_9_10 + pop_13_14 + pop_15_16) - VelocitySet::velocitySet::cs2();
-                        const scalar_t pixy = (pop_7_8 - pop_13_14);
-                        const scalar_t pixz = (pop_9_10 - pop_15_16);
-                        const scalar_t piyy = (pop[3] + pop[4] + pop_7_8 + pop_11_12 + pop_13_14 + pop_17_18) - VelocitySet::velocitySet::cs2();
-                        const scalar_t piyz = (pop_11_12 - pop_17_18);
-                        const scalar_t pizz = (pop[5] + pop[6] + pop_9_10 + pop_11_12 + pop_15_16 + pop_17_18) - VelocitySet::velocitySet::cs2();
+                        // const scalar_t pixx = (pop[1] + pop[2] + pop_7_8 + pop_9_10 + pop_13_14 + pop_15_16) - VelocitySet::velocitySet::cs2();
+                        // const scalar_t pixy = (pop_7_8 - pop_13_14);
+                        // const scalar_t pixz = (pop_9_10 - pop_15_16);
+                        // const scalar_t piyy = (pop[3] + pop[4] + pop_7_8 + pop_11_12 + pop_13_14 + pop_17_18) - VelocitySet::velocitySet::cs2();
+                        // const scalar_t piyz = (pop_11_12 - pop_17_18);
+                        // const scalar_t pizz = (pop[5] + pop[6] + pop_9_10 + pop_11_12 + pop_15_16 + pop_17_18) - VelocitySet::velocitySet::cs2();
 
-                        // Store second-order moments
-                        fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pixx;
-                        fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixy;
-                        fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixz;
-                        fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * piyy;
-                        fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * piyz;
-                        fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pizz;
+                        if constexpr (VSet::Q() == 19)
+                        {
+                            const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) - VelocitySet::velocitySet::cs2();
+                            const scalar_t pixy = ((pop[7] + pop[8]) - (pop[13] + pop[14]));
+                            const scalar_t pixz = ((pop[9] + pop[10]) - (pop[15] + pop[16]));
+                            const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) - VelocitySet::velocitySet::cs2();
+                            const scalar_t piyz = ((pop[11] + pop[12]) - (pop[17] + pop[18]));
+                            const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) - VelocitySet::velocitySet::cs2();
+
+                            // Store second-order moments
+                            fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pixx;
+                            fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixy;
+                            fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixz;
+                            fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * piyy;
+                            fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * piyz;
+                            fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pizz;
+                        }
+                        else if constexpr (VSet::Q() == 27)
+                        {
+                            const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) - VelocitySet::velocitySet::cs2();
+                            const scalar_t pixy = ((pop[7] + pop[8] + pop[19] + pop[20] + pop[21] + pop[22]) - (pop[13] + pop[14] + pop[23] + pop[24] + pop[25] + pop[26]));
+                            const scalar_t pixz = ((pop[9] + pop[10] + pop[19] + pop[20] + pop[23] + pop[24]) - (pop[15] + pop[16] + pop[21] + pop[22] + pop[25] + pop[26]));
+                            const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) - VelocitySet::velocitySet::cs2();
+                            const scalar_t piyz = ((pop[11] + pop[12] + pop[19] + pop[20] + pop[25] + pop[26]) - (pop[17] + pop[18] + pop[21] + pop[22] + pop[23] + pop[24]));
+                            const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]) - VelocitySet::velocitySet::cs2();
+
+                            // Store second-order moments
+                            fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pixx;
+                            fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixy;
+                            fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixz;
+                            fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * piyy;
+                            fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * piyz;
+                            fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pizz;
+                        }
+
+                        // // Store second-order moments
+                        // fMom[idxMom<index::xx()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pixx;
+                        // fMom[idxMom<index::xy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixy;
+                        // fMom[idxMom<index::xz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * pixz;
+                        // fMom[idxMom<index::yy()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * piyy;
+                        // fMom[idxMom<index::yz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ij() * piyz;
+                        // fMom[idxMom<index::zz()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_ii() * pizz;
                     }
                 }
             }

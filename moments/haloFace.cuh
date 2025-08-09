@@ -27,6 +27,7 @@ namespace LBM
             [[nodiscard]] static inline consteval std::size_t z() noexcept { return 2; }
         }
 
+        template <class VSet>
         class haloFace
         {
         public:
@@ -164,17 +165,19 @@ namespace LBM
             template <const std::size_t faceIndex>
             [[nodiscard]] inline constexpr std::size_t nFaces(const host::latticeMesh &mesh) const noexcept
             {
+                static_assert((VSet::Q() == VelocitySet::D3Q19::Q()) | (VSet::Q() == VelocitySet::D3Q27::Q()), "Must be either a D3Q19 or D3Q27 velocity set!");
+
                 if constexpr (faceIndex == device::haloFaces::x())
                 {
-                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nx()) * VelocitySet::D3Q19::QF();
+                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nx()) * VSet::QF();
                 }
                 if constexpr (faceIndex == device::haloFaces::y())
                 {
-                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::ny()) * VelocitySet::D3Q19::QF();
+                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::ny()) * VSet::QF();
                 }
                 if constexpr (faceIndex == device::haloFaces::z())
                 {
-                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nz()) * VelocitySet::D3Q19::QF();
+                    return ((mesh.nx() * mesh.ny() * mesh.nz()) / block::nz()) * VSet::QF();
                 }
 
                 return 0;
@@ -188,6 +191,8 @@ namespace LBM
             template <const std::size_t faceIndex, const std::size_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) const noexcept
             {
+                static_assert((VSet::Q() == VelocitySet::D3Q19::Q()) | (VSet::Q() == VelocitySet::D3Q27::Q()), "Must be either a D3Q19 or D3Q27 velocity set!");
+
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
 
                 const label_t nBlockx = mesh.nxBlocks();
@@ -217,7 +222,7 @@ namespace LBM
                                         const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky);
 
                                         // Contiguous moment access
-                                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::host_reconstruct(
+                                        const std::array<scalar_t, VSet::Q()> pop = VSet::host_reconstruct(
                                             {rho0() + fMom[base + index::rho()],
                                              fMom[base + index::u()],
                                              fMom[base + index::v()],
@@ -236,22 +241,38 @@ namespace LBM
                                             {
                                                 if (tx == 0)
                                                 { // w
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[2];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[16];
+                                                    face[host::idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[2];
+                                                    face[host::idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
+                                                    face[host::idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[10];
+                                                    face[host::idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
+                                                    face[host::idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[16];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[20];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[22];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[24];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[25];
+                                                    }
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (tx == (block::nx() - 1))
                                                 {
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[1];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[15];
+                                                    face[host::idxPopX<0, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[1];
+                                                    face[host::idxPopX<1, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
+                                                    face[host::idxPopX<2, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[9];
+                                                    face[host::idxPopX<3, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
+                                                    face[host::idxPopX<4, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[15];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[19];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[21];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[23];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[26];
+                                                    }
                                                 }
                                             }
                                         }
@@ -262,22 +283,38 @@ namespace LBM
                                             {
                                                 if (ty == 0)
                                                 { // s
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[4];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+                                                    face[host::idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[4];
+                                                    face[host::idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
+                                                    face[host::idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[12];
+                                                    face[host::idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
+                                                    face[host::idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[20];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[22];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[23];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[26];
+                                                    }
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (ty == (block::ny() - 1))
                                                 {
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[3];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+                                                    face[host::idxPopY<0, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[3];
+                                                    face[host::idxPopY<1, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
+                                                    face[host::idxPopY<2, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[11];
+                                                    face[host::idxPopY<3, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
+                                                    face[host::idxPopY<4, VSet::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[19];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[21];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[24];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[25];
+                                                    }
                                                 }
                                             }
                                         }
@@ -288,22 +325,38 @@ namespace LBM
                                             {
                                                 if (tz == 0)
                                                 { // b
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[6];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[15];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+                                                    face[host::idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[6];
+                                                    face[host::idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[10];
+                                                    face[host::idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[12];
+                                                    face[host::idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[15];
+                                                    face[host::idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[20];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[21];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[24];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[26];
+                                                    }
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (tz == (block::nz() - 1))
                                                 {
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[5];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[16];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+                                                    face[host::idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[5];
+                                                    face[host::idxPopZ<1, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[9];
+                                                    face[host::idxPopZ<2, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[11];
+                                                    face[host::idxPopZ<3, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[16];
+                                                    face[host::idxPopZ<4, VSet::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+
+                                                    if constexpr (VSet::Q() == 27)
+                                                    {
+                                                        face[host::idxPopX<5, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[19];
+                                                        face[host::idxPopX<6, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[22];
+                                                        face[host::idxPopX<7, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[23];
+                                                        face[host::idxPopX<8, VSet::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[25];
+                                                    }
                                                 }
                                             }
                                         }

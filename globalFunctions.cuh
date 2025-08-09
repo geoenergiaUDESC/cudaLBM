@@ -278,12 +278,12 @@ namespace LBM
     {
         /**
          * @brief Check if current thread exceeds global bounds
-         * @note Uses device constants device::nx, device::ny, device::nz
+         * @note Uses device constants device_nx, device_ny, device_nz
          * @return True if thread is outside domain boundaries
          **/
         __device__ [[nodiscard]] inline bool out_of_bounds() noexcept
         {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz));
+            return ((threadIdx.x + blockDim.x * blockIdx.x >= device_nx) || (threadIdx.y + blockDim.y * blockIdx.y >= device_ny) || (threadIdx.z + blockDim.z * blockIdx.z >= device_nz));
         }
 
         /**
@@ -291,14 +291,14 @@ namespace LBM
          * @tparam mom Moment index [0, NUMBER_MOMENTS())
          * @param tx,ty,tz Thread-local coordinates
          * @param bx,by,bz Block indices
-         * @return Linearized index using device constants device::NUM_BLOCK_X/Y
+         * @return Linearized index using device constants device_NUM_BLOCK_X/Y
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
         template <const label_t mom>
         __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
+            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device_NUM_BLOCK_X * (by + device_NUM_BLOCK_Y * bz)))));
         }
 
         /**
@@ -313,17 +313,27 @@ namespace LBM
         }
 
         /**
+         * @overload
+         * @note Returns the index for the current thread
+         **/
+        template <const label_t mom>
+        __device__ [[nodiscard]] inline label_t idxMom() noexcept
+        {
+            return idxMom<mom>(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+        }
+
+        /**
          * @brief Population index for X-aligned arrays (device version)
          * @tparam pop Population index
          * @tparam QF Number of populations
          * @param ty,tz Thread-local y/z coordinates
          * @param bx,by,bz Block indices
-         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
+         * @return Linearized index: ty + block::ny()*(tz + block::nz()*(pop + QF*(bx + device_NUM_BLOCK_X*(by + device_NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopX(const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
+            return ty + block::ny() * (tz + block::nz() * (pop + QF * (bx + device_NUM_BLOCK_X * (by + device_NUM_BLOCK_Y * bz))));
         }
 
         /**
@@ -341,12 +351,12 @@ namespace LBM
          * @brief Population index for Y-aligned arrays (device version)
          * @copydetails idxPopX
          * @param tx,tz Thread-local x/z coordinates
-         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
+         * @return Linearized index: tx + block::nx()*(tz + block::nz()*(pop + QF*(bx + device_NUM_BLOCK_X*(by + device_NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopY(const label_t tx, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
+            return tx + block::nx() * (tz + block::nz() * (pop + QF * (bx + device_NUM_BLOCK_X * (by + device_NUM_BLOCK_Y * bz))));
         }
 
         /**
@@ -364,12 +374,12 @@ namespace LBM
          * @brief Population index for Z-aligned arrays (device version)
          * @copydetails idxPopX
          * @param tx,ty Thread-local x/y coordinates
-         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + device::NUM_BLOCK_X*(by + device::NUM_BLOCK_Y*bz)))
+         * @return Linearized index: tx + block::nx()*(ty + block::ny()*(pop + QF*(bx + device_NUM_BLOCK_X*(by + device_NUM_BLOCK_Y*bz)))
          **/
         template <const label_t pop, const label_t QF>
         __device__ [[nodiscard]] inline label_t idxPopZ(const label_t tx, const label_t ty, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz))));
+            return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + device_NUM_BLOCK_X * (by + device_NUM_BLOCK_Y * bz))));
         }
 
         /**

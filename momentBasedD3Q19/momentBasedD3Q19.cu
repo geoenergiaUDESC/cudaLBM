@@ -1,5 +1,5 @@
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
+// #include "../LBMIncludes.cuh"
+// #include "../LBMTypedefs.cuh"
 #include "momentBasedD3Q19.cuh"
 
 using namespace LBM;
@@ -8,61 +8,67 @@ int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
-    const host::latticeMesh mesh(programCtrl);
+    const scalar_t u_infTemp = programCtrl.u_inf();
+    std::cout << "u_inf = " << u_infTemp << std::endl;
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpyToSymbol(device_u_inf, &u_infTemp, sizeof(device_u_inf)));
+    cudaDeviceSynchronize();
 
-    VSet::print();
+    // const host::latticeMesh mesh(programCtrl);
 
-    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(
-        programCtrl,
-        {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-        mesh);
+    // VSet::print();
 
-    // Set cuda device
-    checkCudaErrors(cudaDeviceSynchronize());
-    checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
-    checkCudaErrors(cudaDeviceSynchronize());
+    // const host::array<scalar_t, ctorType::READ_IF_PRESENT, VSet> hostMoments(
+    //     programCtrl,
+    //     {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+    //     mesh);
 
-    // Setup Streams
-    const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
+    // // Set cuda device
+    // checkCudaErrors(cudaDeviceSynchronize());
+    // checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
+    // checkCudaErrors(cudaDeviceSynchronize());
 
-    // Perform device memory allocation
-    device::array<scalar_t> deviceMoments(hostMoments, mesh);
-    device::halo blockHalo(hostMoments.arr(), mesh);
+    // // Setup Streams
+    // // const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
-    // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferL1));
+    // // Perform device memory allocation
+    // device::array<scalar_t> deviceMoments(hostMoments, mesh);
+    // device::halo<VSet> blockHalo(hostMoments.arr(), mesh);
 
-    std::cout << "Time loop start" << std::endl;
-    std::cout << std::endl;
+    // // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
+    // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferL1));
 
-    const std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    // std::cout << "Time loop start" << std::endl;
+    // std::cout << std::endl;
 
-    for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
-    {
-        if (programCtrl.print(timeStep))
-        {
-            std::cout << "Time: " << timeStep << "\n";
-        }
+    // const std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-        momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
-            deviceMoments.ptr(),
-            blockHalo);
+    // for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
+    // {
+    //     if (programCtrl.print(timeStep))
+    //     {
+    //         std::cout << "Time: " << timeStep << "\n";
+    //     }
 
-        blockHalo.swap();
+    //     momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
+    //         deviceMoments.ptr(),
+    //         blockHalo);
 
-        if (programCtrl.save(timeStep))
-        {
-            deviceMoments.write(programCtrl.caseName(), timeStep);
-        }
-    }
+    //     blockHalo.swap();
 
-    // Get ending time point and output the elapsed time
-    const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    std::cout << std::endl;
-    std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
-    std::cout << std::endl;
-    std::cout << "MLUPS: " << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
-    std::cout << "End" << std::endl;
+    //     if (programCtrl.save(timeStep))
+    //     {
+    //         deviceMoments.write(programCtrl.caseName(), timeStep);
+    //     }
+    // }
+
+    // // Get ending time point and output the elapsed time
+    // const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    // std::cout << std::endl;
+    // std::cout << "Elapsed time: " << runTimeIO::duration(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()) << std::endl;
+    // std::cout << std::endl;
+    // std::cout << "MLUPS: " << runTimeIO::MLUPS<double>(mesh, programCtrl, start, end) << std::endl;
+    // std::cout << "End" << std::endl;
 
     return 0;
 }

@@ -283,21 +283,21 @@ namespace LBM
      * @brief Device constant variables
      * @note These variables MUST be initialised on the GPU at program start with cudaMemcpyToSymbol
      **/
-    namespace device
-    {
-        __device__ __constant__ label_t nx;
-        __device__ __constant__ label_t ny;
-        __device__ __constant__ label_t nz;
-        __device__ __constant__ scalar_t Re;
-        __device__ __constant__ scalar_t tau;
-        __device__ __constant__ scalar_t u_inf;
-        __device__ __constant__ scalar_t omega;
-        __device__ __constant__ scalar_t t_omegaVar;
-        __device__ __constant__ scalar_t omegaVar_d2;
-        __device__ __constant__ label_t NUM_BLOCK_X;
-        __device__ __constant__ label_t NUM_BLOCK_Y;
-        __device__ __constant__ label_t NUM_BLOCK_Z;
-    }
+    // namespace device
+    // {
+    __device__ __constant__ label_t device_nx;
+    __device__ __constant__ label_t device_ny;
+    __device__ __constant__ label_t device_nz;
+    // __device__ __constant__ scalar_t device_Re;
+    // __device__ __constant__ scalar_t device_tau;
+    __device__ __constant__ scalar_t device_u_inf;
+    __device__ __constant__ scalar_t device_omega;
+    __device__ __constant__ scalar_t device_t_omegaVar;
+    __device__ __constant__ scalar_t device_omegaVar_d2;
+    __device__ __constant__ label_t device_NUM_BLOCK_X;
+    __device__ __constant__ label_t device_NUM_BLOCK_Y;
+    __device__ __constant__ label_t device_NUM_BLOCK_Z;
+    //}
 }
 
 #endif

@@ -14,7 +14,7 @@ BIN_DIR = $(BUILD_DIR)/bin
 
 # CUDA Compiler Flags
 NVCXX_STANDARD = -std c++20
-NVCXX_OPTFLAGS = -O3 --restrict
+NVCXX_OPTFLAGS = -O3 --restrict --ftemplate-depth 100000000 -ftemplate-depth=100000000
 NVCXX_MFLAGS = --m64 -arch compute_$(GPU_ARCH_CODE)
 NVCXX_WFLAGS = --Wreorder --Wdefault-stream-launch --Wmissing-launch-bounds --Wext-lambda-captures-this -Xptxas -v
 NVCXX_COMPILER_WFLAGS = -Xcompiler "-O3 -funroll-loops -march=native -mtune=native -Wall -Wextra -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wshadow -Wsign-conversion -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings"
@@ -23,7 +23,7 @@ NVCXX_FLAGS = $(NVCXX_STANDARD) $(NVCXX_OPTFLAGS) $(NVCXX_MFLAGS) $(NVCXX_WFLAGS
 
 # C++ Compiler Flags
 CXX_STANDARD = -std=c++20
-CXX_OPTFLAGS = -O3 -flto -funroll-loops 
+CXX_OPTFLAGS = -O3 -flto -funroll-loops --ftemplate-depth 100000000 -ftemplate-depth=100000000
 CXX_MFLAGS = -march=native -mtune=native
 CXX_WFLAGS = -Wall -Wextra -Wpedantic -Werror -Wattributes -Wbuiltin-macro-redefined -Wcast-align -Wconversion -Wdiv-by-zero -Wdouble-promotion -Wfloat-equal -Wformat-security -Wformat=2 -Wimplicit-fallthrough=5 -Winline -Wint-to-pointer-cast -Wlogical-op -Woverflow -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=3 -Wstringop-overflow=4 -Wwrite-strings
 CXX_DFLAGS = NVCXX_DFLAGS

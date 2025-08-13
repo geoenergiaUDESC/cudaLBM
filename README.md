@@ -1,6 +1,6 @@
 # cudaLBM
 
-`cudaLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on a single GPU using CUDA. This project is currently under development and is primarily focused on Linux-based systems.
+`cudaLBM` is a high-performance computing project that implements the moment representation of the Lattice Boltzmann Method (LBM) on a single Nvidia GPU using CUDA. This project is currently under development and is primarily focused on Linux-based systems.
 
 ## 🚀 Features
 
@@ -34,11 +34,12 @@ git clone [https://github.com/geoenergiaUDESC/cudaLBM.git](https://github.com/ge
 
 ```
 
-2. Navigate to the project directory:
+2. Navigate to the project directory and load the bashrc file:
 
 ```
 
 cd cudaLBM
+source bashrc
 
 ```
 
@@ -46,33 +47,19 @@ cd cudaLBM
 
 ```
 
-make
+make install
 
 ```
 
 ## 💨 Usage
 
-To run a simulation, you can execute the compiled binary. For example, to run the lid-driven cavity case:
+To run a simulation, you can execute the compiled binary. For example, to run the lid-driven cavity case, navigate to the lidDrivenCavity folder and type:
 
 ```
 
-./cudaLBM cases/lidDrivenCavity/input.dat
+momentBasedD3Q19 -GPU 0
 
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome! If you would like to contribute to this project, please follow these steps:
-
-1. Fork the repository.
-
-2. Create a new branch (`git checkout -b feature/your-feature`).
-
-3. Commit your changes (`git commit -am 'Add some feature'`).
-
-4. Push to the branch (`git push origin feature/your-feature`).
-
-5. Create a new Pull Request.
 
 ## 📄 License
 
@@ -83,4 +70,3 @@ This project is licensed under the terms of the LICENSE file.
 This codebase was heavily influenced by the `MR-LBM` project, although it has been completely rewritten. You can find the original repository here:
 
 <https://github.com/CERNN/MR-LBM>
-```

@@ -14,7 +14,7 @@
 
 ## ⚡ Performance
 
-The code has been benchmarked with the lid driven cavity case on an **NVIDIA RTX A4000** and achieves approximately **3300 MLUPS** (Million Lattice Updates Per Second) using FP32 for both storage and arithmetic. There is still significant room for improvement, as further optimizations are planned.
+The code has been benchmarked with the lid driven cavity case on an **NVIDIA RTX A4000** and achieves approximately **3300 MLUPS** (Million Lattice Updates Per Second) using FP32 for both storage and arithmetic. There is still room for improvement, as further optimizations are planned.
 
 ## 📅 Future Features
 

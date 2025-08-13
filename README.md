@@ -12,6 +12,10 @@
 
 * **Example Cases:** Includes a lid-driven cavity case to demonstrate the solver's capabilities, with more cases to be added in the future.
 
+## ⚡ Performance
+
+The code has been benchmarked with the lid driven cavity case on an **NVIDIA RTX A4000** and achieves approximately **3300 MLUPS** (Million Lattice Updates Per Second) using FP32 for both storage and arithmetic. There is still significant room for improvement, as further optimizations are planned.
+
 ## 📅 Future Features
 
 * **Multi-GPU Support:** Future versions will leverage CUDA-aware MPI for efficient scaling across multiple GPUs.

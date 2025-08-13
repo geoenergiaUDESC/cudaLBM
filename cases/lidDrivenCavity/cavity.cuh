@@ -29,11 +29,6 @@ namespace LBM
                 {
                     for (label_t z = 0; z < mesh.nz(); z++)
                     {
-                        // Default: no-slip (zero velocity) on all boundaries
-                        constexpr const scalar_t ux = 0.0;
-                        constexpr const scalar_t uy = 0.0;
-                        constexpr const scalar_t uz = 0.0;
-
                         // Zeroth moment (density fluctuation and velocity)
                         fMom[idxMom<index::rho()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = 0; // rho - rho0() = 0
                         // Override for the top wall (y = mesh.ny()-1): ux = U_MAX
@@ -49,7 +44,10 @@ namespace LBM
                         fMom[idxMom<index::w()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)] = 0;
 
                         // Second moments: compute equilibrium populations
-                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::F_eq(ux, uy, uz);
+                        const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::F_eq(
+                            fMom[idxMom<index::u()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)],
+                            fMom[idxMom<index::v()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)],
+                            fMom[idxMom<index::w()>(x, y, z, 0, 0, 0, nBlockx, nBlocky)]);
 
                         // Compute second-order moments (reused terms)
                         const scalar_t pop_7_8 = pop[7] + pop[8];

@@ -18,33 +18,47 @@ namespace LBM
 {
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param fMom Pointer to the interleaved moment variables on the GPU
-     * @param nodeType Pointer to the mesh node types on the GPU
+     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBounds __global__ void momentBasedD3Q19(
-        scalar_t *const ptrRestrict fMom,
+        const device::ptrCollection<10, scalar_t> devPtrs,
         device::halo blockHalo)
     {
-        device::prefetch<device::cacheLevel::L1, device::evictionPolicy::first, 1>(fMom);
-
         // Always a multiple of 32, so no need to check this(I think)
         if (device::out_of_bounds())
         {
             return;
         }
 
-        threadArray<scalar_t, NUMBER_MOMENTS()> moments = {
-            rho0() + fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::u()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::v()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::w()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::xx()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::xy()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::xz()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::yy()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::yz()>(threadIdx, blockIdx)],
-            fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)]};
+        // Coalesced read from global memory
+        threadArray<scalar_t, NUMBER_MOMENTS()> moments;
+        {
+            __shared__ scalar_t s_mom[10][block::size()];
+
+            const label_t thread_idx_in_block = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
+
+            // Read into shared
+            device::constexpr_for<0, 10>(
+                [&](const auto q_)
+                {
+                    s_mom[q_][thread_idx_in_block] = devPtrs.ptr<q_>()[device::idx()];
+                });
+            __syncthreads();
+
+            // Pull into thread memory
+            moments.arr[0] = s_mom[0][thread_idx_in_block] + rho0();
+            moments.arr[1] = s_mom[1][thread_idx_in_block];
+            moments.arr[2] = s_mom[2][thread_idx_in_block];
+            moments.arr[3] = s_mom[3][thread_idx_in_block];
+            moments.arr[4] = s_mom[4][thread_idx_in_block];
+            moments.arr[5] = s_mom[5][thread_idx_in_block];
+            moments.arr[6] = s_mom[6][thread_idx_in_block];
+            moments.arr[7] = s_mom[7][thread_idx_in_block];
+            moments.arr[8] = s_mom[8][thread_idx_in_block];
+            moments.arr[9] = s_mom[9][thread_idx_in_block];
+            // __syncthreads();
+        }
 
         // Reconstruct the population from the moments
         threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(moments);
@@ -84,17 +98,17 @@ namespace LBM
         // Calculate post collision populations
         VelocitySet::D3Q19::reconstruct(pop.arr, moments.arr);
 
-        // Write to global memory
-        fMom[device::idxMom<index::rho()>(threadIdx, blockIdx)] = moments.arr[0] - rho0();
-        fMom[device::idxMom<index::u()>(threadIdx, blockIdx)] = moments.arr[1];
-        fMom[device::idxMom<index::v()>(threadIdx, blockIdx)] = moments.arr[2];
-        fMom[device::idxMom<index::w()>(threadIdx, blockIdx)] = moments.arr[3];
-        fMom[device::idxMom<index::xx()>(threadIdx, blockIdx)] = moments.arr[4];
-        fMom[device::idxMom<index::xy()>(threadIdx, blockIdx)] = moments.arr[5];
-        fMom[device::idxMom<index::xz()>(threadIdx, blockIdx)] = moments.arr[6];
-        fMom[device::idxMom<index::yy()>(threadIdx, blockIdx)] = moments.arr[7];
-        fMom[device::idxMom<index::yz()>(threadIdx, blockIdx)] = moments.arr[8];
-        fMom[device::idxMom<index::zz()>(threadIdx, blockIdx)] = moments.arr[9];
+        // Coalesced write to global memory
+        devPtrs.ptr<0>()[device::idx()] = moments.arr[0] - rho0();
+        devPtrs.ptr<1>()[device::idx()] = moments.arr[1];
+        devPtrs.ptr<2>()[device::idx()] = moments.arr[2];
+        devPtrs.ptr<3>()[device::idx()] = moments.arr[3];
+        devPtrs.ptr<4>()[device::idx()] = moments.arr[4];
+        devPtrs.ptr<5>()[device::idx()] = moments.arr[5];
+        devPtrs.ptr<6>()[device::idx()] = moments.arr[6];
+        devPtrs.ptr<7>()[device::idx()] = moments.arr[7];
+        devPtrs.ptr<8>()[device::idx()] = moments.arr[8];
+        devPtrs.ptr<9>()[device::idx()] = moments.arr[9];
 
         // Save the populations to the block halo
         blockHalo.popSave<VelocitySet::D3Q19>(pop.arr);

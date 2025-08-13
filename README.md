@@ -34,7 +34,7 @@ The code has been benchmarked with the lid driven cavity case on an **NVIDIA RTX
 
 ```
 
-git clone [https://github.com/geoenergiaUDESC/cudaLBM.git](https://github.com/geoenergiaUDESC/cudaLBM.git)
+git clone https://github.com/geoenergiaUDESC/cudaLBM.git
 
 ```
 

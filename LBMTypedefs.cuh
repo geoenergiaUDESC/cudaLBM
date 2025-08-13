@@ -297,6 +297,47 @@ namespace LBM
         __device__ __constant__ label_t NUM_BLOCK_X;
         __device__ __constant__ label_t NUM_BLOCK_Y;
         __device__ __constant__ label_t NUM_BLOCK_Z;
+
+        /**
+         * @brief Struct holding N device pointers of type T
+         **/
+        template <label_t N, typename T>
+        struct ptrCollection
+        {
+            static_assert(N > 0, "N must be positive"); // Ensure N is valid
+
+            /**
+             * @brief Variadic constructor: construct from an arbitrary number of pointers
+             * @return A pointer collection object constructed from args
+             * @param args An arbitrary number N of pointers of type T
+             **/
+            template <typename... Args>
+            __host__ __device__ constexpr ptrCollection(const Args... args)
+                : ptrs_{args...} // Initialize array with arguments
+            {
+                static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
+
+                static_assert((std::is_convertible_v<Args, T *> && ...), "All arguments must be convertible to T*");
+            }
+
+            /**
+             * @brief Provides access to the GPU pointer
+             * @param i The index of the pointer
+             **/
+            template <const label_t i>
+            __device__ __host__ [[nodiscard]] inline constexpr T *ptr() const noexcept
+            {
+                static_assert(i < N, "Invalid pointer access");
+
+                return ptrs_[i];
+            }
+
+        private:
+            /**
+             * @brief The underlying pointers
+             **/
+            T *const ptrRestrict ptrs_[N];
+        };
     }
 }
 

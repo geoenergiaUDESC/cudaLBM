@@ -23,7 +23,7 @@ int main(const int argc, const char *const argv[])
     checkCudaErrors(cudaDeviceSynchronize());
 
     // Setup Streams
-     const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
+    const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Perform device memory allocation
     device::array<scalar_t> rho(host::host_to_device<0>(hostMoments.arr(), mesh), {"rho"}, mesh);
@@ -93,14 +93,6 @@ int main(const int argc, const char *const argv[])
                 timeStep);
         }
     }
-
-    // const label_t timeStep = 0;
-    // fileIO::writeFile(
-    //     programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-    //     mesh,
-    //     hostMoments.varNames(),
-    //     host::device_to_host(devPtrs, mesh),
-    //     timeStep);
 
     // Get ending time point and output the elapsed time
     const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

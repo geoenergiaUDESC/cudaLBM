@@ -27,12 +27,14 @@ namespace LBM
         template <class VSet>
         __device__ static inline void save(
             const scalar_t (&ptrRestrict pop)[VSet::Q()],
-            scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
+            scalar_t *s_pop, // Flattened shared buffer
+            const label_t tid) noexcept
         {
             device::constexpr_for<0, (VSet::Q() - 1)>(
                 [&](const auto q_)
                 {
-                    s_pop[idxPopBlock<q_>(threadIdx)] = pop[q_ + 1];
+                    // const label_t idx = q_ * block::stride() + tid;
+                    s_pop[q_ * block::stride() + tid] = pop[q_ + 1];
                 });
 
             __syncthreads();
@@ -46,7 +48,7 @@ namespace LBM
         template <class VSet>
         __device__ static inline void pull(
             scalar_t (&ptrRestrict pop)[VSet::Q()],
-            const scalar_t (&ptrRestrict s_pop)[block::size() * (VSet::Q() - 1)]) noexcept
+            const scalar_t *s_pop) noexcept
         {
             const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
             const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
@@ -55,24 +57,30 @@ namespace LBM
             const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
             const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
 
-            pop[1] = s_pop[idxPopBlock<0>(xm1, threadIdx.y, threadIdx.z)];
-            pop[2] = s_pop[idxPopBlock<1>(xp1, threadIdx.y, threadIdx.z)];
-            pop[3] = s_pop[idxPopBlock<2>(threadIdx.x, ym1, threadIdx.z)];
-            pop[4] = s_pop[idxPopBlock<3>(threadIdx.x, yp1, threadIdx.z)];
-            pop[5] = s_pop[idxPopBlock<4>(threadIdx.x, threadIdx.y, zm1)];
-            pop[6] = s_pop[idxPopBlock<5>(threadIdx.x, threadIdx.y, zp1)];
-            pop[7] = s_pop[idxPopBlock<6>(xm1, ym1, threadIdx.z)];
-            pop[8] = s_pop[idxPopBlock<7>(xp1, yp1, threadIdx.z)];
-            pop[9] = s_pop[idxPopBlock<8>(xm1, threadIdx.y, zm1)];
-            pop[10] = s_pop[idxPopBlock<9>(xp1, threadIdx.y, zp1)];
-            pop[11] = s_pop[idxPopBlock<10>(threadIdx.x, ym1, zm1)];
-            pop[12] = s_pop[idxPopBlock<11>(threadIdx.x, yp1, zp1)];
-            pop[13] = s_pop[idxPopBlock<12>(xm1, yp1, threadIdx.z)];
-            pop[14] = s_pop[idxPopBlock<13>(xp1, ym1, threadIdx.z)];
-            pop[15] = s_pop[idxPopBlock<14>(xm1, threadIdx.y, zp1)];
-            pop[16] = s_pop[idxPopBlock<15>(xp1, threadIdx.y, zm1)];
-            pop[17] = s_pop[idxPopBlock<16>(threadIdx.x, ym1, zp1)];
-            pop[18] = s_pop[idxPopBlock<17>(threadIdx.x, yp1, zm1)];
+            // Helper lambda for linear index calculation
+            auto linearIdx = [](label_t tx, label_t ty, label_t tz)
+            {
+                return tx + block::nx() * (ty + block::ny() * tz);
+            };
+
+            pop[1] = s_pop[0 * block::stride() + linearIdx(xm1, threadIdx.y, threadIdx.z)];
+            pop[2] = s_pop[1 * block::stride() + linearIdx(xp1, threadIdx.y, threadIdx.z)];
+            pop[3] = s_pop[2 * block::stride() + linearIdx(threadIdx.x, ym1, threadIdx.z)];
+            pop[4] = s_pop[3 * block::stride() + linearIdx(threadIdx.x, yp1, threadIdx.z)];
+            pop[5] = s_pop[4 * block::stride() + linearIdx(threadIdx.x, threadIdx.y, zm1)];
+            pop[6] = s_pop[5 * block::stride() + linearIdx(threadIdx.x, threadIdx.y, zp1)];
+            pop[7] = s_pop[6 * block::stride() + linearIdx(xm1, ym1, threadIdx.z)];
+            pop[8] = s_pop[7 * block::stride() + linearIdx(xp1, yp1, threadIdx.z)];
+            pop[9] = s_pop[8 * block::stride() + linearIdx(xm1, threadIdx.y, zm1)];
+            pop[10] = s_pop[9 * block::stride() + linearIdx(xp1, threadIdx.y, zp1)];
+            pop[11] = s_pop[10 * block::stride() + linearIdx(threadIdx.x, ym1, zm1)];
+            pop[12] = s_pop[11 * block::stride() + linearIdx(threadIdx.x, yp1, zp1)];
+            pop[13] = s_pop[12 * block::stride() + linearIdx(xm1, yp1, threadIdx.z)];
+            pop[14] = s_pop[13 * block::stride() + linearIdx(xp1, ym1, threadIdx.z)];
+            pop[15] = s_pop[14 * block::stride() + linearIdx(xm1, threadIdx.y, zp1)];
+            pop[16] = s_pop[15 * block::stride() + linearIdx(xp1, threadIdx.y, zm1)];
+            pop[17] = s_pop[16 * block::stride() + linearIdx(threadIdx.x, ym1, zp1)];
+            pop[18] = s_pop[17 * block::stride() + linearIdx(threadIdx.x, yp1, zm1)];
         }
 
     private:

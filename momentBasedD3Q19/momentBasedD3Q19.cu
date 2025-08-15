@@ -52,7 +52,6 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t> deviceMoments(hostMoments, mesh);
     device::halo blockHalo(hostMoments.arr(), mesh);
 
-    // checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
     std::cout << "Time loop start" << std::endl;

@@ -80,7 +80,14 @@ namespace LBM
              * @param pop The population density array into which the halo points are to be loaded
              **/
             template <class VSet>
-            __device__ inline void popLoad(scalar_t (&ptrRestrict pop)[VSet::Q()]) const noexcept
+            __device__ static inline void popLoad(
+                scalar_t (&ptrRestrict pop)[VSet::Q()],
+                const scalar_t *const ptrRestrict fx0,
+                const scalar_t *const ptrRestrict fx1,
+                const scalar_t *const ptrRestrict fy0,
+                const scalar_t *const ptrRestrict fy1,
+                const scalar_t *const ptrRestrict fz0,
+                const scalar_t *const ptrRestrict fz1) noexcept
             {
                 const label_t tx = threadIdx.x;
                 const label_t ty = threadIdx.y;
@@ -110,53 +117,53 @@ namespace LBM
 
                 if (tx == 0)
                 { // w
-                    pop[1] = fGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)];
-                    pop[7] = fGhost_.x1()[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[9] = fGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = fGhost_.x1()[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[15] = fGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[1] = fx1[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)];
+                    pop[7] = fx1[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
+                    pop[9] = fx1[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
+                    pop[13] = fx1[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[15] = fx1[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
                 else if (tx == (block::nx() - 1))
                 { // e
-                    pop[2] = fGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)];
-                    pop[8] = fGhost_.x0()[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[10] = fGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[14] = fGhost_.x0()[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[16] = fGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
+                    pop[2] = fx0[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)];
+                    pop[8] = fx0[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
+                    pop[10] = fx0[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[14] = fx0[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
+                    pop[16] = fx0[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
                 }
 
                 if (ty == 0)
                 { // s
-                    pop[3] = fGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)];
-                    pop[7] = fGhost_.y1()[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
-                    pop[11] = fGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = fGhost_.y1()[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = fGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[3] = fy1[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)];
+                    pop[7] = fy1[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
+                    pop[11] = fy1[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
+                    pop[14] = fy1[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
+                    pop[17] = fy1[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
                 }
                 else if (ty == (block::ny() - 1))
                 { // n
-                    pop[4] = fGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)];
-                    pop[8] = fGhost_.y0()[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = fGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[13] = fGhost_.y0()[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
-                    pop[18] = fGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
+                    pop[4] = fy0[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)];
+                    pop[8] = fy0[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
+                    pop[12] = fy0[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[13] = fy0[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
+                    pop[18] = fy0[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
                 }
 
                 if (tz == 0)
                 { // b
-                    pop[5] = fGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)];
-                    pop[9] = fGhost_.z1()[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
-                    pop[11] = fGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = fGhost_.z1()[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = fGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
+                    pop[5] = fz1[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)];
+                    pop[9] = fz1[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
+                    pop[11] = fz1[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
+                    pop[16] = fz1[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
+                    pop[18] = fz1[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
                 }
                 else if (tz == (block::nz() - 1))
                 { // f
-                    pop[6] = fGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)];
-                    pop[10] = fGhost_.z0()[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = fGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
-                    pop[15] = fGhost_.z0()[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
-                    pop[17] = fGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
+                    pop[6] = fz0[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)];
+                    pop[10] = fz0[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
+                    pop[12] = fz0[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
+                    pop[15] = fz0[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
+                    pop[17] = fz0[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
                 }
             }
 
@@ -165,7 +172,14 @@ namespace LBM
              * @param pop The population density array from which the halo points are to be saved
              **/
             template <class VSet>
-            __device__ inline void popSave(const scalar_t (&ptrRestrict pop)[VSet::Q()]) noexcept
+            __device__ static inline void popSave(
+                const scalar_t (&ptrRestrict pop)[VSet::Q()],
+                scalar_t *const ptrRestrict gx0,
+                scalar_t *const ptrRestrict gx1,
+                scalar_t *const ptrRestrict gy0,
+                scalar_t *const ptrRestrict gy1,
+                scalar_t *const ptrRestrict gz0,
+                scalar_t *const ptrRestrict gz1) noexcept
             {
                 const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
                 const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
@@ -182,53 +196,53 @@ namespace LBM
                 /* write to global pop **/
                 if (West(x))
                 { // w
-                    gGhost_.x0()[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[2];
-                    gGhost_.x0()[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[8];
-                    gGhost_.x0()[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[10];
-                    gGhost_.x0()[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[14];
-                    gGhost_.x0()[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[16];
+                    gx0[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[2];
+                    gx0[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[8];
+                    gx0[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[10];
+                    gx0[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[14];
+                    gx0[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[16];
                 }
                 if (East(x))
                 { // e
-                    gGhost_.x1()[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[1];
-                    gGhost_.x1()[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[7];
-                    gGhost_.x1()[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[9];
-                    gGhost_.x1()[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[13];
-                    gGhost_.x1()[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[15];
+                    gx1[idxPopX<0, VSet::QF()>(ty, tz, blockIdx)] = pop[1];
+                    gx1[idxPopX<1, VSet::QF()>(ty, tz, blockIdx)] = pop[7];
+                    gx1[idxPopX<2, VSet::QF()>(ty, tz, blockIdx)] = pop[9];
+                    gx1[idxPopX<3, VSet::QF()>(ty, tz, blockIdx)] = pop[13];
+                    gx1[idxPopX<4, VSet::QF()>(ty, tz, blockIdx)] = pop[15];
                 }
 
                 if (South(y))
                 { // s
-                    gGhost_.y0()[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[4];
-                    gGhost_.y0()[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[8];
-                    gGhost_.y0()[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[12];
-                    gGhost_.y0()[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[13];
-                    gGhost_.y0()[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[18];
+                    gy0[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[4];
+                    gy0[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[8];
+                    gy0[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[12];
+                    gy0[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[13];
+                    gy0[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[18];
                 }
                 if (North(y))
                 { // n
-                    gGhost_.y1()[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[3];
-                    gGhost_.y1()[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[7];
-                    gGhost_.y1()[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[11];
-                    gGhost_.y1()[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[14];
-                    gGhost_.y1()[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[17];
+                    gy1[idxPopY<0, VSet::QF()>(tx, tz, blockIdx)] = pop[3];
+                    gy1[idxPopY<1, VSet::QF()>(tx, tz, blockIdx)] = pop[7];
+                    gy1[idxPopY<2, VSet::QF()>(tx, tz, blockIdx)] = pop[11];
+                    gy1[idxPopY<3, VSet::QF()>(tx, tz, blockIdx)] = pop[14];
+                    gy1[idxPopY<4, VSet::QF()>(tx, tz, blockIdx)] = pop[17];
                 }
 
                 if (Back(z))
                 { // b
-                    gGhost_.z0()[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[6];
-                    gGhost_.z0()[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[10];
-                    gGhost_.z0()[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[12];
-                    gGhost_.z0()[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[15];
-                    gGhost_.z0()[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[17];
+                    gz0[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[6];
+                    gz0[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[10];
+                    gz0[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[12];
+                    gz0[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[15];
+                    gz0[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[17];
                 }
                 if (Front(z))
                 {
-                    gGhost_.z1()[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[5];
-                    gGhost_.z1()[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[9];
-                    gGhost_.z1()[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[11];
-                    gGhost_.z1()[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[16];
-                    gGhost_.z1()[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[18];
+                    gz1[idxPopZ<0, VSet::QF()>(tx, ty, blockIdx)] = pop[5];
+                    gz1[idxPopZ<1, VSet::QF()>(tx, ty, blockIdx)] = pop[9];
+                    gz1[idxPopZ<2, VSet::QF()>(tx, ty, blockIdx)] = pop[11];
+                    gz1[idxPopZ<3, VSet::QF()>(tx, ty, blockIdx)] = pop[16];
+                    gz1[idxPopZ<4, VSet::QF()>(tx, ty, blockIdx)] = pop[18];
                 }
             }
 
@@ -244,27 +258,27 @@ namespace LBM
              * @param xyz The coordinate in the x, y or z directions
              * @return True if x, y or z is at a block boundary, false otherwise
              **/
-            __device__ [[nodiscard]] inline bool West(const label_t x) const noexcept
+            __device__ [[nodiscard]] static inline bool West(const label_t x) noexcept
             {
                 return (threadIdx.x == 0 && x != 0);
             }
-            __device__ [[nodiscard]] inline bool East(const label_t x) const noexcept
+            __device__ [[nodiscard]] static inline bool East(const label_t x) noexcept
             {
                 return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
             }
-            __device__ [[nodiscard]] inline bool South(const label_t y) const noexcept
+            __device__ [[nodiscard]] static inline bool South(const label_t y) noexcept
             {
                 return (threadIdx.y == 0 && y != 0);
             }
-            __device__ [[nodiscard]] inline bool North(const label_t y) const noexcept
+            __device__ [[nodiscard]] static inline bool North(const label_t y) noexcept
             {
                 return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
             }
-            __device__ [[nodiscard]] inline bool Back(const label_t z) const noexcept
+            __device__ [[nodiscard]] static inline bool Back(const label_t z) noexcept
             {
                 return (threadIdx.z == 0 && z != 0);
             }
-            __device__ [[nodiscard]] inline bool Front(const label_t z) const noexcept
+            __device__ [[nodiscard]] static inline bool Front(const label_t z) noexcept
             {
                 return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));
             }

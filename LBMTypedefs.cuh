@@ -24,7 +24,7 @@ namespace LBM
         if (err != cudaSuccess)
         {
             std::cerr << "CUDA error at " << loc.file_name() << "(" << loc.line() << "):" << loc.function_name() << ": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
-            std::exit(-1);
+            std::exit(static_cast<int>(err));
         }
     }
 
@@ -42,8 +42,29 @@ namespace LBM
         if (err != cudaSuccess)
         {
             std::cerr << "CUDA error at " << loc.file_name() << "(" << loc.line() << "):" << loc.function_name() << ": [" << static_cast<int>(err) << "] " << cudaGetErrorString(err) << "." << std::endl;
-            std::exit(-1);
+            std::exit(static_cast<int>(err));
         }
+    }
+
+    void errorHandler(
+        const int err,
+        const std::string &errorString,
+        const std::source_location &loc = std::source_location::current()) noexcept
+    {
+        std::cerr
+            << "Run time error error at "
+            << loc.file_name()
+            << "("
+            << loc.line()
+            << "):"
+            << loc.function_name()
+            << ": ["
+            << err
+            << "] "
+            << errorString
+            << "."
+            << std::endl;
+        std::exit(err);
     }
 
     /**
@@ -126,34 +147,6 @@ namespace LBM
     {
         T arr[N];
     };
-
-    /**
-     * @brief Type used to hold 6 pointers to const data
-     **/
-    struct deviceConstPointers_t
-    {
-        const scalar_t *const ptrRestrict x0;
-        const scalar_t *const ptrRestrict x1;
-        const scalar_t *const ptrRestrict y0;
-        const scalar_t *const ptrRestrict y1;
-        const scalar_t *const ptrRestrict z0;
-        const scalar_t *const ptrRestrict z1;
-    };
-
-    /**
-     * @brief Type used to hold 6 pointers to mutable data
-     **/
-    struct devicePointers_t
-    {
-        scalar_t *const ptrRestrict x0;
-        scalar_t *const ptrRestrict x1;
-        scalar_t *const ptrRestrict y0;
-        scalar_t *const ptrRestrict y1;
-        scalar_t *const ptrRestrict z0;
-        scalar_t *const ptrRestrict z1;
-    };
-
-    // typedef uint8_t nodeType_t;
 
     /**
      * @brief Type used for arrays of labels

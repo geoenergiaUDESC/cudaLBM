@@ -41,6 +41,26 @@ namespace LBM
                 std::cout << std::endl;
 #endif
 
+                // Perform a block dimensions safety check
+                {
+                    if (!(block::nx() * nxBlocks() == nx_))
+                    {
+                        errorHandler(ERR_SIZE, "block::nx() * mesh.nxBlocks() not equal to mesh.nx()\nMesh dimensions should be multiples of 32");
+                    }
+                    if (!(block::ny() * nyBlocks() == ny_))
+                    {
+                        errorHandler(ERR_SIZE, "block::ny() * mesh.nyBlocks() not equal to mesh.ny()\nMesh dimensions should be multiples of 32");
+                    }
+                    if (!(block::nz() * nzBlocks() == nz_))
+                    {
+                        errorHandler(ERR_SIZE, "block::nz() * mesh.nzBlocks() not equal to mesh.nz()\nMesh dimensions should be multiples of 32");
+                    }
+                    if (!(block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() == nx_ * ny_ * nz_))
+                    {
+                        errorHandler(ERR_SIZE, "block::nx() * nxBlocks() * block::ny() * nyBlocks() * block::nz() * nzBlocks() not equal to mesh.nPoints()\nMesh dimensions should be multiples of 32");
+                    }
+                }
+
                 const scalar_t ReTemp = programCtrl.Re();
                 const scalar_t u_infTemp = programCtrl.u_inf();
                 const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();

@@ -1,0 +1,26 @@
+# Hardware information file automatically generated
+# Compiled on: Sep  5 2025 11:19:39
+# Executed on: 2025-09-05 11:19:46
+
+# Properties for CUDA Device ID: 0
+GPU_NAME_0 = NVIDIA RTX A4000
+GPU_ARCH_MAJOR_0 = 8
+GPU_ARCH_MINOR_0 = 6
+GPU_GLOBAL_MEM_MB_0 = 16375
+GPU_SHARED_MEM_PER_BLOCK_KB_0 = 48
+GPU_REGS_PER_BLOCK_0 = 65536
+GPU_MAX_THREADS_PER_BLOCK_0 = 1024
+GPU_MULTIPROCESSOR_COUNT_0 = 48
+
+# Properties for CUDA Device ID: 1
+GPU_NAME_1 = NVIDIA RTX A4000
+GPU_ARCH_MAJOR_1 = 8
+GPU_ARCH_MINOR_1 = 6
+GPU_GLOBAL_MEM_MB_1 = 16375
+GPU_SHARED_MEM_PER_BLOCK_KB_1 = 48
+GPU_REGS_PER_BLOCK_1 = 65536
+GPU_MAX_THREADS_PER_BLOCK_1 = 1024
+GPU_MULTIPROCESSOR_COUNT_1 = 48
+
+# Consolidated architecture flags for all found GPUs (no duplicates)
+NVCXX_ALL_ARCHFLAGS = -gencode arch=compute_86,code=sm_86

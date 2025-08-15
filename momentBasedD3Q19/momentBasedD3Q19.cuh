@@ -23,7 +23,18 @@ namespace LBM
      **/
     launchBounds __global__ void momentBasedD3Q19(
         const device::ptrCollection<10, scalar_t> devPtrs,
-        device::halo blockHalo)
+        const scalar_t *const ptrRestrict fx0,
+        const scalar_t *const ptrRestrict fx1,
+        const scalar_t *const ptrRestrict fy0,
+        const scalar_t *const ptrRestrict fy1,
+        const scalar_t *const ptrRestrict fz0,
+        const scalar_t *const ptrRestrict fz1,
+        scalar_t *const ptrRestrict gx0,
+        scalar_t *const ptrRestrict gx1,
+        scalar_t *const ptrRestrict gy0,
+        scalar_t *const ptrRestrict gy1,
+        scalar_t *const ptrRestrict gz0,
+        scalar_t *const ptrRestrict gz1)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if (device::out_of_bounds())
@@ -34,12 +45,12 @@ namespace LBM
         // Coalesced read from global memory
         threadArray<scalar_t, NUMBER_MOMENTS()> moments;
         {
-            __shared__ scalar_t s_mom[10][block::size()];
+            __shared__ scalar_t s_mom[NUMBER_MOMENTS()][block::size()];
 
             const label_t thread_idx_in_block = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
 
             // Read into shared
-            device::constexpr_for<0, 10>(
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto q_)
                 {
                     s_mom[q_][thread_idx_in_block] = devPtrs.ptr<q_>()[device::idx()];
@@ -57,7 +68,6 @@ namespace LBM
             moments.arr[7] = s_mom[7][thread_idx_in_block];
             moments.arr[8] = s_mom[8][thread_idx_in_block];
             moments.arr[9] = s_mom[9][thread_idx_in_block];
-            // __syncthreads();
         }
 
         // Reconstruct the population from the moments
@@ -76,7 +86,11 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        blockHalo.popLoad<VelocitySet::D3Q19>(pop.arr);
+        device::halo::popLoad<VelocitySet::D3Q19>(
+            pop.arr,
+            fx0, fx1,
+            fy0, fy1,
+            fz0, fz1);
 
         // Calculate the moments either at the boundary or interior
         const normalVector b_n;
@@ -99,19 +113,19 @@ namespace LBM
         VelocitySet::D3Q19::reconstruct(pop.arr, moments.arr);
 
         // Coalesced write to global memory
-        devPtrs.ptr<0>()[device::idx()] = moments.arr[0] - rho0();
-        devPtrs.ptr<1>()[device::idx()] = moments.arr[1];
-        devPtrs.ptr<2>()[device::idx()] = moments.arr[2];
-        devPtrs.ptr<3>()[device::idx()] = moments.arr[3];
-        devPtrs.ptr<4>()[device::idx()] = moments.arr[4];
-        devPtrs.ptr<5>()[device::idx()] = moments.arr[5];
-        devPtrs.ptr<6>()[device::idx()] = moments.arr[6];
-        devPtrs.ptr<7>()[device::idx()] = moments.arr[7];
-        devPtrs.ptr<8>()[device::idx()] = moments.arr[8];
-        devPtrs.ptr<9>()[device::idx()] = moments.arr[9];
+        moments.arr[0] = moments.arr[0] - rho0();
+        device::constexpr_for<0, NUMBER_MOMENTS()>(
+            [&](const auto q_)
+            {
+                devPtrs.ptr<q_>()[device::idx()] = moments.arr[q_];
+            });
 
         // Save the populations to the block halo
-        blockHalo.popSave<VelocitySet::D3Q19>(pop.arr);
+        device::halo::popSave<VelocitySet::D3Q19>(
+            pop.arr,
+            gx0, gx1,
+            gy0, gy1,
+            gz0, gz1);
     }
 }
 

@@ -40,37 +40,47 @@ namespace LBM
         scalar_t *const ptrRestrict gz1)
     {
         // Always a multiple of 32, so no need to check this(I think)
-        if (device::out_of_bounds())
-        {
-            return;
-        }
+        // if (device::out_of_bounds())
+        // {
+        //     return;
+        // }
+
+        // Declare shared memory (flattened)
+        __shared__ scalar_t shared_buffer[block::sharedMemoryBufferSize<VelocitySet::D3Q19>()];
+
+        const label_t tid = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
+        const label_t idx = device::idx();
 
         // Coalesced read from global memory
         threadArray<scalar_t, NUMBER_MOMENTS()> moments;
         {
-            __shared__ scalar_t s_mom[NUMBER_MOMENTS()][block::size()];
-
-            const label_t thread_idx_in_block = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
 
             // Read into shared
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto q_)
-                {
-                    s_mom[q_][thread_idx_in_block] = devPtrs.ptr<q_>()[device::idx()];
-                });
+            shared_buffer[0 * block::stride() + tid] = devPtrs.ptr<0>()[device::idx()];
+            shared_buffer[1 * block::stride() + tid] = devPtrs.ptr<1>()[device::idx()];
+            shared_buffer[2 * block::stride() + tid] = devPtrs.ptr<2>()[device::idx()];
+            shared_buffer[3 * block::stride() + tid] = devPtrs.ptr<3>()[device::idx()];
+            shared_buffer[4 * block::stride() + tid] = devPtrs.ptr<4>()[device::idx()];
+            shared_buffer[5 * block::stride() + tid] = devPtrs.ptr<5>()[device::idx()];
+            shared_buffer[6 * block::stride() + tid] = devPtrs.ptr<6>()[device::idx()];
+            shared_buffer[7 * block::stride() + tid] = devPtrs.ptr<7>()[device::idx()];
+            shared_buffer[8 * block::stride() + tid] = devPtrs.ptr<8>()[device::idx()];
+            shared_buffer[9 * block::stride() + tid] = devPtrs.ptr<9>()[device::idx()];
+
+            // Synchronise before pulling into thread
             __syncthreads();
 
             // Pull into thread memory
-            moments.arr[0] = s_mom[0][thread_idx_in_block] + rho0();
-            moments.arr[1] = s_mom[1][thread_idx_in_block];
-            moments.arr[2] = s_mom[2][thread_idx_in_block];
-            moments.arr[3] = s_mom[3][thread_idx_in_block];
-            moments.arr[4] = s_mom[4][thread_idx_in_block];
-            moments.arr[5] = s_mom[5][thread_idx_in_block];
-            moments.arr[6] = s_mom[6][thread_idx_in_block];
-            moments.arr[7] = s_mom[7][thread_idx_in_block];
-            moments.arr[8] = s_mom[8][thread_idx_in_block];
-            moments.arr[9] = s_mom[9][thread_idx_in_block];
+            moments.arr[0] = shared_buffer[0 * block::stride() + tid] + rho0();
+            moments.arr[1] = shared_buffer[1 * block::stride() + tid];
+            moments.arr[2] = shared_buffer[2 * block::stride() + tid];
+            moments.arr[3] = shared_buffer[3 * block::stride() + tid];
+            moments.arr[4] = shared_buffer[4 * block::stride() + tid];
+            moments.arr[5] = shared_buffer[5 * block::stride() + tid];
+            moments.arr[6] = shared_buffer[6 * block::stride() + tid];
+            moments.arr[7] = shared_buffer[7 * block::stride() + tid];
+            moments.arr[8] = shared_buffer[8 * block::stride() + tid];
+            moments.arr[9] = shared_buffer[9 * block::stride() + tid];
         }
 
         // Reconstruct the population from the moments
@@ -78,14 +88,11 @@ namespace LBM
 
         // Save/pull from shared memory
         {
-            // Declare shared memory
-            __shared__ sharedArray<scalar_t, VSet::Q() - 1, block::size()> s_pop;
-
             // Save populations in shared memory
-            sharedMemory::save<VSet>(pop.arr, s_pop.arr);
+            sharedMemory::save<VelocitySet::D3Q19>(pop.arr, shared_buffer, tid);
 
             // Pull from shared memory
-            sharedMemory::pull<VSet>(pop.arr, s_pop.arr);
+            sharedMemory::pull<VelocitySet::D3Q19>(pop.arr, shared_buffer);
         }
 
         // Load pop from global memory in cover nodes
@@ -96,14 +103,16 @@ namespace LBM
             fz0, fz1);
 
         // Calculate the moments either at the boundary or interior
-        const normalVector b_n;
-        if (b_n.isBoundary())
         {
-            boundaryConditions::calculateMoments<VSet>(pop.arr, moments.arr, b_n);
-        }
-        else
-        {
-            VSet::calculateMoments(pop.arr, moments.arr);
+            const normalVector b_n;
+            if (b_n.isBoundary())
+            {
+                boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop.arr, moments.arr, b_n);
+            }
+            else
+            {
+                VelocitySet::D3Q19::calculateMoments(pop.arr, moments.arr);
+            }
         }
 
         // Scale the moments correctly
@@ -113,15 +122,24 @@ namespace LBM
         Collision::collide(moments.arr);
 
         // Calculate post collision populations
-        VSet::reconstruct(pop.arr, moments.arr);
+        VelocitySet::D3Q19::reconstruct(pop.arr, moments.arr);
+
+        // __pipeline pipeline;
 
         // Coalesced write to global memory
         moments.arr[0] = moments.arr[0] - rho0();
-        device::constexpr_for<0, NUMBER_MOMENTS()>(
-            [&](const auto q_)
-            {
-                devPtrs.ptr<q_>()[device::idx()] = moments.arr[q_];
-            });
+        {
+            devPtrs.ptr<0>()[idx] = moments.arr[0];
+            devPtrs.ptr<1>()[idx] = moments.arr[1];
+            devPtrs.ptr<2>()[idx] = moments.arr[2];
+            devPtrs.ptr<3>()[idx] = moments.arr[3];
+            devPtrs.ptr<4>()[idx] = moments.arr[4];
+            devPtrs.ptr<5>()[idx] = moments.arr[5];
+            devPtrs.ptr<6>()[idx] = moments.arr[6];
+            devPtrs.ptr<7>()[idx] = moments.arr[7];
+            devPtrs.ptr<8>()[idx] = moments.arr[8];
+            devPtrs.ptr<9>()[idx] = moments.arr[9];
+        }
 
         // Save the populations to the block halo
         device::halo::popSave<VelocitySet::D3Q19>(

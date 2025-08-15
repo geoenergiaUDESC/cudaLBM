@@ -134,7 +134,7 @@ namespace LBM
     template <typename T, const label_t N, const label_t blockSize>
     struct sharedArray
     {
-        T arr[blockSize * N];
+        T arr[N][blockSize];
     };
 
     /**

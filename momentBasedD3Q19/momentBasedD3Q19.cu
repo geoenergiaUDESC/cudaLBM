@@ -23,7 +23,7 @@ int main(const int argc, const char *const argv[])
     checkCudaErrors(cudaDeviceSynchronize());
 
     // Setup Streams
-    // const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
+     const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Perform device memory allocation
     device::array<scalar_t> rho(host::host_to_device<0>(hostMoments.arr(), mesh), {"rho"}, mesh);
@@ -59,48 +59,48 @@ int main(const int argc, const char *const argv[])
 
     const std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-    // for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
-    // {
-    //     if (programCtrl.print(timeStep))
-    //     {
-    //         std::cout << "Time: " << timeStep << "\n";
-    //     }
+    for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
+    {
+        if (programCtrl.print(timeStep))
+        {
+            std::cout << "Time: " << timeStep << "\n";
+        }
 
-    //     momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
-    //         devPtrs,
-    //         blockHalo.fGhost().x0(),
-    //         blockHalo.fGhost().x1(),
-    //         blockHalo.fGhost().y0(),
-    //         blockHalo.fGhost().y1(),
-    //         blockHalo.fGhost().z0(),
-    //         blockHalo.fGhost().z1(),
-    //         blockHalo.gGhost().x0(),
-    //         blockHalo.gGhost().x1(),
-    //         blockHalo.gGhost().y0(),
-    //         blockHalo.gGhost().y1(),
-    //         blockHalo.gGhost().z0(),
-    //         blockHalo.gGhost().z1());
+        momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
+            devPtrs,
+            blockHalo.fGhost().x0(),
+            blockHalo.fGhost().x1(),
+            blockHalo.fGhost().y0(),
+            blockHalo.fGhost().y1(),
+            blockHalo.fGhost().z0(),
+            blockHalo.fGhost().z1(),
+            blockHalo.gGhost().x0(),
+            blockHalo.gGhost().x1(),
+            blockHalo.gGhost().y0(),
+            blockHalo.gGhost().y1(),
+            blockHalo.gGhost().z0(),
+            blockHalo.gGhost().z1());
 
-    //     blockHalo.swap();
+        blockHalo.swap();
 
-    //     if (programCtrl.save(timeStep))
-    //     {
-    //         fileIO::writeFile(
-    //             programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-    //             mesh,
-    //             hostMoments.varNames(),
-    //             host::device_to_host(devPtrs, mesh),
-    //             timeStep);
-    //     }
-    // }
+        if (programCtrl.save(timeStep))
+        {
+            fileIO::writeFile(
+                programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
+                mesh,
+                hostMoments.varNames(),
+                host::device_to_host(devPtrs, mesh),
+                timeStep);
+        }
+    }
 
-    const label_t timeStep = 0;
-    fileIO::writeFile(
-        programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-        mesh,
-        hostMoments.varNames(),
-        host::device_to_host(devPtrs, mesh),
-        timeStep);
+    // const label_t timeStep = 0;
+    // fileIO::writeFile(
+    //     programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
+    //     mesh,
+    //     hostMoments.varNames(),
+    //     host::device_to_host(devPtrs, mesh),
+    //     timeStep);
 
     // Get ending time point and output the elapsed time
     const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

@@ -45,17 +45,15 @@ namespace LBM
 
             /**
              * @brief Destructor for the haloFace class
-             * @note Causes a crash (illegal memory access) if cudaFree is uncommented
-             * @note FIX THIS!!!!
              **/
             ~haloFace() noexcept
             {
-                // cudaFree(x0_);
-                // cudaFree(x1_);
-                // cudaFree(y0_);
-                // cudaFree(y1_);
-                // cudaFree(z0_);
-                // cudaFree(z1_);
+                cudaFree(x0_);
+                cudaFree(x1_);
+                cudaFree(y0_);
+                cudaFree(y1_);
+                cudaFree(z0_);
+                cudaFree(z1_);
             }
 
             /**
@@ -162,7 +160,7 @@ namespace LBM
              * @param mesh The mesh
              **/
             template <const std::size_t faceIndex>
-            [[nodiscard]] inline constexpr std::size_t nFaces(const host::latticeMesh &mesh) const noexcept
+            __host__ [[nodiscard]] static inline constexpr std::size_t nFaces(const host::latticeMesh &mesh) noexcept
             {
                 if constexpr (faceIndex == device::haloFaces::x())
                 {

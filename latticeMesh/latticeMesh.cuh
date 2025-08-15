@@ -129,7 +129,7 @@ namespace LBM
              * @brief Returns the dimensions of a thread block in the x, y and z directions
              * @return Dimensions of a thread block as a dim3
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr dim3 threadBlock() const noexcept
+            __device__ __host__ [[nodiscard]] inline consteval dim3 threadBlock() const noexcept
             {
                 return {block::nx(), block::ny(), block::nz()};
             }

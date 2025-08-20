@@ -7,15 +7,8 @@ This class is used to exchange the microscopic velocity components at the edge o
 #ifndef __MBLBM_HALO_CUH
 #define __MBLBM_HALO_CUH
 
-#include "haloFace.cuh"
-
 namespace LBM
 {
-    namespace host
-    {
-
-    }
-
     namespace device
     {
         class halo
@@ -50,29 +43,21 @@ namespace LBM
             }
 
             /**
-             * @brief Provides read-only access to the halos
-             * @return A const-qualified reference to the halos
+             * @brief Provides access to the read halo
+             * @return A collection of const-qualified pointers to the read halo
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &fGhost() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> fGhost() const noexcept
             {
-                return fGhost_;
-            }
-            __device__ __host__ [[nodiscard]] inline constexpr const haloFace &gGhost() const noexcept
-            {
-                return gGhost_;
+                return {fGhost_.x0Const(), fGhost_.x1Const(), fGhost_.y0Const(), fGhost_.y1Const(), fGhost_.z0Const(), fGhost_.z1Const()};
             }
 
             /**
-             * @brief Provides mutable access to the halos
-             * @return A reference to the halos
+             * @brief Provides access to the read halo
+             * @return A collection of mutable pointers to the read halo
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr haloFace &fGhost() noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> gGhost() noexcept
             {
-                return fGhost_;
-            }
-            __device__ __host__ [[nodiscard]] inline constexpr haloFace &gGhost() noexcept
-            {
-                return gGhost_;
+                return {gGhost_.x0(), gGhost_.x1(), gGhost_.y0(), gGhost_.y1(), gGhost_.z0(), gGhost_.z1()};
             }
 
             /**
@@ -117,53 +102,53 @@ namespace LBM
 
                 if (tx == 0)
                 { // w
-                    pop[1] = fx1[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)];
-                    pop[7] = fx1[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[9] = fx1[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))];
-                    pop[13] = fx1[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[15] = fx1[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[1] = __ldg(&fx1[idxPopX<0, VSet::QF()>(ty, tz, bxm1, by, bz)]);
+                    pop[7] = __ldg(&fx1[idxPopX<1, VSet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop[9] = __ldg(&fx1[idxPopX<2, VSet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
+                    pop[13] = __ldg(&fx1[idxPopX<3, VSet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop[15] = __ldg(&fx1[idxPopX<4, VSet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                 }
                 else if (tx == (block::nx() - 1))
                 { // e
-                    pop[2] = fx0[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)];
-                    pop[8] = fx0[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)];
-                    pop[10] = fx0[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[14] = fx0[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)];
-                    pop[16] = fx0[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))];
+                    pop[2] = __ldg(&fx0[idxPopX<0, VSet::QF()>(ty, tz, bxp1, by, bz)]);
+                    pop[8] = __ldg(&fx0[idxPopX<1, VSet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop[10] = __ldg(&fx0[idxPopX<2, VSet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop[14] = __ldg(&fx0[idxPopX<3, VSet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop[16] = __ldg(&fx0[idxPopX<4, VSet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
                 }
 
                 if (ty == 0)
                 { // s
-                    pop[3] = fy1[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)];
-                    pop[7] = fy1[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)];
-                    pop[11] = fy1[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))];
-                    pop[14] = fy1[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)];
-                    pop[17] = fy1[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
+                    pop[3] = __ldg(&fy1[idxPopY<0, VSet::QF()>(tx, tz, bx, bym1, bz)]);
+                    pop[7] = __ldg(&fy1[idxPopY<1, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
+                    pop[11] = __ldg(&fy1[idxPopY<2, VSet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
+                    pop[14] = __ldg(&fy1[idxPopY<3, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
+                    pop[17] = __ldg(&fy1[idxPopY<4, VSet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                 }
                 else if (ty == (block::ny() - 1))
                 { // n
-                    pop[4] = fy0[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)];
-                    pop[8] = fy0[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)];
-                    pop[12] = fy0[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))];
-                    pop[13] = fy0[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)];
-                    pop[18] = fy0[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))];
+                    pop[4] = __ldg(&fy0[idxPopY<0, VSet::QF()>(tx, tz, bx, byp1, bz)]);
+                    pop[8] = __ldg(&fy0[idxPopY<1, VSet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
+                    pop[12] = __ldg(&fy0[idxPopY<2, VSet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop[13] = __ldg(&fy0[idxPopY<3, VSet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
+                    pop[18] = __ldg(&fy0[idxPopY<4, VSet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
                 }
 
                 if (tz == 0)
                 { // b
-                    pop[5] = fz1[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)];
-                    pop[9] = fz1[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)];
-                    pop[11] = fz1[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)];
-                    pop[16] = fz1[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)];
-                    pop[18] = fz1[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)];
+                    pop[5] = __ldg(&fz1[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzm1)]);
+                    pop[9] = __ldg(&fz1[idxPopZ<1, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
+                    pop[11] = __ldg(&fz1[idxPopZ<2, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
+                    pop[16] = __ldg(&fz1[idxPopZ<3, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
+                    pop[18] = __ldg(&fz1[idxPopZ<4, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
                 }
                 else if (tz == (block::nz() - 1))
                 { // f
-                    pop[6] = fz0[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)];
-                    pop[10] = fz0[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)];
-                    pop[12] = fz0[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)];
-                    pop[15] = fz0[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)];
-                    pop[17] = fz0[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)];
+                    pop[6] = __ldg(&fz0[idxPopZ<0, VSet::QF()>(tx, ty, bx, by, bzp1)]);
+                    pop[10] = __ldg(&fz0[idxPopZ<1, VSet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
+                    pop[12] = __ldg(&fz0[idxPopZ<2, VSet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                    pop[15] = __ldg(&fz0[idxPopZ<3, VSet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
+                    pop[17] = __ldg(&fz0[idxPopZ<4, VSet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
                 }
             }
 

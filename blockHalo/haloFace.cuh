@@ -9,24 +9,8 @@ This class is used to exchange the microscopic velocity components at the edge o
 
 namespace LBM
 {
-    namespace host
-    {
-
-    }
-
     namespace device
     {
-        namespace haloFaces
-        {
-            /**
-             * @brief Consteval functions used to distinguish between halo face normal directions
-             * @return An unsigned integer corresponding to the correct direction
-             **/
-            [[nodiscard]] static inline consteval std::size_t x() noexcept { return 0; }
-            [[nodiscard]] static inline consteval std::size_t y() noexcept { return 1; }
-            [[nodiscard]] static inline consteval std::size_t z() noexcept { return 2; }
-        }
-
         class haloFace
         {
         public:
@@ -60,27 +44,27 @@ namespace LBM
              * @brief Provides read-only access to the halo faces
              * @return A const-qualified pointer to the halo faces
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const() const noexcept
             {
                 return x0_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x1Const() const noexcept
             {
                 return x1_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y0Const() const noexcept
             {
                 return y0_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *y1Const() const noexcept
             {
                 return y1_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z0Const() const noexcept
             {
                 return z0_;
             }
-            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *z1Const() const noexcept
             {
                 return z1_;
             }
@@ -188,16 +172,16 @@ namespace LBM
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
 
-                const label_t nBlockx = mesh.nxBlocks();
-                const label_t nBlocky = mesh.nyBlocks();
-                const label_t nBlockz = mesh.nzBlocks();
+                const label_t nxBlocks = mesh.nxBlocks();
+                const label_t nyBlocks = mesh.nyBlocks();
+                const label_t nzBlocks = mesh.nzBlocks();
 
                 // Loop over all blocks and threads
-                for (label_t bz = 0; bz < nBlockz; ++bz)
+                for (label_t bz = 0; bz < nzBlocks; ++bz)
                 {
-                    for (label_t by = 0; by < nBlocky; ++by)
+                    for (label_t by = 0; by < nyBlocks; ++by)
                     {
-                        for (label_t bx = 0; bx < nBlockx; ++bx)
+                        for (label_t bx = 0; bx < nxBlocks; ++bx)
                         {
                             for (label_t tz = 0; tz < block::nz(); ++tz)
                             {
@@ -212,7 +196,7 @@ namespace LBM
                                             continue;
                                         }
 
-                                        const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky);
+                                        const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, nxBlocks, nyBlocks);
 
                                         // Contiguous moment access
                                         const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::host_reconstruct(
@@ -234,22 +218,22 @@ namespace LBM
                                             {
                                                 if (tx == 0)
                                                 { // w
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[2];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[16];
+                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[2];
+                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[8];
+                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[10];
+                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[14];
+                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[16];
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (tx == (block::nx() - 1))
                                                 {
-                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[1];
-                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nBlockx, nBlocky)] = pop[15];
+                                                    face[host::idxPopX<0, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[1];
+                                                    face[host::idxPopX<1, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[7];
+                                                    face[host::idxPopX<2, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[9];
+                                                    face[host::idxPopX<3, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[13];
+                                                    face[host::idxPopX<4, VelocitySet::D3Q19::QF()>(ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[15];
                                                 }
                                             }
                                         }
@@ -260,22 +244,22 @@ namespace LBM
                                             {
                                                 if (ty == 0)
                                                 { // s
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[4];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[8];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[13];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[4];
+                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[8];
+                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[12];
+                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[13];
+                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[18];
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (ty == (block::ny() - 1))
                                                 {
-                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[3];
-                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[7];
-                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[14];
-                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+                                                    face[host::idxPopY<0, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[3];
+                                                    face[host::idxPopY<1, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[7];
+                                                    face[host::idxPopY<2, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[11];
+                                                    face[host::idxPopY<3, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[14];
+                                                    face[host::idxPopY<4, VelocitySet::D3Q19::QF()>(tx, tz, bx, by, bz, nxBlocks, nyBlocks)] = pop[17];
                                                 }
                                             }
                                         }
@@ -286,22 +270,22 @@ namespace LBM
                                             {
                                                 if (tz == 0)
                                                 { // b
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[6];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[10];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[12];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[15];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[17];
+                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[6];
+                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[10];
+                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[12];
+                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[15];
+                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[17];
                                                 }
                                             }
                                             if constexpr (side == 1)
                                             {
                                                 if (tz == (block::nz() - 1))
                                                 {
-                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[5];
-                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[9];
-                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[11];
-                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[16];
-                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nBlockx, nBlocky)] = pop[18];
+                                                    face[host::idxPopZ<0, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[5];
+                                                    face[host::idxPopZ<1, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[9];
+                                                    face[host::idxPopZ<2, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[11];
+                                                    face[host::idxPopZ<3, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[16];
+                                                    face[host::idxPopZ<4, VelocitySet::D3Q19::QF()>(tx, ty, bx, by, bz, nxBlocks, nyBlocks)] = pop[18];
                                                 }
                                             }
                                         }

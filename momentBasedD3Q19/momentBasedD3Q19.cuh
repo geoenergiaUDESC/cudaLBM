@@ -10,12 +10,16 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 #include "../LBMTypedefs.cuh"
 #include "../array/array.cuh"
 #include "../collision/collision.cuh"
-#include "../moments/moments.cuh"
+#include "../blockHalo/blockHalo.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../runTimeIO/runTimeIO.cuh"
 
 namespace LBM
 {
+
+    using VSet = VelocitySet::D3Q19;
+    using Collision = secondOrder;
+
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
      * @param devPtrs Collection of 10 pointers to device arrays on the GPU
@@ -23,18 +27,8 @@ namespace LBM
      **/
     launchBounds __global__ void momentBasedD3Q19(
         const device::ptrCollection<10, scalar_t> devPtrs,
-        const scalar_t *const ptrRestrict fx0,
-        const scalar_t *const ptrRestrict fx1,
-        const scalar_t *const ptrRestrict fy0,
-        const scalar_t *const ptrRestrict fy1,
-        const scalar_t *const ptrRestrict fz0,
-        const scalar_t *const ptrRestrict fz1,
-        scalar_t *const ptrRestrict gx0,
-        scalar_t *const ptrRestrict gx1,
-        scalar_t *const ptrRestrict gy0,
-        scalar_t *const ptrRestrict gy1,
-        scalar_t *const ptrRestrict gz0,
-        scalar_t *const ptrRestrict gz1)
+        const device::ptrCollection<6, const scalar_t> fGhost,
+        const device::ptrCollection<6, scalar_t> gGhost)
     {
         // Always a multiple of 32, so no need to check this(I think)
         // if (device::out_of_bounds())
@@ -43,7 +37,7 @@ namespace LBM
         // }
 
         // Declare shared memory (flattened)
-        __shared__ scalar_t shared_buffer[block::sharedMemoryBufferSize<VelocitySet::D3Q19>()];
+        __shared__ scalar_t shared_buffer[block::sharedMemoryBufferSize<VSet, NUMBER_MOMENTS()>()];
 
         const label_t tid = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
         const label_t idx = device::idx();
@@ -51,64 +45,63 @@ namespace LBM
         // Coalesced read from global memory
         threadArray<scalar_t, NUMBER_MOMENTS()> moments;
         {
-
             // Read into shared
-            shared_buffer[0 * block::stride() + tid] = devPtrs.ptr<0>()[device::idx()];
-            shared_buffer[1 * block::stride() + tid] = devPtrs.ptr<1>()[device::idx()];
-            shared_buffer[2 * block::stride() + tid] = devPtrs.ptr<2>()[device::idx()];
-            shared_buffer[3 * block::stride() + tid] = devPtrs.ptr<3>()[device::idx()];
-            shared_buffer[4 * block::stride() + tid] = devPtrs.ptr<4>()[device::idx()];
-            shared_buffer[5 * block::stride() + tid] = devPtrs.ptr<5>()[device::idx()];
-            shared_buffer[6 * block::stride() + tid] = devPtrs.ptr<6>()[device::idx()];
-            shared_buffer[7 * block::stride() + tid] = devPtrs.ptr<7>()[device::idx()];
-            shared_buffer[8 * block::stride() + tid] = devPtrs.ptr<8>()[device::idx()];
-            shared_buffer[9 * block::stride() + tid] = devPtrs.ptr<9>()[device::idx()];
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    shared_buffer[moment * block::stride() + tid] = devPtrs.ptr<moment>()[idx];
+                });
 
             // Synchronise before pulling into thread
             __syncthreads();
 
             // Pull into thread memory
-            moments.arr[0] = shared_buffer[0 * block::stride() + tid] + rho0();
-            moments.arr[1] = shared_buffer[1 * block::stride() + tid];
-            moments.arr[2] = shared_buffer[2 * block::stride() + tid];
-            moments.arr[3] = shared_buffer[3 * block::stride() + tid];
-            moments.arr[4] = shared_buffer[4 * block::stride() + tid];
-            moments.arr[5] = shared_buffer[5 * block::stride() + tid];
-            moments.arr[6] = shared_buffer[6 * block::stride() + tid];
-            moments.arr[7] = shared_buffer[7 * block::stride() + tid];
-            moments.arr[8] = shared_buffer[8 * block::stride() + tid];
-            moments.arr[9] = shared_buffer[9 * block::stride() + tid];
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    if constexpr (moment == index::rho())
+                    {
+                        moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0();
+                    }
+                    else
+                    {
+                        moments.arr[moment] = shared_buffer[moment * block::stride() + tid];
+                    }
+                });
         }
 
         // Reconstruct the population from the moments
-        threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::reconstruct(moments);
+        threadArray<scalar_t, VSet::Q()> pop = VSet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
             // Save populations in shared memory
-            sharedMemory::save<VelocitySet::D3Q19>(pop.arr, shared_buffer, tid);
+            sharedMemory::save<VSet>(pop.arr, shared_buffer, tid);
 
             // Pull from shared memory
-            sharedMemory::pull<VelocitySet::D3Q19>(pop.arr, shared_buffer);
+            sharedMemory::pull<VSet>(pop.arr, shared_buffer);
         }
 
         // Load pop from global memory in cover nodes
-        device::halo::popLoad<VelocitySet::D3Q19>(
+        device::halo::popLoad<VSet>(
             pop.arr,
-            fx0, fx1,
-            fy0, fy1,
-            fz0, fz1);
+            fGhost.ptr<0>(),
+            fGhost.ptr<1>(),
+            fGhost.ptr<2>(),
+            fGhost.ptr<3>(),
+            fGhost.ptr<4>(),
+            fGhost.ptr<5>());
 
         // Calculate the moments either at the boundary or interior
         {
             const normalVector b_n;
             if (b_n.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet::D3Q19>(pop.arr, moments.arr, b_n);
+                boundaryConditions::calculateMoments<VSet>(pop.arr, moments.arr, b_n);
             }
             else
             {
-                VelocitySet::D3Q19::calculateMoments(pop.arr, moments.arr);
+                VSet::calculateMoments(pop.arr, moments.arr);
             }
         }
 
@@ -116,34 +109,28 @@ namespace LBM
         VelocitySet::velocitySet::scale(moments.arr);
 
         // Collide
-        secondOrder::collide(moments.arr);
+        Collision::collide(moments.arr);
 
         // Calculate post collision populations
-        VelocitySet::D3Q19::reconstruct(pop.arr, moments.arr);
+        VSet::reconstruct(pop.arr, moments.arr);
 
-        // __pipeline pipeline;
+        // Save the populations to the block halo
+        device::halo::popSave<VSet>(
+            pop.arr,
+            gGhost.ptr<0>(),
+            gGhost.ptr<1>(),
+            gGhost.ptr<2>(),
+            gGhost.ptr<3>(),
+            gGhost.ptr<4>(),
+            gGhost.ptr<5>());
 
         // Coalesced write to global memory
         moments.arr[0] = moments.arr[0] - rho0();
-        {
-            devPtrs.ptr<0>()[idx] = moments.arr[0];
-            devPtrs.ptr<1>()[idx] = moments.arr[1];
-            devPtrs.ptr<2>()[idx] = moments.arr[2];
-            devPtrs.ptr<3>()[idx] = moments.arr[3];
-            devPtrs.ptr<4>()[idx] = moments.arr[4];
-            devPtrs.ptr<5>()[idx] = moments.arr[5];
-            devPtrs.ptr<6>()[idx] = moments.arr[6];
-            devPtrs.ptr<7>()[idx] = moments.arr[7];
-            devPtrs.ptr<8>()[idx] = moments.arr[8];
-            devPtrs.ptr<9>()[idx] = moments.arr[9];
-        }
-
-        // Save the populations to the block halo
-        device::halo::popSave<VelocitySet::D3Q19>(
-            pop.arr,
-            gx0, gx1,
-            gy0, gy1,
-            gz0, gz1);
+        device::constexpr_for<0, NUMBER_MOMENTS()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments.arr[moment];
+            });
     }
 }
 

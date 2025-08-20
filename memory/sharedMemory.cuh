@@ -57,30 +57,24 @@ namespace LBM
             const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
             const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
 
-            // Helper lambda for linear index calculation
-            auto linearIdx = [](label_t tx, label_t ty, label_t tz)
-            {
-                return tx + block::nx() * (ty + block::ny() * tz);
-            };
-
-            pop[1] = s_pop[0 * block::stride() + linearIdx(xm1, threadIdx.y, threadIdx.z)];
-            pop[2] = s_pop[1 * block::stride() + linearIdx(xp1, threadIdx.y, threadIdx.z)];
-            pop[3] = s_pop[2 * block::stride() + linearIdx(threadIdx.x, ym1, threadIdx.z)];
-            pop[4] = s_pop[3 * block::stride() + linearIdx(threadIdx.x, yp1, threadIdx.z)];
-            pop[5] = s_pop[4 * block::stride() + linearIdx(threadIdx.x, threadIdx.y, zm1)];
-            pop[6] = s_pop[5 * block::stride() + linearIdx(threadIdx.x, threadIdx.y, zp1)];
-            pop[7] = s_pop[6 * block::stride() + linearIdx(xm1, ym1, threadIdx.z)];
-            pop[8] = s_pop[7 * block::stride() + linearIdx(xp1, yp1, threadIdx.z)];
-            pop[9] = s_pop[8 * block::stride() + linearIdx(xm1, threadIdx.y, zm1)];
-            pop[10] = s_pop[9 * block::stride() + linearIdx(xp1, threadIdx.y, zp1)];
-            pop[11] = s_pop[10 * block::stride() + linearIdx(threadIdx.x, ym1, zm1)];
-            pop[12] = s_pop[11 * block::stride() + linearIdx(threadIdx.x, yp1, zp1)];
-            pop[13] = s_pop[12 * block::stride() + linearIdx(xm1, yp1, threadIdx.z)];
-            pop[14] = s_pop[13 * block::stride() + linearIdx(xp1, ym1, threadIdx.z)];
-            pop[15] = s_pop[14 * block::stride() + linearIdx(xm1, threadIdx.y, zp1)];
-            pop[16] = s_pop[15 * block::stride() + linearIdx(xp1, threadIdx.y, zm1)];
-            pop[17] = s_pop[16 * block::stride() + linearIdx(threadIdx.x, ym1, zp1)];
-            pop[18] = s_pop[17 * block::stride() + linearIdx(threadIdx.x, yp1, zm1)];
+            pop[1] = s_pop[0 * block::stride() + blockIndex(xm1, threadIdx.y, threadIdx.z)];
+            pop[2] = s_pop[1 * block::stride() + blockIndex(xp1, threadIdx.y, threadIdx.z)];
+            pop[3] = s_pop[2 * block::stride() + blockIndex(threadIdx.x, ym1, threadIdx.z)];
+            pop[4] = s_pop[3 * block::stride() + blockIndex(threadIdx.x, yp1, threadIdx.z)];
+            pop[5] = s_pop[4 * block::stride() + blockIndex(threadIdx.x, threadIdx.y, zm1)];
+            pop[6] = s_pop[5 * block::stride() + blockIndex(threadIdx.x, threadIdx.y, zp1)];
+            pop[7] = s_pop[6 * block::stride() + blockIndex(xm1, ym1, threadIdx.z)];
+            pop[8] = s_pop[7 * block::stride() + blockIndex(xp1, yp1, threadIdx.z)];
+            pop[9] = s_pop[8 * block::stride() + blockIndex(xm1, threadIdx.y, zm1)];
+            pop[10] = s_pop[9 * block::stride() + blockIndex(xp1, threadIdx.y, zp1)];
+            pop[11] = s_pop[10 * block::stride() + blockIndex(threadIdx.x, ym1, zm1)];
+            pop[12] = s_pop[11 * block::stride() + blockIndex(threadIdx.x, yp1, zp1)];
+            pop[13] = s_pop[12 * block::stride() + blockIndex(xm1, yp1, threadIdx.z)];
+            pop[14] = s_pop[13 * block::stride() + blockIndex(xp1, ym1, threadIdx.z)];
+            pop[15] = s_pop[14 * block::stride() + blockIndex(xm1, threadIdx.y, zp1)];
+            pop[16] = s_pop[15 * block::stride() + blockIndex(xp1, threadIdx.y, zm1)];
+            pop[17] = s_pop[16 * block::stride() + blockIndex(threadIdx.x, ym1, zp1)];
+            pop[18] = s_pop[17 * block::stride() + blockIndex(threadIdx.x, yp1, zm1)];
         }
 
     private:
@@ -110,6 +104,11 @@ namespace LBM
         __device__ [[nodiscard]] static inline label_t idxPopBlock(const dim3 &tx) noexcept
         {
             return idxPopBlock<pop>(tx.x, tx.y, tx.z);
+        }
+
+        __device__ [[nodiscard]] static inline label_t blockIndex(const label_t tx, const label_t ty, const label_t tz) noexcept
+        {
+            return tx + block::nx() * (ty + block::ny() * tz);
         }
 
         /**

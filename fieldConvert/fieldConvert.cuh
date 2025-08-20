@@ -10,7 +10,7 @@ Contents: Function definitions specific to the fieldConvert executable
 #include "../LBMTypedefs.cuh"
 #include "../array/array.cuh"
 #include "../collision/collision.cuh"
-#include "../moments/moments.cuh"
+#include "../blockHalo/blockHalo.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../runTimeIO/runTimeIO.cuh"
 #include "../postProcess.cuh"

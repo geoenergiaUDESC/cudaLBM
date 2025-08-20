@@ -278,7 +278,7 @@ namespace LBM
                 const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;
 
                 // Copy device -> host
-                const std::vector<T> hostFields = host::copyToHost(ptr_, nTotal);
+                const std::vector<T> hostFields = host::toHost(ptr_, nTotal);
 
                 // Write to file
                 fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);

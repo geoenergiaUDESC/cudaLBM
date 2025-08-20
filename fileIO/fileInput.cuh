@@ -254,27 +254,6 @@ namespace LBM
         }
 
         /**
-         * @brief De-interleave an array of structures into a structure of arrays
-         * @param fMom The array of structures to be de-interleaved
-         * @param mesh The mesh
-         **/
-        template <typename T, class M>
-        [[nodiscard]] std::vector<std::vector<T>> deinterleaveAoS(const std::vector<T> &fMom, const M &mesh)
-        {
-            return {
-                host::save<index::rho()>(fMom.data(), mesh),
-                host::save<index::u()>(fMom.data(), mesh),
-                host::save<index::v()>(fMom.data(), mesh),
-                host::save<index::w()>(fMom.data(), mesh),
-                host::save<index::xx()>(fMom.data(), mesh),
-                host::save<index::xy()>(fMom.data(), mesh),
-                host::save<index::xz()>(fMom.data(), mesh),
-                host::save<index::yy()>(fMom.data(), mesh),
-                host::save<index::yz()>(fMom.data(), mesh),
-                host::save<index::zz()>(fMom.data(), mesh)};
-        }
-
-        /**
          * @brief De-interleave an array of structures (AoS) into a structure of arrays (SoA).
          * @param fMom The array of structures to be de-interleaved (AoS).
          * @param mesh The mesh

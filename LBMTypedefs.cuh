@@ -83,14 +83,6 @@ namespace LBM
     };
 
     /**
-     * @brief Launch bounds information
-     * @note These variables are device specific - enable modification later
-     **/
-    [[nodiscard]] inline consteval auto MAX_THREADS_PER_BLOCK() noexcept { return 512; }
-    [[nodiscard]] inline consteval auto MIN_BLOCKS_PER_MP() noexcept { return 4; }
-#define launchBounds __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP())
-
-    /**
      * @brief Floating point type used for scalar types
      * @note Types are either 32 bit or 64 bit floating point numbers
      * @note These types are supplied via command line defines during compilation
@@ -305,7 +297,7 @@ namespace LBM
              * @param args An arbitrary number N of pointers of type T
              **/
             template <typename... Args>
-            __host__ __device__ constexpr ptrCollection(const Args... args)
+            __device__ __host__ constexpr ptrCollection(const Args... args)
                 : ptrs_{args...} // Initialize array with arguments
             {
                 static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
@@ -325,6 +317,18 @@ namespace LBM
                 return ptrs_[i];
             }
 
+            __host__ [[nodiscard]] constexpr std::array<T *, N> to_array() const noexcept
+            {
+                std::array<T *, N> arr;
+
+                for (label_t i = 0; i < N; i++)
+                {
+                    arr[i] = ptrs_[i];
+                }
+
+                return arr;
+            }
+
         private:
             /**
              * @brief The underlying pointers
@@ -333,5 +337,7 @@ namespace LBM
         };
     }
 }
+
+#include "hardwareConfig.cuh"
 
 #endif

@@ -26,16 +26,16 @@ int main(const int argc, const char *const argv[])
     const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Perform device memory allocation
-    device::array<scalar_t> rho(host::host_to_device<0>(hostMoments.arr(), mesh), {"rho"}, mesh);
-    device::array<scalar_t> u(host::host_to_device<1>(hostMoments.arr(), mesh), {"u"}, mesh);
-    device::array<scalar_t> v(host::host_to_device<2>(hostMoments.arr(), mesh), {"v"}, mesh);
-    device::array<scalar_t> w(host::host_to_device<3>(hostMoments.arr(), mesh), {"w"}, mesh);
-    device::array<scalar_t> mxx(host::host_to_device<4>(hostMoments.arr(), mesh), {"m_xx"}, mesh);
-    device::array<scalar_t> mxy(host::host_to_device<5>(hostMoments.arr(), mesh), {"m_xy"}, mesh);
-    device::array<scalar_t> mxz(host::host_to_device<6>(hostMoments.arr(), mesh), {"m_xz"}, mesh);
-    device::array<scalar_t> myy(host::host_to_device<7>(hostMoments.arr(), mesh), {"m_yy"}, mesh);
-    device::array<scalar_t> myz(host::host_to_device<8>(hostMoments.arr(), mesh), {"m_yz"}, mesh);
-    device::array<scalar_t> mzz(host::host_to_device<9>(hostMoments.arr(), mesh), {"m_zz"}, mesh);
+    device::array<scalar_t> rho(host::toDevice<0>(hostMoments.arr(), mesh), {"rho"}, mesh);
+    device::array<scalar_t> u(host::toDevice<1>(hostMoments.arr(), mesh), {"u"}, mesh);
+    device::array<scalar_t> v(host::toDevice<2>(hostMoments.arr(), mesh), {"v"}, mesh);
+    device::array<scalar_t> w(host::toDevice<3>(hostMoments.arr(), mesh), {"w"}, mesh);
+    device::array<scalar_t> mxx(host::toDevice<4>(hostMoments.arr(), mesh), {"m_xx"}, mesh);
+    device::array<scalar_t> mxy(host::toDevice<5>(hostMoments.arr(), mesh), {"m_xy"}, mesh);
+    device::array<scalar_t> mxz(host::toDevice<6>(hostMoments.arr(), mesh), {"m_xz"}, mesh);
+    device::array<scalar_t> myy(host::toDevice<7>(hostMoments.arr(), mesh), {"m_yy"}, mesh);
+    device::array<scalar_t> myz(host::toDevice<8>(hostMoments.arr(), mesh), {"m_yz"}, mesh);
+    device::array<scalar_t> mzz(host::toDevice<9>(hostMoments.arr(), mesh), {"m_zz"}, mesh);
 
     const device::ptrCollection<10, scalar_t> devPtrs(
         rho.ptr(),
@@ -68,18 +68,8 @@ int main(const int argc, const char *const argv[])
 
         momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
             devPtrs,
-            blockHalo.fGhost().x0(),
-            blockHalo.fGhost().x1(),
-            blockHalo.fGhost().y0(),
-            blockHalo.fGhost().y1(),
-            blockHalo.fGhost().z0(),
-            blockHalo.fGhost().z1(),
-            blockHalo.gGhost().x0(),
-            blockHalo.gGhost().x1(),
-            blockHalo.gGhost().y0(),
-            blockHalo.gGhost().y1(),
-            blockHalo.gGhost().z0(),
-            blockHalo.gGhost().z1());
+            blockHalo.fGhost(),
+            blockHalo.gGhost());
 
         blockHalo.swap();
 
@@ -89,7 +79,7 @@ int main(const int argc, const char *const argv[])
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
                 hostMoments.varNames(),
-                host::device_to_host(devPtrs, mesh),
+                host::toHost(devPtrs, mesh),
                 timeStep);
         }
     }

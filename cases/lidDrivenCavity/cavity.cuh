@@ -38,7 +38,7 @@ namespace LBM
                                     // Override for the top wall (y = mesh.ny()-1): ux = U_MAX
                                     if ((ty + (by * block::ny())) == (mesh.ny() - 1))
                                     {
-                                        // fMom[idxMom<index::u()>(tx, ty, tz, bx, by, bz, nBlockx, nBlocky)] = VelocitySet::velocitySet::scale_i() * u_inf;
+                                        // fMom[idxMom<index::u()>(tx, ty, tz, bx, by, bz, nxBlocks, nyBlocks)] = VelocitySet::velocitySet::scale_i() * u_inf;
                                         fMom[idxMom<index::u()>(tx, ty, tz, bx, by, bz, mesh)] = u_inf;
                                     }
                                     else

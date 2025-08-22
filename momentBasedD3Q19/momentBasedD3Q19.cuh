@@ -50,15 +50,6 @@ namespace LBM
                 [&](const auto moment)
                 {
                     shared_buffer[moment * block::stride() + tid] = devPtrs.ptr<moment>()[idx];
-                });
-
-            // Synchronise before pulling into thread
-            __syncthreads();
-
-            // Pull into thread memory
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
-                {
                     if constexpr (moment == index::rho())
                     {
                         moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0();
@@ -68,6 +59,23 @@ namespace LBM
                         moments.arr[moment] = shared_buffer[moment * block::stride() + tid];
                     }
                 });
+
+            // Synchronise before pulling into thread
+            // __syncthreads();
+
+            // Pull into thread memory
+            // device::constexpr_for<0, NUMBER_MOMENTS()>(
+            //     [&](const auto moment)
+            //     {
+            //         if constexpr (moment == index::rho())
+            //         {
+            //             moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0();
+            //         }
+            //         else
+            //         {
+            //             moments.arr[moment] = shared_buffer[moment * block::stride() + tid];
+            //         }
+            //     });
         }
 
         // Reconstruct the population from the moments

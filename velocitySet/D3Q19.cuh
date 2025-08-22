@@ -188,7 +188,7 @@ namespace LBM
             {
                 std::array<scalar_t, Q_> pop;
 
-                host::constexpr_for<0, (Q_ - 1)>(
+                host::constexpr_for<0, Q_>(
                     [&](const auto q_)
                     {
                         pop[q_] = f_eq(

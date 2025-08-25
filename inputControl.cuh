@@ -45,7 +45,7 @@ namespace LBM
          **/
         [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
         {
-            for (std::size_t i = 0; i < commandLine_.size(); i++)
+            for (label_t i = 0; i < commandLine_.size(); i++)
             {
                 if (commandLine_[i] == name)
                 {

@@ -16,6 +16,7 @@ namespace LBM
 {
     namespace host
     {
+        template <class VSet>
         __host__ [[nodiscard]] const std::vector<scalar_t> moments(const host::latticeMesh &mesh, const scalar_t u_inf)
         {
             std::vector<scalar_t> fMom(mesh.nx() * mesh.ny() * mesh.nz() * NUMBER_MOMENTS(), 0);
@@ -49,10 +50,10 @@ namespace LBM
                                     fMom[idxMom<index::w()>(tx, ty, tz, bx, by, bz, mesh)] = 0;
 
                                     // Second moments: compute equilibrium populations
-                                    const std::array<scalar_t, VelocitySet::D3Q19::Q()> pop = VelocitySet::D3Q19::F_eq(
-                                        0,
-                                        0,
-                                        0);
+                                    const std::array<scalar_t, VSet::Q()> pop = VSet::F_eq(
+                                        static_cast<scalar_t>(0),
+                                        static_cast<scalar_t>(0),
+                                        static_cast<scalar_t>(0));
 
                                     // Compute second-order moments (reused terms)
                                     const scalar_t pop_7_8 = pop[7] + pop[8];
@@ -62,20 +63,20 @@ namespace LBM
                                     const scalar_t pop_11_12 = pop[11] + pop[12];
                                     const scalar_t pop_17_18 = pop[17] + pop[18];
 
-                                    const scalar_t pixx = (pop[1] + pop[2] + pop_7_8 + pop_9_10 + pop_13_14 + pop_15_16) - VelocitySet::velocitySet::cs2();
+                                    const scalar_t pixx = (pop[1] + pop[2] + pop_7_8 + pop_9_10 + pop_13_14 + pop_15_16) - VelocitySet::velocitySet::cs2<scalar_t>();
                                     const scalar_t pixy = (pop_7_8 - pop_13_14);
                                     const scalar_t pixz = (pop_9_10 - pop_15_16);
-                                    const scalar_t piyy = (pop[3] + pop[4] + pop_7_8 + pop_11_12 + pop_13_14 + pop_17_18) - VelocitySet::velocitySet::cs2();
+                                    const scalar_t piyy = (pop[3] + pop[4] + pop_7_8 + pop_11_12 + pop_13_14 + pop_17_18) - VelocitySet::velocitySet::cs2<scalar_t>();
                                     const scalar_t piyz = (pop_11_12 - pop_17_18);
-                                    const scalar_t pizz = (pop[5] + pop[6] + pop_9_10 + pop_11_12 + pop_15_16 + pop_17_18) - VelocitySet::velocitySet::cs2();
+                                    const scalar_t pizz = (pop[5] + pop[6] + pop_9_10 + pop_11_12 + pop_15_16 + pop_17_18) - VelocitySet::velocitySet::cs2<scalar_t>();
 
                                     // Store second-order moments
-                                    fMom[idxMom<index::xx()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii() * pixx;
-                                    fMom[idxMom<index::xy()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij() * pixy;
-                                    fMom[idxMom<index::xz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij() * pixz;
-                                    fMom[idxMom<index::yy()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii() * piyy;
-                                    fMom[idxMom<index::yz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij() * piyz;
-                                    fMom[idxMom<index::zz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii() * pizz;
+                                    fMom[idxMom<index::xx()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii<scalar_t>() * pixx;
+                                    fMom[idxMom<index::xy()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij<scalar_t>() * pixy;
+                                    fMom[idxMom<index::xz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij<scalar_t>() * pixz;
+                                    fMom[idxMom<index::yy()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii<scalar_t>() * piyy;
+                                    fMom[idxMom<index::yz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ij<scalar_t>() * piyz;
+                                    fMom[idxMom<index::zz()>(tx, ty, tz, bx, by, bz, mesh)] = VelocitySet::velocitySet::scale_ii<scalar_t>() * pizz;
                                 }
                             }
                         }

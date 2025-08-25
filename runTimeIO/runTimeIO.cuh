@@ -39,7 +39,7 @@ namespace LBM
         template <typename T>
         [[nodiscard]] inline constexpr T MLUPS(const host::latticeMesh &mesh, const programControl &programCtrl, const std::chrono::high_resolution_clock::time_point &start, const std::chrono::high_resolution_clock::time_point &end) noexcept
         {
-            if ((programCtrl.nt() == programCtrl.latestTime() - 1) | mesh.nPoints() == 0)
+            if ((programCtrl.nt() == (programCtrl.latestTime() - 1)) | mesh.nPoints() == 0)
             {
                 return 0;
             }

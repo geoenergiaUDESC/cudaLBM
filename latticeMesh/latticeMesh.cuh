@@ -25,9 +25,9 @@ namespace LBM
              * @note This constructor reads from the caseInfo file and is used primarily to construct the global mesh
              **/
             [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
-                : nx_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nx")),
-                  ny_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "ny")),
-                  nz_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nz")),
+                : nx_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nx")),
+                  ny_(string::extractParameter<label_t>(string::readFile("caseInfo"), "ny")),
+                  nz_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nz")),
                   nPoints_(nx_ * ny_ * nz_),
                   L_(programCtrl.L())
             {

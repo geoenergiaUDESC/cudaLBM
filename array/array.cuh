@@ -17,7 +17,7 @@ namespace LBM
 {
     namespace host
     {
-        template <typename T, const ctorType::type cType>
+        template <typename T, const ctorType::type cType, class VSet>
         class array
         {
         public:
@@ -129,7 +129,7 @@ namespace LBM
                         // Construct default
                         std::cout << "Constructing default" << std::endl;
                         std::cout << std::endl;
-                        return host::moments(mesh, programCtrl.u_inf());
+                        return host::moments<VSet>(mesh, programCtrl.u_inf());
                     }
                 }
 
@@ -138,7 +138,7 @@ namespace LBM
                 {
                     std::cout << "Constructing default" << std::endl;
                     std::cout << std::endl;
-                    return host::moments(mesh, programCtrl.u_inf());
+                    return host::moments<VSet>(mesh, programCtrl.u_inf());
                 }
             }
 
@@ -198,8 +198,8 @@ namespace LBM
              * @param hostArray The array allocated on the host
              * @param mesh The lattice mesh
              **/
-            template <const ctorType::type cType>
-            [[nodiscard]] array(const host::array<T, cType> &hostArray, const host::latticeMesh &mesh)
+            template <const ctorType::type cType, class VSet>
+            [[nodiscard]] array(const host::array<T, cType, VSet> &hostArray, const host::latticeMesh &mesh)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   varNames_(hostArray.varNames()),
                   mesh_(mesh){};
@@ -272,7 +272,7 @@ namespace LBM
              * @param fields Object containing the solution variables encoded in interleaved AoS format
              * @param timeStep The current time step
              **/
-            __host__ void write(const std::string &filePrefix, const std::size_t timeStep)
+            __host__ void write(const std::string &filePrefix, const label_t timeStep)
             {
                 const std::size_t nVars = varNames_.size();
                 const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;

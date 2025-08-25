@@ -19,7 +19,7 @@ namespace LBM
          * @param timeStep The current time step
          **/
         template <typename T, class M>
-        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const std::size_t timeStep)
+        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const label_t timeStep)
         {
             static_assert(std::is_floating_point<T>::value, "T must be floating point");
 

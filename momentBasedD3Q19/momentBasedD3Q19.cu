@@ -1,5 +1,3 @@
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
 #include "momentBasedD3Q19.cuh"
 
 using namespace LBM;
@@ -12,7 +10,7 @@ int main(const int argc, const char *const argv[])
 
     VSet::print();
 
-    const host::array<scalar_t, ctorType::READ_IF_PRESENT> hostMoments(
+    const host::array<scalar_t, ctorType::READ_IF_PRESENT, VSet> hostMoments(
         programCtrl,
         {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
         mesh);
@@ -50,7 +48,7 @@ int main(const int argc, const char *const argv[])
         mzz.ptr());
 
     device::array<scalar_t> deviceMoments(hostMoments, mesh);
-    device::halo blockHalo(hostMoments.arr(), mesh);
+    device::halo<VSet> blockHalo(hostMoments.arr(), mesh);
 
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
@@ -61,18 +59,13 @@ int main(const int argc, const char *const argv[])
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
+        // Do the run-time IO
         if (programCtrl.print(timeStep))
         {
             std::cout << "Time: " << timeStep << "\n";
         }
 
-        momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
-            devPtrs,
-            blockHalo.fGhost(),
-            blockHalo.gGhost());
-
-        blockHalo.swap();
-
+        // Checkpoint
         if (programCtrl.save(timeStep))
         {
             fileIO::writeFile(
@@ -82,6 +75,15 @@ int main(const int argc, const char *const argv[])
                 host::toHost(devPtrs, mesh),
                 timeStep);
         }
+
+        // Main kernel
+        momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
+            devPtrs,
+            blockHalo.fGhost(),
+            blockHalo.gGhost());
+
+        // Halo pointer swap
+        blockHalo.swap();
     }
 
     // Get ending time point and output the elapsed time

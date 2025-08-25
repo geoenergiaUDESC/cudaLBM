@@ -89,7 +89,7 @@ namespace LBM
      * @brief Launch bounds information
      * @note These variables are device specific - enable modification later
      **/
-    [[nodiscard]] inline consteval label_t MAX_THREADS_PER_BLOCK() noexcept { return 512; }
+    [[nodiscard]] inline consteval label_t MAX_THREADS_PER_BLOCK() noexcept { return block::nx() * block::ny() * block::nz(); }
     [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBounds __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP())
 }

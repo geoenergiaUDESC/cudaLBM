@@ -18,7 +18,7 @@ namespace LBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
-        [[nodiscard]] std::vector<std::string> readCaseDirectory(const std::string_view &fileName)
+        [[nodiscard]] const std::vector<std::string> readFile(const std::string_view &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
@@ -53,12 +53,55 @@ namespace LBM
          **/
         [[nodiscard]] bool is_number(const std::string &s) noexcept
         {
+            if (s.empty())
+            {
+                return false;
+            }
+
             std::string::const_iterator it = s.begin();
-            while (it != s.end() && std::isdigit(*it))
+
+            // Check for optional sign
+            if (*it == '+' || *it == '-')
             {
                 ++it;
+                // If string is just a sign, it's not a valid number
+                if (it == s.end())
+                {
+                    return false;
+                }
             }
-            return !s.empty() && it == s.end();
+
+            bool has_digits = false;
+            bool has_decimal = false;
+
+            // Process each character
+            while (it != s.end())
+            {
+                if (std::isdigit(*it))
+                {
+                    has_digits = true;
+                    ++it;
+                }
+                else if (*it == '.')
+                {
+                    // Only one decimal point allowed
+                    if (has_decimal)
+                    {
+                        return false;
+                    }
+                    has_decimal = true;
+                    ++it;
+                }
+                else
+                {
+                    // Invalid character found
+                    return false;
+                }
+            }
+
+            // Must have at least one digit and if there's a decimal point,
+            // there must be digits after it (handled by the iteration)
+            return has_digits;
         }
 
         /**
@@ -95,17 +138,7 @@ namespace LBM
             return result;
         }
 
-        /**
-         * @brief Searches for an entry corresponding to variableName within the vector of strings S
-         * @param T The type of variable returned
-         * @param S The vector of strings which is searched
-         * @param name The name of the variable which is to be found and returned as type T
-         * @return The value of the variable expressed as a label_t
-         * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
-         * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
-         **/
-        template <typename T>
-        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
+        [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string_view &name)
         {
             // Loop over S
             for (label_t i = 0; i < S.size(); i++)
@@ -119,38 +152,95 @@ namespace LBM
                     // Check that the last char is ;
                     // Perform the exit here if the above string is not equal to ;
 
-                    const std::string toReturn = std::string(s[1].begin(), s[1].end() - 1);
-                    // Check if T is integral type
-                    if constexpr (std::is_integral_v<T>)
+                    return std::string(s[1].begin(), s[1].end() - 1);
+                }
+            }
+
+            // Otherwise return 0
+            // Should theoretically never get to this point because we have checked already that the string exists
+
+            throw std::runtime_error("Parameter " + std::string(name) + " not found");
+
+            return "";
+        }
+
+        /**
+         * @brief Searches for an entry corresponding to variableName within the vector of strings S
+         * @param T The type of variable returned
+         * @param S The vector of strings which is searched
+         * @param name The name of the variable which is to be found and returned as type T
+         * @return The value of the variable expressed as a type T
+         * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
+         * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
+         **/
+        template <typename T>
+        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
+        {
+            // First get the parameter line string
+            const std::string toReturn = extractParameterLine(S, name);
+
+            // Is it supposed an integral value?
+            if constexpr (std::is_integral_v<T>)
+            {
+                if (is_number(toReturn))
+                {
+                    // Check if T is an unsigned integral type
+                    if constexpr (std::is_unsigned_v<T>)
                     {
-                        if (is_number(toReturn))
-                        {
-                            // Check if T is an unsigned integral type
-                            if constexpr (std::is_unsigned_v<T>)
-                            {
-                                return static_cast<T>(std::stoul(toReturn));
-                            }
-                            // T must be a signed integral type
-                            else
-                            {
-                                return static_cast<T>(std::stol(toReturn));
-                            }
-                        }
+                        return static_cast<T>(std::stoul(toReturn));
                     }
-                    // Otherwise T must be a scalar type
-                    else if constexpr (std::is_floating_point_v<T>)
+                    // T must be a signed integral type
+                    else
                     {
-                        return static_cast<T>(std::stold(toReturn));
-                    }
-                    else if constexpr (std::is_same_v<T, std::string>)
-                    {
-                        return toReturn;
+                        return static_cast<T>(std::stol(toReturn));
                     }
                 }
             }
-            // Otherwise return 0
-            // Should theoretically never get to this point because we have checked already that the string exists
-            throw std::runtime_error("Parameter " + std::string(name) + " not found");
+            // Is it supposed a floating ponit value?
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                return static_cast<T>(std::stold(toReturn));
+            }
+            // Is it supposed a string?
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return toReturn;
+            }
+
+            return 0;
+        }
+
+        template <typename T>
+        [[nodiscard]] T extractParameter(const std::string &toReturn)
+        {
+            // Is it supposed an integral value?
+            if constexpr (std::is_integral_v<T>)
+            {
+                if (is_number(toReturn))
+                {
+                    // Check if T is an unsigned integral type
+                    if constexpr (std::is_unsigned_v<T>)
+                    {
+                        return static_cast<T>(std::stoul(toReturn));
+                    }
+                    // T must be a signed integral type
+                    else
+                    {
+                        return static_cast<T>(std::stol(toReturn));
+                    }
+                }
+            }
+            // Is it supposed a floating ponit value?
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                return static_cast<T>(std::stold(toReturn));
+            }
+            // Is it supposed a string?
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return toReturn;
+            }
+
             return 0;
         }
 

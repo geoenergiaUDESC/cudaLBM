@@ -41,41 +41,47 @@ namespace LBM
             }
 
             /**
+             * @brief Returns the unique lattice weights
+             * @return The unique lattice weights for the D3Q19 velocity set
+             **/
+            template <typename T>
+            __device__ __host__ [[nodiscard]] static inline consteval T w_0() noexcept
+            {
+                return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
+            }
+            template <typename T>
+            __device__ __host__ [[nodiscard]] static inline consteval T w_1() noexcept
+            {
+                return static_cast<T>(static_cast<double>(1) / static_cast<double>(18));
+            }
+            template <typename T>
+            __device__ __host__ [[nodiscard]] static inline consteval T w_2() noexcept
+            {
+                return static_cast<T>(static_cast<double>(1) / static_cast<double>(36));
+            }
+
+            /**
              * @brief Returns the weight for a given lattice point
              * @return w_q[q]
              * @param q The lattice point
              **/
-            template <const label_t q_>
-            [[nodiscard]] static inline consteval scalar_t w_q(const lattice_constant<q_> q) noexcept
+            template <typename T>
+            __host__ [[nodiscard]] static inline consteval const std::array<T, 19> w_q() noexcept
+            {
+                // Return the component
+                return {
+                    w_0<T>(),
+                    w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(),
+                    w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
+            }
+            template <typename T, const label_t q_>
+            [[nodiscard]] static inline consteval T w_q(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function w(q)");
 
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const scalar_t W[Q_] =
-                    {w_0(),
-                     w_1(), w_1(), w_1(), w_1(), w_1(), w_1(),
-                     w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2(), w_2()};
-
                 // Return the component
-                return W[q()];
-            }
-
-            /**
-             * @brief Returns the unique lattice weights
-             * @return The unique lattice weights for the D3Q19 velocity set
-             **/
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_0() noexcept
-            {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(3.0));
-            }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_1() noexcept
-            {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(18.0));
-            }
-            __device__ __host__ [[nodiscard]] static inline consteval scalar_t w_2() noexcept
-            {
-                return static_cast<scalar_t>(static_cast<double>(1.0) / static_cast<double>(36.0));
+                return w_q<T>()[q()];
             }
 
             /**
@@ -83,41 +89,30 @@ namespace LBM
              * @return c_x[q]
              * @param q The lattice point
              **/
-            template <const label_t q_>
-            [[nodiscard]] static inline consteval scalar_t cx(const lattice_constant<q_> q) noexcept
+            template <typename T>
+            __host__ [[nodiscard]] static inline consteval const std::array<T, 19> cx() noexcept
+            {
+                // Return the component
+                return {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+            }
+            template <typename T, const label_t q_>
+            [[nodiscard]] static inline consteval T cx(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function cx(q)");
 
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const scalar_t CX[Q_] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
-
                 // Return the component
-                return CX[q()];
+                return cx<T>()[q()];
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nxNeg(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cx(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CX[Q_] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
-
-                // Return the component
-                return CX[q()] < 0;
+                return (cx<int>(q) < 0);
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nxPos(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cx(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CX[Q_] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
-
-                // Return the component
-                return CX[q()] > 0;
+                return (cx<int>(q) > 0);
             }
 
             /**
@@ -125,41 +120,30 @@ namespace LBM
              * @return c_y[q]
              * @param q The lattice point
              **/
-            template <const label_t q_>
-            [[nodiscard]] static inline consteval scalar_t cy(const lattice_constant<q_> q) noexcept
+            template <typename T>
+            __host__ [[nodiscard]] static inline consteval const std::array<T, 19> cy() noexcept
+            {
+                // Return the component
+                return {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+            }
+            template <typename T, const label_t q_>
+            [[nodiscard]] static inline consteval T cy(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function cy(q)");
 
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const scalar_t CY[Q_] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
-
                 // Return the component
-                return CY[q()];
+                return cy<T>()[q()];
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nyNeg(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cy(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CY[Q_] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
-
-                // Return the component
-                return CY[q()] < 0;
+                return (cy<int>(q) < 0);
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nyPos(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cy(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CY[Q_] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
-
-                // Return the component
-                return CY[q()] > 0;
+                return (cy<int>(q) > 0);
             }
 
             /**
@@ -167,41 +151,30 @@ namespace LBM
              * @return c_z[q]
              * @param q The lattice point
              **/
-            template <const label_t q_>
-            [[nodiscard]] static inline consteval scalar_t cz(const lattice_constant<q_> q) noexcept
+            template <typename T>
+            __host__ [[nodiscard]] static inline consteval const std::array<T, 19> cz() noexcept
+            {
+                // Return the component
+                return {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+            }
+            template <typename T, const label_t q_>
+            [[nodiscard]] static inline consteval T cz(const lattice_constant<q_> q) noexcept
             {
                 // Check that we are accessing a valid member
                 static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
 
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const scalar_t CZ[Q_] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
-
                 // Return the component
-                return CZ[q()];
+                return cz<T>()[q()];
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nzNeg(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CZ[Q_] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
-
-                // Return the component
-                return CZ[q()] < 0;
+                return (cz<int>(q) < 0);
             }
             template <const label_t q_>
             [[nodiscard]] static inline consteval bool nzPos(const lattice_constant<q_> q) noexcept
             {
-                // Check that we are accessing a valid member
-                static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
-
-                // This will be eliminated by the compiler because the function is consteval
-                constexpr const int CZ[Q_] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
-
-                // Return the component
-                return CZ[q()] > 0;
+                return (cz<int>(q) > 0);
             }
 
             /**
@@ -211,9 +184,10 @@ namespace LBM
              * @param uc3 3 * ((u * cx[q]) + (v * cy[q]) + (w * [cz]))
              * @param p1_muu 1 - 1.5 * ((u ^ 2) + (v ^ 2) + (w ^ 2))
              **/
-            [[nodiscard]] static inline constexpr scalar_t f_eq(const scalar_t rhow, const scalar_t uc3, const scalar_t p1_muu) noexcept
+            template <typename T>
+            [[nodiscard]] static inline constexpr T f_eq(const T rhow, const T uc3, const T p1_muu) noexcept
             {
-                return (rhow * (p1_muu + uc3 * (static_cast<scalar_t>(1.0) + uc3 * static_cast<scalar_t>(0.5))));
+                return (rhow * (p1_muu + uc3 * (static_cast<T>(1.0) + uc3 * static_cast<T>(0.5))));
             }
 
             /**
@@ -223,18 +197,18 @@ namespace LBM
              * @param v The y-component of velocity
              * @param w The z-component of velocity
              **/
-            __host__ [[nodiscard]] static inline constexpr const std::array<scalar_t, 19> F_eq(const scalar_t u, const scalar_t v, const scalar_t w) noexcept
+            template <typename T>
+            __host__ [[nodiscard]] static inline constexpr const std::array<T, 19> F_eq(const T u, const T v, const T w) noexcept
             {
-                std::array<scalar_t, Q_> pop;
+                std::array<T, Q_> pop;
 
-                host::constexpr_for<0, Q_>(
-                    [&](const auto q_)
-                    {
-                        pop[q_] = f_eq(
-                            w_q(lattice_constant<q_>()),
-                            static_cast<scalar_t>(3) * (u * cx(lattice_constant<q_>()) + v * cy(lattice_constant<q_>()) + w * cz(lattice_constant<q_>())),
-                            static_cast<scalar_t>(1) - static_cast<scalar_t>(1.5) * (u * u + v * v + w * w));
-                    });
+                for (label_t q = 0; q < Q_; q++)
+                {
+                    pop[q] = f_eq<T>(
+                        w_q<T>()[q],
+                        static_cast<T>(3) * ((u * cx<T>()[q]) + (v * cy<T>()[q]) + (w * cz<T>()[q])),
+                        static_cast<T>(1) - static_cast<T>(1.5) * ((u * u) + (v * v) + (w * w)));
+                }
 
                 return pop;
             }
@@ -246,12 +220,12 @@ namespace LBM
              **/
             __device__ static inline void reconstruct(scalar_t (&ptrRestrict pop)[19], const scalar_t (&ptrRestrict moments)[10]) noexcept
             {
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[4] + moments[7] + moments[9]);
 
-                const scalar_t multiplyTerm_0 = moments[0] * w_0();
+                const scalar_t multiplyTerm_0 = moments[0] * w_0<scalar_t>();
                 pop[0] = multiplyTerm_0 * pics2;
 
-                const scalar_t multiplyTerm_1 = moments[0] * w_1();
+                const scalar_t multiplyTerm_1 = moments[0] * w_1<scalar_t>();
                 pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
                 pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
                 pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
@@ -259,7 +233,7 @@ namespace LBM
                 pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
                 pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
 
-                const scalar_t multiplyTerm_2 = moments[0] * w_2();
+                const scalar_t multiplyTerm_2 = moments[0] * w_2<scalar_t>();
                 pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
@@ -283,12 +257,12 @@ namespace LBM
             {
                 threadArray<scalar_t, VelocitySet::D3Q19::Q()> pop;
 
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments.arr[4] + moments.arr[7] + moments.arr[9]);
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments.arr[4] + moments.arr[7] + moments.arr[9]);
 
-                const scalar_t multiplyTerm_0 = moments.arr[0] * w_0();
+                const scalar_t multiplyTerm_0 = moments.arr[0] * w_0<scalar_t>();
                 pop.arr[0] = multiplyTerm_0 * pics2;
 
-                const scalar_t multiplyTerm_1 = moments.arr[0] * w_1();
+                const scalar_t multiplyTerm_1 = moments.arr[0] * w_1<scalar_t>();
                 pop.arr[1] = multiplyTerm_1 * (pics2 + moments.arr[1] + moments.arr[4]);
                 pop.arr[2] = multiplyTerm_1 * (pics2 - moments.arr[1] + moments.arr[4]);
                 pop.arr[3] = multiplyTerm_1 * (pics2 + moments.arr[2] + moments.arr[7]);
@@ -296,7 +270,7 @@ namespace LBM
                 pop.arr[5] = multiplyTerm_1 * (pics2 + moments.arr[3] + moments.arr[9]);
                 pop.arr[6] = multiplyTerm_1 * (pics2 - moments.arr[3] + moments.arr[9]);
 
-                const scalar_t multiplyTerm_2 = moments.arr[0] * w_2();
+                const scalar_t multiplyTerm_2 = moments.arr[0] * w_2<scalar_t>();
                 pop.arr[7] = multiplyTerm_2 * (pics2 + moments.arr[1] + moments.arr[2] + moments.arr[4] + moments.arr[7] + moments.arr[5]);
                 pop.arr[8] = multiplyTerm_2 * (pics2 - moments.arr[1] - moments.arr[2] + moments.arr[4] + moments.arr[7] + moments.arr[5]);
                 pop.arr[9] = multiplyTerm_2 * (pics2 + moments.arr[1] + moments.arr[3] + moments.arr[4] + moments.arr[9] + moments.arr[6]);
@@ -320,15 +294,15 @@ namespace LBM
              **/
             __host__ [[nodiscard]] static const std::array<scalar_t, 19> host_reconstruct(const std::array<scalar_t, 10> &moments) noexcept
             {
-                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2() * (moments[4] + moments[7] + moments[9]);
+                const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[4] + moments[7] + moments[9]);
 
-                const scalar_t multiplyTerm_0 = moments[0] * w_0();
+                const scalar_t multiplyTerm_0 = moments[0] * w_0<scalar_t>();
 
                 std::array<scalar_t, 19> pop;
 
                 pop[0] = multiplyTerm_0 * pics2;
 
-                const scalar_t multiplyTerm_1 = moments[0] * w_1();
+                const scalar_t multiplyTerm_1 = moments[0] * w_1<scalar_t>();
                 pop[1] = multiplyTerm_1 * (pics2 + moments[1] + moments[4]);
                 pop[2] = multiplyTerm_1 * (pics2 - moments[1] + moments[4]);
                 pop[3] = multiplyTerm_1 * (pics2 + moments[2] + moments[7]);
@@ -336,7 +310,7 @@ namespace LBM
                 pop[5] = multiplyTerm_1 * (pics2 + moments[3] + moments[9]);
                 pop[6] = multiplyTerm_1 * (pics2 - moments[3] + moments[9]);
 
-                const scalar_t multiplyTerm_2 = moments[0] * w_2();
+                const scalar_t multiplyTerm_2 = moments[0] * w_2<scalar_t>();
                 pop[7] = multiplyTerm_2 * (pics2 + moments[1] + moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[8] = multiplyTerm_2 * (pics2 - moments[1] - moments[2] + moments[4] + moments[7] + moments[5]);
                 pop[9] = multiplyTerm_2 * (pics2 + moments[1] + moments[3] + moments[4] + moments[9] + moments[6]);
@@ -370,12 +344,12 @@ namespace LBM
                 moments[3] = ((pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17])) * invRho;
 
                 // Equation 5
-                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2();
+                moments[4] = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) * invRho - cs2<scalar_t>();
                 moments[5] = (pop[7] - pop[13] + pop[8] - pop[14]) * invRho;
                 moments[6] = (pop[9] - pop[15] + pop[10] - pop[16]) * invRho;
-                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2();
+                moments[7] = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) * invRho - cs2<scalar_t>();
                 moments[8] = (pop[11] - pop[17] + pop[12] - pop[18]) * invRho;
-                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2();
+                moments[9] = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) * invRho - cs2<scalar_t>();
             }
 
             /**
@@ -447,7 +421,11 @@ namespace LBM
             static inline void printAll(const lattice_constant<q_> q = lattice_constant<0>()) noexcept
             {
                 // Print the lattice weight to the terminal
-                std::cout << "    [" << lattice_constant<q_>() << "] = {" << w_q(lattice_constant<q_>()) << ", " << static_cast<int>(cx(lattice_constant<q_>())) << ", " << static_cast<int>(cy(lattice_constant<q_>())) << ", " << static_cast<int>(cz(lattice_constant<q_>())) << "};" << std::endl;
+                std::cout << "    [" << lattice_constant<q_>() << "] = {"
+                          << w_q<double>(lattice_constant<q_>()) << ", "
+                          << cx<int>(lattice_constant<q_>()) << ", "
+                          << cy<int>(lattice_constant<q_>()) << ", "
+                          << cz<int>(lattice_constant<q_>()) << "};" << std::endl;
 
                 // Check that we have not reached the end of the loop
                 if constexpr (q() < Q_ - 1)

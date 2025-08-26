@@ -20,13 +20,13 @@ namespace LBM
              * @param fMom An std::vector containing the 10 interlaced moments
              * @param mesh The mesh
              **/
-            [[nodiscard]] haloFace(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
-                : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
-                  x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(fMom, mesh))),
-                  y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(fMom, mesh))),
-                  y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(fMom, mesh))),
-                  z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(fMom, mesh))),
-                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(fMom, mesh))) {};
+            // [[nodiscard]] haloFace(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
+            //     : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
+            //       x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(fMom, mesh))),
+            //       y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(fMom, mesh))),
+            //       y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(fMom, mesh))),
+            //       z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(fMom, mesh))),
+            //       z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(fMom, mesh))) {};
 
             [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
                 : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
@@ -176,57 +176,57 @@ namespace LBM
              * @param fMom The 10 interlaced moments
              * @param mesh The mesh
              **/
-            template <const label_t faceIndex, const label_t side>
-            __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) const noexcept
-            {
-                std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
+            // template <const label_t faceIndex, const label_t side>
+            // __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) const noexcept
+            // {
+            //     std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
 
-                // Loop over all blocks and threads
-                for (label_t bz = 0; bz < mesh.nzBlocks(); ++bz)
-                {
-                    for (label_t by = 0; by < mesh.nyBlocks(); ++by)
-                    {
-                        for (label_t bx = 0; bx < mesh.nxBlocks(); ++bx)
-                        {
-                            for (label_t tz = 0; tz < block::nz(); ++tz)
-                            {
-                                for (label_t ty = 0; ty < block::ny(); ++ty)
-                                {
-                                    for (label_t tx = 0; tx < block::nx(); ++tx)
-                                    {
+            //     // Loop over all blocks and threads
+            //     for (label_t bz = 0; bz < mesh.nzBlocks(); ++bz)
+            //     {
+            //         for (label_t by = 0; by < mesh.nyBlocks(); ++by)
+            //         {
+            //             for (label_t bx = 0; bx < mesh.nxBlocks(); ++bx)
+            //             {
+            //                 for (label_t tz = 0; tz < block::nz(); ++tz)
+            //                 {
+            //                     for (label_t ty = 0; ty < block::ny(); ++ty)
+            //                     {
+            //                         for (label_t tx = 0; tx < block::nx(); ++tx)
+            //                         {
 
-                                        // Skip out-of-bounds elements (equivalent to GPU version)
-                                        if (tx >= mesh.nx() || ty >= mesh.ny() || tz >= mesh.nz())
-                                        {
-                                            continue;
-                                        }
+            //                             // Skip out-of-bounds elements (equivalent to GPU version)
+            //                             if (tx >= mesh.nx() || ty >= mesh.ny() || tz >= mesh.nz())
+            //                             {
+            //                                 continue;
+            //                             }
 
-                                        const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks());
+            //                             const label_t base = host::idxMom<0>(tx, ty, tz, bx, by, bz, mesh.nxBlocks(), mesh.nyBlocks());
 
-                                        // Contiguous moment access
-                                        const std::array<scalar_t, VSet::Q()> pop = VSet::host_reconstruct(
-                                            {rho0<scalar_t>() + fMom[base + index::rho()],
-                                             fMom[base + index::u()],
-                                             fMom[base + index::v()],
-                                             fMom[base + index::w()],
-                                             fMom[base + index::xx()],
-                                             fMom[base + index::xy()],
-                                             fMom[base + index::xz()],
-                                             fMom[base + index::yy()],
-                                             fMom[base + index::yz()],
-                                             fMom[base + index::zz()]});
+            //                             // Contiguous moment access
+            //                             const std::array<scalar_t, VSet::Q()> pop = VSet::host_reconstruct(
+            //                                 {rho0<scalar_t>() + fMom[base + index::rho()],
+            //                                  fMom[base + index::u()],
+            //                                  fMom[base + index::v()],
+            //                                  fMom[base + index::w()],
+            //                                  fMom[base + index::xx()],
+            //                                  fMom[base + index::xy()],
+            //                                  fMom[base + index::xz()],
+            //                                  fMom[base + index::yy()],
+            //                                  fMom[base + index::yz()],
+            //                                  fMom[base + index::zz()]});
 
-                                        // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
-                                        handleGhostCells<faceIndex, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            //                             // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
+            //                             handleGhostCells<faceIndex, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
 
-                return face;
-            }
+            //     return face;
+            // }
 
             template <const label_t faceIndex, const label_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) const noexcept

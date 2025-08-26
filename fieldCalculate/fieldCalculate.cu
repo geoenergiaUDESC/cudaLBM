@@ -30,7 +30,7 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    const host::array<scalar_t, ctorType::MUST_READ, VSet> hostMoments(
+    const host::arrayCollection<scalar_t, ctorType::MUST_READ, VSet> hostMoments(
         programCtrl,
         {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"});
 

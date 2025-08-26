@@ -14,185 +14,326 @@
 #include <algorithm>
 #include <cctype>
 
-// Helper function to trim whitespace from a string
-[[nodiscard]] const std::string trim(const std::string &str)
+namespace LBM
 {
-    const std::size_t start = str.find_first_not_of(" \t\n\r\f\v");
-    if (start == std::string::npos)
-    {
-        return "";
-    }
+    using VSet = VelocitySet::D3Q19;
+    using Collision = secondOrder;
 
-    const std::size_t end = str.find_last_not_of(" \t\n\r\f\v");
-    return str.substr(start, end - start + 1);
-}
+    //     template <class VSet>
+    //     struct boundaryValue
+    //     {
+    //     public:
+    //         // Initialise
+    //         // Need to check that the region name is valid
+    //         __host__ [[nodiscard]] boundaryValue(const std::string &fieldName, const std::string &regionName)
+    //             : value(initialiseValue(fieldName, regionName)){};
 
-// Helper function to remove comments from a string
-[[nodiscard]] const std::string removeComments(const std::string &str)
-{
-    const std::size_t commentPos = str.find("//");
-    if (commentPos != std::string::npos)
-    {
-        return str.substr(0, commentPos);
-    }
-    return str;
-}
+    //         __host__ [[nodiscard]] inline constexpr scalar_t operator()() const noexcept
+    //         {
+    //             return value;
+    //         }
 
-// Helper function to check if a string contains only whitespace
-[[nodiscard]] bool isOnlyWhitespace(const std::string &str)
-{
-    for (char c : str)
+    //     private:
+    //         // Underlying variables
+    //         const scalar_t value;
+
+    //         __host__ [[nodiscard]] scalar_t initialiseValue(const std::string &fieldName, const std::string &regionName, const std::string &initialConditionsName = "initialConditions") const
+    //         {
+    //             const std::vector<std::string> boundaryLines = string::readFile(initialConditionsName);
+
+    //             // Extracts the entire block of text corresponding to currentField
+    //             const std::vector<std::string> fieldBlock = string::extractBlock(boundaryLines, fieldName, "field");
+
+    //             // Extracts the block of text corresponding to internalField within the current field block
+    //             const std::vector<std::string> internalFieldBlock = string::extractBlock(fieldBlock, regionName);
+
+    //             // Now read the value line
+    //             const std::string value_ = string::extractParameterLine(internalFieldBlock, "value");
+
+    //             // Try fixing its value
+    //             if (string::is_number(value_))
+    //             {
+    //                 const std::unordered_set<std::string> allowed = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+
+    //                 const bool isMember = allowed.find(fieldName) != allowed.end();
+
+    //                 if (isMember)
+    //                 { // Check to see if it is a moment or a velocity and scale appropriately
+    //                     if (fieldName == "rho")
+    //                     {
+    //                         return string::extractParameter<scalar_t>(internalFieldBlock, "value");
+    //                     }
+    //                     if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
+    //                     {
+    //                         return string::extractParameter<scalar_t>(internalFieldBlock, "value") * VelocitySet::velocitySet::scale_i<scalar_t>();
+    //                     }
+    //                     if ((fieldName == "m_xx") | (fieldName == "m_yy") | (fieldName == "m_zz"))
+    //                     {
+    //                         return string::extractParameter<scalar_t>(internalFieldBlock, "value") * VelocitySet::velocitySet::scale_ii<scalar_t>();
+    //                     }
+    //                     if ((fieldName == "m_xy") | (fieldName == "m_xz") | (fieldName == "m_yz"))
+    //                     {
+    //                         return string::extractParameter<scalar_t>(internalFieldBlock, "value") * VelocitySet::velocitySet::scale_ij<scalar_t>();
+    //                     }
+    //                 }
+
+    //                 throw std::runtime_error("Invalid field name \" " + fieldName + "\" for equilibrium distribution");
+    //             }
+    //             // Otherwise, test to see if it is an equilibrium moment
+    //             else if (value_ == "equilibrium")
+    //             {
+    //                 // Check to see if the variable is one of the moments
+    //                 const std::unordered_set<std::string> allowed = {"m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+    //                 const bool isMember = allowed.find(fieldName) != allowed.end();
+
+    //                 std::cout << "Constructing equilibrium moment" << std::endl;
+
+    //                 // It is an equilibrium moment
+    //                 if (isMember)
+    //                 {
+    //                     // Construct the velocity values
+    //                     const boundaryValue u("u", regionName);
+    //                     const boundaryValue v("v", regionName);
+    //                     const boundaryValue w("w", regionName);
+
+    //                     // Construct the equilibrium distribution
+    //                     const std::array<scalar_t, VSet::Q()> pop = VSet::F_eq(u.value, v.value, w.value);
+
+    //                     // Compute second-order moments
+    //                     const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) - VelocitySet::velocitySet::cs2<scalar_t>();
+    //                     const scalar_t pixy = (pop[7] + pop[8] - pop[13] - pop[14]);
+    //                     const scalar_t pixz = (pop[9] + pop[10] - pop[15] - pop[16]);
+    //                     const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) - VelocitySet::velocitySet::cs2<scalar_t>();
+    //                     const scalar_t piyz = (pop[11] + pop[12] - pop[17] - pop[18]);
+    //                     const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) - VelocitySet::velocitySet::cs2<scalar_t>();
+
+    //                     // Store second-order moments (this can probably be improved)
+    //                     if (fieldName == "m_xx")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ii<scalar_t>() * (pixx);
+    //                     }
+    //                     if (fieldName == "m_xy")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ij<scalar_t>() * (pixy);
+    //                     }
+    //                     if (fieldName == "m_xz")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ij<scalar_t>() * (pixz);
+    //                     }
+    //                     if (fieldName == "m_yy")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ii<scalar_t>() * (piyy);
+    //                     }
+    //                     if (fieldName == "m_yz")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ij<scalar_t>() * (piyz);
+    //                     }
+    //                     if (fieldName == "m_zz")
+    //                     {
+    //                         return VelocitySet::velocitySet::scale_ii<scalar_t>() * (pizz);
+    //                     }
+
+    //                     throw std::runtime_error("Invalid field name \" " + fieldName + "\" for equilibrium distribution");
+    //                 }
+    //                 // Otherwise, not valid
+    //                 else
+    //                 {
+    //                     std::cerr << "Entry for " << fieldName << " in region " << regionName << " not a valid numerical value and not an equilibrium moment" << std::endl;
+
+    //                     throw std::runtime_error("Invalid field name for equilibrium distribution");
+
+    //                     return 0;
+    //                 }
+    //             }
+    //             // Not valid
+    //             else
+    //             {
+    //                 std::cerr << "Entry for " << fieldName << " in region " << regionName << " not a valid numerical value and not an equilibrium moment" << std::endl;
+
+    //                 throw std::runtime_error("Invalid field name for equilibrium distribution");
+
+    //                 return 0;
+    //             }
+    //         }
+    //     };
+
+    //     // Defines a group of fields at a particular boundary
+    //     template <class VSet>
+    //     struct boundaryRegion
+    //     {
+    //     public:
+    //         // Need to check that the length of fieldNames is 10
+    //         [[nodiscard]] boundaryRegion(const std::string &regionName)
+    //             : values_{
+    //                   boundaryValue("rho", regionName),
+    //                   boundaryValue("u", regionName),
+    //                   boundaryValue("v", regionName),
+    //                   boundaryValue("w", regionName),
+    //                   boundaryValue("m_xx", regionName),
+    //                   boundaryValue("m_xy", regionName),
+    //                   boundaryValue("m_xz", regionName),
+    //                   boundaryValue("m_yy", regionName),
+    //                   boundaryValue("m_yz", regionName),
+    //                   boundaryValue("m_zz", regionName)}
+    //         {
+    // #ifdef VERBOSE
+    //             print();
+    // #endif
+    //         };
+
+    //         [[nodiscard]] inline constexpr scalar_t rho() const noexcept
+    //         {
+    //             return values_[index::rho()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t u() const noexcept
+    //         {
+    //             return values_[index::u()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t v() const noexcept
+    //         {
+    //             return values_[index::v()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t w() const noexcept
+    //         {
+    //             return values_[index::w()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_xx() const noexcept
+    //         {
+    //             return values_[index::xx()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_xy() const noexcept
+    //         {
+    //             return values_[index::xy()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_xz() const noexcept
+    //         {
+    //             return values_[index::xz()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_yy() const noexcept
+    //         {
+    //             return values_[index::yy()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_yz() const noexcept
+    //         {
+    //             return values_[index::yz()]();
+    //         }
+    //         [[nodiscard]] inline constexpr scalar_t m_zz() const noexcept
+    //         {
+    //             return values_[index::zz()]();
+    //         }
+
+    //         void print() const noexcept
+    //         {
+    //             const std::vector<std::string> regionNames({"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"});
+    //             for (std::size_t field = 0; field < regionNames.size(); field++)
+    //             {
+    //                 std::cout << regionNames[field] << ": " << values_[field]() << std::endl;
+    //             }
+    //         }
+
+    //     private:
+    //         const boundaryValue<VSet> values_[10];
+    //     };
+
+    //     // Defines the value of a field at a group of boundaries
+    //     template <class VSet>
+    //     struct boundaryFields
+    //     {
+    //     public:
+    //         [[nodiscard]] boundaryFields(const std::string &fieldName)
+    //             : values_{
+    //                   boundaryValue<VSet>(fieldName, "North"),
+    //                   boundaryValue<VSet>(fieldName, "South"),
+    //                   boundaryValue<VSet>(fieldName, "East"),
+    //                   boundaryValue<VSet>(fieldName, "West"),
+    //                   boundaryValue<VSet>(fieldName, "Front"),
+    //                   boundaryValue<VSet>(fieldName, "Back"),
+    //                   boundaryValue<VSet>(fieldName, "internalField")},
+    //               fieldName_(fieldName)
+    //         {
+    //             print();
+    //         };
+
+    //         [[nodiscard]] inline constexpr scalar_t North() const noexcept { return values_[0](); }
+    //         [[nodiscard]] inline constexpr scalar_t South() const noexcept { return values_[1](); }
+    //         [[nodiscard]] inline constexpr scalar_t East() const noexcept { return values_[2](); }
+    //         [[nodiscard]] inline constexpr scalar_t West() const noexcept { return values_[3](); }
+    //         [[nodiscard]] inline constexpr scalar_t Front() const noexcept { return values_[4](); }
+    //         [[nodiscard]] inline constexpr scalar_t Back() const noexcept { return values_[5](); }
+    //         [[nodiscard]] inline constexpr scalar_t internalField() const noexcept { return values_[6](); }
+
+    //         void print() const noexcept
+    //         {
+    //             std::cout << fieldName_ << " boundary values:" << std::endl;
+
+    //             const std::vector<std::string> fieldNames({"North", "South", "East", "West", "Front", "Back", "Internal"});
+    //             for (std::size_t var = 0; var < fieldNames.size(); var++)
+    //             {
+    //                 std::cout << fieldNames[var] << ": " << values_[var]() << std::endl;
+    //             }
+    //         }
+
+    //     private:
+    //         const boundaryValue<VSet> values_[7];
+
+    //         const std::string &fieldName_;
+    //     };
+
+    template <class VSet, class M>
+    [[nodiscard]] const std::vector<scalar_t> initialise_from_boundary_conditions(const M &mesh, const std::string &fieldName)
     {
-        if (!std::isspace(static_cast<unsigned char>(c)))
+        const boundaryFields<VSet> field_b(fieldName);
+
+        std::vector<scalar_t> field(mesh.nPoints(), 0);
+
+        for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
         {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Helper function to find the line number of a block declaration
-[[nodiscard]] std::size_t findBlockLine(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
-{
-    for (std::size_t i = startLine; i < lines.size(); ++i)
-    {
-        const std::string processedLine = removeComments(lines[i]);
-        const std::string trimmedLine = trim(processedLine);
-
-        // Check if line starts with the block name
-        if (trimmedLine.compare(0, blockName.length(), blockName) == 0)
-        {
-            // Extract the rest of the line after the block name
-            const std::string rest = trim(trimmedLine.substr(blockName.length()));
-
-            // Check if the next token is empty or a brace
-            if (rest.empty() || rest == "{" || rest[0] == '{')
+            for (label_t by = 0; by < mesh.nyBlocks(); by++)
             {
-                return i;
-            }
+                for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
+                {
+                    for (label_t tz = 0; tz < block::nz(); tz++)
+                    {
+                        for (label_t ty = 0; ty < block::ny(); ty++)
+                        {
+                            for (label_t tx = 0; tx < block::nx(); tx++)
+                            {
+                                const label_t x = (bx * block::nx()) + tx;
+                                const label_t y = (by * block::ny()) + ty;
+                                const label_t z = (bz * block::nz()) + tz;
 
-            // Check if the next token is a semicolon (for field declarations)
-            if (rest[0] == ';')
-            {
-                return i;
-            }
+                                const label_t index = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
-            // For cases like "internalField" which might be followed by other content
-            std::istringstream iss(rest);
-            std::string nextToken;
-            iss >> nextToken;
+                                const bool is_west = (x == 0);
+                                const bool is_east = (x == mesh.nx() - 1);
+                                const bool is_south = (y == 0);
+                                const bool is_north = (y == mesh.ny() - 1);
+                                const bool is_front = (z == 0);
+                                const bool is_back = (z == mesh.nz() - 1);
 
-            if (nextToken.empty() || nextToken == "{" || nextToken == ";")
-            {
-                return i;
-            }
-        }
-    }
+                                const label_t boundary_count =
+                                    static_cast<label_t>(is_west) +
+                                    static_cast<label_t>(is_east) +
+                                    static_cast<label_t>(is_south) +
+                                    static_cast<label_t>(is_north) +
+                                    static_cast<label_t>(is_front) +
+                                    static_cast<label_t>(is_back);
+                                const scalar_t value_sum =
+                                    (is_west * field_b.West()) +
+                                    (is_east * field_b.East()) +
+                                    (is_south * field_b.South()) +
+                                    (is_north * field_b.North()) +
+                                    (is_front * field_b.Front()) +
+                                    (is_back * field_b.Back());
 
-    throw std::runtime_error("Field block \"" + blockName + "\" not defined");
-}
-
-// General function to extract a block by name
-[[nodiscard]] const std::vector<std::string> extractBlock(
-    const std::vector<std::string> &lines,
-    const std::string &blockName,
-    const std::size_t startLine = 0)
-{
-    std::vector<std::string> result;
-
-    // Find the block line using the helper function
-    const std::size_t blockLine = findBlockLine(lines, blockName, startLine);
-
-    // Check for non-whitespace content between block declaration and opening brace
-    bool foundOpeningBrace = false;
-    int braceCount = 0;
-    std::size_t openingBraceLine = 0;
-
-    // First, check if the opening brace is on the same line as the block declaration
-    const std::string blockLineProcessed = removeComments(lines[blockLine]);
-    std::size_t openBracePos = blockLineProcessed.find('{');
-    if (openBracePos != std::string::npos)
-    {
-        // Opening brace is on the same line as block declaration
-        braceCount = 1;
-        result.push_back(lines[blockLine]);
-        foundOpeningBrace = true;
-        openingBraceLine = blockLine;
-    }
-    else
-    {
-        // Check subsequent lines for the opening brace
-        for (std::size_t i = blockLine + 1; i < lines.size(); ++i)
-        {
-            const std::string processedLine = removeComments(lines[i]);
-            const std::string trimmedLine = trim(processedLine);
-
-            // Check for closing brace before opening brace
-            if (processedLine.find('}') != std::string::npos)
-            {
-                throw std::runtime_error("Found closing brace before opening brace for block '" + blockName + "'");
-            }
-
-            // Check for non-whitespace content
-            if (!isOnlyWhitespace(trimmedLine) && trimmedLine.find('{') == std::string::npos)
-            {
-                throw std::runtime_error("Non-whitespace content found between block declaration and opening brace for block '" + blockName + "'");
-            }
-
-            // Check for opening brace
-            openBracePos = processedLine.find('{');
-            if (openBracePos != std::string::npos)
-            {
-                braceCount = 1;
-                result.push_back(lines[i]);
-                foundOpeningBrace = true;
-                openingBraceLine = i;
-                break;
-            }
-
-            // If we reach here, the line contains only whitespace or comments
-            // We don't add these lines to the result yet
-        }
-    }
-
-    if (!foundOpeningBrace)
-    {
-        throw std::runtime_error("Opening brace not found for block '" + blockName + "'");
-    }
-
-    // Continue processing from the line after the opening brace
-    for (std::size_t i = openingBraceLine + 1; i < lines.size(); ++i)
-    {
-        // Process each line to count braces, but keep the original line in the result
-        const std::string processedLineInner = removeComments(lines[i]);
-        for (char c : processedLineInner)
-        {
-            if (c == '{')
-            {
-                braceCount++;
-            }
-            else if (c == '}')
-            {
-                braceCount--;
+                                field[index] = boundary_count > 0 ? value_sum / static_cast<scalar_t>(boundary_count) : field_b.internalField();
+                            }
+                        }
+                    }
+                }
             }
         }
-        result.push_back(lines[i]);
 
-        if (braceCount == 0)
-        {
-            return result;
-        }
+        return field;
     }
-
-    // If we reach here, the braces are unbalanced
-    throw std::runtime_error("Unbalanced braces for block '" + blockName + "'");
-}
-
-// Specialized function for field blocks (for backward compatibility)
-[[nodiscard]] const std::vector<std::string> extractBlock(
-    const std::vector<std::string> &lines,
-    const std::string &fieldName,
-    const std::string &key)
-{
-    return extractBlock(lines, key + " " + fieldName);
 }

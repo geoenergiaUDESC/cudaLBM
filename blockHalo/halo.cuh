@@ -11,6 +11,7 @@ namespace LBM
 {
     namespace device
     {
+        template <class VSet>
         class halo
         {
         public:
@@ -19,9 +20,13 @@ namespace LBM
              * @param f The std::vector to be allocated on the device
              * @return An array object constructed from f
              **/
-            [[nodiscard]] halo(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
-                : fGhost_(haloFace(fMom, mesh)),
-                  gGhost_(haloFace(fMom, mesh)) {};
+            // [[nodiscard]] halo(const std::vector<scalar_t> &fMom, const host::latticeMesh &mesh) noexcept
+            //     : fGhost_(haloFace<VSet>(fMom, mesh)),
+            //       gGhost_(haloFace<VSet>(fMom, mesh)) {};
+
+            [[nodiscard]] halo(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
+                : fGhost_(haloFace<VSet>(fMom, mesh)),
+                  gGhost_(haloFace<VSet>(fMom, mesh)) {};
 
             /**
              * @brief Default desructor for the halo class
@@ -64,7 +69,6 @@ namespace LBM
              * @brief Loads the populations at the halo points into pop
              * @param pop The population density array into which the halo points are to be loaded
              **/
-            template <class VSet>
             __device__ static inline void popLoad(
                 scalar_t (&ptrRestrict pop)[VSet::Q()],
                 const scalar_t *const ptrRestrict fx0,
@@ -156,7 +160,6 @@ namespace LBM
              * @brief Saves the populations in pop to the halo
              * @param pop The population density array from which the halo points are to be saved
              **/
-            template <class VSet>
             __device__ static inline void popSave(
                 const scalar_t (&ptrRestrict pop)[VSet::Q()],
                 scalar_t *const ptrRestrict gx0,
@@ -235,8 +238,8 @@ namespace LBM
             /**
              * @brief The individual halo objects
              **/
-            haloFace fGhost_;
-            haloFace gGhost_;
+            haloFace<VSet> fGhost_;
+            haloFace<VSet> gGhost_;
 
             /**
              * @brief Check whether the current x, y or z index is at a block boundary

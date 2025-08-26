@@ -17,27 +17,139 @@ namespace LBM
 {
     namespace host
     {
-        template <typename T, const ctorType::type cType>
+        template <typename T, class VSet>
         class array
         {
         public:
+            [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl)
+                : arr_(initialise_array(mesh, name, programCtrl)),
+                  name_(name) {};
+
+            ~array() {};
+
             /**
-             * @brief Constructor for the host array class
+             * @brief Provides read-only access to the underlying std::vector
+             * @return An immutable reference to an std::vector of type T
+             **/
+            [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
+            {
+                return arr_;
+            }
+
+            /**
+             * @brief Provides access to the variable names
+             * @return An immutable reference to an std::vector of std::strings
+             **/
+            __host__ [[nodiscard]] inline constexpr const std::string &name() const noexcept
+            {
+                return name_;
+            }
+
+        private:
+            const std::vector<T> arr_;
+
+            const std::string name_;
+
+            [[nodiscard]] const std::vector<scalar_t> initialise_array(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
+            {
+                if (fileIO::hasIndexedFiles(programCtrl.caseName()))
+                {
+                    // throw std::runtime_error("Restarting not implemented yet!");
+
+                    const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
+
+                    return fileIO::readFieldByName<scalar_t>(fileName, fieldName);
+
+                    // return std::vector<scalar_t>(mesh.nPoints(), 0);
+                }
+                else
+                {
+                    return initialConditions(mesh, fieldName);
+                }
+            }
+
+            [[nodiscard]] const std::vector<scalar_t> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
+            {
+                const boundaryFields<VSet> bField(fieldName);
+
+                std::vector<scalar_t> field(mesh.nPoints(), 0);
+
+                for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
+                {
+                    for (label_t by = 0; by < mesh.nyBlocks(); by++)
+                    {
+                        for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
+                        {
+                            for (label_t tz = 0; tz < block::nz(); tz++)
+                            {
+                                for (label_t ty = 0; ty < block::ny(); ty++)
+                                {
+                                    for (label_t tx = 0; tx < block::nx(); tx++)
+                                    {
+                                        const label_t x = (bx * block::nx()) + tx;
+                                        const label_t y = (by * block::ny()) + ty;
+                                        const label_t z = (bz * block::nz()) + tz;
+
+                                        const label_t index = host::idx(tx, ty, tz, bx, by, bz, mesh);
+
+                                        const bool is_west = (x == 0);
+                                        const bool is_east = (x == mesh.nx() - 1);
+                                        const bool is_south = (y == 0);
+                                        const bool is_north = (y == mesh.ny() - 1);
+                                        const bool is_front = (z == 0);
+                                        const bool is_back = (z == mesh.nz() - 1);
+
+                                        const label_t boundary_count =
+                                            static_cast<label_t>(is_west) +
+                                            static_cast<label_t>(is_east) +
+                                            static_cast<label_t>(is_south) +
+                                            static_cast<label_t>(is_north) +
+                                            static_cast<label_t>(is_front) +
+                                            static_cast<label_t>(is_back);
+                                        const scalar_t value_sum =
+                                            (is_west * bField.West()) +
+                                            (is_east * bField.East()) +
+                                            (is_south * bField.South()) +
+                                            (is_north * bField.North()) +
+                                            (is_front * bField.Front()) +
+                                            (is_back * bField.Back());
+
+                                        field[index] = boundary_count > 0 ? value_sum / static_cast<scalar_t>(boundary_count) : bField.internalField();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return field;
+            }
+        };
+
+        template <typename T, const ctorType::type cType, class VSet>
+        class arrayCollection
+        {
+        public:
+            /**
+             * @brief Constructor for the host arrayCollection class
              * @param programCtrl The program control dictionary
              * @param mesh The mesh
              **/
-            [[nodiscard]] array(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
+            [[nodiscard]] arrayCollection(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
                 : arr_(initialiseVector(programCtrl, mesh)),
                   varNames_(varNames) {};
 
             /**
-             * @brief Constructs the device array from an std::vector of type T
+             * @brief Constructs the host array from an std::vector of type T
              * @param programCtrl Immutable reference to the program control
              * @param varNames The names of the variables
              * @param timeIndex The index of the time step
              * @return An array object constructed from f
              **/
-            [[nodiscard]] array(
+            [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
                 const std::vector<std::string> &varNames,
                 const label_t timeIndex)
@@ -45,21 +157,21 @@ namespace LBM
                   varNames_(varNames) {};
 
             /**
-             * @brief Constructs the device array from an std::vector of type T at the latest time
+             * @brief Constructs the host arrayCollection from an std::vector of type T at the latest time
              * @param programCtrl Immutable reference to the program control
              * @param varNames The names of the variables
              * @return An array object constructed from f
              **/
-            [[nodiscard]] array(
+            [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
                 const std::vector<std::string> &varNames)
                 : arr_(initialiseVector(programCtrl)),
                   varNames_(varNames) {};
 
             /**
-             * @brief Destructor for the host array class
+             * @brief Destructor for the host arrayCollection class
              **/
-            ~array() {};
+            ~arrayCollection() {};
 
             /**
              * @brief Provides read-only access to the underlying std::vector
@@ -129,7 +241,7 @@ namespace LBM
                         // Construct default
                         std::cout << "Constructing default" << std::endl;
                         std::cout << std::endl;
-                        return host::moments(mesh, programCtrl.u_inf());
+                        return host::moments<VSet>(mesh, programCtrl.u_inf());
                     }
                 }
 
@@ -138,7 +250,7 @@ namespace LBM
                 {
                     std::cout << "Constructing default" << std::endl;
                     std::cout << std::endl;
-                    return host::moments(mesh, programCtrl.u_inf());
+                    return host::moments<VSet>(mesh, programCtrl.u_inf());
                 }
             }
 
@@ -187,10 +299,10 @@ namespace LBM
              * @param f The std::vector to be allocated on the device
              * @return An array object constructed from f
              **/
-            [[nodiscard]] array(const std::vector<T> &f, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
-                : ptr_(device::allocateArray<T>(f)),
-                  varNames_(varNames),
-                  mesh_(mesh) {};
+            // [[nodiscard]] array(const std::vector<T> &f, std::string &name, const host::latticeMesh &mesh)
+            //     : ptr_(device::allocateArray<T>(f)),
+            //       name_(name),
+            //       mesh_(mesh) {};
 
             /**
              * @brief Constructs the device array from a host array
@@ -198,10 +310,10 @@ namespace LBM
              * @param hostArray The array allocated on the host
              * @param mesh The lattice mesh
              **/
-            template <const ctorType::type cType>
-            [[nodiscard]] array(const host::array<T, cType> &hostArray, const host::latticeMesh &mesh)
+            template <class VSet>
+            [[nodiscard]] array(const host::array<T, VSet> &hostArray, const host::latticeMesh &mesh)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
-                  varNames_(hostArray.varNames()),
+                  name_(hostArray.name()),
                   mesh_(mesh){};
 
             /**
@@ -243,18 +355,9 @@ namespace LBM
              * @brief Provides access to the variable names
              * @return An immutable reference to an std::vector of std::strings
              **/
-            __host__ [[nodiscard]] inline const std::vector<std::string> &varNames() const noexcept
+            __host__ [[nodiscard]] inline const std::string &name() const noexcept
             {
-                return varNames_;
-            }
-
-            /**
-             * @brief Provides access to a variable name
-             * @return An std::string
-             **/
-            __host__ [[nodiscard]] inline const std::string &varName(const label_t var) const noexcept
-            {
-                return varNames_[var];
+                return name_;
             }
 
             /**
@@ -272,17 +375,17 @@ namespace LBM
              * @param fields Object containing the solution variables encoded in interleaved AoS format
              * @param timeStep The current time step
              **/
-            __host__ void write(const std::string &filePrefix, const std::size_t timeStep)
-            {
-                const std::size_t nVars = varNames_.size();
-                const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;
+            // __host__ void write(const std::string &filePrefix, const label_t timeStep)
+            // {
+            //     const std::size_t nVars = varNames_.size();
+            //     const std::size_t nTotal = static_cast<std::size_t>(mesh_.nx()) * static_cast<std::size_t>(mesh_.ny()) * static_cast<std::size_t>(mesh_.nz()) * nVars;
 
-                // Copy device -> host
-                const std::vector<T> hostFields = host::toHost(ptr_, nTotal);
+            //     // Copy device -> host
+            //     const std::vector<T> hostFields = host::toHost(ptr_, nTotal);
 
-                // Write to file
-                fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);
-            }
+            //     // Write to file
+            //     fileIO::writeFile(filePrefix + "_" + std::to_string(timeStep) + ".LBMBin", mesh_, varNames_, hostFields, timeStep);
+            // }
 
             /**
              * @brief Returns the total size of the array, i.e. the number of points * number of variables
@@ -290,7 +393,7 @@ namespace LBM
              **/
             __host__ [[nodiscard]] inline constexpr label_t size() const noexcept
             {
-                return mesh_.nPoints() * varNames_.size();
+                return mesh_.nPoints();
             }
 
         private:
@@ -302,7 +405,7 @@ namespace LBM
             /**
              * @brief Names of the solution variables
              **/
-            const std::vector<std::string> varNames_;
+            const std::string &name_;
 
             /**
              * @brief Reference to the mesh

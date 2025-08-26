@@ -37,6 +37,7 @@ Contents: A list of header files necessary for compilation
 #include <typeinfo>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #endif

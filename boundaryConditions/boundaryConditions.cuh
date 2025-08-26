@@ -10,6 +10,7 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 #include "../LBMTypedefs.cuh"
 
 #include "normalVector.cuh"
+#include "boundaryField.cuh"
 
 namespace LBM
 {
@@ -513,8 +514,8 @@ namespace LBM
                 moments[2] = static_cast<scalar_t>(0);
                 moments[3] = static_cast<scalar_t>(0);
                 // moments[4] = device::u_inf * device::u_inf * rho;
-                moments[4] = static_cast<scalar_t>(0);                                       // At the intersection of front and back, only z derivative exists
-                moments[5] = -VelocitySet::velocitySet::cs2() * device::tau * device::u_inf; // At the intersection of front and back, only z derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                 // At the intersection of front and back, only z derivative exists
+                moments[5] = -VelocitySet::velocitySet::cs2<scalar_t>() * device::tau * device::u_inf; // At the intersection of front and back, only z derivative exists
                 // moments[5] = static_cast<scalar_t>(0);
                 moments[6] = static_cast<scalar_t>(0);
                 moments[7] = static_cast<scalar_t>(0);
@@ -535,8 +536,8 @@ namespace LBM
                 moments[2] = static_cast<scalar_t>(0);
                 moments[3] = static_cast<scalar_t>(0);
                 // moments[4] = device::u_inf * device::u_inf * rho;
-                moments[4] = static_cast<scalar_t>(0);                                      // At the intersection of front and back, only z derivative exists
-                moments[5] = VelocitySet::velocitySet::cs2() * device::tau * device::u_inf; // At the intersection of front and back, only z derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                // At the intersection of front and back, only z derivative exists
+                moments[5] = VelocitySet::velocitySet::cs2<scalar_t>() * device::tau * device::u_inf; // At the intersection of front and back, only z derivative exists
                 // moments[5] = static_cast<scalar_t>(0);
                 moments[6] = static_cast<scalar_t>(0);
                 moments[7] = static_cast<scalar_t>(0);
@@ -557,8 +558,8 @@ namespace LBM
                 moments[2] = static_cast<scalar_t>(0);
                 moments[3] = static_cast<scalar_t>(0);
                 // moments[4] = device::u_inf * device::u_inf * rho;
-                moments[5] = -static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * device::tau * device::u_inf; // At the intersection of East and West, only x derivative exists
-                moments[4] = static_cast<scalar_t>(0);                                                                  // At the intersection of East and West, only x derivative exists
+                moments[5] = -static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2<scalar_t>() * device::tau * device::u_inf; // At the intersection of East and West, only x derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                                            // At the intersection of East and West, only x derivative exists
                 // moments[5] = static_cast<scalar_t>(0);
                 moments[6] = static_cast<scalar_t>(0);
                 moments[7] = static_cast<scalar_t>(0);
@@ -579,8 +580,8 @@ namespace LBM
                 moments[2] = static_cast<scalar_t>(0);
                 moments[3] = static_cast<scalar_t>(0);
                 // moments[4] = device::u_inf * device::u_inf * rho;
-                moments[5] = static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2() * device::tau * device::u_inf; // At the intersection of East and West, only x derivative exists
-                moments[4] = static_cast<scalar_t>(0);                                                                 // At the intersection of East and West, only x derivative exists
+                moments[5] = static_cast<scalar_t>(2) * VelocitySet::velocitySet::cs2<scalar_t>() * device::tau * device::u_inf; // At the intersection of East and West, only x derivative exists
+                moments[4] = static_cast<scalar_t>(0);                                                                           // At the intersection of East and West, only x derivative exists
                 // moments[5] = static_cast<scalar_t>(0);
                 moments[6] = static_cast<scalar_t>(0);
                 moments[7] = static_cast<scalar_t>(0);

@@ -19,13 +19,13 @@ namespace LBM
          * @param timeStep The current time step
          **/
         template <typename T, class M>
-        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const std::size_t timeStep)
+        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const label_t timeStep)
         {
             static_assert(std::is_floating_point<T>::value, "T must be floating point");
 
             static_assert(std::endian::native == std::endian::little | std::endian::native == std::endian::big, "File system must be either little or big endian");
 
-            static_assert(sizeof(scalar_t) == 4 | sizeof(scalar_t) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
+            static_assert(sizeof(T) == 4 | sizeof(T) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
 
             const std::size_t nVars = varNames.size();
             const std::size_t nPoints = static_cast<std::size_t>(mesh.nx()) * static_cast<std::size_t>(mesh.ny()) * static_cast<std::size_t>(mesh.nz());
@@ -54,11 +54,11 @@ namespace LBM
                 out << "\tbinaryType\tbigEndian;" << std::endl;
             }
             out << std::endl;
-            if constexpr (sizeof(scalar_t) == 4)
+            if constexpr (sizeof(T) == 4)
             {
                 out << "\tscalarType\t32 bit;" << std::endl;
             }
-            else if constexpr (sizeof(scalar_t) == 8)
+            else if constexpr (sizeof(T) == 8)
             {
                 out << "\tscalarType\t64 bit;" << std::endl;
             }
@@ -95,7 +95,7 @@ namespace LBM
             out << "{" << std::endl;
             out << "\tfieldType\tnonUniform;" << std::endl;
             out << std::endl;
-            out << "\tfield[" << expectedSize << "][" << mesh.nx() << "][" << mesh.ny() << "][" << mesh.nz() << "][" << nVars << "]" << std::endl;
+            out << "\tfield[" << expectedSize << "][" << nVars << "][" << mesh.nz() << "][" << mesh.ny() << "][" << mesh.nx() << "]" << std::endl;
             out << "\t{" << std::endl;
             // out.flush();
             out.write(reinterpret_cast<const char *>(fields.data()), static_cast<std::streamsize>(byteSize));

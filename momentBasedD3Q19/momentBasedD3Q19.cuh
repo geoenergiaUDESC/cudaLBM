@@ -52,30 +52,13 @@ namespace LBM
                     shared_buffer[moment * block::stride() + tid] = devPtrs.ptr<moment>()[idx];
                     if constexpr (moment == index::rho())
                     {
-                        moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0();
+                        moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0<scalar_t>();
                     }
                     else
                     {
                         moments.arr[moment] = shared_buffer[moment * block::stride() + tid];
                     }
                 });
-
-            // Synchronise before pulling into thread
-            // __syncthreads();
-
-            // Pull into thread memory
-            // device::constexpr_for<0, NUMBER_MOMENTS()>(
-            //     [&](const auto moment)
-            //     {
-            //         if constexpr (moment == index::rho())
-            //         {
-            //             moments.arr[moment] = shared_buffer[moment * block::stride() + tid] + rho0();
-            //         }
-            //         else
-            //         {
-            //             moments.arr[moment] = shared_buffer[moment * block::stride() + tid];
-            //         }
-            //     });
         }
 
         // Reconstruct the population from the moments
@@ -86,12 +69,14 @@ namespace LBM
             // Save populations in shared memory
             sharedMemory::save<VSet>(pop.arr, shared_buffer, tid);
 
+            __syncthreads();
+
             // Pull from shared memory
             sharedMemory::pull<VSet>(pop.arr, shared_buffer);
         }
 
         // Load pop from global memory in cover nodes
-        device::halo::popLoad<VSet>(
+        device::halo<VSet>::popLoad(
             pop.arr,
             fGhost.ptr<0>(),
             fGhost.ptr<1>(),
@@ -122,8 +107,16 @@ namespace LBM
         // Calculate post collision populations
         VSet::reconstruct(pop.arr, moments.arr);
 
+        // Coalesced write to global memory
+        moments.arr[0] = moments.arr[0] - rho0<scalar_t>();
+        device::constexpr_for<0, NUMBER_MOMENTS()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments.arr[moment];
+            });
+
         // Save the populations to the block halo
-        device::halo::popSave<VSet>(
+        device::halo<VSet>::popSave(
             pop.arr,
             gGhost.ptr<0>(),
             gGhost.ptr<1>(),
@@ -131,14 +124,6 @@ namespace LBM
             gGhost.ptr<3>(),
             gGhost.ptr<4>(),
             gGhost.ptr<5>());
-
-        // Coalesced write to global memory
-        moments.arr[0] = moments.arr[0] - rho0();
-        device::constexpr_for<0, NUMBER_MOMENTS()>(
-            [&](const auto moment)
-            {
-                devPtrs.ptr<moment>()[idx] = moments.arr[moment];
-            });
     }
 }
 

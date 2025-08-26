@@ -24,15 +24,15 @@ namespace LBM
          **/
         [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              caseName_(string::extractParameter<std::string>(string::readCaseDirectory("caseInfo"), "caseName")),
+              caseName_(string::extractParameter<std::string>(string::readFile("caseInfo"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
-              Lx_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lx")),
-              Ly_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Ly")),
-              Lz_(string::extractParameter<scalar_t>(string::readCaseDirectory("caseInfo"), "Lz")),
-              nTimeSteps_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "nTimeSteps")),
-              saveInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "saveInterval")),
-              infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval")),
+              Lx_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Lx")),
+              Ly_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Ly")),
+              Lz_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Lz")),
+              nTimeSteps_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nTimeSteps")),
+              saveInterval_(string::extractParameter<label_t>(string::readFile("caseInfo"), "saveInterval")),
+              infoInterval_(string::extractParameter<label_t>(string::readFile("caseInfo"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
             static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
@@ -219,7 +219,7 @@ namespace LBM
         template <typename T>
         [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
         {
-            return string::extractParameter<T>(string::readCaseDirectory("caseInfo"), varName);
+            return string::extractParameter<T>(string::readFile("caseInfo"), varName);
         }
     };
 }

@@ -62,3 +62,4 @@ lidDrivenCavity/*.dat
 lidDrivenCavity/*.vtu
 lidDrivenCavity/*.LBMBin
 build/bin/*
+testRead/*.vtu

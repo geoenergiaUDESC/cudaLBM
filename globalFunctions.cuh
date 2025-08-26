@@ -476,7 +476,8 @@ namespace LBM
     /**
      * @brief Reference density 1.0
      **/
-    __device__ __host__ [[nodiscard]] inline consteval scalar_t rho0() noexcept
+    template <typename T>
+    __device__ __host__ [[nodiscard]] inline consteval T rho0() noexcept
     {
         return 1.0;
     }

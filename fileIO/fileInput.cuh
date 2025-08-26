@@ -530,11 +530,10 @@ namespace LBM
         }
 
         template <typename T>
-        [[nodiscard]] std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
+        [[nodiscard]] const std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
         {
             static_assert(std::is_floating_point_v<T>, "T must be floating point");
-            static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big,
-                          "System must be little or big endian");
+            static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
 
             // Check if file exists
             if (!std::filesystem::exists(fileName))
@@ -557,14 +556,11 @@ namespace LBM
             // Validate scalar size
             if (sizeof(T) != header.scalarSize)
             {
-                throw std::runtime_error("Scalar size mismatch between file (" +
-                                         std::to_string(header.scalarSize) +
-                                         " bytes) and template type (" +
-                                         std::to_string(sizeof(T)) + " bytes)");
+                throw std::runtime_error("Scalar size mismatch between file (" + std::to_string(header.scalarSize) + " bytes) and template type (" + std::to_string(sizeof(T)) + " bytes)");
             }
 
             // Find the requested field name
-            auto it = std::find(header.fieldNames.begin(), header.fieldNames.end(), fieldName);
+            const auto it = std::find(header.fieldNames.begin(), header.fieldNames.end(), fieldName);
             if (it == header.fieldNames.end())
             {
                 // Create a list of available field names for better error message
@@ -572,14 +568,22 @@ namespace LBM
                 for (const auto &name : header.fieldNames)
                 {
                     if (!availableFields.empty())
+                    {
                         availableFields += ", ";
+                    }
                     availableFields += "'" + name + "'";
                 }
                 throw std::runtime_error("Field name '" + fieldName + "' not found in file. Available fields: " + availableFields);
             }
 
-            // Calculate field index and data position
-            const std::size_t fieldIndex = std::distance(header.fieldNames.begin(), it);
+            // Calculate field index and data position - FIXED sign conversion issue
+            const std::ptrdiff_t signedFieldIndex = std::distance(header.fieldNames.begin(), it);
+            if (signedFieldIndex < 0)
+            {
+                throw std::runtime_error("Internal error: Negative field index");
+            }
+
+            const std::size_t fieldIndex = static_cast<std::size_t>(signedFieldIndex);
             const std::size_t pointsPerField = header.nx * header.ny * header.nz;
 
             // Check for potential overflow in calculations
@@ -667,9 +671,7 @@ namespace LBM
 
             if (in.gcount() != static_cast<std::streamsize>(byteCount))
             {
-                throw std::runtime_error("Incomplete field data read. Expected " +
-                                         std::to_string(byteCount) + " bytes, got " +
-                                         std::to_string(in.gcount()) + " bytes");
+                throw std::runtime_error("Incomplete field data read. Expected " + std::to_string(byteCount) + " bytes, got " + std::to_string(in.gcount()) + " bytes");
             }
 
             // Handle endianness conversion if needed
@@ -681,80 +683,6 @@ namespace LBM
 
             return fieldData;
         }
-
-        // template <typename T>
-        // [[nodiscard]] const std::vector<T> readSingleField(const std::string &fileName, const std::string &fieldName)
-        // {
-        //     static_assert(std::is_floating_point_v<T>, "T must be floating point");
-        //     static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
-
-        //     // Check that the file exists
-        //     if (!std::filesystem::exists(fileName))
-        //     {
-        //         throw std::runtime_error("File does not exist: " + fileName);
-        //     }
-
-        //     // Parse header metadata
-        //     const fieldFileHeader header = parseFieldFileHeader(fileName);
-
-        //     // Validate scalar size
-        //     if (sizeof(T) != header.scalarSize)
-        //     {
-        //         throw std::runtime_error("Scalar size mismatch between file and template type");
-        //     }
-
-        //     // Find the field index
-        //     const auto it = std::find(header.fieldNames.begin(), header.fieldNames.end(), fieldName);
-        //     if (it == header.fieldNames.end())
-        //     {
-        //         throw std::runtime_error("Field not found: " + fieldName);
-        //     }
-        //     const std::ptrdiff_t fieldIndex = std::distance(header.fieldNames.begin(), it);
-
-        //     // Calculate data positions
-        //     const std::size_t nPoints = header.nx * header.ny * header.nz;
-        //     const std::size_t fieldOffset = fieldIndex * nPoints * sizeof(T);
-        //     const std::size_t dataStartPos = header.dataStartPos + fieldOffset;
-
-        //     // Open file and jump to the start of the field data
-        //     std::ifstream in(fileName, std::ios::binary);
-        //     if (!in)
-        //     {
-        //         throw std::runtime_error("Cannot open file: " + fileName);
-        //     }
-
-        //     // Safe conversion for seekg
-        //     if (dataStartPos > static_cast<std::size_t>(std::numeric_limits<std::streamoff>::max()))
-        //     {
-        //         throw std::runtime_error("File position overflow");
-        //     }
-        //     in.seekg(static_cast<std::streamoff>(dataStartPos));
-
-        //     // Read only the specific field data
-        //     std::vector<T> data(nPoints);
-        //     const std::size_t byteCount = nPoints * sizeof(T);
-
-        //     // Check for streamsize overflow
-        //     if (byteCount > static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()))
-        //     {
-        //         throw std::runtime_error("Data size exceeds maximum stream size");
-        //     }
-        //     in.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(byteCount));
-
-        //     if (!in.good() || in.gcount() != static_cast<std::streamsize>(byteCount))
-        //     {
-        //         throw std::runtime_error("Error reading binary data for field: " + fieldName);
-        //     }
-
-        //     // Handle endianness conversion if needed
-        //     const bool systemIsLittle = (std::endian::native == std::endian::little);
-        //     if (systemIsLittle != header.isLittleEndian)
-        //     {
-        //         swapEndianVector(data);
-        //     }
-
-        //     return data;
-        // }
 
         /**
          * @brief De-interleave an array of structures (AoS) into a structure of arrays (SoA).

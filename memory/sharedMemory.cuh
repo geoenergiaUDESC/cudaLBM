@@ -37,7 +37,7 @@ namespace LBM
                     s_pop[q_ * block::stride() + tid] = pop[q_ + 1];
                 });
 
-            __syncthreads();
+            // __syncthreads();
         }
 
         /**

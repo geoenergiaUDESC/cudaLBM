@@ -70,7 +70,7 @@ namespace LBM
                                 {
                                     for (label_t tx = 0; tx < block::nx(); tx++)
                                     {
-                                        arr[host::idxMom(tx, ty, tz, bx, by, bz, var, mesh)] = f_temp[host::idx(tx, ty, tz, bx, by, bz, mesh)];
+                                        arr[host::idx(tx, ty, tz, bx, by, bz, mesh) + (var * mesh.nPoints())] = f_temp[host::idx(tx, ty, tz, bx, by, bz, mesh)];
                                     }
                                 }
                             }
@@ -88,35 +88,35 @@ namespace LBM
          * @param mesh The mesh
          * @return An std::vector of type T, de-interlaced from fMom
          **/
-        template <const label_t mom, class M>
-        __host__ [[nodiscard]] const std::vector<scalar_t> toDevice(const std::vector<scalar_t> hostMoments, const M &mesh)
-        {
-            // Allocate size and all to 0
-            std::vector<scalar_t> arr(mesh.nPoints(), 0);
+        // template <const label_t mom, class M>
+        // __host__ [[nodiscard]] const std::vector<scalar_t> toDevice(const std::vector<scalar_t> hostMoments, const M &mesh)
+        // {
+        //     // Allocate size and all to 0
+        //     std::vector<scalar_t> arr(mesh.nPoints(), 0);
 
-            // Copy idxMom to idx
-            for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
-            {
-                for (label_t by = 0; by < mesh.nyBlocks(); by++)
-                {
-                    for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
-                    {
-                        for (label_t tz = 0; tz < block::nz(); tz++)
-                        {
-                            for (label_t ty = 0; ty < block::ny(); ty++)
-                            {
-                                for (label_t tx = 0; tx < block::nx(); tx++)
-                                {
-                                    arr[host::idx(tx, ty, tz, bx, by, bz, mesh)] = hostMoments[host::idxMom<mom>(tx, ty, tz, bx, by, bz, mesh)];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        //     // Copy idxMom to idx
+        //     for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
+        //     {
+        //         for (label_t by = 0; by < mesh.nyBlocks(); by++)
+        //         {
+        //             for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
+        //             {
+        //                 for (label_t tz = 0; tz < block::nz(); tz++)
+        //                 {
+        //                     for (label_t ty = 0; ty < block::ny(); ty++)
+        //                     {
+        //                         for (label_t tx = 0; tx < block::nx(); tx++)
+        //                         {
+        //                             arr[host::idx(tx, ty, tz, bx, by, bz, mesh)] = hostMoments[host::idxMom<mom>(tx, ty, tz, bx, by, bz, mesh)];
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            return arr;
-        }
+        //     return arr;
+        // }
     }
 
     namespace device

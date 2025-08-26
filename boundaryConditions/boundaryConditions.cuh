@@ -10,6 +10,7 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 #include "../LBMTypedefs.cuh"
 
 #include "normalVector.cuh"
+#include "boundaryField.cuh"
 
 namespace LBM
 {

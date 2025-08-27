@@ -63,3 +63,4 @@ lidDrivenCavity/*.vtu
 lidDrivenCavity/*.LBMBin
 build/bin/*
 testRead/*.vtu
+build/include/hardware.info

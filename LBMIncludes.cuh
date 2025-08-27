@@ -14,10 +14,12 @@ Contents: A list of header files necessary for compilation
 #include <bit>
 #include <cctype>
 #include <charconv>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <filesystem>

@@ -1,5 +1,8 @@
 # Top-level Makefile
-SUBDIRS = momentBasedD3Q19 fieldConvert fieldCalculate
+TOOL_SUBDIRS = computeVersion
+GPU_SUBDIRS = momentBasedD3Q19 fieldConvert fieldCalculate
+SUBDIRS = $(TOOL_SUBDIRS) $(GPU_SUBDIRS)
+
 BUILD_DIR = build
 BIN_DIR = $(BUILD_DIR)/bin
 INCLUDE_DIR = $(BUILD_DIR)/include
@@ -13,8 +16,15 @@ directories:
 	mkdir -p $(BIN_DIR)
 	mkdir -p $(INCLUDE_DIR)
 
-# Build subprojects
-$(SUBDIRS): directories
+# Generate hardware info in build directory
+build/include/hardware.info:
+	@echo "--- Detectando hardware CUDA ---"
+	$(MAKE) -C computeVersion run
+
+$(TOOL_SUBDIRS): directories
+	$(MAKE) -C $@
+
+$(GPU_SUBDIRS): build/include/hardware.info
 	$(MAKE) -C $@
 
 # Clean all projects

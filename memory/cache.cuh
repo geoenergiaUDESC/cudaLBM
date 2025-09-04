@@ -11,24 +11,24 @@ Contents: Handles the use of the cache on the GPU
 
 namespace LBM
 {
-    namespace device
+    namespace cache
     {
         /**
          * @brief Enumerated type of cache eviction policies
          **/
-        namespace evictionPolicy
+        namespace Policy
         {
             typedef enum Enum : label_t
             {
-                first = 0,
-                last = 1
+                evict_first = 0,
+                evict_last = 1
             } Enum;
         }
 
         /**
          * @brief Enumerated type of cache levels
          **/
-        namespace cacheLevel
+        namespace Level
         {
             typedef enum Enum : label_t
             {
@@ -39,101 +39,47 @@ namespace LBM
 
         /**
          * @brief Perform a prefetch to a particular level of cache
-         * @tparam cacheLevel The cache level to prefetch to
-         * @tparam evictionPolicy The cache eviction policy
-         * @tparam prefetchDistance The number of cycles ahead to prefetch
-         * @param fMom Pointer to the interleaved moment variables on the GPU
+         * @tparam level The cache level to prefetch to
+         * @tparam policy The cache eviction policy
+         * @tparam T The type of pointer
+         * @param ptr Pointer to the interleaved moment variables on the GPU
          **/
-        template <const cacheLevel::Enum level, const evictionPolicy::Enum policy, const label_t prefetchDistance>
-        __device__ inline void prefetch(const scalar_t *const ptrRestrict fMom) noexcept
+        template <const Level::Enum level, const Policy::Enum policy, typename T>
+        __device__ inline void prefetch(const T *const ptrRestrict ptr) noexcept
         {
-            static_assert((level == cacheLevel::L1) | (level == cacheLevel::L2), "Prefetch cache level must be 1 or 2");
-            static_assert((policy == evictionPolicy::first) | (policy == evictionPolicy::last), "Cache eviction policy must be evictFirst or evictLast");
-            // static_assert((__CUDA_ARCH__ >= 350), "CUDA architecture must be >= 350");
+            // Check that the CUDA architecture is valid
+#if defined(__CUDA_ARCH__)
+            static_assert((__CUDA_ARCH__ >= 350), "CUDA architecture must be >= 350");
+#endif
 
-            const label_t total_blocks = device::NUM_BLOCK_X * device::NUM_BLOCK_Y * device::NUM_BLOCK_Z;
-            const label_t current_block_index = blockIdx.z * (device::NUM_BLOCK_X * device::NUM_BLOCK_Y) + blockIdx.y * device::NUM_BLOCK_X + blockIdx.x;
+            // Check that the cache level is valid
+            static_assert((level == Level::L1) | (level == Level::L2), "Prefetch cache level must be 1 or 2");
 
-            // Prefetch multiple blocks ahead
-            constexpr_for<1, prefetchDistance>(
-                [&](const auto lookahead)
+            // Check that the eviction policy is valid
+            static_assert((policy == Policy::evict_first) | (policy == Policy::evict_last), "Cache eviction policy must be evict_first or evict_last");
+
+            if constexpr (level == Level::L1)
+            {
+                if constexpr (policy == Policy::evict_first)
                 {
-                    const label_t target_block_index = current_block_index + lookahead;
-
-                    if (target_block_index < total_blocks)
-                    {
-                        // Calculate target block coordinates
-                        const label_t target_bz = target_block_index / (device::NUM_BLOCK_X * device::NUM_BLOCK_Y);
-                        const label_t target_by = (target_block_index % (device::NUM_BLOCK_X * device::NUM_BLOCK_Y)) / device::NUM_BLOCK_X;
-                        const label_t target_bx = target_block_index % device::NUM_BLOCK_X;
-
-                        // Calculate base index for target block
-                        const label_t target_base_idx = NUMBER_MOMENTS() * (threadIdx.x + block::nx() * (threadIdx.y + block::ny() * threadIdx.z) + block::size() * (target_bx + device::NUM_BLOCK_X * (target_by + device::NUM_BLOCK_Y * target_bz)));
-
-                        // Prefetch the moments
-                        if constexpr (level == cacheLevel::L1)
-                        {
-                            asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx]));
-
-                            if constexpr (policy == evictionPolicy::last)
-                            {
-                                asm volatile("prefetch.global.L1::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                            }
-
-                            if constexpr (policy == evictionPolicy::first)
-                            {
-                                asm volatile("prefetch.global.L1::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                            }
-
-                            // For 64-bit precision, prefetch the next cache line
-                            if constexpr (sizeof(scalar_t) == 8)
-                            {
-                                asm volatile("prefetch.global.L1 [%0];" : : "l"(&fMom[target_base_idx + 8]));
-
-                                if constexpr (policy == evictionPolicy::last)
-                                {
-                                    asm volatile("prefetch.global.L1::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-
-                                if constexpr (policy == evictionPolicy::first)
-                                {
-                                    asm volatile("prefetch.global.L1::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-                            }
-                        }
-
-                        if constexpr (level == cacheLevel::L2)
-                        {
-                            asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx]));
-
-                            if constexpr (policy == evictionPolicy::last)
-                            {
-                                asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                            }
-
-                            if constexpr (policy == evictionPolicy::first)
-                            {
-                                asm volatile("prefetch.global.L2::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                            }
-
-                            // For 64-bit precision, prefetch the next cache line
-                            if constexpr (sizeof(scalar_t) == 8)
-                            {
-                                asm volatile("prefetch.global.L2 [%0];" : : "l"(&fMom[target_base_idx + 8]));
-
-                                if constexpr (policy == evictionPolicy::last)
-                                {
-                                    asm volatile("prefetch.global.L2::evict_last [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-
-                                if constexpr (policy == evictionPolicy::first)
-                                {
-                                    asm volatile("prefetch.global.L2::evict_first [%0];" : : "l"(&fMom[target_base_idx]));
-                                }
-                            }
-                        }
-                    }
-                });
+                    asm volatile("prefetch.global.L1::evict_first [%0];" ::"l"(ptr));
+                }
+                else if constexpr (policy == Policy::evict_last)
+                {
+                    asm volatile("prefetch.global.L1::evict_last [%0];" ::"l"(ptr));
+                }
+            }
+            else if constexpr (level == Level::L2)
+            {
+                if constexpr (policy == Policy::evict_first)
+                {
+                    asm volatile("prefetch.global.L2::evict_first [%0];" ::"l"(ptr));
+                }
+                else if constexpr (policy == Policy::evict_last)
+                {
+                    asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(ptr));
+                }
+            }
         }
     }
 }

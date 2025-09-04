@@ -20,7 +20,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t nx() noexcept
         {
 #ifdef SCALAR_PRECISION_32
-            return 32;
+            return 8;
 #elif SCALAR_PRECISION_64
             return 4;
 #endif
@@ -32,7 +32,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t ny() noexcept
         {
 #ifdef SCALAR_PRECISION_32
-            return 4;
+            return 8;
 #elif SCALAR_PRECISION_64
             return 4;
 #endif
@@ -44,7 +44,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
-            return 4;
+            return 8;
 #elif SCALAR_PRECISION_64
             return 4;
 #endif
@@ -80,7 +80,7 @@ namespace LBM
         template <class VSet, const label_t nVars>
         __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize() noexcept
         {
-            return (VSet::Q() - 1 > nVars ? VSet::Q() - 1 : nVars) * (block::size() + padding());
+            return (VSet::Q() - 1 > nVars ? VSet::Q() - 1 : nVars) * (size() + padding());
         }
 
     }

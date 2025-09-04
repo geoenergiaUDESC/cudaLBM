@@ -36,11 +36,19 @@ namespace LBM
         //     return;
         // }
 
+        const label_t idx = device::idx();
+
+        // Prefetch L2
+        device::constexpr_for<0, NUMBER_MOMENTS()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
         // Declare shared memory (flattened)
         __shared__ scalar_t shared_buffer[block::sharedMemoryBufferSize<VSet, NUMBER_MOMENTS()>()];
 
         const label_t tid = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
-        const label_t idx = device::idx();
 
         // Coalesced read from global memory
         threadArray<scalar_t, NUMBER_MOMENTS()> moments;

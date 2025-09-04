@@ -42,7 +42,7 @@ namespace LBM
         device::constexpr_for<0, NUMBER_MOMENTS()>(
             [&](const auto moment)
             {
-                device::prefetch<device::cacheLevel::L2, device::evictionPolicy::first, 1>(&(devPtrs.ptr<moment>()[idx]));
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
         // Declare shared memory (flattened)

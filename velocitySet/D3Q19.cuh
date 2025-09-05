@@ -353,6 +353,37 @@ namespace LBM
             }
 
             /**
+             * @brief Calculate rho_I based upon the boundary normal vector
+             * @return rho_I as a scalar_t
+             * @param pop The population density
+             * @param b_n The boundary normal vector at the current lattice node
+             **/
+            template <class B_N>
+            __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const scalar_t (&ptrRestrict pop)[19], const B_N &b_n) noexcept
+            {
+                return (
+                    (incomingSwitch<scalar_t>(lattice_constant<0>(), b_n) * pop[0]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<1>(), b_n) * pop[1]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<2>(), b_n) * pop[2]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<3>(), b_n) * pop[3]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<4>(), b_n) * pop[4]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<5>(), b_n) * pop[5]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<6>(), b_n) * pop[6]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<7>(), b_n) * pop[7]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<8>(), b_n) * pop[8]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<9>(), b_n) * pop[9]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<10>(), b_n) * pop[10]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<11>(), b_n) * pop[11]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<12>(), b_n) * pop[12]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<13>(), b_n) * pop[13]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<14>(), b_n) * pop[14]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<15>(), b_n) * pop[15]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<16>(), b_n) * pop[16]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<17>(), b_n) * pop[17]) +
+                    (incomingSwitch<scalar_t>(lattice_constant<18>(), b_n) * pop[18]));
+            }
+
+            /**
              * @brief Prints information about the velocity set to the terminal
              **/
             static void print() noexcept
@@ -433,6 +464,24 @@ namespace LBM
                     // Continue if the next iteration is not the last
                     printAll(lattice_constant<q_ + 1>());
                 }
+            }
+
+            template <typename T, class B_N, const label_t q_>
+            __device__ [[nodiscard]] static inline constexpr T incomingSwitch(const lattice_constant<q_> q, const B_N &b_n) noexcept
+            {
+                // b_n.x > 0  => EAST boundary
+                // b_n.x < 0  => WEST boundary
+                const bool cond_x = (b_n.isEast() & nxNeg(q)) | (b_n.isWest() & nxPos(q));
+
+                // b_n.y > 0  => NORTH boundary
+                // b_n.y < 0  => SOUTH boundary
+                const bool cond_y = (b_n.isNorth() & nyNeg(q)) | (b_n.isSouth() & nyPos(q));
+
+                // b_n.z > 0  => FRONT boundary
+                // b_n.z < 0  => BACK boundary
+                const bool cond_z = (b_n.isFront() & nzNeg(q)) | (b_n.isBack() & nzPos(q));
+
+                return static_cast<T>(!(cond_x | cond_y | cond_z));
             }
         };
     }

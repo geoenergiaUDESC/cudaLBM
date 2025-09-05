@@ -1,5 +1,5 @@
 # Top-level Makefile
-SUBDIRS = momentBasedD3Q19 fieldConvert
+SUBDIRS = momentBasedD3Q19 fieldConvert fieldCalculate
 BUILD_DIR = build
 BIN_DIR = $(BUILD_DIR)/bin
 INCLUDE_DIR = $(BUILD_DIR)/include

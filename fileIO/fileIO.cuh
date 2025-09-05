@@ -86,6 +86,23 @@ namespace LBM
         }
 
         /**
+         * @brief Converts a string to an integral value of type T
+         * @return An integral value of type T converted from num_str
+         * @param num_str A string representation of a number
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] T stringToIntegral(const std::string &num_str) noexcept
+        {
+            T value = 0;
+
+            const auto result = std::from_chars(num_str.data(), num_str.data() + num_str.size(), value);
+
+            static_cast<void>(result);
+
+            return value;
+        }
+
+        /**
          * @brief Get the indices of the time step present within the current directory for a given file prefix
          * @param fileName The prefix of the case files - normally defined in caseInfo as caseName
          **/
@@ -122,12 +139,18 @@ namespace LBM
 
                 try
                 {
-                    indices.push_back(std::stoull(num_str));
+                    indices.push_back(stringToIntegral<label_t>(num_str));
                 }
                 catch (...)
                 {
                     continue;
                 }
+            }
+
+            // Check that the indices are empty - if they are, it means no valid files were found
+            if (indices.empty())
+            {
+                throw std::runtime_error("No matching files found with prefix " + fileName + " and .LBMBin extension");
             }
 
             std::sort(indices.begin(), indices.end());
@@ -151,6 +174,32 @@ namespace LBM
                 return 0;
             }
         }
+
+        /**
+         * @brief Gets the starting index of the fieldConvert loop
+         * @return The first index of the main loop
+         * @param programCtrl A programControl object
+         **/
+        template <class PC>
+        __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl, const bool isLatestTime)
+        {
+            const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+
+            return isLatestTime ? static_cast<label_t>(fileNameIndices.size() - 1) : 0;
+        }
+
+        template <class PC>
+        __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl)
+        {
+            return getStartIndex(programCtrl, programCtrl.input().isArgPresent("-latestTime"));
+        }
+
+        // template <class PC>
+        // __host__ [[nodiscard]] label_t getStartTime(const PC &programCtrl)
+        // {
+        //     // const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+        //     return fileIO::timeIndices(programCtrl.caseName())[getStartIndex(programCtrl)];
+        // }
     }
 }
 

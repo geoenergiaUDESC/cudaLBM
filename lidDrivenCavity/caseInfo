@@ -23,9 +23,9 @@ startTime       0;
 
 nTimeSteps      10001;
 
-saveInterval    2500;
+saveInterval    2000;
 
-infoInterval    2500;
+infoInterval    2000;
 
 Lx              1.0;
 

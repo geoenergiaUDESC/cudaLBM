@@ -35,6 +35,10 @@ namespace LBM
               infoInterval_(string::extractParameter<label_t>(string::readCaseDirectory("caseInfo"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
+            static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
+
+            static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
+
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << "{                                                                         }" << std::endl;
             std::cout << "{ UDESC LBM                                                               }" << std::endl;
@@ -42,6 +46,7 @@ namespace LBM
             std::cout << "{                                                                         }" << std::endl;
             std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
             std::cout << std::endl;
+            std::cout << "Executable: " << input_.commandLine()[0] << std::endl;
             std::cout << "programControl:" << std::endl;
             std::cout << "{" << std::endl;
             std::cout << "    deviceList: [";
@@ -62,6 +67,8 @@ namespace LBM
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
+            std::cout << "    Scalar type: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << std::endl;
+            std::cout << "    Label type: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
@@ -72,33 +79,6 @@ namespace LBM
          * @brief Destructor for the programControl class
          **/
         ~programControl() noexcept {};
-
-        /**
-         * @brief Copies constants initialised on the host to the device constant memory
-         * @param nx The number of lattices in the x direction
-         **/
-        // void copyDeviceSymbols(const label_t nx) const noexcept
-        // {
-        //     const scalar_t viscosity = u_inf_ * static_cast<scalar_t>(nx) / Re_;
-        //     const scalar_t tau = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosity;
-        //     const scalar_t omega = static_cast<scalar_t>(1.0) / tau;
-        //     const scalar_t t_omegaVar = static_cast<scalar_t>(1) - omega;
-        //     const scalar_t omegaVar_d2 = omega * static_cast<scalar_t>(0.5);
-
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::Re, &Re_, sizeof(device::Re)));
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::u_inf, &u_inf_, sizeof(device::u_inf)));
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::tau, &tau, sizeof(device::tau)));
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::omega, &omega, sizeof(device::omega)));
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::t_omegaVar, &t_omegaVar, sizeof(device::t_omegaVar)));
-        //     cudaDeviceSynchronize();
-        //     checkCudaErrors(cudaMemcpyToSymbol(device::omegaVar_d2, &omegaVar_d2, sizeof(device::omegaVar_d2)));
-        //     cudaDeviceSynchronize();
-        // }
 
         /**
          * @brief Returns the name of the case
@@ -163,9 +143,36 @@ namespace LBM
             return (timeStep % infoInterval_) == 0;
         }
 
+        /**
+         * @brief Returns the latest time step of the solution files contained within the current directory
+         * @return The latest time step as a label_t
+         **/
         __device__ __host__ [[nodiscard]] inline constexpr label_t latestTime() const noexcept
         {
             return latestTime_;
+        }
+
+        /**
+         * @brief Provides read-only access to the input control
+         * @return A const reference to an inputControl object
+         **/
+        __host__ [[nodiscard]] inline constexpr const inputControl &input() const noexcept
+        {
+            return input_;
+        }
+
+        /**
+         * @brief Provides read-only access to the arguments supplied at the command line
+         * @return The command line input as a vector of strings
+         **/
+        __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
+        {
+            return input_.commandLine();
+        }
+
+        __host__ [[nodiscard]] inline constexpr const pointVector L() const noexcept
+        {
+            return {Lx_, Ly_, Lz_};
         }
 
     private:
@@ -173,6 +180,10 @@ namespace LBM
          * @brief A reference to the input control object
          **/
         const inputControl input_;
+
+        /**
+         * @brief The name of the simulation case
+         **/
         const std::string caseName_;
 
         /**

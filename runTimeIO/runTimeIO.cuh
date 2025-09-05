@@ -44,7 +44,15 @@ namespace LBM
                 return 0;
             }
 
-            return static_cast<T>(mesh.nPoints() * (programCtrl.nt() - programCtrl.latestTime() - 1)) / static_cast<double>(1000000 * std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
+            const uint64_t nPoints = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+
+            const uint64_t nTime = static_cast<uint64_t>(programCtrl.nt()) - static_cast<uint64_t>(programCtrl.latestTime()) - 1;
+
+            const uint64_t numerator = nPoints * nTime;
+
+            const uint64_t denominator = static_cast<uint64_t>(1000000) * static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count());
+
+            return static_cast<T>(numerator) / static_cast<T>(denominator);
         }
     }
 }

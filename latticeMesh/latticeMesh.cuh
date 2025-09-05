@@ -61,6 +61,48 @@ namespace LBM
                     }
                 }
 
+                // Safety check for the mesh dimensions
+                {
+                    const uint64_t nxTemp = static_cast<uint64_t>(nx_);
+                    const uint64_t nyTemp = static_cast<uint64_t>(ny_);
+                    const uint64_t nzTemp = static_cast<uint64_t>(nz_);
+                    const uint64_t nPointsTemp = nxTemp * nyTemp * nzTemp;
+                    constexpr const uint64_t typeLimit = static_cast<uint64_t>(std::numeric_limits<label_t>::max());
+
+                    // Check that the mesh dimensions won't overflow the type limit for label_t
+                    if (nPointsTemp >= typeLimit)
+                    {
+                        errorHandler(ERR_SIZE,
+                                     "\nMesh size exceeds maximum allowed value:\n"
+                                     "Number of mesh points: " +
+                                         std::to_string(nPointsTemp) +
+                                         "\nLimit of label_t: " +
+                                         std::to_string(typeLimit));
+                    }
+
+                    // Check that the mesh dimensions are not too large for GPU memory
+                    {
+                        const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[0]);
+                        const uint64_t totalMemTemp = static_cast<uint64_t>(props.totalGlobalMem);
+                        const uint64_t allocationSize = nPointsTemp * static_cast<uint64_t>(sizeof(scalar_t)) * static_cast<uint64_t>(NUMBER_MOMENTS());
+
+                        if (allocationSize >= totalMemTemp)
+                        {
+                            const double gbAllocation = static_cast<double>(allocationSize / (1024 * 1024 * 1024));
+                            const double gbAvailable = static_cast<double>(totalMemTemp / (1024 * 1024 * 1024));
+
+                            errorHandler(ERR_SIZE,
+                                         "\nInsufficient GPU memory:\n"
+                                         "Attempted to allocate: " +
+                                             std::to_string(allocationSize) +
+                                             " bytes (" + std::to_string(gbAllocation) + " GB)\n"
+                                                                                         "Available GPU memory: " +
+                                             std::to_string(totalMemTemp) +
+                                             " bytes (" + std::to_string(gbAvailable) + " GB)");
+                        }
+                    }
+                }
+
                 const scalar_t ReTemp = programCtrl.Re();
                 const scalar_t u_infTemp = programCtrl.u_inf();
                 const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();

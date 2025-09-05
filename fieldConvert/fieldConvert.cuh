@@ -13,7 +13,7 @@ Contents: Function definitions specific to the fieldConvert executable
 #include "../blockHalo/blockHalo.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../runTimeIO/runTimeIO.cuh"
-#include "../postProcess.cuh"
+#include "../postProcess/postProcess.cuh"
 #include "../inputControl.cuh"
 
 namespace LBM

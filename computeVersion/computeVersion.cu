@@ -4,19 +4,6 @@
 
 using namespace LBM;
 
-[[nodiscard]] const cudaDeviceProp getDeviceProperties(const int deviceID)
-{
-    cudaDeviceProp props;
-    const cudaError_t error = cudaGetDeviceProperties(&props, deviceID);
-
-    if (error != cudaSuccess)
-    {
-        throw std::runtime_error("some exception here");
-    }
-
-    return props;
-}
-
 int main()
 {
 
@@ -38,8 +25,8 @@ int main()
     std::filesystem::path outputFilePath = "../build/include/hardware.info";
     std::ofstream outputFile(outputFilePath);
 
-    auto now = std::chrono::system_clock::now();
-    auto time_now = std::chrono::system_clock::to_time_t(now);
+    const std::chrono::_V2::system_clock::time_point now = std::chrono::system_clock::now();
+    const time_t time_now = std::chrono::system_clock::to_time_t(now);
 
     outputFile << "# Hardware information file automatically generated" << std::endl;
     outputFile << "# Compiled on: " << __DATE__ << " " << __TIME__ << std::endl;
@@ -52,8 +39,13 @@ int main()
     {
         const cudaDeviceProp props = getDeviceProperties(i);
 
-        std::string current_arch_flag = "-gencode arch=compute_" + std::to_string(props.major) + std::to_string(props.minor) +
-                                        ",code=sm_" + std::to_string(props.major) + std::to_string(props.minor);
+        const std::string current_arch_flag =
+            "-gencode arch=compute_" +
+            std::to_string(props.major) +
+            std::to_string(props.minor) +
+            ",code=sm_" +
+            std::to_string(props.major) +
+            std::to_string(props.minor);
 
         if (all_arch_flags.find(current_arch_flag) == std::string::npos)
         {

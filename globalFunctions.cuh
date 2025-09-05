@@ -385,6 +385,42 @@ namespace LBM
         }
 
         /**
+         * @brief Memory index within a block (device version)
+         * @param tx Thread-local x-coordinate
+         * @param ty Thread-local y-coordinate
+         * @param tz Thread-local z-coordinate
+         * @return Linearized index using block dimensions (block::nx() and block::ny())
+         *
+         * Layout within a block: [tz][ty][tx] (tx fastest varying)
+         * Strides:
+         *   - x-stride: 1
+         *   - y-stride: block::nx()
+         *   - z-stride: block::nx() * block::ny()
+         **/
+        __device__ [[nodiscard]] inline label_t idxBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
+        {
+            return tx + block::nx() * (ty + block::ny() * tz);
+            // return tx + (ty * block::nx()) + (tz * block::nx() * block::ny());
+        }
+
+        /**
+         * @overload
+         * @param tx Thread coordinates (dim3)
+         **/
+        __device__ [[nodiscard]] inline label_t idxBlock(const dim3 &tx) noexcept
+        {
+            return idxBlock(tx.x, tx.y, tx.z);
+        }
+
+        /**
+         * @overload
+         **/
+        __device__ [[nodiscard]] inline label_t idxBlock() noexcept
+        {
+            return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
+        }
+
+        /**
          * @brief Population index for X-aligned arrays (device version)
          * @tparam pop Population index
          * @tparam QF Number of populations
@@ -480,6 +516,19 @@ namespace LBM
     __device__ __host__ [[nodiscard]] inline consteval T rho0() noexcept
     {
         return 1.0;
+    }
+
+    __host__ [[nodiscard]] const cudaDeviceProp getDeviceProperties(const int deviceID)
+    {
+        cudaDeviceProp props;
+        const cudaError_t error = cudaGetDeviceProperties(&props, deviceID);
+
+        if (error != cudaSuccess)
+        {
+            throw std::runtime_error("some exception here");
+        }
+
+        return props;
     }
 }
 

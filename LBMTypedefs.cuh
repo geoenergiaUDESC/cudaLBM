@@ -62,7 +62,6 @@ namespace LBM
             << err
             << "] "
             << errorString
-            << "."
             << std::endl;
         std::exit(err);
     }

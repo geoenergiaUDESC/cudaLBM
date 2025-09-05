@@ -48,7 +48,7 @@ namespace LBM
         // Declare shared memory (flattened)
         __shared__ scalar_t shared_buffer[block::sharedMemoryBufferSize<VSet, NUMBER_MOMENTS()>()];
 
-        const label_t tid = threadIdx.x + (threadIdx.y * block::nx()) + (threadIdx.z * block::nx() * block::ny());
+        const label_t tid = device::idxBlock();
 
         // Coalesced read from global memory
         threadArray<scalar_t, NUMBER_MOMENTS()> moments;

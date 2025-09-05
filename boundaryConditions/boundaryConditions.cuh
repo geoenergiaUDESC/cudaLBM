@@ -35,508 +35,346 @@ namespace LBM
             // Static boundaries
             case normalVector::SOUTH_WEST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
-                    moments[0] = rho;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / static_cast<scalar_t>(125);
-                    moments[0] = rho;
-                }
+                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_WEST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
-                    moments[0] = rho;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / static_cast<scalar_t>(125);
-                    moments[0] = rho;
-                }
+                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_EAST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
-                    moments[0] = rho;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / static_cast<scalar_t>(125);
-                    moments[0] = rho;
-                }
+                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_EAST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(12) * rho_I) / static_cast<scalar_t>(7);
-                    moments[0] = rho;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / static_cast<scalar_t>(125);
-                    moments[0] = rho;
-                }
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_WEST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * pop[8];
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * ((device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[8] + pop[20] + pop[22]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * ((device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))));
-                }
+                const scalar_t mxy_I = pop[8] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = mxy;                      // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_EAST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (-pop[13]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xy_I - device::omega * m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[5] = (-static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * ((device::omega * m_xy_I - m_xy_I - static_cast<scalar_t>(1))));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (-pop[13] - pop[23] - pop[26]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xy_I - device::omega * m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[5] = (-static_cast<scalar_t>(25) * m_xy_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * ((device::omega * m_xy_I - m_xy_I - static_cast<scalar_t>(1))));
-                }
+                const scalar_t mxy_I = -pop[13] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = mxy;                      // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::WEST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10] + pop[20] + pop[24]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxz_I = pop[10] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::WEST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (-pop[16]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (-pop[16] - pop[22] - pop[25]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxz_I = -pop[16] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::EAST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (-pop[15]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (-pop[15] - pop[21] - pop[26]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_xz_I - device::omega * m_xz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxz_I = -pop[15] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::EAST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9] + pop[19] + pop[23]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(25) * m_xz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_xz_I - m_xz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxz_I = pop[9] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12] + pop[20] + pop[26]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t myz_I = pop[12] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = myz;                      // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_yz_I = inv_rho_I * (-pop[18]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (-device::omega * m_yz_I + m_yz_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_yz_I = inv_rho_I * (-pop[18] - pop[22] - pop[23]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (-device::omega * m_yz_I + m_yz_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t myz_I = -pop[18] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
 
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = myz;                      // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::WEST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[14]);
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[16]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+                const scalar_t mxy_I = (pop[8] - pop[14]) * inv_rho_I;
+                const scalar_t mxz_I = (pop[10] - pop[16]) * inv_rho_I;
 
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[14] + pop[20] + pop[22] - pop[24] - pop[25]);
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[16] + pop[20] + pop[24] - pop[22] - pop[25]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
 
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                }
-
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = mxy;                      // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::EAST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[13]);
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[15]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+                const scalar_t mxy_I = (pop[7] - pop[13]) * inv_rho_I;
+                const scalar_t mxz_I = (pop[9] - pop[15]) * inv_rho_I;
 
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[13] + pop[19] + pop[21] - pop[23] - pop[26]);
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[15] + pop[19] + pop[23] - pop[21] - pop[26]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
 
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                }
-
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = mxy;                      // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = static_cast<scalar_t>(0); // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::SOUTH():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[13]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[18]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[8] - pop[13] + pop[20] + pop[22] - pop[23] - pop[26]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[18] + pop[20] + pop[26] - pop[22] - pop[23]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
+                const scalar_t mxy_I = (pop[8] - pop[13]) * inv_rho_I;
+                const scalar_t myz_I = (pop[12] - pop[18]) * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = mxy;                      // mxy
+                moments[6] = static_cast<scalar_t>(0); // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = myz;                      // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[15]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[17]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (pop[10] - pop[15] + pop[20] + pop[24] - pop[21] - pop[26]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[12] - pop[17] + pop[20] + pop[26] - pop[21] - pop[24]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
+                const scalar_t mxz_I = (pop[10] - pop[15]) * inv_rho_I;
+                const scalar_t myz_I = (pop[12] - pop[17]) * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = myz;                      // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
             case normalVector::FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[16]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[18]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xz_I = inv_rho_I * (pop[9] - pop[16] + pop[19] + pop[23] - pop[22] - pop[25]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[18] + pop[19] + pop[25] - pop[22] - pop[23]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[6] = (static_cast<scalar_t>(5) * m_xz_I) / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
+                const scalar_t mxz_I = (pop[9] - pop[16]) * inv_rho_I;
+                const scalar_t myz_I = (pop[11] - pop[18]) * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[4] = static_cast<scalar_t>(0);
-                moments[5] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[0] = rho;
+                moments[1] = static_cast<scalar_t>(0); // ux
+                moments[2] = static_cast<scalar_t>(0); // uy
+                moments[3] = static_cast<scalar_t>(0); // uz
+                moments[4] = static_cast<scalar_t>(0); // mxx
+                moments[5] = static_cast<scalar_t>(0); // mxy
+                moments[6] = mxz;                      // mxz
+                moments[7] = static_cast<scalar_t>(0); // myy
+                moments[8] = myz;                      // myz
+                moments[9] = static_cast<scalar_t>(0); // mzz
 
                 return;
             }
@@ -544,272 +382,183 @@ namespace LBM
             // Lid boundaries
             case normalVector::NORTH():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[14]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[17]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[1] = device::u_inf;
-                    moments[4] = (static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5);
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3) - device::u_inf / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[14] + pop[19] + pop[21] - pop[24] - pop[25]);
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11] - pop[17] + pop[19] + pop[25] - pop[21] - pop[24]);
-                    const scalar_t rho = (static_cast<scalar_t>(6) * rho_I) / static_cast<scalar_t>(5);
-                    moments[0] = rho;
-                    moments[1] = device::u_inf;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[5] = (static_cast<scalar_t>(5) * m_xy_I) / static_cast<scalar_t>(3) - device::u_inf / static_cast<scalar_t>(3);
-                    moments[8] = (static_cast<scalar_t>(5) * m_yz_I) / static_cast<scalar_t>(3);
-                }
+                const scalar_t mxy_I = (pop[7] - pop[14]) * inv_rho_I;
+                const scalar_t myz_I = (pop[11] - pop[17]) * inv_rho_I;
 
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = (static_cast<scalar_t>(6) * mxy_I * rho_I - device::u_inf * rho) / (static_cast<scalar_t>(3) * rho);
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = mxy;                           // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = myz;                           // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_WEST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf - static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / (static_cast<scalar_t>(125) + static_cast<scalar_t>(75) * device::u_inf - static_cast<scalar_t>(75) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_WEST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf - static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / (static_cast<scalar_t>(125) + static_cast<scalar_t>(75) * device::u_inf - static_cast<scalar_t>(75) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_EAST_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf - static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / (static_cast<scalar_t>(125) - static_cast<scalar_t>(75) * device::u_inf - static_cast<scalar_t>(75) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_EAST_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t rho = (static_cast<scalar_t>(24) * rho_I) / (static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf - static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t rho = (static_cast<scalar_t>(216) * rho_I) / (static_cast<scalar_t>(125) - static_cast<scalar_t>(75) * device::u_inf - static_cast<scalar_t>(75) * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                }
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
-
-                moments[5] = static_cast<scalar_t>(0);
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0);
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_BACK():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_yz_I = inv_rho_I * (-pop[17]);
-                    const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * device::u_inf * device::u_inf) - static_cast<scalar_t>(3) * device::u_inf * device::u_inf + static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))); // At the lip, this moment vanishes
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_yz_I = inv_rho_I * (-pop[17] - pop[21] - pop[24]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I + static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (m_yz_I - device::omega * m_yz_I + static_cast<scalar_t>(1))); // At the lip, this moment vanishes
-                }
+                const scalar_t myz_I = -pop[17] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(72) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I + static_cast<scalar_t>(2) * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(18) * rho);
 
-                moments[5] = static_cast<scalar_t>(0); // At the intersection of front and back, only z derivative exists
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = myz;                           // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_FRONT():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11]);
-                    const scalar_t rho = (static_cast<scalar_t>(72) * rho_I * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(48) - static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[8] = (m_yz_I * (static_cast<scalar_t>(50) - static_cast<scalar_t>(3) * device::u_inf * device::u_inf) + static_cast<scalar_t>(3) * device::u_inf * device::u_inf - static_cast<scalar_t>(2)) / (static_cast<scalar_t>(18) * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))); // At the lip, this moment vanishes
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_yz_I = inv_rho_I * (pop[11] + pop[19] + pop[25]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24));
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[8] = (static_cast<scalar_t>(25) * m_yz_I - static_cast<scalar_t>(1)) / (static_cast<scalar_t>(9) * (device::omega * m_yz_I - m_yz_I + static_cast<scalar_t>(1))); // At the lip, this moment vanishes
-                }
+                const scalar_t myz_I = pop[11] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(72) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I - static_cast<scalar_t>(2) * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(18) * rho);
 
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = static_cast<scalar_t>(0);      // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = myz;                           // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_EAST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[5] = (m_xy_I * (static_cast<scalar_t>(25) - static_cast<scalar_t>(15) * device::u_inf - static_cast<scalar_t>(15) * device::u_inf * device::u_inf) - static_cast<scalar_t>(1) - static_cast<scalar_t>(3) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::u_inf) / (static_cast<scalar_t>(9) * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] + pop[19] + pop[21]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[5] = (m_xy_I * (static_cast<scalar_t>(25) - static_cast<scalar_t>(15) * device::u_inf - static_cast<scalar_t>(15) * device::u_inf * device::u_inf) - static_cast<scalar_t>(1) - static_cast<scalar_t>(3) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::u_inf) / (static_cast<scalar_t>(9) * (device::omega * m_xy_I - m_xy_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxy_I = pop[7] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega + static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho - static_cast<scalar_t>(3) * device::u_inf * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(9) * rho);
 
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = mxy;                           // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }
             case normalVector::NORTH_WEST():
             {
-                if constexpr (VSet::Q() == 19)
-                {
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (-device::omega * m_xy_I + m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::omega * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[5] = (m_xy_I * (static_cast<scalar_t>(25) + static_cast<scalar_t>(15) * device::u_inf - static_cast<scalar_t>(15) * device::u_inf * device::u_inf) + static_cast<scalar_t>(1) + static_cast<scalar_t>(3) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::u_inf) / (static_cast<scalar_t>(9) * (m_xy_I - device::omega * m_xy_I + static_cast<scalar_t>(1)));
-                }
-                else if constexpr (VSet::Q() == 27)
-                {
-                    // Modify this and leave it hard-coded for now
-                    const scalar_t m_xy_I = inv_rho_I * (pop[7] - pop[24] - pop[25]);
-                    const scalar_t rho = (static_cast<scalar_t>(36) * rho_I * (-device::omega * m_xy_I + m_xy_I + static_cast<scalar_t>(1))) / (device::omega + static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::omega * device::u_inf + static_cast<scalar_t>(3) * device::omega * device::u_inf * device::u_inf);
-                    moments[0] = rho;
-                    moments[4] = device::u_inf * device::u_inf;
-                    moments[5] = (m_xy_I * (static_cast<scalar_t>(25) + static_cast<scalar_t>(15) * device::u_inf - static_cast<scalar_t>(15) * device::u_inf * device::u_inf) + static_cast<scalar_t>(1) + static_cast<scalar_t>(3) * device::u_inf * device::u_inf - static_cast<scalar_t>(3) * device::u_inf) / (static_cast<scalar_t>(9) * (m_xy_I - device::omega * m_xy_I + static_cast<scalar_t>(1)));
-                }
+                const scalar_t mxy_I = -pop[14] * inv_rho_I;
 
-                moments[1] = static_cast<scalar_t>(0);
-                moments[2] = static_cast<scalar_t>(0);
-                moments[3] = static_cast<scalar_t>(0);
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega - static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho - static_cast<scalar_t>(3) * device::u_inf * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(9) * rho);
 
-                moments[6] = static_cast<scalar_t>(0);
-                moments[7] = static_cast<scalar_t>(0);
-                moments[8] = static_cast<scalar_t>(0); // At the lip, this moment vanishes
-                moments[9] = static_cast<scalar_t>(0);
+                moments[0] = rho;
+                moments[1] = device::u_inf;                 // ux
+                moments[2] = static_cast<scalar_t>(0);      // uy
+                moments[3] = static_cast<scalar_t>(0);      // uz
+                moments[4] = device::u_inf * device::u_inf; // mxx
+                moments[5] = mxy;                           // mxy
+                moments[6] = static_cast<scalar_t>(0);      // mxz
+                moments[7] = static_cast<scalar_t>(0);      // myy
+                moments[8] = static_cast<scalar_t>(0);      // myz
+                moments[9] = static_cast<scalar_t>(0);      // mzz
 
                 return;
             }

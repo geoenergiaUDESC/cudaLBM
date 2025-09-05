@@ -1,114 +1,19 @@
 #include "momentBasedD3Q19.cuh"
 
-// #include "../testRead/testRead.cuh"
-
 using namespace LBM;
-
-// template <typename T, class VSet>
-// class hostArray
-// {
-// public:
-//     [[nodiscard]] constexpr hostArray(
-//         const std::string &name,
-//         const host::latticeMesh &mesh)
-//         : arr_(initialConditions(mesh, name)),
-//           name_(name) {};
-
-//     ~hostArray() {};
-
-//     /**
-//      * @brief Provides read-only access to the underlying std::vector
-//      * @return An immutable reference to an std::vector of type T
-//      **/
-//     [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
-//     {
-//         return arr_;
-//     }
-
-//     /**
-//      * @brief Provides access to the variable names
-//      * @return An immutable reference to an std::vector of std::strings
-//      **/
-//     __host__ [[nodiscard]] inline constexpr const std::string &name() const noexcept
-//     {
-//         return name_;
-//     }
-
-// private:
-//     const std::vector<T> arr_;
-
-//     const std::string name_;
-
-//     [[nodiscard]] const std::vector<scalar_t> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
-//     {
-//         const boundaryFields<VSet> field_b(fieldName);
-
-//         std::vector<scalar_t> field(mesh.nPoints(), 0);
-
-//         for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
-//         {
-//             for (label_t by = 0; by < mesh.nyBlocks(); by++)
-//             {
-//                 for (label_t bx = 0; bx < mesh.nxBlocks(); bx++)
-//                 {
-//                     for (label_t tz = 0; tz < block::nz(); tz++)
-//                     {
-//                         for (label_t ty = 0; ty < block::ny(); ty++)
-//                         {
-//                             for (label_t tx = 0; tx < block::nx(); tx++)
-//                             {
-//                                 const label_t x = (bx * block::nx()) + tx;
-//                                 const label_t y = (by * block::ny()) + ty;
-//                                 const label_t z = (bz * block::nz()) + tz;
-
-//                                 const label_t index = host::idx(tx, ty, tz, bx, by, bz, mesh);
-
-//                                 const bool is_west = (x == 0);
-//                                 const bool is_east = (x == mesh.nx() - 1);
-//                                 const bool is_south = (y == 0);
-//                                 const bool is_north = (y == mesh.ny() - 1);
-//                                 const bool is_front = (z == 0);
-//                                 const bool is_back = (z == mesh.nz() - 1);
-
-//                                 const label_t boundary_count =
-//                                     static_cast<label_t>(is_west) +
-//                                     static_cast<label_t>(is_east) +
-//                                     static_cast<label_t>(is_south) +
-//                                     static_cast<label_t>(is_north) +
-//                                     static_cast<label_t>(is_front) +
-//                                     static_cast<label_t>(is_back);
-//                                 const scalar_t value_sum =
-//                                     (is_west * field_b.West()) +
-//                                     (is_east * field_b.East()) +
-//                                     (is_south * field_b.South()) +
-//                                     (is_north * field_b.North()) +
-//                                     (is_front * field_b.Front()) +
-//                                     (is_back * field_b.Back());
-
-//                                 field[index] = boundary_count > 0 ? value_sum / static_cast<scalar_t>(boundary_count) : field_b.internalField();
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-
-//         return field;
-//     }
-// };
 
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
-    const host::latticeMesh mesh(programCtrl);
-
-    VSet::print();
-
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaSetDevice(programCtrl.deviceList()[0]));
     checkCudaErrors(cudaDeviceSynchronize());
+
+    const host::latticeMesh mesh(programCtrl);
+
+    VSet::print();
 
     // Setup Streams
     const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();

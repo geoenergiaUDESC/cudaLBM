@@ -25,6 +25,13 @@ namespace LBM
             const std::vector<std::string> fieldNames; // Names of the field
         };
 
+        [[nodiscard]] const std::string filestring_trim(const std::string &str)
+        {
+            const std::size_t start = str.find_first_not_of(" \t\r\n");
+            const std::size_t end = str.find_last_not_of(" \t\r\n;");
+            return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
+        }
+
         /**
          * @brief Parse header metadata from file
          * @param fileName The name of the file to be parsed
@@ -93,7 +100,7 @@ namespace LBM
             while (std::getline(in, line))
             {
                 lineNumber++;
-                line = string::trim(line);
+                line = filestring_trim(line);
                 if (line.empty())
                 {
                     continue;
@@ -322,7 +329,7 @@ namespace LBM
                             throw std::runtime_error("Unexpected end of file after fieldNames declaration");
                         }
                         lineNumber++;
-                        line = string::trim(line);
+                        line = filestring_trim(line);
                         if (line != "{")
                         {
                             throw std::runtime_error("Expected opening brace after fieldNames declaration at line " + std::to_string(lineNumber));
@@ -342,7 +349,7 @@ namespace LBM
                             {
                                 line.pop_back();
                             }
-                            const std::string fieldName = string::trim(line);
+                            const std::string fieldName = filestring_trim(line);
 
                             // Validate field name
                             if (fieldName.empty())

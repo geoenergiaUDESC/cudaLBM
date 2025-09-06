@@ -61,5 +61,4 @@ lidDrivenCavity/nodeTypes
 lidDrivenCavity/*.dat
 lidDrivenCavity/*.vtu
 lidDrivenCavity/*.LBMBin
-build/bin/*
-build/include/hardware.info
+build

@@ -2,22 +2,7 @@
 NVCXX = nvcc
 CXX = g++
 
-# Auto-detect GPU architecture
-#GPU_ARCH_CODE := $(shell nvidia-smi --query-gpu=compute_cap --format=csv,noheader | sed 's/\.//' | sort -n | tail -1)
-#ifeq ($(GPU_ARCH_CODE),)
-#    GPU_ARCH_CODE := 86  # Fallback to default
-#endif
-
-# Common build directories (relative to project root)
-#BUILD_DIR = ../build
-#BIN_DIR = $(BUILD_DIR)/bin
-#INCLUDE_DIR = $(BUILD_DIR)/include
-
-BUILD_DIR = /home/gtchoaire/cudaLBM/build
-BIN_DIR = $(BUILD_DIR)/bin
-INCLUDE_DIR = $(BUILD_DIR)/include
-
--include $(INCLUDE_DIR)/hardware.info
+-include $(CUDALBM_INCLUDE_DIR)/hardware.info
 
 # CUDA Compiler Flags
 NVCXX_STANDARD = -std c++20

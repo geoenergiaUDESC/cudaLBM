@@ -1,36 +1,18 @@
-#include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
-#include "../../src/programControl.cuh"
+#include "computeVersion.cuh"
 
 using namespace LBM;
 
 int main()
 {
+    const deviceIndex_t deviceCount = countDevices();
 
-    int deviceCount = 0;
-    cudaError_t error = cudaGetDeviceCount(&deviceCount);
-
-    if (error != cudaSuccess)
-    {
-        std::cerr << "Erro ao consultar dispositivos CUDA. O driver está instalado corretamente?" << std::endl;
-        return 1;
-    }
-
-    if (deviceCount == 0)
-    {
-        std::cout << "Nenhum dispositivo CUDA encontrado no sistema." << std::endl;
-        return 0;
-    }
-
-    // const std::filesystem::path outputFilePath = "../build/include/hardware.info";
     const std::filesystem::path outputFilePath = "hardware.info";
     std::ofstream outputFile(outputFilePath);
 
-    const std::chrono::_V2::system_clock::time_point now = std::chrono::system_clock::now();
-    const time_t time_now = std::chrono::system_clock::to_time_t(now);
+    const time_t time_now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     outputFile << "# Hardware information file automatically generated" << std::endl;
-    outputFile << "# Compiled on: " << __DATE__ << " " << __TIME__ << std::endl;
+    outputFile << "# Compiled on: " << compileTimestamp() << std::endl;
     outputFile << "# Executed on: " << std::put_time(std::localtime(&time_now), "%Y-%m-%d %H:%M:%S") << std::endl;
     outputFile << std::endl;
 

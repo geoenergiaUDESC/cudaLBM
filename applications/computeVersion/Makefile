@@ -12,14 +12,14 @@ run: $(EXECUTABLE)
 	@ ./$(EXECUTABLE)
 
 install: clean uninstall run $(EXECUTABLE)
-	@ mkdir -p $(BIN_DIR)
-	@ mv $(EXECUTABLE) $(BIN_DIR)/
-	@ mv hardware.info $(INCLUDE_DIR)/
+	@ mkdir -p $(CUDALBM_BIN_DIR)
+	@ mv $(EXECUTABLE) $(CUDALBM_BIN_DIR)/
+	@ mv hardware.info $(CUDALBM_INCLUDE_DIR)/
 	@ rm -f $(EXECUTABLE)
 
 clean:
 	@ rm -f $(EXECUTABLE)
-	@ rm -f $(INCLUDE_DIR)/hardware.info
+	@ rm -f $(CUDALBM_INCLUDE_DIR)/hardware.info
 
 uninstall:
-	@ rm -f $(BIN_DIR)/$(EXECUTABLE)
+	@ rm -f $(CUDALBM_BIN_DIR)/$(EXECUTABLE)

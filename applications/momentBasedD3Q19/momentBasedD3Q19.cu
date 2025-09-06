@@ -75,7 +75,7 @@ int main(const int argc, const char *const argv[])
         // Do the run-time IO
         if (programCtrl.print(timeStep))
         {
-            std::cout << "Time: " << timeStep << "\n";
+            std::cout << "Time: " << timeStep << std::endl;
         }
 
         // Checkpoint

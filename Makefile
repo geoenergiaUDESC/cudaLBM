@@ -1,9 +1,17 @@
 # Top-level Makefile
-TOOL_SUBDIRS = computeVersion
-GPU_SUBDIRS = momentBasedD3Q19 fieldConvert fieldCalculate
+TOOL_SUBDIRS = applications/computeVersion
+GPU_SUBDIRS = applications/momentBasedD3Q19 applications/fieldConvert applications/fieldCalculate
 SUBDIRS = $(TOOL_SUBDIRS) $(GPU_SUBDIRS)
 
-BUILD_DIR = build
+#BUILD_DIR = build
+# BIN_DIR = $(BUILD_DIR)/bin
+# INCLUDE_DIR = $(BUILD_DIR)/include
+
+#BUILD_DIR = /home/gtchoaire/cudaLBM/build
+#BIN_DIR = $(BUILD_DIR)/bin
+#INCLUDE_DIR = $(BUILD_DIR)/include
+
+BUILD_DIR = /home/gtchoaire/cudaLBM/build
 BIN_DIR = $(BUILD_DIR)/bin
 INCLUDE_DIR = $(BUILD_DIR)/include
 
@@ -13,6 +21,7 @@ all: directories $(SUBDIRS)
 
 # Create build directories
 directories:
+	mkdir -p $(BUILD_DIR)
 	mkdir -p $(BIN_DIR)
 	mkdir -p $(INCLUDE_DIR)
 

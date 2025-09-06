@@ -9,7 +9,11 @@ CXX = g++
 #endif
 
 # Common build directories (relative to project root)
-BUILD_DIR = ../build
+#BUILD_DIR = ../build
+#BIN_DIR = $(BUILD_DIR)/bin
+#INCLUDE_DIR = $(BUILD_DIR)/include
+
+BUILD_DIR = /home/gtchoaire/cudaLBM/build
 BIN_DIR = $(BUILD_DIR)/bin
 INCLUDE_DIR = $(BUILD_DIR)/include
 

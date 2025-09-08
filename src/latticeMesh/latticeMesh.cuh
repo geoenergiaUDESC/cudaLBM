@@ -1,7 +1,51 @@
-/**
-Filename: latticeMesh.cuh
-Contents: A class holding information about the solution grid
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    A class holding information about the solution grid
+
+Namespace
+    LBM::host
+
+SourceFiles
+    latticeMesh.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_LATTICEMESH_CUH
 #define __MBLBM_LATTICEMESH_CUH
@@ -15,15 +59,29 @@ namespace LBM
 {
     namespace host
     {
+        /**
+         * @class latticeMesh
+         * @brief Represents the computational grid for LBM simulations
+         *
+         * This class encapsulates the 3D lattice grid information including
+         * dimensions, block decomposition, and physical properties. It handles
+         * initialization from configuration files, validation of grid parameters,
+         * and synchronization of grid properties with GPU device memory.
+         */
         class latticeMesh
         {
         public:
             /**
-             * @brief Default-constructs a latticeMesh object
-             * @return A latticeMesh object constructed from the caseInfo file
-             * @note This constructor requires that a mesh file be present in the working directory
-             * @note This constructor reads from the caseInfo file and is used primarily to construct the global mesh
-             **/
+             * @brief Constructs a lattice mesh from program configuration
+             * @param[in] programCtrl Program control object containing simulation parameters
+             * @throws Error if mesh dimensions are invalid or GPU memory is insufficient
+             *
+             * This constructor reads mesh dimensions from the "caseInfo" file and performs:
+             * - Validation of block decomposition compatibility
+             * - Memory requirement checking for GPU
+             * - Calculation of LBM relaxation parameters
+             * - Initialization of device constants for GPU execution
+             */
             [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
                 : nx_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readFile("caseInfo"), "ny")),
@@ -146,9 +204,10 @@ namespace LBM
             };
 
             /**
-             * @brief Returns the number of lattices in the x, y and z directions
-             * @return Number of lattices as a label_t
-             **/
+             * @name Grid Dimension Accessors
+             * @brief Provide access to grid dimensions
+             * @return Dimension value in specified direction
+             */
             __device__ __host__ [[nodiscard]] inline constexpr label_t nx() const noexcept
             {
                 return nx_;
@@ -167,9 +226,10 @@ namespace LBM
             }
 
             /**
-             * @brief Returns the number of CUDA blocks in the x, y and z directions
-             * @return Number of CUDA blocks as a label_t
-             **/
+             * @name Block Decomposition Accessors
+             * @brief Provide access to CUDA block decomposition
+             * @return Number of blocks in specified direction
+             */
             __device__ __host__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
             {
                 return nx_ / block::nx();
@@ -188,23 +248,27 @@ namespace LBM
             }
 
             /**
-             * @brief Returns the dimensions of a thread block in the x, y and z directions
-             * @return Dimensions of a thread block as a dim3
-             **/
+             * @brief Get thread block dimensions for CUDA kernel launches
+             * @return dim3 structure with thread block dimensions
+             */
             __device__ __host__ [[nodiscard]] inline consteval dim3 threadBlock() const noexcept
             {
                 return {block::nx(), block::ny(), block::nz()};
             }
 
             /**
-             * @brief Returns the number of thread blocks in the x, y and z directions
-             * @return Number of thread blocks as a dim3
-             **/
+             * @brief Get grid dimensions for CUDA kernel launches
+             * @return dim3 structure with grid dimensions
+             */
             __device__ __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
             {
                 return {static_cast<uint32_t>(nx_ / block::nx()), static_cast<uint32_t>(ny_ / block::ny()), static_cast<uint32_t>(nz_ / block::nz())};
             }
 
+            /**
+             * @brief Get physical domain dimensions
+             * @return Const reference to pointVector containing domain size
+             */
             __host__ [[nodiscard]] inline constexpr const pointVector &L() const noexcept
             {
                 return L_;
@@ -219,6 +283,9 @@ namespace LBM
             const label_t nz_;
             const label_t nPoints_;
 
+            /**
+             * @brief Physical dimensions of the domain
+             **/
             const pointVector L_;
         };
     }

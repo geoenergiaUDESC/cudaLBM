@@ -1,9 +1,13 @@
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-//                                                                         //
-// UDESC LBM                                                               //
-// Universidade do Esdado de Santa Catarina                                //
-//                                                                         //
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
 
 caseName        lidDrivenCavity;
 
@@ -33,4 +37,4 @@ Ly              1.0;
 
 Lz              1.0;
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+\*---------------------------------------------------------------------------*/

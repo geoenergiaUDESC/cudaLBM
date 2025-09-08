@@ -13,22 +13,22 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    VSet::print();
+    VelocitySet::print();
 
     // Setup Streams
     const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Allocate the arrays on the host first
-    const host::array<scalar_t, VSet> h_rho("rho", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_u("u", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_v("v", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_w("w", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_xx("m_xx", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_xy("m_xy", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_xz("m_xz", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_yy("m_yy", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_yz("m_yz", mesh, programCtrl);
-    const host::array<scalar_t, VSet> h_m_zz("m_zz", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_rho("rho", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_u("u", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_v("v", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_w("w", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_xx("m_xx", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_xy("m_xy", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_xz("m_xz", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_yy("m_yy", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_yz("m_yz", mesh, programCtrl);
+    const host::array<scalar_t, VelocitySet> h_m_zz("m_zz", mesh, programCtrl);
 
     device::array<scalar_t> rho(h_rho, mesh);
     device::array<scalar_t> u(h_u, mesh);
@@ -53,7 +53,7 @@ int main(const int argc, const char *const argv[])
         myz.ptr(),
         mzz.ptr());
 
-    device::halo<VSet> blockHalo(
+    device::halo<VelocitySet> blockHalo(
         {h_rho.arr(),
          h_u.arr(),
          h_v.arr(),

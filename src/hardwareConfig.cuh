@@ -1,7 +1,51 @@
-/**
- * @file hardwareConfig.cuh
- * @brief Compile-time constants for the GPU
- **/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Compile-time constants for the GPU
+
+Namespace
+    LBM, LBM::block
+
+SourceFiles
+    hardwareConfig.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_HARDWARECONFIG_CUH
 #define __MBLBM_HARDWARECONFIG_CUH
@@ -77,10 +121,10 @@ namespace LBM
         /**
          * @brief Total size of the shared memory
          **/
-        template <class VSet, const label_t nVars>
+        template <class VelocitySet, const label_t nVars>
         __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize() noexcept
         {
-            return (VSet::Q() - 1 > nVars ? VSet::Q() - 1 : nVars) * (size() + padding());
+            return (VelocitySet::Q() - 1 > nVars ? VelocitySet::Q() - 1 : nVars) * (size() + padding());
         }
 
     }

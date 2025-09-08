@@ -1,7 +1,51 @@
-/**
-Filename: strings.cuh
-Contents: Functions employed throughout the source code to manipulate strings
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Functions employed throughout the source code to manipulate strings
+
+Namespace
+    LBM
+
+SourceFiles
+    strings.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
@@ -268,9 +312,10 @@ namespace LBM
         }
 
         /**
-         * @brief Checks that the input string is numeric
-         * @param s The string_view object which is to be checked
-         * @return True if s is numeric, false otherwise
+         * @brief Checks that the input string is numeric.
+         * @param s The string_view object which is to be checked.
+         * @return True if s is a valid number, false otherwise.
+         * @note A valid number can optionally start with a '+' or '-' sign and may contain one decimal point.
          **/
         [[nodiscard]] bool is_number(const std::string &s) noexcept
         {
@@ -323,6 +368,24 @@ namespace LBM
             // Must have at least one digit and if there's a decimal point,
             // there must be digits after it (handled by the iteration)
             return has_digits;
+        }
+
+        /**
+         * @brief Determines whether or not the number string is all digits
+         * @param numStr The number string
+         * @return True if the string is all digits, false otherwise
+         **/
+        [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
+        {
+            for (char c : numStr)
+            {
+                if (!std::isdigit(static_cast<unsigned char>(c)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /**

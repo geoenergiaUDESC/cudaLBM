@@ -1,7 +1,51 @@
-/**
-Filename: streaming.cuh
-Contents: Handles the streaming process on the GPU
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Class handling the streaming step
+
+Namespace
+    LBM
+
+SourceFiles
+    streaming.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_STREAMING_CUH
 #define __MBLBM_STREAMING_CUH
@@ -12,26 +56,42 @@ Contents: Handles the streaming process on the GPU
 
 namespace LBM
 {
+    /**
+     * @class streaming
+     * @brief Handles the streaming step in Lattice Boltzmann Method simulations
+     *
+     * This class manages the streaming (propagation) step of the LBM algorithm,
+     * where particle distributions move to neighboring lattice sites. It provides
+     * efficient shared memory operations for storing and retrieving population
+     * data with optimized periodic boundary handling.
+     */
     class streaming
     {
     public:
         /**
-         * @brief Default constructor for the sharedMemory class
-         **/
+         * @brief Default constructor
+         */
         [[nodiscard]] inline consteval streaming() {};
 
         /**
-         * @brief Saves the thread population density to the block shared memory
-         * @param pop The population density at the current thread
-         * @param s_pop The population density in shared memory
-         **/
-        template <class VSet, const label_t N>
+         * @brief Saves thread population density to shared memory
+         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam N Size of shared memory array
+         * @param[in] pop Population density array for current thread
+         * @param[out] s_pop Shared memory array for population storage
+         * @param[in] tid Thread ID within block
+         *
+         * This method stores population data from individual threads into
+         * shared memory for efficient access during the streaming step.
+         * It uses compile-time loop unrolling for optimal performance.
+         */
+        template <class VelocitySet, const label_t N>
         __device__ static inline void save(
-            const thread::array<scalar_t, VSet::Q()> &pop,
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, N> &s_pop,
             const label_t tid) noexcept
         {
-            device::constexpr_for<0, (VSet::Q() - 1)>(
+            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
                 [&](const auto q_)
                 {
                     // const label_t idx = q_ * block::stride() + tid;
@@ -40,13 +100,19 @@ namespace LBM
         }
 
         /**
-         * @brief Pulls the population density from shared memory
-         * @param pop The population density at the current thread
-         * @param s_pop The population density in shared memory
-         **/
-        template <class VSet, const label_t N>
+         * @brief Pulls population density from shared memory with periodic boundaries
+         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @tparam N Size of shared memory array
+         * @param[out] pop Population density array to be populated
+         * @param[in] s_pop Shared memory array containing population data
+         *
+         * This method retrieves population data from shared memory, applying
+         * periodic boundary conditions to handle data exchange between threads
+         * at block boundaries. It implements the D3Q19 streaming pattern.
+         */
+        template <class VelocitySet, const label_t N>
         __device__ static inline void pull(
-            thread::array<scalar_t, VSet::Q()> &pop,
+            thread::array<scalar_t, VelocitySet::Q()> &pop,
             const thread::array<scalar_t, N> &s_pop) noexcept
         {
             const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
@@ -78,16 +144,15 @@ namespace LBM
 
     private:
         /**
-         * @brief Population index within a single block (thread-local storage)
-         * @tparam pop Population index
-         * @param tx Thread-local x-coordinate
-         * @param ty Thread-local y-coordinate
-         * @param tz Thread-local z-coordinate
-         * @return Linearized index: tx + block::nx() * (ty + block::ny() * (tz + block::nz() * pop))
+         * @brief Computes linear index for population data within a block
+         * @tparam pop Population component index
+         * @param[in] tx Thread x-coordinate within block
+         * @param[in] ty Thread y-coordinate within block
+         * @param[in] tz Thread z-coordinate within block
+         * @return Linearized index in shared memory
          *
-         * @note Assumes populations are stored in thread-local order within a block
-         * @note Memory layout: [pop][tz][ty][tx] (pop slowest varying, tx fastest)
-         **/
+         * Memory layout: [pop][tz][ty][tx] (pop slowest varying, tx fastest)
+         */
         template <const label_t pop>
         __device__ [[nodiscard]] static inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
@@ -95,43 +160,27 @@ namespace LBM
         }
 
         /**
-         * @overload
-         * @brief Population index within a single block (dim3 version)
-         * @param tx Thread coordinates (dim3 struct)
-         **/
+         * @brief Computes linear index for population data using dim3 coordinates
+         * @tparam pop Population component index
+         * @param[in] tx Thread coordinates as dim3 structure
+         * @return Linearized index in shared memory
+         */
         template <const label_t pop>
         __device__ [[nodiscard]] static inline label_t idxPopBlock(const dim3 &tx) noexcept
         {
             return idxPopBlock<pop>(tx.x, tx.y, tx.z);
         }
 
-        // __device__ [[nodiscard]] static inline label_t blockIndex(const label_t tx, const label_t ty, const label_t tz) noexcept
-        // {
-        //     return tx + block::nx() * (ty + block::ny() * tz);
-        // }
-
         /**
-         * @brief Compute periodic boundary index with optimized power-of-two handling
+         * @brief Computes periodic boundary index with optimization for power-of-two dimensions
          * @tparam Shift Direction shift (-1 for backward, +1 for forward)
          * @tparam Dim Dimension size (periodic length)
-         * @tparam label_t Integer type for indexing
-         * @param idx Current index position
+         * @param[in] idx Current index position
          * @return Shifted index with periodic wrapping
          *
-         * @note Uses bitwise AND optimization when Dim is power-of-two
-         * @warning Shift must be either -1 or 1 (statically enforced)
-         *
-         * Example usage:
-         * @code
-         * // For 256-element periodic dimension (power-of-two)
-         * periodic_index<-1, 256>(5);  // Returns 4
-         * periodic_index<1, 256>(255); // Returns 0
-         *
-         * // For non-power-of-two dimension (e.g., 100)
-         * periodic_index<-1, 100>(0);   // Returns 99
-         * periodic_index<1, 100>(99);   // Returns 0
-         * @endcode
-         **/
+         * This function uses bitwise AND optimization when Dim is power-of-two
+         * for improved performance, falling back to modulo arithmetic otherwise.
+         */
         template <const int Shift, const int Dim>
         __device__ [[nodiscard]] static inline label_t periodic_index(const label_t idx) noexcept
         {

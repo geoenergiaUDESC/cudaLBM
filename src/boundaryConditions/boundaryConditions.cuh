@@ -1,7 +1,51 @@
-/**
-Filename: boundaryConditions.cuh
-Contents: A class applying boundary conditions to the lid driven cavity case
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    A class applying boundary conditions to the lid driven cavity case
+
+Namespace
+    LBM
+
+SourceFiles
+    boundaryConditions.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
 #define __MBLBM_BOUNDARYCONDITIONS_CUH
@@ -10,31 +54,56 @@ Contents: A class applying boundary conditions to the lid driven cavity case
 #include "../LBMTypedefs.cuh"
 
 #include "normalVector.cuh"
-#include "boundaryField.cuh"
+#include "boundaryValue.cuh"
+#include "boundaryRegion.cuh"
+#include "boundaryFields.cuh"
 
 namespace LBM
 {
+    /**
+     * @class boundaryConditions
+     * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
+     *
+     * This class implements the boundary condition treatment for the D3Q19 lattice model
+     * in lid-driven cavity flow simulations. It handles both static wall boundaries and
+     * moving lid boundaries using moment-based boundary conditions derived from the
+     * regularized LBM approach.
+     */
     class boundaryConditions
     {
     public:
+        /**
+         * @brief Default constructor (constexpr)
+         */
         [[nodiscard]] inline consteval boundaryConditions() {};
 
         /**
-         * @brief Calculate the moment variables at the boundary
-         * @param pop The population density at the current lattice node
-         * @param moments The moment variables at the current lattice node
-         * @param b_n The boundary normal vector at the current lattice node
-         **/
-        template <class VSet>
+         * @brief Calculate moment variables at boundary nodes
+         * @tparam VelocitySet Velocity set configuration defining lattice structure
+         * @param[in] pop Population density array at current lattice node
+         * @param[out] moments Moment variables array to be populated
+         * @param[in] boundaryNormal Normal vector information at boundary node
+         *
+         * This method implements the moment-based boundary condition treatment for
+         * the D3Q19 lattice model. It handles various boundary types including:
+         * - Static wall boundaries (all velocity components zero)
+         * - Moving lid boundaries (prescribed tangential velocity)
+         * - Corner and edge cases with specialized treatment
+         *
+         * The method uses the regularized LBM approach to reconstruct boundary
+         * moments from available population information, ensuring mass conservation
+         * and appropriate stress conditions at boundaries.
+         */
+        template <class VelocitySet>
         __device__ static inline constexpr void calculateMoments(
-            const thread::array<scalar_t, VSet::Q()> &pop,
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
-            const normalVector &b_n) noexcept
+            const normalVector &boundaryNormal) noexcept
         {
-            const scalar_t rho_I = VSet::rho_I(pop, b_n);
+            const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
-            switch (b_n.nodeType())
+            switch (boundaryNormal.nodeType())
             {
             // Static boundaries
             case normalVector::SOUTH_WEST_BACK():

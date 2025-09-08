@@ -1,7 +1,51 @@
-/**
-Filename: fileInput.cuh
-Contents: Implementation of reading solution variables encoded in binary format
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Implementation of reading solution variables encoded in binary format
+
+Namespace
+    LBM::fileIO
+
+SourceFiles
+    fileInput.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_FILEINPUT_CUH
 #define __MBLBM_FILEINPUT_CUH
@@ -11,20 +55,30 @@ namespace LBM
     namespace fileIO
     {
         /**
-         * @brief  Structure to hold parsed header information
-         **/
+         * @struct fieldFileHeader
+         * @brief Contains metadata extracted from field file headers
+         *
+         * This structure holds all the metadata required to interpret
+         * binary field data files, including dimensions, data format,
+         * and field information.
+         */
         struct fieldFileHeader
         {
-            const bool isLittleEndian;                 // Endianness of the binary data
-            const std::size_t scalarSize;              // 4 or 8 bytes
-            const std::size_t nx;                      // Grid dimensions
-            const std::size_t ny;                      // Grid dimensions
-            const std::size_t nz;                      // Grid dimensions
-            const std::size_t nVars;                   // Number of variables
-            const std::size_t dataStartPos;            // File position of binary data start
-            const std::vector<std::string> fieldNames; // Names of the field
+            const bool isLittleEndian;                 //!< Endianness of the binary data
+            const std::size_t scalarSize;              //!< Size of scalar values (4 or 8 bytes)
+            const std::size_t nx;                      //!< Grid dimension in x-direction
+            const std::size_t ny;                      //!< Grid dimension in y-direction
+            const std::size_t nz;                      //!< Grid dimension in z-direction
+            const std::size_t nVars;                   //!< Number of variables per grid point
+            const std::size_t dataStartPos;            //!< File position where binary data begins
+            const std::vector<std::string> fieldNames; //!< Names of all field variables
         };
 
+        /**
+         * @brief Trims leading/trailing whitespace and trailing semicolons from a string
+         * @param[in] str The input string to trim
+         * @return The trimmed string
+         */
         [[nodiscard]] const std::string filestring_trim(const std::string &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\r\n");
@@ -33,10 +87,15 @@ namespace LBM
         }
 
         /**
-         * @brief Parse header metadata from file
-         * @param fileName The name of the file to be parsed
-         * @return The parsed header information
-         **/
+         * @brief Parse header metadata from field file
+         * @param[in] fileName Name of the file to parse
+         * @return Parsed header information
+         * @throws std::runtime_error if file doesn't exist, is inaccessible, or has invalid format
+         *
+         * This function reads and validates the header section of field files,
+         * extracting metadata about grid dimensions, data format, and field names.
+         * It performs comprehensive error checking for file integrity and format compliance.
+         */
         [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &fileName)
         {
             // Check if file exists and is accessible
@@ -430,8 +489,9 @@ namespace LBM
 
         /**
          * @brief Swap endianness for a single value
-         * @param value The value to be swapped
-         **/
+         * @tparam T Data type of value to swap
+         * @param[in,out] value Reference to value whose endianness will be swapped
+         */
         template <typename T>
         void swapEndian(T &value)
         {
@@ -444,8 +504,9 @@ namespace LBM
 
         /**
          * @brief Swap endianness for all values in a vector
-         * @param data The vector to be swapped
-         **/
+         * @tparam T Data type of vector elements
+         * @param[in,out] data Vector whose elements' endianness will be swapped
+         */
         template <typename T>
         void swapEndianVector(std::vector<T> &data)
         {
@@ -456,9 +517,16 @@ namespace LBM
         }
 
         /**
-         * @brief Read a file and return the data contained
-         * @param fileName The name of the file to be read
-         **/
+         * @brief Read all field data from a binary file
+         * @tparam T Floating-point type to read (must match file format)
+         * @param[in] fileName Name of the file to read
+         * @return Vector containing all field data in AoS (Array of Structures) format
+         * @throws std::runtime_error if file doesn't exist, is inaccessible, or has format issues
+         *
+         * This function reads the entire binary data from a field file, handling
+         * endianness conversion if necessary. Data is returned in AoS format where
+         * all variables for each point are stored contiguously.
+         */
         template <typename T>
         [[nodiscard]] const std::vector<T> readFieldFile(const std::string &fileName)
         {
@@ -524,6 +592,18 @@ namespace LBM
             return data;
         }
 
+        /**
+         * @brief Read specific field data from a binary file
+         * @tparam T Floating-point type to read (must match file format)
+         * @param[in] fileName Name of the file to read
+         * @param[in] fieldName Name of the specific field to extract
+         * @return Vector containing data for the requested field in SoA (Structure of Arrays) format
+         * @throws std::runtime_error if field doesn't exist or file has format issues
+         *
+         * This function extracts a single field from a multi-field binary file,
+         * handling endianness conversion and validation. It's more efficient than
+         * reading the entire file when only specific fields are needed.
+         */
         template <typename T>
         [[nodiscard]] const std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
         {
@@ -680,11 +760,18 @@ namespace LBM
         }
 
         /**
-         * @brief De-interleave an array of structures (AoS) into a structure of arrays (SoA).
-         * @param fMom The array of structures to be de-interleaved (AoS).
-         * @param mesh The mesh
-         * @return A vector of vectors, where each inside vector contains all the values for a unique variable (SoA).
-         **/
+         * @brief Convert Array of Structures (AoS) to Structure of Arrays (SoA)
+         * @tparam T Data type of array elements
+         * @tparam M Mesh type providing dimension information
+         * @param[in] fMom Input data in AoS format (all variables interleaved per point)
+         * @param[in] mesh Mesh object providing dimension information
+         * @return Vector of vectors where each inner vector contains all values for one variable
+         * @throws std::invalid_argument if input size doesn't match mesh dimensions
+         *
+         * This function reorganizes data from AoS format (where all variables for
+         * each point are stored together) to SoA format (where each variable's values
+         * are stored in separate contiguous arrays).
+         */
         template <typename T, class M>
         [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
         {

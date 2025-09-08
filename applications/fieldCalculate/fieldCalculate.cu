@@ -2,10 +2,16 @@
 
 using namespace LBM;
 
-// static constexpr const label_t SchemeOrder = 8;
-
 [[nodiscard]] inline consteval label_t SchemeOrder() { return 8; }
 
+/**
+ * @brief Calculates the magnitude of a 3D vector field.
+ * @tparam T The data type of the vector components.
+ * @param u A vector representing the x-components of the vector field.
+ * @param v A vector representing the y-components of the vector field.
+ * @param w A vector representing the z-components of the vector field.
+ * @return A vector containing the magnitude of the vector field at each point.
+ **/
 template <typename T>
 [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
 {
@@ -21,7 +27,7 @@ template <typename T>
     return magu;
 }
 
-using VSet = VelocitySet::D3Q19;
+using VelocitySet = D3Q19;
 
 int main(const int argc, const char *const argv[])
 {
@@ -30,7 +36,7 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    const host::arrayCollection<scalar_t, ctorType::MUST_READ, VSet> hostMoments(
+    const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
         programCtrl,
         {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"});
 

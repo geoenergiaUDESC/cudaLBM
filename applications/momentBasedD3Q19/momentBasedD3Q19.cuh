@@ -17,7 +17,7 @@ Contents: Main kernel for the moment representation with the D3Q19 velocity set
 namespace LBM
 {
 
-    using VSet = VelocitySet::D3Q19;
+    using VelocitySet = D3Q19;
     using Collision = secondOrder;
 
     /**
@@ -46,7 +46,7 @@ namespace LBM
             });
 
         // Declare shared memory (flattened)
-        __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VSet, NUMBER_MOMENTS()>()> shared_buffer;
+        __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>()> shared_buffer;
 
         const label_t tid = device::idxBlock();
 
@@ -70,21 +70,21 @@ namespace LBM
         }
 
         // Reconstruct the population from the moments
-        thread::array<scalar_t, VSet::Q()> pop = VSet::reconstruct(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
             // Save populations in shared memory
-            streaming::save<VSet>(pop, shared_buffer, tid);
+            streaming::save<VelocitySet>(pop, shared_buffer, tid);
 
             __syncthreads();
 
             // Pull from shared memory
-            streaming::pull<VSet>(pop, shared_buffer);
+            streaming::pull<VelocitySet>(pop, shared_buffer);
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VSet>::popLoad(
+        device::halo<VelocitySet>::load(
             pop,
             fGhost.ptr<0>(),
             fGhost.ptr<1>(),
@@ -95,25 +95,25 @@ namespace LBM
 
         // Calculate the moments either at the boundary or interior
         {
-            const normalVector b_n;
-            if (b_n.isBoundary())
+            const normalVector boundaryNormal;
+            if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VSet>(pop, moments, b_n);
+                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
             }
             else
             {
-                VSet::calculateMoments(pop, moments);
+                VelocitySet::calculateMoments(pop, moments);
             }
         }
 
         // Scale the moments correctly
-        VelocitySet::velocitySet::scale(moments);
+        velocitySet::scale(moments);
 
         // Collide
         Collision::collide(moments);
 
         // Calculate post collision populations
-        VSet::reconstruct(pop, moments);
+        VelocitySet::reconstruct(pop, moments);
 
         // Coalesced write to global memory
         moments[0] = moments[0] - rho0<scalar_t>();
@@ -124,7 +124,7 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        device::halo<VSet>::popSave(
+        device::halo<VelocitySet>::save(
             pop,
             gGhost.ptr<0>(),
             gGhost.ptr<1>(),

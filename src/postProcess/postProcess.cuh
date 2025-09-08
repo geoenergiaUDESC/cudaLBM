@@ -1,3 +1,52 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Top-level header file for the post processing routines
+
+Namespace
+    LBM::postProcess
+
+SourceFiles
+    postProcess.cuh
+
+\*---------------------------------------------------------------------------*/
+
 #ifndef __MBLBM_POSTPROCESS_CUH
 #define __MBLBM_POSTPROCESS_CUH
 
@@ -9,10 +58,15 @@ namespace LBM
     namespace postProcess
     {
         /**
-         * @brief Calculates the coordinates of the points of a latticeMesh object
-         * @param mesh The mesh
-         * @return An std::vector of type T containing the latticeMesh object points
-         **/
+         * @brief Calculates physical coordinates of lattice points
+         * @tparam T Coordinate data type (typically scalar_t or double)
+         * @param[in] mesh Lattice mesh providing dimensions and physical size
+         * @return Vector of coordinates in interleaved format [x0, y0, z0, x1, y1, z1, ...]
+         *
+         * This function converts lattice indices to physical coordinates using
+         * the domain dimensions stored in the mesh. Coordinates are normalized
+         * to the physical domain size and distributed evenly across the lattice.
+         */
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
         {
@@ -43,10 +97,18 @@ namespace LBM
         }
 
         /**
-         * @brief Calculates the connectivity of the points of a latticeMesh object
-         * @param mesh The mesh
-         * @return An std::vector of type label_t containing the latticeMesh object connectivity
-         **/
+         * @brief Calculates element connectivity for visualization
+         * @tparam one_based If true, uses 1-based indexing; if false, uses 0-based
+         * @param[in] mesh Lattice mesh providing dimensions
+         * @return Vector of element connectivity in VTK hexahedron order
+         *
+         * This function generates connectivity information for hexahedral elements
+         * that make up the lattice mesh. The connectivity follows the standard
+         * VTK ordering for hexahedrons (voxels).
+         *
+         * @note The one_based template parameter determines whether node indices
+         *       start at 1 (for some file formats like Tecplot) or 0 (for VTK)
+         */
         template <const bool one_based>
         __host__ [[nodiscard]] const std::vector<label_t> meshConnectivity(const host::latticeMesh &mesh)
         {
@@ -86,10 +148,15 @@ namespace LBM
         }
 
         /**
-         * @brief Calculates the point offsets of the points of a latticeMesh object
-         * @param mesh The mesh
-         * @return An std::vector of type label_t containing the latticeMesh object point offsets
-         **/
+         * @brief Calculates offset pointers for unstructured grid data
+         * @param[in] mesh Lattice mesh providing dimensions
+         * @return Vector of offset pointers for VTK unstructured grid format
+         *
+         * This function generates offset information for VTK unstructured grid
+         * format, where each offset indicates the cumulative number of points
+         * up to that element. For hexahedral elements, each element has 8 points,
+         * so offsets increase by 8 for each element.
+         */
         __host__ [[nodiscard]] const std::vector<label_t> meshOffsets(const host::latticeMesh &mesh)
         {
             const label_t nx = mesh.nx();

@@ -23,19 +23,20 @@ all: directories $(SUBDIRS)
 
 # Create build directories
 directories:
-	mkdir -p $(CUDALBM_BUILD_DIR)
-	mkdir -p $(CUDALBM_BIN_DIR)
-	mkdir -p $(CUDALBM_INCLUDE_DIR)
+	@ mkdir -p $(CUDALBM_BUILD_DIR)
+	@ mkdir -p $(CUDALBM_BIN_DIR)
+	@ mkdir -p $(CUDALBM_INCLUDE_DIR)
 
-# Generate hardware info in build directory
+# Compile and run computeVersion to generate hardware.info
 $(CUDALBM_INCLUDE_DIR)/hardware.info: directories
-	@echo "--- Detecting CUDA hardware ---"
-	$(MAKE) -C applications/computeVersion run
-	mv applications/computeVersion/hardware.info $(CUDALBM_INCLUDE_DIR)/
+	@ $(MAKE) -C applications/computeVersion install
+	@ $(CUDALBM_BIN_DIR)/computeVersion
 
+# Compile computeVersion (tool subdirectories)
 $(TOOL_SUBDIRS): directories
 	$(MAKE) -C $@
 
+# Compile GPU applications only after hardware.info is generated
 $(GPU_SUBDIRS): $(CUDALBM_INCLUDE_DIR)/hardware.info
 	$(MAKE) -C $@
 

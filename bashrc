@@ -1,5 +1,9 @@
+# Define the architecture type
+export CUDALBM_ARCHITECTURE_DETECTION="Automatic"
+export CUDALBM_ARCHITECTURE_VERSION="89"
+
 # Define the third party install directory
-CUDALBM_PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+export CUDALBM_PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Export the build directory
 export CUDALBM_BUILD_DIR="$CUDALBM_PROJECT_DIR/build"

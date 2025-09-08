@@ -46,8 +46,6 @@ template <const bool verboseOutput = false>
 
 int main()
 {
-    const deviceIndex_t deviceCount = countDevices();
-
     const std::string CUDALBM_ARCHITECTURE_DETECTION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_DETECTION", "Automatic");
     const std::string CUDALBM_ARCHITECTURE_VERSION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_VERSION");
     const std::string CUDALBM_BUILD_DIR = getEnvironmentVariable("CUDALBM_BUILD_DIR");
@@ -81,15 +79,21 @@ int main()
 
     if (CUDALBM_ARCHITECTURE_DETECTION == "Manual")
     {
-        std::cout << "Doing manual detection" << std::endl;
+        // std::cout << "Doing manual detection" << std::endl;
+
         const std::string all_arch_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=sm_" + CUDALBM_ARCHITECTURE_VERSION;
         const std::string all_lto_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=lto_" + CUDALBM_ARCHITECTURE_VERSION;
         outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
         outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << " " << all_lto_flags << std::endl;
+
+        // std::cout << "Successfully generated '" << outputFilePath.string() << "' with architecture defined in bashrc." << std::endl;
     }
     else
     {
-        std::cout << "Doing automatic detection" << std::endl;
+        // std::cout << "Doing automatic detection" << std::endl;
+
+        const deviceIndex_t deviceCount = countDevices();
+
         std::string all_arch_flags = "";
 
         for (int i = 0; i < deviceCount; ++i)
@@ -135,12 +139,12 @@ int main()
 
             outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
             outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << std::endl;
+
+            // std::cout << "Successfully generated '" << outputFilePath.string() << "' with info for " << deviceCount << " CUDA device(s)." << std::endl;
         }
     }
 
     outputFile.close();
-
-    std::cout << "Successfully generated '" << outputFilePath.string() << "' with info for " << deviceCount << " CUDA device(s)." << std::endl;
 
     return 0;
 }

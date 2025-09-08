@@ -1,7 +1,51 @@
-/**
-Filename: velocitySet.cuh
-Contents: Base class used for definition of the velocity set
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Top-level header file for the velocity set classes
+
+Namespace
+    LBM
+
+SourceFiles
+    D3Q19.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_VELOCITYSET_CUH
 #define __MBLBM_VELOCITYSET_CUH
@@ -9,76 +53,95 @@ Contents: Base class used for definition of the velocity set
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 #include "../globalFunctions.cuh"
-// #include "../array/array.cuh"
 
 namespace LBM
 {
-    namespace VelocitySet
+    /**
+     * @class velocitySet
+     * @brief Base class for LBM velocity sets providing common constants and scaling operations
+     *
+     * This class serves as a base for specific velocity set implementations (e.g., D3Q19, D3Q27)
+     * and provides common constants, scaling factors, and utility functions used across
+     * different velocity set configurations in the Lattice Boltzmann Method.
+     */
+    class velocitySet
     {
-        class velocitySet
+    public:
+        /**
+         * @brief Default constructor (consteval)
+         */
+        [[nodiscard]] inline consteval velocitySet() noexcept {};
+
+        /**
+         * @brief Get the a^2 constant (3.0)
+         */
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
         {
-        public:
-            /**
-             * @brief Constructor for the velocitySet class
-             * @return A velocitySet object
-             * @note This constructor is consteval
-             **/
-            [[nodiscard]] inline consteval velocitySet() noexcept {};
+            return static_cast<T>(3.0);
+        }
 
-            /**
-             * @brief Parameters used by both D3Q19 and D3Q27 velocity sets
-             * @return Scalar constants used by the velocity set
-             * @note These methods are consteval
-             **/
-            template <typename T>
-            __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
-            {
-                return static_cast<T>(3.0);
-            }
-            template <typename T>
-            __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
-            {
-                return static_cast<T>(static_cast<double>(1.0) / static_cast<double>(3.0));
-            }
+        /**
+         * @brief Get the speed of sound squared (c^2 = 1 / 3)
+         */
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
+        {
+            return static_cast<T>(static_cast<double>(1.0) / static_cast<double>(3.0));
+        }
 
-            template <typename T>
-            __device__ __host__ [[nodiscard]] static inline consteval T scale_i() noexcept
-            {
-                return static_cast<T>(3.0);
-            }
-            template <typename T>
-            __device__ __host__ [[nodiscard]] static inline consteval T scale_ii() noexcept
-            {
-                return static_cast<T>(4.5);
-            }
-            template <typename T>
-            __device__ __host__ [[nodiscard]] static inline consteval T scale_ij() noexcept
-            {
-                return static_cast<T>(9.0);
-            }
+        /**
+         * @brief Get scaling factor for first-order moments
+         */
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T scale_i() noexcept
+        {
+            return static_cast<T>(3.0);
+        }
 
-            /**
-             * @brief Scale the moments by constant values
-             * @param moments The moment variables
-             **/
-            template <class A>
-            __device__ static inline void scale(A &moments) noexcept
-            {
-                // Scale the moments correctly
-                moments(label_constant<1>()) = scale_i<scalar_t>() * (moments(label_constant<1>()));
-                moments(label_constant<2>()) = scale_i<scalar_t>() * (moments(label_constant<2>()));
-                moments(label_constant<3>()) = scale_i<scalar_t>() * (moments(label_constant<3>()));
-                moments(label_constant<4>()) = scale_ii<scalar_t>() * (moments(label_constant<4>()));
-                moments(label_constant<5>()) = scale_ij<scalar_t>() * (moments(label_constant<5>()));
-                moments(label_constant<6>()) = scale_ij<scalar_t>() * (moments(label_constant<6>()));
-                moments(label_constant<7>()) = scale_ii<scalar_t>() * (moments(label_constant<7>()));
-                moments(label_constant<8>()) = scale_ij<scalar_t>() * (moments(label_constant<8>()));
-                moments(label_constant<9>()) = scale_ii<scalar_t>() * (moments(label_constant<9>()));
-            }
+        /**
+         * @brief Get scaling factor for diagonal second-order moments
+         */
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T scale_ii() noexcept
+        {
+            return static_cast<T>(4.5);
+        }
 
-        private:
-        };
-    }
+        /**
+         * @brief Get scaling factor for off-diagonal second-order moments
+         */
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T scale_ij() noexcept
+        {
+            return static_cast<T>(9.0);
+        }
+
+        /**
+         * @brief Apply velocity set scaling factors to moment array
+         * @param[in,out] moments Array of 10 moment variables to be scaled
+         *
+         * This method applies the appropriate scaling factors to each moment component:
+         * - First-order moments (velocity components): scaled by scale_i()
+         * - Diagonal second-order moments: scaled by scale_ii()
+         * - Off-diagonal second-order moments: scaled by scale_ij()
+         */
+        __device__ static inline void scale(thread::array<scalar_t, 10> &moments) noexcept
+        {
+            // Scale the moments correctly
+            moments(label_constant<1>()) = scale_i<scalar_t>() * (moments(label_constant<1>()));
+            moments(label_constant<2>()) = scale_i<scalar_t>() * (moments(label_constant<2>()));
+            moments(label_constant<3>()) = scale_i<scalar_t>() * (moments(label_constant<3>()));
+            moments(label_constant<4>()) = scale_ii<scalar_t>() * (moments(label_constant<4>()));
+            moments(label_constant<5>()) = scale_ij<scalar_t>() * (moments(label_constant<5>()));
+            moments(label_constant<6>()) = scale_ij<scalar_t>() * (moments(label_constant<6>()));
+            moments(label_constant<7>()) = scale_ii<scalar_t>() * (moments(label_constant<7>()));
+            moments(label_constant<8>()) = scale_ij<scalar_t>() * (moments(label_constant<8>()));
+            moments(label_constant<9>()) = scale_ii<scalar_t>() * (moments(label_constant<9>()));
+        }
+
+    private:
+    };
 }
 
 #include "D3Q19.cuh"

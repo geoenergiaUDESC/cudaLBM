@@ -1,7 +1,51 @@
-/**
-Filename: inputControl.cuh
-Contents: A class handling the input arguments supplied to the executable
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    A class handling the input arguments supplied to the executable
+
+Namespace
+    LBM
+
+SourceFiles
+    inputControl.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_INPUTCONTROL_CUH
 #define __MBLBM_INPUTCONTROL_CUH
@@ -11,14 +55,23 @@ Contents: A class handling the input arguments supplied to the executable
 
 namespace LBM
 {
+    /**
+     * @class inputControl
+     * @brief Handles command-line input arguments and GPU device configuration
+     *
+     * @details Parses command-line arguments, validates input, and initializes
+     * GPU device list based on provided arguments. Supports mandatory -GPU flag
+     * for most executables with exceptions for utility tools.
+     */
     class inputControl
     {
     public:
         /**
          * @brief Constructor for the inputControl class
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
-         **/
+         * @param[in] argc First argument passed to main (argument count)
+         * @param[in] argv Second argument passed to main (argument vector)
+         * @throws std::runtime_error if argument count is negative
+         */
         [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
             : nArgs_(nArgsCheck(argc)),
               commandLine_(parseCommandLine(argc, argv)),
@@ -31,8 +84,8 @@ namespace LBM
 
         /**
          * @brief Returns the device list as a vector of ints
-         * @return The device list
-         **/
+         * @return const std::vector<deviceIndex_t>& The device list containing GPU indices
+         */
         [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return deviceList_;
@@ -40,9 +93,9 @@ namespace LBM
 
         /**
          * @brief Verifies if an argument is present at the command line
-         * @return True if the argument is present at the command line, false otherwise
-         * @param name The argument to search for
-         **/
+         * @param[in] name The argument to search for
+         * @return bool True if the argument is present, false otherwise
+         */
         [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
         {
             for (label_t i = 0; i < commandLine_.size(); i++)
@@ -58,17 +111,17 @@ namespace LBM
 
         /**
          * @brief Returns the command line input as a vector of strings
-         * @return The command line input
-         **/
+         * @return const std::vector<std::string>& The parsed command line arguments
+         */
         __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
         {
             return commandLine_;
         }
 
         /**
-         * @brief Returns the name of the currently running executable as a string
-         * @return The name of the currently running executable
-         **/
+         * @brief Returns the name of the currently running executable
+         * @return const std::string& The executable name
+         */
         __host__ [[nodiscard]] inline constexpr const std::string &executableName() const noexcept
         {
             return commandLine_[0];
@@ -81,11 +134,11 @@ namespace LBM
         const label_t nArgs_;
 
         /**
-         * @brief Returns the number of arguments supplied at the command line
-         * @return The number of arguments supplied at the command line as a label_t
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
-         **/
+         * @brief Validates and returns the number of command line arguments
+         * @param[in] argc First argument passed to main (argument count)
+         * @return label_t Validated number of arguments
+         * @throws std::runtime_error if argument count is negative
+         */
         [[nodiscard]] label_t nArgsCheck(const int argc) const
         {
             // Check for a bad number of supplied arguments
@@ -106,11 +159,11 @@ namespace LBM
         const std::vector<std::string> commandLine_;
 
         /**
-         * @brief Return a vector of string views of the arguments passed to the solver at the command line
-         * @return A vector of string views of the arguments passed to the solver at the command line
-         * @param argc First argument passed to main
-         * @param argv Second argument passed to main
-         **/
+         * @brief Parses command line arguments into a vector of strings
+         * @param[in] argc First argument passed to main (argument count)
+         * @param[in] argv Second argument passed to main (argument vector)
+         * @return std::vector<std::string> Parsed command line arguments
+         */
         [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
         {
             if (argc > 0)
@@ -140,10 +193,13 @@ namespace LBM
         const std::vector<deviceIndex_t> deviceList_;
 
         /**
-         * @brief Parses the command line for the -GPU argument, checking for valid inputs and converting to deviceList
-         * @return An std::vector of deviceIndex_t representing the indices of the devices
-         * @note Checks that the number of GPUs supplied on the command line is valid, and if the argument is "fieldConvert", the -GPU flag is not necessary
-         **/
+         * @brief Initializes GPU device list based on command line arguments
+         * @return std::vector<deviceIndex_t> List of GPU device indices
+         * @throws std::runtime_error if:
+         * - -GPU argument is missing for non-utility executables
+         * - Requested GPUs exceed available devices
+         * @note For "fieldConvert" and "fieldCalculate" executables, -GPU flag is optional (defaults to device 0)
+         */
         [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList() const
         {
             if (isArgPresent("-GPU"))
@@ -170,9 +226,9 @@ namespace LBM
         }
 
         /**
-         * @brief Checks the number of available CUDA devices
-         * @return The number of avaiable CUDA devices
-         **/
+         * @brief Queries the number of available CUDA devices
+         * @return deviceIndex_t Count of available CUDA devices
+         */
         [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
         {
             deviceIndex_t deviceCount = -1;

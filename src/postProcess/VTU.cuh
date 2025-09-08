@@ -1,3 +1,52 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    VTU binary file writer
+
+Namespace
+    LBM::postProcess
+
+SourceFiles
+    VTU.cuh
+
+\*---------------------------------------------------------------------------*/
+
 #ifndef __MBLBM_VTU_CUH
 #define __MBLBM_VTU_CUH
 
@@ -9,10 +58,14 @@ namespace LBM
     namespace postProcess
     {
         /**
-         * @brief Obtain the name of the type that corresponds to the C++ data type
-         * @tparam T The C++ data type (e.g. float, int64_t)
-         * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
-         **/
+         * @brief Maps C++ data types to VTK type names
+         * @tparam T C++ data type to map
+         * @return String containing the corresponding VTK type name
+         *
+         * This template function provides the VTK-compatible type name
+         * for various C++ data types, used in VTU file headers to
+         * specify data formats for binary storage.
+         */
         template <typename T>
         [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
         {
@@ -56,12 +109,32 @@ namespace LBM
         }
 
         /**
-         * @brief Escreve variáveis de solução para um arquivo de grade não estruturada VTU (.vtu) - VERSÃO CORRIGIDA
-         * @param solutionVars Um std::vector de std::vectors contendo a variável de solução a ser escrita
-         * @param fileName O nome do arquivo a ser escrito (.vtu)
-         * @param mesh A malha
-         * @param solutionVarNames Nomes das variáveis de solução
-         **/
+         * @brief Writes solution data to a binary VTU (VTK Unstructured Grid) file
+         * @param[in] solutionVars Vector of solution variable arrays (Structure of Arrays format)
+         * @param[in] fileName Output filename for VTU data (should have .vtu extension)
+         * @param[in] mesh Lattice mesh providing domain dimensions and structure
+         * @param[in] solutionVarNames Names of the solution variables for VTU header
+         * @param[in] title Optional title for the dataset (currently unused)
+         * @return None
+         * @note Uses 0-based indexing for element connectivity (VTK convention)
+         * @note Output format: Binary VTU with appended data section
+         * @note Uses little-endian byte ordering and UInt64 header type
+         *
+         * This function writes simulation results to a VTK Unstructured Grid file
+         * with the following structure:
+         * 1. XML header with metadata and data array references
+         * 2. Appended binary data section containing:
+         *    - Solution variables (point data)
+         *    - Node coordinates
+         *    - Element connectivity (0-based)
+         *    - Element offsets
+         *    - Element types (all hexahedrons, type 12)
+         *
+         * The function performs comprehensive validation of input data including:
+         * - Variable count matching name count
+         * - Node count consistency across all arrays
+         * - File accessibility checks
+         */
         void writeVTU(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,

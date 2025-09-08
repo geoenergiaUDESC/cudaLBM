@@ -1,7 +1,51 @@
-/**
-Filename: fileIO.cuh
-Contents: Includes needed for the file IO
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Top-level header for the file IO operations
+
+Namespace
+    LBM::fileIO
+
+SourceFiles
+    fileIO.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_FILEIO_CUH
 #define __MBLBM_FILEIO_CUH
@@ -15,10 +59,10 @@ namespace LBM
     namespace fileIO
     {
         /**
-         * @brief Determines whether or not the number string is all digits
-         * @param numStr The number string
-         * @return True if the string is all digits, false otherwise
-         **/
+         * @brief Checks if a string contains only digit characters
+         * @param[in] numStr String to check
+         * @return True if string contains only digits, false otherwise
+         */
         [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
         {
             for (char c : numStr)
@@ -33,19 +77,23 @@ namespace LBM
         }
 
         /**
-         * @brief Determines whether or not the number string is valid
-         * @param numStr The number string
-         * @return True if the string is valid, false otherwise
-         **/
-        [[nodiscard]] inline bool isValidString(const std::string &numStr) noexcept
+         * @brief Validates if a string represents a valid integer
+         * @param[in] intStr String to validate
+         * @return True if string is non-empty and contains only digits
+         */
+        [[nodiscard]] inline bool isValidInteger(const std::string &intStr) noexcept
         {
-            return ((numStr.empty()) && (!isAllDigits(numStr)));
+            return (!intStr.empty() || isAllDigits(intStr));
         }
 
         /**
-         * @brief Determine whether or not the current directory contains valid .LBMBin files for a given file prefix
-         * @param fileName The prefix of the case files - normally defined in caseInfo as caseName
-         **/
+         * @brief Checks if directory contains indexed .LBMBin files with given prefix
+         * @param[in] fileName Case name prefix to search for
+         * @return True if matching files found, false otherwise
+         *
+         * Searches current directory for files with pattern: {fileName}_{number}.LBMBin
+         * where {number} consists of only digits.
+         */
         [[nodiscard]] bool hasIndexedFiles(const std::string &fileName)
         {
             const std::filesystem::path currentDir = std::filesystem::current_path();
@@ -86,10 +134,12 @@ namespace LBM
         }
 
         /**
-         * @brief Converts a string to an integral value of type T
-         * @return An integral value of type T converted from num_str
-         * @param num_str A string representation of a number
-         **/
+         * @brief Converts string to integral value
+         * @tparam T Integral type to convert to
+         * @param[in] num_str String representation of number
+         * @return Converted integral value
+         * @note Uses std::from_chars for efficient conversion
+         */
         template <typename T>
         __host__ [[nodiscard]] T stringToIntegral(const std::string &num_str) noexcept
         {
@@ -103,9 +153,14 @@ namespace LBM
         }
 
         /**
-         * @brief Get the indices of the time step present within the current directory for a given file prefix
-         * @param fileName The prefix of the case files - normally defined in caseInfo as caseName
-         **/
+         * @brief Extracts time indices from indexed files in current directory
+         * @param[in] fileName Case name prefix to search for
+         * @return Sorted vector of time indices found
+         * @throws std::runtime_error if no valid files found
+         *
+         * Parses files with pattern: {fileName}_{number}.LBMBin and extracts
+         * the numeric portion as time indices.
+         */
         [[nodiscard]] const std::vector<label_t> timeIndices(const std::string &fileName)
         {
             std::vector<label_t> indices;
@@ -132,7 +187,7 @@ namespace LBM
                 }
 
                 const std::string num_str = stem.substr(prefix.size());
-                if (isValidString(num_str))
+                if (!isValidInteger(num_str))
                 {
                     continue;
                 }
@@ -159,9 +214,10 @@ namespace LBM
         }
 
         /**
-         * @brief Get the latest time step contained within the current directory of a given file prefix
-         * @param fileName The prefix of the case files - normally defined in caseInfo as caseName
-         **/
+         * @brief Gets the latest time index from available files
+         * @param[in] fileName Case name prefix to search for
+         * @return Highest time index found, or 0 if no files found
+         */
         [[nodiscard]] label_t latestTime(const std::string &fileName)
         {
             if (hasIndexedFiles(fileName))
@@ -176,10 +232,12 @@ namespace LBM
         }
 
         /**
-         * @brief Gets the starting index of the fieldConvert loop
-         * @return The first index of the main loop
-         * @param programCtrl A programControl object
-         **/
+         * @brief Determines starting index for field conversion loop
+         * @tparam PC Program control type
+         * @param[in] programCtrl Program control object
+         * @param[in] isLatestTime Flag indicating whether to start from latest time
+         * @return Starting index (0 for earliest, last index for latest)
+         */
         template <class PC>
         __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl, const bool isLatestTime)
         {
@@ -188,18 +246,17 @@ namespace LBM
             return isLatestTime ? static_cast<label_t>(fileNameIndices.size() - 1) : 0;
         }
 
+        /**
+         * @brief Determines starting index based on program control settings
+         * @tparam PC Program control type
+         * @param[in] programCtrl Program control object
+         * @return Starting index determined by command line arguments
+         */
         template <class PC>
         __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl)
         {
             return getStartIndex(programCtrl, programCtrl.input().isArgPresent("-latestTime"));
         }
-
-        // template <class PC>
-        // __host__ [[nodiscard]] label_t getStartTime(const PC &programCtrl)
-        // {
-        //     // const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
-        //     return fileIO::timeIndices(programCtrl.caseName())[getStartIndex(programCtrl)];
-        // }
     }
 }
 

@@ -1,7 +1,51 @@
-/**
-Filename: deviceArray.cuh
-Contents: A templated class for various different types of arrays allocated on the device
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    A templated class for allocating arrays on the GPU
+
+Namespace
+    LBM::device
+
+SourceFiles
+    deviceArray.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_DEVICEARRAY_CUH
 #define __MBLBM_DEVICEARRAY_CUH
@@ -15,19 +59,21 @@ namespace LBM
         {
         public:
             /**
-             * @brief Constructs the device array from a host array
-             * @tparam cType The constructor type of the host array
-             * @param hostArray The array allocated on the host
-             * @param mesh The lattice mesh
+             * @brief Constructs a device array from host data
+             * @tparam VelocitySet Template parameter for velocity set configuration
+             * @param[in] hostArray Source data allocated on host memory
+             * @param[in] mesh Lattice mesh defining array dimensions
+             * @post Device memory is allocated and initialized with host data
              **/
-            template <class VSet>
-            [[nodiscard]] array(const host::array<T, VSet> &hostArray, const host::latticeMesh &mesh)
+            template <class VelocitySet>
+            [[nodiscard]] array(const host::array<T, VelocitySet> &hostArray, const host::latticeMesh &mesh)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   name_(hostArray.name()),
                   mesh_(mesh){};
 
             /**
-             * @brief Destructor for the array class
+             * @brief Destructor - automatically releases device memory
+             * @note Noexcept guarantee: failsafe if cudaFree fails
              **/
             ~array() noexcept
             {
@@ -35,8 +81,10 @@ namespace LBM
             }
 
             /**
-             * @brief Overloads the [] operator
-             * @return The i-th index of the underlying array
+             * @brief Element access operator
+             * @param[in] i Index of element to access
+             * @return Value at index @p i
+             * @warning No bounds checking performed
              **/
             __device__ __host__ [[nodiscard]] inline T operator[](const label_t i) const noexcept
             {
@@ -44,8 +92,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides read-only access to the data
-             * @return A const-qualified pointer to the data
+             * @brief Get read-only access to underlying data
+             * @return Const pointer to device memory
              **/
             __device__ __host__ [[nodiscard]] inline const T *ptr() const noexcept
             {
@@ -53,8 +101,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides mutable access to the data
-             * @return A pointer to the data
+             * @brief Get mutable access to underlying data
+             * @return Pointer to device memory
              **/
             __device__ __host__ [[nodiscard]] inline T *ptr() noexcept
             {
@@ -62,8 +110,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides access to the variable names
-             * @return An immutable reference to an std::vector of std::strings
+             * @brief Get array identifier name
+             * @return Const reference to name string
              **/
             __host__ [[nodiscard]] inline const std::string &name() const noexcept
             {
@@ -71,8 +119,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides access to the mesh
-             * @return An immutable reference to a host::latticeMesh object
+             * @brief Get associated mesh object
+             * @return Const reference to lattice mesh
              **/
             __host__ [[nodiscard]] inline const host::latticeMesh &mesh() const noexcept
             {
@@ -80,8 +128,9 @@ namespace LBM
             }
 
             /**
-             * @brief Returns the total size of the array, i.e. the number of points * number of variables
-             * @return The total size of the array as a label_t
+             * @brief Get total number of elements
+             * @return Number of elements in array
+             * @note Returns mesh point count - assumes 1:1 element-to-point mapping
              **/
             __host__ [[nodiscard]] inline constexpr label_t size() const noexcept
             {

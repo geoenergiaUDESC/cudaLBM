@@ -1,7 +1,51 @@
-/**
-Filename: runTimeIO.cuh
-Contents: Functions handling runtime IO
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Class handling the run-time IO of the solver
+
+Namespace
+    LBM::runTimeIO
+
+SourceFiles
+    runTimeIO.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_RUNTIMEIO_CUH
 #define __MBLBM_RUNTIMEIO_CUH
@@ -11,9 +55,22 @@ Contents: Functions handling runtime IO
 
 namespace LBM
 {
+    /**
+     * @class runTimeIO
+     * @brief Handles runtime input/output operations and performance monitoring
+     *
+     * This class manages runtime operations including timing, performance metrics,
+     * and output formatting. It tracks simulation duration and calculates
+     * performance metrics like MLUPS (Million Lattice Updates Per Second).
+     */
     class runTimeIO
     {
     public:
+        /**
+         * @brief Constructs a runTimeIO object and starts timing
+         * @param[in] mesh Lattice mesh providing dimension information
+         * @param[in] programCtrl Program control object with simulation parameters
+         */
         [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
             const programControl &programCtrl)
@@ -26,6 +83,13 @@ namespace LBM
             std::cout << std::endl;
         };
 
+        /**
+         * @brief Destructor - calculates and outputs performance metrics
+         *
+         * Upon destruction, this class calculates and displays:
+         * - Total elapsed time in HH:MM:SS format
+         * - MLUPS (Million Lattice Updates Per Second) performance metric
+         */
         ~runTimeIO()
         {
             const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
@@ -38,6 +102,11 @@ namespace LBM
             std::cout << std::endl;
         };
 
+        /**
+         * @brief Formats a duration in seconds into HH:MM:SS string format
+         * @param[in] totalSeconds Total number of seconds to format
+         * @return String formatted as HH:MM:SS (supports negative durations)
+         */
         [[nodiscard]] static const std::string duration(const long long totalSeconds) noexcept
         {
             // Handle sign and absolute value conversion
@@ -61,6 +130,18 @@ namespace LBM
             return oss.str();
         }
 
+        /**
+         * @brief Calculates Million Lattice Updates Per Second (MLUPS) performance metric
+         * @tparam T Data type for the MLUPS calculation (typically double)
+         * @param[in] mesh Lattice mesh providing dimension information
+         * @param[in] programCtrl Program control object with time step information
+         * @param[in] start Simulation start time point
+         * @param[in] end Simulation end time point
+         * @return MLUPS value as type T, or 0 if calculation is not applicable
+         *
+         * MLUPS is calculated as: (total lattice points × time steps) / (execution time in seconds × 10⁶)
+         * This metric provides a standardized way to compare LBM implementation performance.
+         */
         template <typename T>
         [[nodiscard]] static inline constexpr T MLUPS(
             const host::latticeMesh &mesh,

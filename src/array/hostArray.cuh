@@ -1,7 +1,51 @@
-/**
-Filename: hostArray.cuh
-Contents: A templated class for various different types of arrays allocated on the host
-**/
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    A templated class for allocating arrays on the CPU
+
+Namespace
+    LBM::host
+
+SourceFiles
+    hostArray.cuh
+
+\*---------------------------------------------------------------------------*/
 
 #ifndef __MBLBM_HOSTARRAY_CUH
 #define __MBLBM_HOSTARRAY_CUH
@@ -10,15 +54,22 @@ namespace LBM
 {
     namespace host
     {
-        template <typename T, class VSet>
+        /**
+         * @class array
+         * @brief Templated RAII wrapper for host memory management with field initialization
+         * @tparam T Data type of array elements
+         * @tparam VelocitySet Velocity set configuration for LBM simulation
+         **/
+        template <typename T, class VelocitySet>
         class array
         {
         public:
             /**
-             * @brief Constructor for the host array class
-             * @param name Name of the solution variable
-             * @param mesh The mesh
-             * @param programCtrl The program control dictionary
+             * @brief Constructs a host array with field initialization
+             * @param[in] name Name identifier for the field
+             * @param[in] mesh Lattice mesh defining array dimensions
+             * @param[in] programCtrl Program control parameters
+             * @post Array is initialized from latest time step or initial conditions
              **/
             [[nodiscard]] array(
                 const std::string &name,
@@ -33,8 +84,8 @@ namespace LBM
             ~array() {};
 
             /**
-             * @brief Provides read-only access to the underlying std::vector
-             * @return An immutable reference to an std::vector of type T
+             * @brief Get read-only access to underlying data
+             * @return Const reference to data vector
              **/
             [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
             {
@@ -42,8 +93,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides access to the variable name
-             * @return An immutable reference to a std::string
+             * @brief Get field name identifier
+             * @return Const reference to name string
              **/
             __host__ [[nodiscard]] inline constexpr const std::string &name() const noexcept
             {
@@ -62,11 +113,12 @@ namespace LBM
             const std::string name_;
 
             /**
-             * @brief Initialises the std::vector
-             * @return A std::vector of type T initialised from either the latest time or the initial conditions
-             * @param mesh The lattice mesh
-             * @param fieldName The name of the solution variable
-             * @param programCtrl The program control dictionary
+             * @brief Initialize array from file or initial conditions
+             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] fieldName Name of field to initialize
+             * @param[in] programCtrl Program control parameters
+             * @return Initialized data vector
+             * @throws std::runtime_error if file operations fail
              **/
             [[nodiscard]] const std::vector<T> initialise_array(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
             {
@@ -83,14 +135,14 @@ namespace LBM
             }
 
             /**
-             * @brief Initialises the std::vector from an initial conditions file
-             * @return A std::vector of type T initialised from either the latest time or the initial conditions
-             * @param mesh The lattice mesh
-             * @param fieldName The name of the solution variable
+             * @brief Apply initial conditions with boundary handling
+             * @param[in] mesh Lattice mesh for dimensioning and boundary detection
+             * @param[in] fieldName Name of field for boundary condition lookup
+             * @return Initialized data vector with boundary conditions applied
              **/
             [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
             {
-                const boundaryFields<VSet> bField(fieldName);
+                const boundaryFields<VelocitySet> bField(fieldName);
 
                 std::vector<T> field(mesh.nPoints(), 0);
 
@@ -146,25 +198,32 @@ namespace LBM
             }
         };
 
-        template <typename T, const ctorType::type cType, class VSet>
+        /**
+         * @class arrayCollection
+         * @brief Templated container for multiple field arrays with flexible initialization
+         * @tparam T Data type of array elements
+         * @tparam cType Constructor type specification
+         * @tparam VelocitySet Velocity set configuration for LBM simulation
+         **/
+        template <typename T, const ctorType::type cType, class VelocitySet>
         class arrayCollection
         {
         public:
             /**
-             * @brief Constructor for the host arrayCollection class
-             * @param programCtrl The program control dictionary
-             * @param mesh The mesh
+             * @brief Construct from program control and variable names
+             * @param[in] programCtrl Program control parameters
+             * @param[in] varNames Names of variables to include in collection
+             * @param[in] mesh Lattice mesh for dimensioning
              **/
             [[nodiscard]] arrayCollection(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
                 : arr_(initialiseVector(programCtrl, mesh)),
                   varNames_(varNames) {};
 
             /**
-             * @brief Constructs the host array from an std::vector of type T
-             * @param programCtrl Immutable reference to the program control
-             * @param varNames The names of the variables
-             * @param timeIndex The index of the time step
-             * @return An array object constructed from f
+             * @brief Construct from specific time index
+             * @param[in] programCtrl Program control parameters
+             * @param[in] varNames Names of variables to include
+             * @param[in] timeIndex Specific time index to read from
              **/
             [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
@@ -174,10 +233,9 @@ namespace LBM
                   varNames_(varNames) {};
 
             /**
-             * @brief Constructs the host arrayCollection from an std::vector of type T at the latest time
-             * @param programCtrl Immutable reference to the program control
-             * @param varNames The names of the variables
-             * @return An array object constructed from f
+             * @brief Construct from latest available time
+             * @param[in] programCtrl Program control parameters
+             * @param[in] varNames Names of variables to include
              **/
             [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
@@ -191,8 +249,8 @@ namespace LBM
             ~arrayCollection() {};
 
             /**
-             * @brief Provides read-only access to the underlying std::vector
-             * @return An immutable reference to an std::vector of type T
+             * @brief Get read-only access to underlying data
+             * @return Const reference to data vector
              **/
             [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
             {
@@ -200,8 +258,8 @@ namespace LBM
             }
 
             /**
-             * @brief Provides access to the variable names
-             * @return An immutable reference to an std::vector of std::strings
+             * @brief Get variable names in collection
+             * @return Const reference to variable names vector
              **/
             __host__ [[nodiscard]] inline const std::vector<std::string> &varNames() const noexcept
             {
@@ -220,9 +278,11 @@ namespace LBM
             const std::vector<std::string> varNames_;
 
             /**
-             * @brief Initialises the std::vector
-             * @param programCtrl The program control dictionary
-             * @param mesh The mesh
+             * @brief Initialize vector from mesh dimensions
+             * @param[in] programCtrl Program control parameters
+             * @param[in] mesh Lattice mesh for dimensioning
+             * @return Initialized data vector
+             * @throws std::runtime_error if indexed files not found
              **/
             [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
             {
@@ -241,9 +301,11 @@ namespace LBM
             }
 
             /**
-             * @brief Initialises the std::vector
-             * @param programCtrl The program control dictionary
-             * @param timeIndex The index of the file
+             * @brief Initialize vector from specific time index
+             * @param[in] programCtrl Program control parameters
+             * @param[in] timeIndex Time index to read from
+             * @return Initialized data vector
+             * @throws std::runtime_error if indexed files not found
              **/
             [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const label_t timeIndex) const
             {
@@ -264,8 +326,9 @@ namespace LBM
             }
 
             /**
-             * @brief Initialises the std::vector from the latest time step
-             * @param programCtrl The program control dictionary
+             * @brief Initialize vector from latest time
+             * @param[in] programCtrl Program control parameters
+             * @return Initialized data vector
              **/
             [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
             {

@@ -2,6 +2,13 @@
 
 using namespace LBM;
 
+/**
+ * @brief Retrieves the value of an environment variable, returning a default value if the variable is not set.
+ * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
+ * @param envVariable The name of the environment variable to retrieve.
+ * @param defaultName The default value to return if the environment variable is not set.
+ * @return The value of the environment variable, or the default value if it is not set.
+ **/
 template <const bool verboseOutput = false>
 [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable, const std::string &defaultName)
 {
@@ -25,6 +32,13 @@ template <const bool verboseOutput = false>
     }
 }
 
+/**
+ * @brief Retrieves the value of an environment variable, throwing an exception if the variable is not set.
+ * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
+ * @param envVariable The name of the environment variable to retrieve.
+ * @return The value of the environment variable.
+ * @throws std::runtime_error If the environment variable is not set.
+ **/
 template <const bool verboseOutput = false>
 [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable)
 {

@@ -8,27 +8,26 @@ if [ -z "${CUDALBM_PROJECT_DIR}" ]; then
 fi
 
 # Make sure the opt directory is clean
-rm -rf opt/
+rm -rf $CUDALBM_UCX_DIR
+rm -rf $CUDALBM_MPI_DIR
 
 # Build UCX:
-rm -rf $CUDALBM_PROJECT_DIR/opt/ucx/
 rm -rf ucx/
 git clone https://github.com/openucx/ucx.git
 cd ucx/
 ./autogen.sh
-./contrib/configure-release --prefix=$CUDALBM_PROJECT_DIR/opt/ucx --with-cuda=$CUDA_DIR
-make -j16
+./contrib/configure-release --prefix=$CUDALBM_UCX_DIR --with-cuda=$CUDALBM_CUDA_DIR
+make
 make install
 cd ../
 
 # Build OpenMPI:
-rm -rf $CUDALBM_PROJECT_DIR/opt/OpenMPI/
 rm -rf openmpi-5.0.7/
 rm -rf openmpi-5.0.7.tar.gz
 wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.7.tar.gz
 tar -xvf openmpi-5.0.7.tar.gz
 cd openmpi-5.0.7/
-./configure --prefix=$CUDALBM_PROJECT_DIR/opt/OpenMPI --with-cuda=$CUDA_DIR --with-ucx=$CUDALBM_PROJECT_DIR/opt/ucx
-make -j16
+./configure --prefix=$CUDALBM_MPI_DIR --with-cuda=$CUDALBM_CUDA_DIR --with-ucx=$CUDALBM_UCX_DIR
+make
 make install
 cd ../

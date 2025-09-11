@@ -13,6 +13,10 @@ ifeq ($(CUDALBM_INCLUDE_DIR),)
 $(error CUDALBM_INCLUDE_DIR is not set. Please run "source bashrc" in the project directory first)
 endif
 
+ifeq ($(CUDALBM_CUDA_DIR),)
+$(error CUDALBM_CUDA_DIR is not set. Please run "source bashrc" in the project directory first)
+endif
+
 TOOL_SUBDIRS = applications/computeVersion
 GPU_SUBDIRS = applications/momentBasedD3Q19 applications/fieldConvert applications/fieldCalculate
 SUBDIRS = $(TOOL_SUBDIRS) $(GPU_SUBDIRS)

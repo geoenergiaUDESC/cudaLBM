@@ -39,6 +39,22 @@ OPENMPI_SRC_DIR = openmpi-$(OPENMPI_VERSION)
 OPENMPI_TARBALL = openmpi-$(OPENMPI_VERSION).tar.gz
 OPENMPI_INSTALL_DIR = $(CUDALBM_MPI_DIR)
 
+# Detect if -jN was passed to make and preserve it for sub-makes
+ifneq (,$(findstring j,$(MAKEFLAGS)))
+    # Extract the job number from MAKEFLAGS
+    JOBS := $(patsubst -j%,%,$(filter -j%,$(MAKEFLAGS)))
+    ifeq ($(JOBS),)
+        # If no number specified, use default
+        JOBS :=
+    else
+        # Add the -j prefix
+        JOBS := -j$(JOBS)
+    endif
+else
+    # No -j flag specified
+    JOBS :=
+endif
+
 .PHONY: all clean uninstall install ucx-build openmpi-build ucx-install openmpi-install
 
 # Default target builds but doesn't install
@@ -52,7 +68,7 @@ ucx-build:
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" FCFLAGS="$(FCFLAGS)" FFLAGS="$(FFLAGS)" \
 	./autogen.sh && \
 	./contrib/configure-release --prefix=$(UCX_INSTALL_DIR) --with-cuda=$(CUDALBM_CUDA_DIR) && \
-	make -j
+	$(MAKE) $(JOBS)
 
 # Build OpenMPI without installing (depends on UCX being built)
 openmpi-build: ucx-build
@@ -62,15 +78,15 @@ openmpi-build: ucx-build
 	cd $(OPENMPI_SRC_DIR) && \
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" FCFLAGS="$(FCFLAGS)" FFLAGS="$(FFLAGS)" \
 	./configure --prefix=$(OPENMPI_INSTALL_DIR) --with-cuda=$(CUDALBM_CUDA_DIR) --with-ucx=$(UCX_INSTALL_DIR) && \
-	make -j
+	$(MAKE) $(JOBS)
 
 # Install UCX (assumes it's already built)
 ucx-install:
-	cd $(UCX_SRC_DIR) && make install
+	cd $(UCX_SRC_DIR) && $(MAKE) $(JOBS) install
 
 # Install OpenMPI (assumes it's already built)
 openmpi-install:
-	cd $(OPENMPI_SRC_DIR) && make install
+	cd $(OPENMPI_SRC_DIR) && $(MAKE) $(JOBS) install
 
 # Complete install process: clean, uninstall, build, and install
 install: clean uninstall ucx-build ucx-install openmpi-build openmpi-install
@@ -99,3 +115,6 @@ help:
 	@echo "  clean         - Remove source directories"
 	@echo "  uninstall     - Remove installed files"
 	@echo "  help          - Show this help message"
+	@echo ""
+	@echo "Parallel builds:"
+	@echo "  Use -jN flag with make to enable parallel builds (e.g., make install -j16)"

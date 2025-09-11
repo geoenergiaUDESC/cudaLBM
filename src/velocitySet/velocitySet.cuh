@@ -63,18 +63,18 @@ namespace LBM
      * This class serves as a base for specific velocity set implementations (e.g., D3Q19, D3Q27)
      * and provides common constants, scaling factors, and utility functions used across
      * different velocity set configurations in the Lattice Boltzmann Method.
-     */
+     **/
     class velocitySet
     {
     public:
         /**
          * @brief Default constructor (consteval)
-         */
+         **/
         [[nodiscard]] inline consteval velocitySet() noexcept {};
 
         /**
          * @brief Get the a^2 constant (3.0)
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
         {
@@ -83,7 +83,7 @@ namespace LBM
 
         /**
          * @brief Get the speed of sound squared (c^2 = 1 / 3)
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
         {
@@ -92,7 +92,7 @@ namespace LBM
 
         /**
          * @brief Get scaling factor for first-order moments
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T scale_i() noexcept
         {
@@ -101,7 +101,7 @@ namespace LBM
 
         /**
          * @brief Get scaling factor for diagonal second-order moments
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T scale_ii() noexcept
         {
@@ -110,7 +110,7 @@ namespace LBM
 
         /**
          * @brief Get scaling factor for off-diagonal second-order moments
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T scale_ij() noexcept
         {
@@ -125,7 +125,7 @@ namespace LBM
          * - First-order moments (velocity components): scaled by scale_i()
          * - Diagonal second-order moments: scaled by scale_ii()
          * - Off-diagonal second-order moments: scaled by scale_ij()
-         */
+         **/
         __device__ static inline void scale(thread::array<scalar_t, 10> &moments) noexcept
         {
             // Scale the moments correctly

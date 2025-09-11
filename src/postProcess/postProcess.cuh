@@ -66,7 +66,7 @@ namespace LBM
          * This function converts lattice indices to physical coordinates using
          * the domain dimensions stored in the mesh. Coordinates are normalized
          * to the physical domain size and distributed evenly across the lattice.
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> meshCoordinates(const host::latticeMesh &mesh)
         {
@@ -108,7 +108,7 @@ namespace LBM
          *
          * @note The one_based template parameter determines whether node indices
          *       start at 1 (for some file formats like Tecplot) or 0 (for VTK)
-         */
+         **/
         template <const bool one_based>
         __host__ [[nodiscard]] const std::vector<label_t> meshConnectivity(const host::latticeMesh &mesh)
         {
@@ -156,7 +156,7 @@ namespace LBM
          * format, where each offset indicates the cumulative number of points
          * up to that element. For hexahedral elements, each element has 8 points,
          * so offsets increase by 8 for each element.
-         */
+         **/
         __host__ [[nodiscard]] const std::vector<label_t> meshOffsets(const host::latticeMesh &mesh)
         {
             const label_t nx = mesh.nx();

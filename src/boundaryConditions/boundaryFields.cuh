@@ -60,7 +60,7 @@ namespace LBM
      *
      * This struct provides access to a specific field's value across all
      * boundary regions (North, South, East, West, Front, Back) and the internal field.
-     */
+     **/
     template <class VelocitySet>
     class boundaryFields
     {
@@ -68,7 +68,7 @@ namespace LBM
         /**
          * @brief Constructs boundary field values for all regions
          * @param[in] fieldName Name of the field to initialize across all regions
-         */
+         **/
         [[nodiscard]] boundaryFields(const std::string &fieldName)
             : values_{
                   boundaryValue<VelocitySet>(fieldName, "North"),
@@ -84,7 +84,7 @@ namespace LBM
          * @name Region Accessors
          * @brief Provide access to field values for specific boundary regions
          * @return The value of the field in the specified region
-         */
+         **/
         [[nodiscard]] inline constexpr scalar_t North() const noexcept
         {
             return values_[0]();
@@ -116,7 +116,7 @@ namespace LBM
 
         /**
          * @brief Print field values for all regions
-         */
+         **/
         void print() const noexcept
         {
             std::cout << fieldName_ << " boundary values:" << std::endl;
@@ -131,12 +131,12 @@ namespace LBM
     private:
         /**
          * @brief Field values for all regions
-         */
+         **/
         const boundaryValue<VelocitySet> values_[7];
 
         /**
          * @brief Name of the field
-         */
+         **/
         const std::string &fieldName_;
     };
 

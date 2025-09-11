@@ -64,14 +64,14 @@ namespace LBM
      *
      * The collision operation follows the standard BGK approximation with
      * specialized treatment for second-order moments in the moment space.
-     */
+     **/
     class secondOrder : private collision
     {
     public:
         /**
          * @brief Default constructor (consteval)
          * @return A secondOrder collision operator instance
-         */
+         **/
         [[nodiscard]] inline consteval secondOrder() noexcept {};
 
         /**
@@ -87,7 +87,7 @@ namespace LBM
          *
          * @note This implementation assumes zero force terms, so velocity updates are omitted
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
-         */
+         **/
         __device__ static inline void collide(thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             // Velocity updates are removed since force terms are zero

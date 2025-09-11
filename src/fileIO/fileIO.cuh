@@ -62,7 +62,7 @@ namespace LBM
          * @brief Checks if a string contains only digit characters
          * @param[in] numStr String to check
          * @return True if string contains only digits, false otherwise
-         */
+         **/
         [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
         {
             for (char c : numStr)
@@ -80,7 +80,7 @@ namespace LBM
          * @brief Validates if a string represents a valid integer
          * @param[in] intStr String to validate
          * @return True if string is non-empty and contains only digits
-         */
+         **/
         [[nodiscard]] inline bool isValidInteger(const std::string &intStr) noexcept
         {
             return (!intStr.empty() || isAllDigits(intStr));
@@ -93,7 +93,7 @@ namespace LBM
          *
          * Searches current directory for files with pattern: {fileName}_{number}.LBMBin
          * where {number} consists of only digits.
-         */
+         **/
         [[nodiscard]] bool hasIndexedFiles(const std::string &fileName)
         {
             const std::filesystem::path currentDir = std::filesystem::current_path();
@@ -139,7 +139,7 @@ namespace LBM
          * @param[in] num_str String representation of number
          * @return Converted integral value
          * @note Uses std::from_chars for efficient conversion
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] T stringToIntegral(const std::string &num_str) noexcept
         {
@@ -160,7 +160,7 @@ namespace LBM
          *
          * Parses files with pattern: {fileName}_{number}.LBMBin and extracts
          * the numeric portion as time indices.
-         */
+         **/
         [[nodiscard]] const std::vector<label_t> timeIndices(const std::string &fileName)
         {
             std::vector<label_t> indices;
@@ -217,7 +217,7 @@ namespace LBM
          * @brief Gets the latest time index from available files
          * @param[in] fileName Case name prefix to search for
          * @return Highest time index found, or 0 if no files found
-         */
+         **/
         [[nodiscard]] label_t latestTime(const std::string &fileName)
         {
             if (hasIndexedFiles(fileName))
@@ -237,7 +237,7 @@ namespace LBM
          * @param[in] programCtrl Program control object
          * @param[in] isLatestTime Flag indicating whether to start from latest time
          * @return Starting index (0 for earliest, last index for latest)
-         */
+         **/
         template <class PC>
         __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl, const bool isLatestTime)
         {
@@ -251,7 +251,7 @@ namespace LBM
          * @tparam PC Program control type
          * @param[in] programCtrl Program control object
          * @return Starting index determined by command line arguments
-         */
+         **/
         template <class PC>
         __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl)
         {

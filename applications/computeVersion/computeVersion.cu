@@ -1,62 +1,55 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Executable to detect CUDA-capable hardware and generate a hardware info file
+
+Namespace
+    LBM
+
+SourceFiles
+    computeVersion.cu
+
+\*---------------------------------------------------------------------------*/
+
 #include "computeVersion.cuh"
 
 using namespace LBM;
-
-/**
- * @brief Retrieves the value of an environment variable, returning a default value if the variable is not set.
- * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
- * @param envVariable The name of the environment variable to retrieve.
- * @param defaultName The default value to return if the environment variable is not set.
- * @return The value of the environment variable, or the default value if it is not set.
- **/
-template <const bool verboseOutput = false>
-[[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable, const std::string &defaultName)
-{
-    const char *const env_ptr = std::getenv(envVariable.c_str());
-
-    if (env_ptr == nullptr)
-    {
-        if constexpr (verboseOutput)
-        {
-            std::cout << envVariable << ": " << defaultName << std::endl;
-        }
-        return defaultName;
-    }
-    else
-    {
-        if constexpr (verboseOutput)
-        {
-            std::cout << envVariable << ": " << env_ptr << std::endl;
-        }
-        return env_ptr;
-    }
-}
-
-/**
- * @brief Retrieves the value of an environment variable, throwing an exception if the variable is not set.
- * @tparam verboseOutput A boolean template parameter that controls whether the retrieved environment variable and its value are printed to the console.
- * @param envVariable The name of the environment variable to retrieve.
- * @return The value of the environment variable.
- * @throws std::runtime_error If the environment variable is not set.
- **/
-template <const bool verboseOutput = false>
-[[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable)
-{
-    const char *const env_ptr = std::getenv(envVariable.c_str());
-
-    if (env_ptr == nullptr)
-    {
-        const std::string errorString = "Error: " + envVariable + " environment variable is not set." + "Please run:" + "  source ~/.bashrc" + "or add it to your environment.";
-        throw std::runtime_error(errorString);
-    }
-
-    if constexpr (verboseOutput)
-    {
-        std::cout << envVariable << ": " << env_ptr << std::endl;
-    }
-
-    return env_ptr;
-}
 
 int main()
 {
@@ -93,19 +86,13 @@ int main()
 
     if (CUDALBM_ARCHITECTURE_DETECTION == "Manual")
     {
-        // std::cout << "Doing manual detection" << std::endl;
-
         const std::string all_arch_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=sm_" + CUDALBM_ARCHITECTURE_VERSION;
         const std::string all_lto_flags = "-gencode arch=compute_" + CUDALBM_ARCHITECTURE_VERSION + ",code=lto_" + CUDALBM_ARCHITECTURE_VERSION;
         outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
         outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << " " << all_lto_flags << std::endl;
-
-        // std::cout << "Successfully generated '" << outputFilePath.string() << "' with architecture defined in bashrc." << std::endl;
     }
     else
     {
-        // std::cout << "Doing automatic detection" << std::endl;
-
         const deviceIndex_t deviceCount = countDevices();
 
         std::string all_arch_flags = "";
@@ -153,8 +140,6 @@ int main()
 
             outputFile << "# Consolidated architecture flags for all found GPUs (no duplicates)" << std::endl;
             outputFile << "NVCXX_ALL_ARCHFLAGS = " << all_arch_flags << std::endl;
-
-            // std::cout << "Successfully generated '" << outputFilePath.string() << "' with info for " << deviceCount << " CUDA device(s)." << std::endl;
         }
     }
 

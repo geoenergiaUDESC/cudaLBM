@@ -47,8 +47,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_[YOUR_FILENAME_UPPERCASE] _CUH
-#define __MBLBM_ [YOUR_FILENAME_UPPERCASE] _CUH
+#ifndef __MBLBM_YOUR_FILENAME_UPPERCASE_CUH
+#define __MBLBM_YOUR_FILENAME_UPPERCASE_CUH
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
@@ -59,70 +59,74 @@ SourceFiles
 namespace LBM
 {
     /**
-     * @class [YourClassName]
+     * @class YourClassName
      * @brief [Brief description of the class]
      *
      * @details [Detailed description of the class functionality]
-     */
-    class[YourClassName]
+     **/
+    template <class MemberType>
+    class YourClassName
     {
     public:
         /**
          * @brief Default constructor
-         */
-        [YourClassName]() = default;
+         **/
+        [[nodiscard]] YourClassName() = default;
 
         /**
          * @brief Parameterized constructor
          * @param[in] param1 Description of first parameter
          * @param[in] param2 Description of second parameter
-         */
-        [YourClassName](ParamType1 param1, ParamType2 param2);
+         **/
+        template <class ParamType1, class ParamType2>
+        YourClassName(const ParamType1 param1, const ParamType2 param2){};
 
         /**
          * @brief Destructor
-         */
-        ~[YourClassName]() = default;
+         **/
+        ~YourClassName() = default;
 
         /**
          * @brief Copy constructor
          * @param[in] other Object to copy from
-         */
-        [YourClassName](const[YourClassName] & other);
+         **/
+        YourClassName(const YourClassName &other) {};
 
         /**
          * @brief Move constructor
          * @param[in] other Object to move from
-         */
-        [YourClassName]([YourClassName] &&other) noexcept;
+         **/
+        YourClassName(const YourClassName &&other) noexcept {};
 
         /**
          * @brief Copy assignment operator
          * @param[in] other Object to copy from
          * @return Reference to this object
-         */
-        [YourClassName] &operator=(const[YourClassName] & other);
+         **/
+        YourClassName &operator=(const YourClassName &other) {};
 
         /**
          * @brief Move assignment operator
          * @param[in] other Object to move from
          * @return Reference to this object
-         */
-        [YourClassName] &operator=([YourClassName] && other) noexcept;
+         **/
+        YourClassName &operator=(const YourClassName &&other) noexcept {};
 
         /**
          * @brief Example member function
          * @param[in] input Description of input parameter
          * @return Description of return value
-         */
-        [[nodiscard]] ReturnType exampleFunction(InputType input) const;
+         **/
+        template <class ReturnType, class InputType>
+        [[nodiscard]] ReturnType exampleFunction(const InputType input) const {};
 
         /**
          * @brief Example CUDA device function
          * @param[in] input Description of input parameter
          * @return Description of return value
-         */
-        __device__ [[nodiscard]] DeviceReturnType deviceFunction(DeviceInputType input) const;
+         **/
+        template <class DeviceReturnType, class DeviceInputType>
+        __device__ [[nodiscard]] DeviceReturnType deviceFunction(const DeviceInputType input) const {};
 
     private:
         // Member variables with brief descriptions
@@ -132,19 +136,21 @@ namespace LBM
         /**
          * @brief Example private helper function
          * @param[in] input Description of input parameter
-         */
-        void helperFunction(HelperInputType input);
+         **/
+        template <class HelperInputType>
+        void helperFunction(const HelperInputType input) {};
     };
 
     // Optional: Non-member functions related to the class
     /**
      * @brief Example non-member function
-     * @param[in] obj Instance of [YourClassName]
+     * @param[in] obj Instance of YourClassName
      * @param[in] param Additional parameter
      * @return Description of return value
-     */
-    [[nodiscard]] ReturnType nonMemberFunction(const[YourClassName] & obj, ParamType param);
+     **/
+    template <class ReturnType, class ParamType>
+    [[nodiscard]] ReturnType nonMemberFunction(const YourClassName &obj, const ParamType param) {};
 
 } // namespace LBM
 
-#endif // __MBLBM_[YOUR_FILENAME_UPPERCASE]_CUH
+#endif // __MBLBM_YOUR_FILENAME_UPPERCASE_CUH

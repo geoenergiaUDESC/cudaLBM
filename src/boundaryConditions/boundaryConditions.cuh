@@ -68,13 +68,13 @@ namespace LBM
      * in lid-driven cavity flow simulations. It handles both static wall boundaries and
      * moving lid boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
-     */
+     **/
     class boundaryConditions
     {
     public:
         /**
          * @brief Default constructor (constexpr)
-         */
+         **/
         [[nodiscard]] inline consteval boundaryConditions() {};
 
         /**
@@ -93,7 +93,7 @@ namespace LBM
          * The method uses the regularized LBM approach to reconstruct boundary
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
-         */
+         **/
         template <class VelocitySet>
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,

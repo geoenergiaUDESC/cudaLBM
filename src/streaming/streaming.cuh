@@ -64,13 +64,13 @@ namespace LBM
      * where particle distributions move to neighboring lattice sites. It provides
      * efficient shared memory operations for storing and retrieving population
      * data with optimized periodic boundary handling.
-     */
+     **/
     class streaming
     {
     public:
         /**
          * @brief Default constructor
-         */
+         **/
         [[nodiscard]] inline consteval streaming() {};
 
         /**
@@ -84,7 +84,7 @@ namespace LBM
          * This method stores population data from individual threads into
          * shared memory for efficient access during the streaming step.
          * It uses compile-time loop unrolling for optimal performance.
-         */
+         **/
         template <class VelocitySet, const label_t N>
         __device__ static inline void save(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -109,7 +109,7 @@ namespace LBM
          * This method retrieves population data from shared memory, applying
          * periodic boundary conditions to handle data exchange between threads
          * at block boundaries. It implements the D3Q19 streaming pattern.
-         */
+         **/
         template <class VelocitySet, const label_t N>
         __device__ static inline void pull(
             thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -152,7 +152,7 @@ namespace LBM
          * @return Linearized index in shared memory
          *
          * Memory layout: [pop][tz][ty][tx] (pop slowest varying, tx fastest)
-         */
+         **/
         template <const label_t pop>
         __device__ [[nodiscard]] static inline label_t idxPopBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
@@ -164,7 +164,7 @@ namespace LBM
          * @tparam pop Population component index
          * @param[in] tx Thread coordinates as dim3 structure
          * @return Linearized index in shared memory
-         */
+         **/
         template <const label_t pop>
         __device__ [[nodiscard]] static inline label_t idxPopBlock(const dim3 &tx) noexcept
         {
@@ -180,7 +180,7 @@ namespace LBM
          *
          * This function uses bitwise AND optimization when Dim is power-of-two
          * for improved performance, falling back to modulo arithmetic otherwise.
-         */
+         **/
         template <const int Shift, const int Dim>
         __device__ [[nodiscard]] static inline label_t periodic_index(const label_t idx) noexcept
         {

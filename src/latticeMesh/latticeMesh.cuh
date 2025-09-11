@@ -67,7 +67,7 @@ namespace LBM
          * dimensions, block decomposition, and physical properties. It handles
          * initialization from configuration files, validation of grid parameters,
          * and synchronization of grid properties with GPU device memory.
-         */
+         **/
         class latticeMesh
         {
         public:
@@ -81,7 +81,7 @@ namespace LBM
              * - Memory requirement checking for GPU
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
-             */
+             **/
             [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
                 : nx_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readFile("caseInfo"), "ny")),
@@ -207,7 +207,7 @@ namespace LBM
              * @name Grid Dimension Accessors
              * @brief Provide access to grid dimensions
              * @return Dimension value in specified direction
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr label_t nx() const noexcept
             {
                 return nx_;
@@ -229,7 +229,7 @@ namespace LBM
              * @name Block Decomposition Accessors
              * @brief Provide access to CUDA block decomposition
              * @return Number of blocks in specified direction
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr label_t nxBlocks() const noexcept
             {
                 return nx_ / block::nx();
@@ -250,7 +250,7 @@ namespace LBM
             /**
              * @brief Get thread block dimensions for CUDA kernel launches
              * @return dim3 structure with thread block dimensions
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline consteval dim3 threadBlock() const noexcept
             {
                 return {block::nx(), block::ny(), block::nz()};
@@ -259,7 +259,7 @@ namespace LBM
             /**
              * @brief Get grid dimensions for CUDA kernel launches
              * @return dim3 structure with grid dimensions
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr dim3 gridBlock() const noexcept
             {
                 return {static_cast<uint32_t>(nx_ / block::nx()), static_cast<uint32_t>(ny_ / block::ny()), static_cast<uint32_t>(nz_ / block::nz())};
@@ -268,7 +268,7 @@ namespace LBM
             /**
              * @brief Get physical domain dimensions
              * @return Const reference to pointVector containing domain size
-             */
+             **/
             __host__ [[nodiscard]] inline constexpr const pointVector &L() const noexcept
             {
                 return L_;

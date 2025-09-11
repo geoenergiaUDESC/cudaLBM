@@ -65,7 +65,7 @@ namespace LBM
          * @param[in] nPoints Number of elements to copy
          * @return std::vector<T> containing the copied data
          * @throws std::runtime_error if CUDA memory copy fails
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] const std::vector<T> toHost(const T *const ptrRestrict devPtr, const std::size_t nPoints)
         {
@@ -92,7 +92,7 @@ namespace LBM
          *
          * This function copies multiple device arrays to host memory and
          * interleaves them in AoSoA (Array of Structures of Array) format
-         */
+         **/
         template <class M, typename T, const label_t nVars>
         __host__ [[nodiscard]] const std::vector<T> toHost(
             const device::ptrCollection<nVars, T> &devPtrs,
@@ -142,7 +142,7 @@ namespace LBM
          * @param[out] ptr Pointer to be allocated
          * @param[in] nPoints Number of elements to allocate
          * @throws std::runtime_error if CUDA allocation fails
-         */
+         **/
         template <typename T>
         __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
         {
@@ -161,7 +161,7 @@ namespace LBM
          * @return Pointer to allocated device memory
          * @throws std::runtime_error if CUDA allocation fails
          * @note Verbose mode prints allocation details
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] T *allocate(const std::size_t nPoints) noexcept
         {
@@ -183,7 +183,7 @@ namespace LBM
          * @param[in] f Source host vector
          * @throws std::runtime_error if CUDA memory copy fails
          * @note Verbose mode prints copy details
-         */
+         **/
         template <typename T>
         __host__ void copy(T *const ptr, const std::vector<T> &f)
         {
@@ -207,7 +207,7 @@ namespace LBM
          * @param[in] f Host vector to copy to device
          * @return Pointer to allocated device memory containing copied data
          * @throws std::runtime_error if CUDA operations fail
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
         {
@@ -225,7 +225,7 @@ namespace LBM
          * @param[in] val Value to initialize all elements with
          * @return Pointer to allocated and initialized device memory
          * @throws std::runtime_error if CUDA operations fail
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] T *allocateArray(const label_t nPoints, const T val) noexcept
         {

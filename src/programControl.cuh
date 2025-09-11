@@ -83,12 +83,14 @@ namespace LBM
 
             static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
 
-            std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
-            std::cout << "{                                                                         }" << std::endl;
-            std::cout << "{ UDESC LBM                                                               }" << std::endl;
-            std::cout << "{ Universidade do Esdado de Santa Catarina                                }" << std::endl;
-            std::cout << "{                                                                         }" << std::endl;
-            std::cout << "{ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * }" << std::endl;
+            std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
+            std::cout << "|                                                                             |" << std::endl;
+            std::cout << "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |" << std::endl;
+            std::cout << "| Developed at UDESC - State University of Santa Catarina                     |" << std::endl;
+            std::cout << "| Website: https://www.udesc.br                                               |" << std::endl;
+            std::cout << "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |" << std::endl;
+            std::cout << "|                                                                             |" << std::endl;
+            std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
             std::cout << std::endl;
             std::cout << "Executable: " << input_.commandLine()[0] << std::endl;
             std::cout << "programControl:" << std::endl;

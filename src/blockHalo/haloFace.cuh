@@ -63,7 +63,7 @@ namespace LBM
          * at block boundaries for all six faces (x0, x1, y0, y1, z0, z1). It provides
          * both read-only and mutable access to halo data for efficient communication
          * between adjacent CUDA blocks during LBM simulations.
-         */
+         **/
         template <class VelocitySet>
         class haloFace
         {
@@ -73,7 +73,7 @@ namespace LBM
              * @param[in] fMom Moment representation of distribution functions (10 interlaced moments)
              * @param[in] mesh Lattice mesh defining simulation domain
              * @post All six halo faces are allocated and initialized with population data
-             */
+             **/
             [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
                 : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
                   x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(fMom, mesh))),
@@ -84,7 +84,7 @@ namespace LBM
 
             /**
              * @brief Destructor - releases all allocated device memory
-             */
+             **/
             ~haloFace() noexcept
             {
                 cudaFree(x0_);
@@ -99,7 +99,7 @@ namespace LBM
              * @name Read-only Accessors
              * @brief Provide const access to halo face data
              * @return Const pointer to halo face data
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr const scalar_t *x0Const() const noexcept
             {
                 return x0_;
@@ -129,7 +129,7 @@ namespace LBM
              * @name Mutable Accessors
              * @brief Provide mutable access to halo face data
              * @return Pointer to halo face data
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr scalar_t *x0() noexcept
             {
                 return x0_;
@@ -160,7 +160,7 @@ namespace LBM
              * @brief Provide reference to pointer for swapping operations
              * @return Reference to pointer (used for buffer swapping)
              * @note These methods are specifically for pointer swapping and should not be used elsewhere
-             */
+             **/
             [[nodiscard]] inline constexpr scalar_t *ptrRestrict &x0Ref() noexcept
             {
                 return x0_;
@@ -202,7 +202,7 @@ namespace LBM
              * @tparam faceIndex Direction index (x, y, or z)
              * @param[in] mesh Lattice mesh for dimensioning
              * @return Number of elements in the specified halo face
-             */
+             **/
             template <const label_t faceIndex>
             __host__ [[nodiscard]] static inline constexpr label_t nFaces(const host::latticeMesh &mesh) noexcept
             {
@@ -229,7 +229,7 @@ namespace LBM
              * @param[in] fMom Moment representation of distribution functions
              * @param[in] mesh Lattice mesh for dimensioning
              * @return Initialized population data for the specified halo face
-             */
+             **/
             template <const label_t faceIndex, const label_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) const noexcept
             {
@@ -294,7 +294,7 @@ namespace LBM
              *
              * This method handles the D3Q19 lattice model, storing appropriate
              * population components based on boundary position and direction.
-             */
+             **/
             template <const label_t faceIndex, const label_t side>
             __host__ void static handleGhostCells(
                 std::vector<scalar_t> &face,

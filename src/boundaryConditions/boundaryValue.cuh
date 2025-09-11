@@ -61,7 +61,7 @@ namespace LBM
      * This struct reads and stores boundary condition values from configuration files,
      * handling both direct numerical values and equilibrium-based calculations.
      * It automatically applies appropriate scaling based on field type.
-     */
+     **/
     template <class VelocitySet>
     class boundaryValue
     {
@@ -71,14 +71,14 @@ namespace LBM
          * @param[in] fieldName Name of the field (e.g., "rho", "u", "m_xx")
          * @param[in] regionName Name of the boundary region (e.g., "North", "West")
          * @throws std::runtime_error if field name is invalid or configuration is malformed
-         */
+         **/
         __host__ [[nodiscard]] boundaryValue(const std::string &fieldName, const std::string &regionName)
             : value(initialiseValue(fieldName, regionName)){};
 
         /**
          * @brief Access the stored boundary value
          * @return The boundary value with appropriate scaling applied
-         */
+         **/
         __host__ [[nodiscard]] inline constexpr scalar_t operator()() const noexcept
         {
             return value;
@@ -87,7 +87,7 @@ namespace LBM
     private:
         /**
          * @brief The underlying variable
-         */
+         **/
         const scalar_t value;
 
         /**
@@ -102,7 +102,7 @@ namespace LBM
          * - Direct numerical values with appropriate scaling
          * - Equilibrium-based calculations for moment fields
          * - Validation of field names and region names
-         */
+         **/
         __host__ [[nodiscard]] scalar_t initialiseValue(const std::string &fieldName, const std::string &regionName, const std::string &initialConditionsName = "initialConditions") const
         {
             const std::vector<std::string> boundaryLines = string::readFile(initialConditionsName);

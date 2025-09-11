@@ -60,7 +60,7 @@ namespace LBM
      *
      * This struct aggregates all field values (density, velocity components, and moments)
      * for a specific boundary region, providing convenient access to individual components.
-     */
+     **/
     template <class VelocitySet>
     class boundaryRegion
     {
@@ -88,7 +88,7 @@ namespace LBM
          * @name Field Accessors
          * @brief Provide access to individual field values in the boundary region
          * @return The value of the specified field with appropriate scaling
-         */
+         **/
         [[nodiscard]] inline constexpr scalar_t rho() const noexcept
         {
             return values_[index::rho()]();
@@ -133,7 +133,7 @@ namespace LBM
         /**
          * @brief Print all field values for this boundary region
          * @note Only active when VERBOSE macro is defined
-         */
+         **/
         void print() const noexcept
         {
             const std::vector<std::string> regionNames({"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"});
@@ -146,7 +146,7 @@ namespace LBM
     private:
         /**
          * @brief Array of boundary values for all fields
-         */
+         **/
         const boundaryValue<VelocitySet> values_[10];
     };
 }

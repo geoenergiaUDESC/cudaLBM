@@ -62,7 +62,7 @@ namespace LBM
      * This class manages runtime operations including timing, performance metrics,
      * and output formatting. It tracks simulation duration and calculates
      * performance metrics like MLUPS (Million Lattice Updates Per Second).
-     */
+     **/
     class runTimeIO
     {
     public:
@@ -70,7 +70,7 @@ namespace LBM
          * @brief Constructs a runTimeIO object and starts timing
          * @param[in] mesh Lattice mesh providing dimension information
          * @param[in] programCtrl Program control object with simulation parameters
-         */
+         **/
         [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
             const programControl &programCtrl)
@@ -89,7 +89,7 @@ namespace LBM
          * Upon destruction, this class calculates and displays:
          * - Total elapsed time in HH:MM:SS format
          * - MLUPS (Million Lattice Updates Per Second) performance metric
-         */
+         **/
         ~runTimeIO()
         {
             const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
@@ -106,7 +106,7 @@ namespace LBM
          * @brief Formats a duration in seconds into HH:MM:SS string format
          * @param[in] totalSeconds Total number of seconds to format
          * @return String formatted as HH:MM:SS (supports negative durations)
-         */
+         **/
         [[nodiscard]] static const std::string duration(const long long totalSeconds) noexcept
         {
             // Handle sign and absolute value conversion
@@ -141,7 +141,7 @@ namespace LBM
          *
          * MLUPS is calculated as: (total lattice points × time steps) / (execution time in seconds × 10⁶)
          * This metric provides a standardized way to compare LBM implementation performance.
-         */
+         **/
         template <typename T>
         [[nodiscard]] static inline constexpr T MLUPS(
             const host::latticeMesh &mesh,

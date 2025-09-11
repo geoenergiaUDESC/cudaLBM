@@ -65,7 +65,7 @@ namespace LBM
          * This template function provides the VTK-compatible type name
          * for various C++ data types, used in VTU file headers to
          * specify data formats for binary storage.
-         */
+         **/
         template <typename T>
         [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
         {
@@ -134,7 +134,7 @@ namespace LBM
          * - Variable count matching name count
          * - Node count consistency across all arrays
          * - File accessibility checks
-         */
+         **/
         void writeVTU(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,

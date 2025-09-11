@@ -65,19 +65,19 @@ namespace LBM
      * - Weight coefficients for each direction
      * - Methods for moment calculation and population reconstruction
      * - Equilibrium distribution functions
-     */
+     **/
     class D3Q19 : private velocitySet
     {
     public:
         /**
          * @brief Default constructor (consteval)
-         */
+         **/
         [[nodiscard]] inline consteval D3Q19() {};
 
         /**
          * @brief Get number of discrete velocity directions
          * @return 19 (number of directions in D3Q19 lattice)
-         */
+         **/
         [[nodiscard]] static inline consteval label_t Q() noexcept
         {
             return Q_;
@@ -86,7 +86,7 @@ namespace LBM
         /**
          * @brief Get number of velocity components on a lattice face
          * @return 5 (number of directions crossing each face in D3Q19)
-         */
+         **/
         [[nodiscard]] static inline consteval label_t QF() noexcept
         {
             return QF_;
@@ -94,7 +94,7 @@ namespace LBM
 
         /**
          * @brief Get weight for stationary component (q=0)
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_0() noexcept
         {
@@ -103,7 +103,7 @@ namespace LBM
 
         /**
          * @brief Get weight for orthogonal directions (q=1-6)
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_1() noexcept
         {
@@ -112,7 +112,7 @@ namespace LBM
 
         /**
          * @brief Get weight for diagonal directions (q=7-18)
-         */
+         **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_2() noexcept
         {
@@ -122,7 +122,7 @@ namespace LBM
         /**
          * @brief Get all weights for host computation
          * @return Array of 19 weights in D3Q19 order
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_w_q() noexcept
         {
@@ -136,7 +136,7 @@ namespace LBM
         /**
          * @brief Get all weights for device computation
          * @return Thread array of 19 weights in D3Q19 order
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> w_q() noexcept
         {
@@ -152,7 +152,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return Weight for specified direction
-         */
+         **/
         template <typename T, const label_t q_>
         __device__ [[nodiscard]] static inline consteval T w_q(const label_constant<q_> q) noexcept
         {
@@ -166,7 +166,7 @@ namespace LBM
         /**
          * @brief Get x-components for all directions (host version)
          * @return Array of 19 x-velocity components
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cx() noexcept
         {
@@ -177,7 +177,7 @@ namespace LBM
         /**
          * @brief Get x-components for all directions (device version)
          * @return Thread array of 19 x-velocity components
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cx() noexcept
         {
@@ -190,7 +190,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return x-component for specified direction
-         */
+         **/
         template <typename T, const label_t q_>
         __device__ [[nodiscard]] static inline consteval T cx(const label_constant<q_> q) noexcept
         {
@@ -206,7 +206,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is negative
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nxNeg(const label_constant<q_> q) noexcept
         {
@@ -218,7 +218,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is positive
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nxPos(const label_constant<q_> q) noexcept
         {
@@ -228,7 +228,7 @@ namespace LBM
         /**
          * @brief Get y-components for all directions (host version)
          * @return Array of 19 y-velocity components
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cy() noexcept
         {
@@ -239,7 +239,7 @@ namespace LBM
         /**
          * @brief Get y-components for all directions (device version)
          * @return Thread array of 19 y-velocity components
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cy() noexcept
         {
@@ -252,7 +252,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return y-component for specified direction
-         */
+         **/
         template <typename T, const label_t q_>
         __device__ [[nodiscard]] static inline consteval T cy(const label_constant<q_> q) noexcept
         {
@@ -268,7 +268,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if y-component is negative
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nyNeg(const label_constant<q_> q) noexcept
         {
@@ -280,7 +280,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is positive
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nyPos(const label_constant<q_> q) noexcept
         {
@@ -290,7 +290,7 @@ namespace LBM
         /**
          * @brief Get z-components for all directions (host version)
          * @return Array of 19 z-velocity components
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cz() noexcept
         {
@@ -301,7 +301,7 @@ namespace LBM
         /**
          * @brief Get z-components for all directions (device version)
          * @return Thread array of 19 z-velocity components
-         */
+         **/
         template <typename T>
         __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cz() noexcept
         {
@@ -314,7 +314,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return z-component for specified direction
-         */
+         **/
         template <typename T, const label_t q_>
         __device__ [[nodiscard]] static inline consteval T cz(const label_constant<q_> q) noexcept
         {
@@ -330,7 +330,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if z-component is positive
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nzNeg(const label_constant<q_> q) noexcept
         {
@@ -342,7 +342,7 @@ namespace LBM
          * @tparam q_ Direction index (0-18)
          * @param[in] q Direction index as compile-time constant
          * @return True if z-component is positive
-         */
+         **/
         template <const label_t q_>
         __device__ [[nodiscard]] static inline consteval bool nzPos(const label_constant<q_> q) noexcept
         {
@@ -356,7 +356,7 @@ namespace LBM
          * @param[in] uc3 3 * (u·c_q) = 3*(u*cx + v*cy + w*cz)
          * @param[in] p1_muu 1 - 1.5*(u² + v² + w²)
          * @return Equilibrium distribution value for the direction
-         */
+         **/
         template <typename T>
         [[nodiscard]] static inline constexpr T f_eq(const T rhow, const T uc3, const T p1_muu) noexcept
         {
@@ -370,7 +370,7 @@ namespace LBM
          * @param[in] v y-component of velocity
          * @param[in] w z-component of velocity
          * @return Array of 19 equilibrium distribution values
-         */
+         **/
         template <typename T>
         __host__ [[nodiscard]] static inline constexpr const std::array<T, 19> F_eq(const T u, const T v, const T w) noexcept
         {
@@ -391,7 +391,7 @@ namespace LBM
          * @brief Reconstruct population distribution from moments (in-place)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
-         */
+         **/
         __device__ static inline void reconstruct(thread::array<scalar_t, 19> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()));
@@ -426,7 +426,7 @@ namespace LBM
          * @brief Reconstruct population distribution from moments (return)
          * @param[in] moments Moment array (10 components)
          * @return Population array with 19 components
-         */
+         **/
         __device__ static inline thread::array<scalar_t, 19> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()));
@@ -461,7 +461,7 @@ namespace LBM
          * @brief Reconstruct population distribution from moments (host version)
          * @param[in] moments Moment array (10 components)
          * @return Population array with 19 components
-         */
+         **/
         __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[4] + moments[7] + moments[9]);
@@ -501,7 +501,7 @@ namespace LBM
          * @brief Calculate moments from population distribution
          * @param[in] pop Population array (19 components)
          * @param[out] moments Moment array to be filled (10 components)
-         */
+         **/
         __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             // Equation 3
@@ -528,7 +528,7 @@ namespace LBM
          * @param[in] pop Population distribution
          * @param[in] boundaryNormal Boundary normal information
          * @return Incoming density (ρ_I) for boundary treatment
-         */
+         **/
         template <class B_N>
         __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const thread::array<scalar_t, 19> &pop, const B_N &boundaryNormal) noexcept
         {
@@ -556,7 +556,7 @@ namespace LBM
 
         /**
          * @brief Print velocity set information to terminal
-         */
+         **/
         __host__ static void print() noexcept
         {
             std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
@@ -614,7 +614,7 @@ namespace LBM
          * - For Front boundary (normal.z > 0): checks negative z-velocity component
          * - For Back boundary (normal.z < 0): checks positive z-velocity component
          * Returns 1 only if no incoming component is detected on any axis
-         */
+         **/
         template <typename T, class B_N, const label_t q_>
         __device__ [[nodiscard]] static inline constexpr T incomingSwitch(const label_constant<q_> q, const B_N &boundaryNormal) noexcept
         {

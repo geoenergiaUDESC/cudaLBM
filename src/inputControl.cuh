@@ -62,7 +62,7 @@ namespace LBM
      * @details Parses command-line arguments, validates input, and initializes
      * GPU device list based on provided arguments. Supports mandatory -GPU flag
      * for most executables with exceptions for utility tools.
-     */
+     **/
     class inputControl
     {
     public:
@@ -71,7 +71,7 @@ namespace LBM
          * @param[in] argc First argument passed to main (argument count)
          * @param[in] argv Second argument passed to main (argument vector)
          * @throws std::runtime_error if argument count is negative
-         */
+         **/
         [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
             : nArgs_(nArgsCheck(argc)),
               commandLine_(parseCommandLine(argc, argv)),
@@ -85,7 +85,7 @@ namespace LBM
         /**
          * @brief Returns the device list as a vector of ints
          * @return const std::vector<deviceIndex_t>& The device list containing GPU indices
-         */
+         **/
         [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return deviceList_;
@@ -95,7 +95,7 @@ namespace LBM
          * @brief Verifies if an argument is present at the command line
          * @param[in] name The argument to search for
          * @return bool True if the argument is present, false otherwise
-         */
+         **/
         [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
         {
             for (label_t i = 0; i < commandLine_.size(); i++)
@@ -112,7 +112,7 @@ namespace LBM
         /**
          * @brief Returns the command line input as a vector of strings
          * @return const std::vector<std::string>& The parsed command line arguments
-         */
+         **/
         __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &commandLine() const noexcept
         {
             return commandLine_;
@@ -121,7 +121,7 @@ namespace LBM
         /**
          * @brief Returns the name of the currently running executable
          * @return const std::string& The executable name
-         */
+         **/
         __host__ [[nodiscard]] inline constexpr const std::string &executableName() const noexcept
         {
             return commandLine_[0];
@@ -138,7 +138,7 @@ namespace LBM
          * @param[in] argc First argument passed to main (argument count)
          * @return label_t Validated number of arguments
          * @throws std::runtime_error if argument count is negative
-         */
+         **/
         [[nodiscard]] label_t nArgsCheck(const int argc) const
         {
             // Check for a bad number of supplied arguments
@@ -163,7 +163,7 @@ namespace LBM
          * @param[in] argc First argument passed to main (argument count)
          * @param[in] argv Second argument passed to main (argument vector)
          * @return std::vector<std::string> Parsed command line arguments
-         */
+         **/
         [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
         {
             if (argc > 0)
@@ -199,7 +199,7 @@ namespace LBM
          * - -GPU argument is missing for non-utility executables
          * - Requested GPUs exceed available devices
          * @note For "fieldConvert" and "fieldCalculate" executables, -GPU flag is optional (defaults to device 0)
-         */
+         **/
         [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList() const
         {
             if (isArgPresent("-GPU"))
@@ -228,7 +228,7 @@ namespace LBM
         /**
          * @brief Queries the number of available CUDA devices
          * @return deviceIndex_t Count of available CUDA devices
-         */
+         **/
         [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
         {
             deviceIndex_t deviceCount = -1;

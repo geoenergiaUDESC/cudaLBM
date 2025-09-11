@@ -60,13 +60,13 @@ namespace LBM
         /**
          * @namespace Policy
          * @brief Enumerates cache eviction policies for prefetch operations
-         */
+         **/
         namespace Policy
         {
             /**
              * @enum Enum
              * @brief Cache eviction policy options
-             */
+             **/
             typedef enum Enum : label_t
             {
                 evict_first = 0,
@@ -77,13 +77,13 @@ namespace LBM
         /**
          * @namespace Level
          * @brief Enumerates cache hierarchy levels for prefetch operations
-         */
+         **/
         namespace Level
         {
             /**
              * @enum Enum
              * @brief Cache level options
-             */
+             **/
             typedef enum Enum : label_t
             {
                 L1 = 0,
@@ -105,7 +105,7 @@ namespace LBM
          * @note Requires CUDA architecture >= 350 (Kepler or newer)
          * @note Uses restrict qualifier to indicate no pointer aliasing
          * @note Compile-time validation ensures only valid cache levels and policies are used
-         */
+         **/
         template <const Level::Enum level, const Policy::Enum policy, typename T>
         __device__ inline void prefetch(const T *const ptrRestrict ptr) noexcept
         {

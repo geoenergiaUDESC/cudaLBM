@@ -80,7 +80,7 @@ namespace LBM
          * - Variable count matching name count
          * - Node count consistency across all arrays
          * - File accessibility checks
-         */
+         **/
         void writeTecplot(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,

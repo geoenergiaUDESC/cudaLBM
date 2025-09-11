@@ -63,7 +63,7 @@ namespace LBM
          * This class handles the exchange of distribution functions between adjacent
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
-         */
+         **/
         template <class VelocitySet>
         class halo
         {
@@ -72,20 +72,20 @@ namespace LBM
              * @brief Constructs halo regions from moment data and mesh
              * @param[in] fMom Moment representation of distribution functions
              * @param[in] mesh Lattice mesh defining simulation domain
-             */
+             **/
             [[nodiscard]] halo(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
                 : fGhost_(haloFace<VelocitySet>(fMom, mesh)),
                   gGhost_(haloFace<VelocitySet>(fMom, mesh)) {};
 
             /**
              * @brief Default destructor
-             */
+             **/
             ~halo() {};
 
             /**
              * @brief Swaps read and write halo buffers
              * @note Synchronizes device before swapping to ensure all operations complete
-             */
+             **/
             __host__ inline void swap() noexcept
             {
                 checkCudaErrorsInline(cudaDeviceSynchronize());
@@ -100,7 +100,7 @@ namespace LBM
             /**
              * @brief Provides read-only access to the current read halo
              * @return Collection of const pointers to halo faces (x0, x1, y0, y1, z0, z1)
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, const scalar_t> fGhost() const noexcept
             {
                 return {fGhost_.x0Const(), fGhost_.x1Const(), fGhost_.y0Const(), fGhost_.y1Const(), fGhost_.z0Const(), fGhost_.z1Const()};
@@ -109,7 +109,7 @@ namespace LBM
             /**
              * @brief Provides mutable access to the current write halo
              * @return Collection of mutable pointers to halo faces (x0, x1, y0, y1, z0, z1)
-             */
+             **/
             __device__ __host__ [[nodiscard]] inline constexpr const device::ptrCollection<6, scalar_t> gGhost() noexcept
             {
                 return {gGhost_.x0(), gGhost_.x1(), gGhost_.y0(), gGhost_.y1(), gGhost_.z0(), gGhost_.z1()};
@@ -128,7 +128,7 @@ namespace LBM
              * This device function loads population values from neighboring blocks'
              * halo regions based on the current thread's position within its block.
              * It handles all 18 directions of the D3Q19 lattice model.
-             */
+             **/
             __device__ static inline void load(
                 thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const scalar_t *const ptrRestrict fx0,
@@ -228,7 +228,7 @@ namespace LBM
              *
              * This device function saves population values to halo regions for
              * neighboring blocks to read. It handles all 18 directions of the D3Q19 lattice model.
-             */
+             **/
             __device__ static inline void save(
                 const thread::array<scalar_t, VelocitySet::Q()> &pop,
                 scalar_t *const ptrRestrict gx0,
@@ -314,7 +314,7 @@ namespace LBM
              * @brief Check if current thread is at western block boundary
              * @param[in] x Global x-coordinate
              * @return True if at western boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool West(const label_t x) noexcept
             {
                 return (threadIdx.x == 0 && x != 0);
@@ -324,7 +324,7 @@ namespace LBM
              * @brief Check if current thread is at eastern block boundary
              * @param[in] x Global x-coordinate
              * @return True if at eastern boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool East(const label_t x) noexcept
             {
                 return (threadIdx.x == (block::nx() - 1) && x != (device::nx - 1));
@@ -334,7 +334,7 @@ namespace LBM
              * @brief Check if current thread is at southern block boundary
              * @param[in] y Global y-coordinate
              * @return True if at southern boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool South(const label_t y) noexcept
             {
                 return (threadIdx.y == 0 && y != 0);
@@ -344,7 +344,7 @@ namespace LBM
              * @brief Check if current thread is at northern block boundary
              * @param[in] y Global y-coordinate
              * @return True if at northern boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool North(const label_t y) noexcept
             {
                 return (threadIdx.y == (block::ny() - 1) && y != (device::ny - 1));
@@ -354,7 +354,7 @@ namespace LBM
              * @brief Check if current thread is at back (z-min) block boundary
              * @param[in] z Global z-coordinate
              * @return True if at back boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool Back(const label_t z) noexcept
             {
                 return (threadIdx.z == 0 && z != 0);
@@ -364,7 +364,7 @@ namespace LBM
              * @brief Check if current thread is at front (z-max) block boundary
              * @param[in] z Global z-coordinate
              * @return True if at front boundary but not domain edge
-             */
+             **/
             __device__ [[nodiscard]] static inline bool Front(const label_t z) noexcept
             {
                 return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));

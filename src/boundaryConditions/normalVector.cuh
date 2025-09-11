@@ -69,14 +69,14 @@ namespace LBM
      * The bitmask uses a 7-bit representation where:
      * - Bits 0-5: Individual boundary flags
      * - Bit 6: General boundary indicator (any boundary)
-     */
+     **/
     class normalVector
     {
     public:
         /**
          * @brief Constructs a normalVector from current thread indices
          * @return normalVector for the current thread's position
-         */
+         **/
         __device__ [[nodiscard]] inline normalVector() noexcept
             : bitmask_(computeBitmask()){};
 
@@ -86,7 +86,7 @@ namespace LBM
          * @param[in] y Y-coordinate in the lattice
          * @param[in] z Z-coordinate in the lattice
          * @return normalVector for the specified position
-         */
+         **/
         __device__ [[nodiscard]] inline normalVector(const label_t x, const label_t y, const label_t z) noexcept
             : bitmask_(computeBitmask(x, y, z)){};
 
@@ -94,7 +94,7 @@ namespace LBM
          * @name Basic Boundary Flags
          * @brief Bitmask values for individual boundary faces
          * @return Bitmask value for the specified boundary face
-         */
+         **/
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST() noexcept
         {
             return 0x01;
@@ -124,7 +124,7 @@ namespace LBM
          * @name Corner Boundary Types
          * @brief Bitmask values for corner configurations (8 types)
          * @return Bitmask value for the specified corner configuration
-         */
+         **/
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST_BACK() noexcept
         {
             return SOUTH() | WEST() | BACK();
@@ -162,7 +162,7 @@ namespace LBM
          * @name Edge Boundary Types
          * @brief Bitmask values for edge configurations (12 types)
          * @return Bitmask value for the specified edge configuration
-         */
+         **/
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST() noexcept
         {
             return SOUTH() | WEST();
@@ -215,7 +215,7 @@ namespace LBM
         /**
          * @brief Special type for interior points
          * @return Bitmask value for interior points (no boundaries)
-         */
+         **/
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t INTERIOR() noexcept
         {
             return 0x00;
@@ -225,7 +225,7 @@ namespace LBM
          * @name Boundary Detection Methods
          * @brief Check if the point lies on specific boundaries
          * @return True if the point lies on the specified boundary
-         */
+         **/
         __device__ [[nodiscard]] inline bool isWest() const noexcept
         {
             return bitmask_ & WEST();
@@ -262,7 +262,7 @@ namespace LBM
         /**
          * @brief Get the node type bitmask
          * @return The bitmask representing the node type (bits 0-5)
-         */
+         **/
         __device__ [[nodiscard]] inline uint8_t nodeType() const noexcept
         {
             return bitmask_ & 0x3F;
@@ -277,7 +277,7 @@ namespace LBM
         /**
          * @brief Compute bitmask from current thread indices
          * @return Bitmask representing boundary configuration
-         */
+         **/
         __device__ [[nodiscard]] inline static uint8_t computeBitmask() noexcept
         {
             return computeBitmask(threadIdx.x + blockDim.x * blockIdx.x, threadIdx.y + blockDim.y * blockIdx.y, threadIdx.z + blockDim.z * blockIdx.z);
@@ -298,7 +298,7 @@ namespace LBM
          * - Bit 4: Back boundary (z == 0)
          * - Bit 5: Front boundary (z == device::nz - 1)
          * - Bit 6: Any boundary (logical OR of bits 0-5)
-         */
+         **/
         __device__ [[nodiscard]] inline static uint8_t computeBitmask(const label_t x, const label_t y, const label_t z) noexcept
         {
             return static_cast<uint8_t>(

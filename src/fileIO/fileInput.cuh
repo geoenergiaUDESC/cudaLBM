@@ -61,7 +61,7 @@ namespace LBM
          * This structure holds all the metadata required to interpret
          * binary field data files, including dimensions, data format,
          * and field information.
-         */
+         **/
         struct fieldFileHeader
         {
             const bool isLittleEndian;                 //!< Endianness of the binary data
@@ -78,7 +78,7 @@ namespace LBM
          * @brief Trims leading/trailing whitespace and trailing semicolons from a string
          * @param[in] str The input string to trim
          * @return The trimmed string
-         */
+         **/
         [[nodiscard]] const std::string filestring_trim(const std::string &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\r\n");
@@ -95,7 +95,7 @@ namespace LBM
          * This function reads and validates the header section of field files,
          * extracting metadata about grid dimensions, data format, and field names.
          * It performs comprehensive error checking for file integrity and format compliance.
-         */
+         **/
         [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &fileName)
         {
             // Check if file exists and is accessible
@@ -491,7 +491,7 @@ namespace LBM
          * @brief Swap endianness for a single value
          * @tparam T Data type of value to swap
          * @param[in,out] value Reference to value whose endianness will be swapped
-         */
+         **/
         template <typename T>
         void swapEndian(T &value)
         {
@@ -506,7 +506,7 @@ namespace LBM
          * @brief Swap endianness for all values in a vector
          * @tparam T Data type of vector elements
          * @param[in,out] data Vector whose elements' endianness will be swapped
-         */
+         **/
         template <typename T>
         void swapEndianVector(std::vector<T> &data)
         {
@@ -526,7 +526,7 @@ namespace LBM
          * This function reads the entire binary data from a field file, handling
          * endianness conversion if necessary. Data is returned in AoS format where
          * all variables for each point are stored contiguously.
-         */
+         **/
         template <typename T>
         [[nodiscard]] const std::vector<T> readFieldFile(const std::string &fileName)
         {
@@ -603,7 +603,7 @@ namespace LBM
          * This function extracts a single field from a multi-field binary file,
          * handling endianness conversion and validation. It's more efficient than
          * reading the entire file when only specific fields are needed.
-         */
+         **/
         template <typename T>
         [[nodiscard]] const std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
         {
@@ -771,7 +771,7 @@ namespace LBM
          * This function reorganizes data from AoS format (where all variables for
          * each point are stored together) to SoA format (where each variable's values
          * are stored in separate contiguous arrays).
-         */
+         **/
         template <typename T, class M>
         [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
         {

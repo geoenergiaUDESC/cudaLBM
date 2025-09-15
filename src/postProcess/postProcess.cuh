@@ -97,27 +97,21 @@ namespace LBM
         }
 
         /**
-         * @brief Calculates element connectivity for visualization
-         * @tparam one_based If true, uses 1-based indexing; if false, uses 0-based
-         * @param[in] mesh Lattice mesh providing dimensions
-         * @return Vector of element connectivity in VTK hexahedron order
-         *
-         * This function generates connectivity information for hexahedral elements
-         * that make up the lattice mesh. The connectivity follows the standard
-         * VTK ordering for hexahedrons (voxels).
-         *
-         * @note The one_based template parameter determines whether node indices
-         *       start at 1 (for some file formats like Tecplot) or 0 (for VTK)
+         * @brief Calculates the connectivity of the points of a latticeMesh object
+         * @tparam one_based If true, indices are 1-based. If false, 0-based.
+         * @tparam IndexType The integer type for the connectivity data (e.g., uint32_t, uint64_t).
+         * @param mesh The mesh
+         * @return An std::vector of type IndexType containing the latticeMesh object connectivity
          **/
-        template <const bool one_based>
-        __host__ [[nodiscard]] const std::vector<label_t> meshConnectivity(const host::latticeMesh &mesh)
+        template <const bool one_based, typename IndexType>
+        __host__ [[nodiscard]] const std::vector<IndexType> meshConnectivity(const host::latticeMesh &mesh)
         {
             const label_t nx = mesh.nx();
             const label_t ny = mesh.ny();
             const label_t nz = mesh.nz();
             const label_t numElements = (nx - 1) * (ny - 1) * (nz - 1);
 
-            std::vector<label_t> connectivity(numElements * 8);
+            std::vector<IndexType> connectivity(numElements * 8);
             label_t cell_idx = 0;
             constexpr const label_t offset = one_based ? 1 : 0;
 
@@ -131,14 +125,14 @@ namespace LBM
                         const label_t stride_y = nx;
                         const label_t stride_z = nx * ny;
 
-                        connectivity[cell_idx * 8 + 0] = base + offset;
-                        connectivity[cell_idx * 8 + 1] = base + 1 + offset;
-                        connectivity[cell_idx * 8 + 2] = base + stride_y + 1 + offset;
-                        connectivity[cell_idx * 8 + 3] = base + stride_y + offset;
-                        connectivity[cell_idx * 8 + 4] = base + stride_z + offset;
-                        connectivity[cell_idx * 8 + 5] = base + stride_z + 1 + offset;
-                        connectivity[cell_idx * 8 + 6] = base + stride_z + stride_y + 1 + offset;
-                        connectivity[cell_idx * 8 + 7] = base + stride_z + stride_y + offset;
+                        connectivity[cell_idx * 8 + 0] = static_cast<IndexType>(base + offset);
+                        connectivity[cell_idx * 8 + 1] = static_cast<IndexType>(base + 1 + offset);
+                        connectivity[cell_idx * 8 + 2] = static_cast<IndexType>(base + stride_y + 1 + offset);
+                        connectivity[cell_idx * 8 + 3] = static_cast<IndexType>(base + stride_y + offset);
+                        connectivity[cell_idx * 8 + 4] = static_cast<IndexType>(base + stride_z + offset);
+                        connectivity[cell_idx * 8 + 5] = static_cast<IndexType>(base + stride_z + 1 + offset);
+                        connectivity[cell_idx * 8 + 6] = static_cast<IndexType>(base + stride_z + stride_y + 1 + offset);
+                        connectivity[cell_idx * 8 + 7] = static_cast<IndexType>(base + stride_z + stride_y + offset);
                         ++cell_idx;
                     }
                 }
@@ -148,27 +142,24 @@ namespace LBM
         }
 
         /**
-         * @brief Calculates offset pointers for unstructured grid data
-         * @param[in] mesh Lattice mesh providing dimensions
-         * @return Vector of offset pointers for VTK unstructured grid format
-         *
-         * This function generates offset information for VTK unstructured grid
-         * format, where each offset indicates the cumulative number of points
-         * up to that element. For hexahedral elements, each element has 8 points,
-         * so offsets increase by 8 for each element.
+         * @brief Calculates the point offsets of the points of a latticeMesh object
+         * @tparam IndexType The integer type for the offset data (e.g., uint32_t, uint64_t).
+         * @param mesh The mesh
+         * @return An std::vector of type IndexType containing the latticeMesh object point offsets
          **/
-        __host__ [[nodiscard]] const std::vector<label_t> meshOffsets(const host::latticeMesh &mesh)
+        template <typename IndexType>
+        __host__ [[nodiscard]] const std::vector<IndexType> meshOffsets(const host::latticeMesh &mesh)
         {
             const label_t nx = mesh.nx();
             const label_t ny = mesh.ny();
             const label_t nz = mesh.nz();
             const label_t numElements = (nx - 1) * (ny - 1) * (nz - 1);
 
-            std::vector<label_t> offsets(numElements);
+            std::vector<IndexType> offsets(numElements);
 
             for (label_t i = 0; i < numElements; ++i)
             {
-                offsets[i] = (i + 1) * 8;
+                offsets[i] = static_cast<IndexType>((i + 1) * 8);
             }
 
             return offsets;

@@ -165,8 +165,7 @@ namespace LBM
                 }
             }
 
-            // Write connectivity (1-based indexing)
-            const std::vector<label_t> connectivity = meshConnectivity<true>(mesh);
+            const std::vector<label_t> connectivity = meshConnectivity<true, label_t>(mesh);
             for (label_t e = 0; e < numElements; ++e)
             {
                 for (label_t n = 0; n < 8; ++n)

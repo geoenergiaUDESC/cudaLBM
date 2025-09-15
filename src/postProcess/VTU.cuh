@@ -58,13 +58,9 @@ namespace LBM
     namespace postProcess
     {
         /**
-         * @brief Maps C++ data types to VTK type names
-         * @tparam T C++ data type to map
-         * @return String containing the corresponding VTK type name
-         *
-         * This template function provides the VTK-compatible type name
-         * for various C++ data types, used in VTU file headers to
-         * specify data formats for binary storage.
+         * @brief Obtain the name of the type that corresponds to the C++ data type
+         * @tparam T The C++ data type (e.g. float, int64_t)
+         * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
          **/
         template <typename T>
         [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
@@ -109,71 +105,28 @@ namespace LBM
         }
 
         /**
-         * @brief Writes solution data to a binary VTU (VTK Unstructured Grid) file
-         * @param[in] solutionVars Vector of solution variable arrays (Structure of Arrays format)
-         * @param[in] fileName Output filename for VTU data (should have .vtu extension)
-         * @param[in] mesh Lattice mesh providing domain dimensions and structure
-         * @param[in] solutionVarNames Names of the solution variables for VTU header
-         * @param[in] title Optional title for the dataset (currently unused)
-         * @return None
-         * @note Uses 0-based indexing for element connectivity (VTK convention)
-         * @note Output format: Binary VTU with appended data section
-         * @note Uses little-endian byte ordering and UInt64 header type
-         *
-         * This function writes simulation results to a VTK Unstructured Grid file
-         * with the following structure:
-         * 1. XML header with metadata and data array references
-         * 2. Appended binary data section containing:
-         *    - Solution variables (point data)
-         *    - Node coordinates
-         *    - Element connectivity (0-based)
-         *    - Element offsets
-         *    - Element types (all hexahedrons, type 12)
-         *
-         * The function performs comprehensive validation of input data including:
-         * - Variable count matching name count
-         * - Node count consistency across all arrays
-         * - File accessibility checks
-         **/
-        void writeVTU(
+         * @brief Auxiliary template function that performs the VTU file writing.
+         * @tparam IndexType The data type for the mesh indices (uint32_t or uint64_t).
+         */
+        template <typename IndexType>
+        void writeVTU_impl(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,
             const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames,
-            [[maybe_unused]] const std::string &title = "") noexcept
+            const std::vector<std::string> &solutionVarNames) noexcept
         {
-            // Info on entering the function
-            std::cout << "Writing VTU unstructured grid to " << fileName << std::endl;
-
             const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
             const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
             const size_t numVars = solutionVars.size();
 
-            if (numVars != solutionVarNames.size())
-            {
-                std::cerr << "Erro: O número de variáveis de solução (" << numVars << ") não corresponde à contagem de nomes de variáveis (" << solutionVarNames.size() << ")\n";
-                return;
-            }
-
-            for (size_t i = 0; i < numVars; i++)
-            {
-                if (solutionVars[i].size() != numNodes)
-                {
-                    std::cerr << "Erro: A variável de solução " << i << " tem " << solutionVars[i].size() << " elementos, esperado " << numNodes << "\n";
-                    return;
-                }
-            }
-
             const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
-
-            const std::vector<label_t> connectivity = meshConnectivity<false>(mesh);
-
-            const std::vector<label_t> offsets = meshOffsets(mesh);
+            const std::vector<IndexType> connectivity = meshConnectivity<false, IndexType>(mesh);
+            const std::vector<IndexType> offsets = meshOffsets<IndexType>(mesh);
 
             std::ofstream outFile(fileName, std::ios::binary);
             if (!outFile)
             {
-                std::cerr << "Erro ao abrir o arquivo: " << fileName << "\n";
+                std::cerr << "Error opening file " << fileName << "\n";
                 return;
             }
 
@@ -199,11 +152,12 @@ namespace LBM
             currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
 
             xml << "      <Cells>\n";
-            xml << "        <DataArray type=\"" << getVtkTypeName<label_t>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + connectivity.size() * sizeof(label_t);
+            // Usa o IndexType para obter o nome do tipo VTK correto
+            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+            currentOffset += sizeof(uint64_t) + connectivity.size() * sizeof(IndexType);
 
-            xml << "        <DataArray type=\"" << getVtkTypeName<label_t>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + offsets.size() * sizeof(label_t);
+            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+            currentOffset += sizeof(uint64_t) + offsets.size() * sizeof(IndexType);
 
             xml << "        <DataArray type=\"" << getVtkTypeName<uint8_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
             xml << "      </Cells>\n";
@@ -218,9 +172,7 @@ namespace LBM
             {
                 using T = typename std::decay_t<decltype(vec)>::value_type;
                 const uint64_t blockSize = vec.size() * sizeof(T);
-
                 outFile.write(reinterpret_cast<const char *>(&blockSize), sizeof(uint64_t));
-
                 outFile.write(reinterpret_cast<const char *>(vec.data()), static_cast<std::streamsize>(blockSize));
             };
 
@@ -232,8 +184,7 @@ namespace LBM
             writeBlock(connectivity);
             writeBlock(offsets);
 
-            const std::vector<uint8_t> types(numElements, 12);
-
+            const std::vector<uint8_t> types(numElements, 12); // 12 é o código VTK para hexaedro
             writeBlock(types);
 
             outFile << "</AppendedData>\n";
@@ -241,6 +192,51 @@ namespace LBM
 
             outFile.close();
             std::cout << "Successfully wrote VTU file: " << fileName << "\n";
+        }
+
+        /**
+         * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
+         * This function checks the mesh size and dispatches to the implementation with
+         * the appropriate index type (32-bit or 64-bit).
+         */
+        void writeVTU(
+            const std::vector<std::vector<scalar_t>> &solutionVars,
+            const std::string &fileName,
+            const host::latticeMesh &mesh,
+            const std::vector<std::string> &solutionVarNames,
+            [[maybe_unused]] const std::string &title = "") noexcept
+        {
+            std::cout << "Writing VTU unstructured grid to " << fileName << std::endl;
+
+            const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+            const size_t numVars = solutionVars.size();
+
+            if (numVars != solutionVarNames.size())
+            {
+                std::cerr << "Error: The number of solution (" << numVars << ") does not match the count of variable names (" << solutionVarNames.size() << ")\n";
+                return;
+            }
+            for (size_t i = 0; i < numVars; i++)
+            {
+                if (solutionVars[i].size() != numNodes)
+                {
+                    std::cerr << "Error: The solution variable " << i << " has " << solutionVars[i].size() << " elements, expected " << numNodes << "\n";
+                    return;
+                }
+            }
+
+            constexpr const uint64_t limit32 = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
+
+            if (numNodes >= limit32)
+            {
+                std::cout << "Info: Mesh is large. Using 64-bit indices for VTU file.\n";
+                writeVTU_impl<uint64_t>(solutionVars, fileName, mesh, solutionVarNames);
+            }
+            else
+            {
+                std::cout << "Info: Mesh is small. Using 32-bit indices for VTU file.\n";
+                writeVTU_impl<uint32_t>(solutionVars, fileName, mesh, solutionVarNames);
+            }
         }
     }
 }

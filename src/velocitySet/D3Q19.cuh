@@ -502,24 +502,89 @@ namespace LBM
          * @param[in] pop Population array (19 components)
          * @param[out] moments Moment array to be filled (10 components)
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        template <class N>
+        __device__ inline static void calculateMoments(
+            const thread::array<scalar_t, 19> &pop,
+            thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
+            const N &boundaryNormal) noexcept
         {
             // Equation 3
-            moments(label_constant<0>()) = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
+            moments(label_constant<0>()) = boundaryNormal.isInterior() * (pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>()));
             const scalar_t invRho = static_cast<scalar_t>(1) / moments(label_constant<0>());
 
             // Equation 4 + force correction
-            moments(label_constant<1>()) = ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho;
-            moments(label_constant<2>()) = ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho;
-            moments(label_constant<3>()) = ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho;
+            moments(label_constant<1>()) = boundaryNormal.isInterior() * (((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho);
+            moments(label_constant<2>()) = boundaryNormal.isInterior() * (((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho);
+            moments(label_constant<3>()) = boundaryNormal.isInterior() * (((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho);
 
             // Equation 5
-            moments(label_constant<4>()) = (pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>())) * invRho - cs2<scalar_t>();
-            moments(label_constant<5>()) = (pop(label_constant<7>()) - pop(label_constant<13>()) + pop(label_constant<8>()) - pop(label_constant<14>())) * invRho;
-            moments(label_constant<6>()) = (pop(label_constant<9>()) - pop(label_constant<15>()) + pop(label_constant<10>()) - pop(label_constant<16>())) * invRho;
-            moments(label_constant<7>()) = (pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
-            moments(label_constant<8>()) = (pop(label_constant<11>()) - pop(label_constant<17>()) + pop(label_constant<12>()) - pop(label_constant<18>())) * invRho;
-            moments(label_constant<9>()) = (pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
+            moments(label_constant<4>()) = boundaryNormal.isInterior() * ((pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>())) * invRho - cs2<scalar_t>());
+            moments(label_constant<5>()) = boundaryNormal.isInterior() * ((pop(label_constant<7>()) - pop(label_constant<13>()) + pop(label_constant<8>()) - pop(label_constant<14>())) * invRho);
+            moments(label_constant<6>()) = boundaryNormal.isInterior() * ((pop(label_constant<9>()) - pop(label_constant<15>()) + pop(label_constant<10>()) - pop(label_constant<16>())) * invRho);
+            moments(label_constant<7>()) = boundaryNormal.isInterior() * ((pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>());
+            moments(label_constant<8>()) = boundaryNormal.isInterior() * ((pop(label_constant<11>()) - pop(label_constant<17>()) + pop(label_constant<12>()) - pop(label_constant<18>())) * invRho);
+            moments(label_constant<9>()) = boundaryNormal.isInterior() * ((pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>());
+        }
+
+        __device__ inline static scalar_t rho(const thread::array<scalar_t, 19> &pop) noexcept
+        {
+            return pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
+        }
+
+        __device__ inline static scalar_t u(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho;
+        }
+        __device__ inline static scalar_t v(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho;
+        }
+        __device__ inline static scalar_t w(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho;
+        }
+
+        __device__ inline static scalar_t mxx(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>())) * invRho - cs2<scalar_t>();
+        }
+        __device__ inline static scalar_t mxy(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<7>()) - pop(label_constant<13>()) + pop(label_constant<8>()) - pop(label_constant<14>())) * invRho;
+        }
+        __device__ inline static scalar_t mxz(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<9>()) - pop(label_constant<15>()) + pop(label_constant<10>()) - pop(label_constant<16>())) * invRho;
+        }
+        __device__ inline static scalar_t myy(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
+        }
+        __device__ inline static scalar_t myz(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<11>()) - pop(label_constant<17>()) + pop(label_constant<12>()) - pop(label_constant<18>())) * invRho;
+        }
+        __device__ inline static scalar_t mzz(const thread::array<scalar_t, 19> &pop, const scalar_t invRho) noexcept
+        {
+            return (pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
+        }
+
+        __device__ inline static thread::array<scalar_t, NUMBER_MOMENTS()> calculateMoments(const thread::array<scalar_t, 19> &pop) noexcept
+        {
+            const scalar_t rho = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
+            const scalar_t invRho = static_cast<scalar_t>(1) / rho;
+
+            return {
+                rho,
+                ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho,
+                ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho,
+                ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho,
+                (pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>())) * invRho - cs2<scalar_t>(),
+                (pop(label_constant<7>()) - pop(label_constant<13>()) + pop(label_constant<8>()) - pop(label_constant<14>())) * invRho,
+                (pop(label_constant<9>()) - pop(label_constant<15>()) + pop(label_constant<10>()) - pop(label_constant<16>())) * invRho,
+                (pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>(),
+                (pop(label_constant<11>()) - pop(label_constant<17>()) + pop(label_constant<12>()) - pop(label_constant<18>())) * invRho,
+                (pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>()};
         }
 
         /**

@@ -140,14 +140,8 @@ namespace LBM
         // Calculate the moments either at the boundary or interior
         {
             const normalVector boundaryNormal;
-            if (boundaryNormal.isBoundary())
-            {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
-            }
-            else
-            {
-                VelocitySet::calculateMoments(pop, moments);
-            }
+            VelocitySet::calculateMoments(pop, moments, boundaryNormal);
+            boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
         }
 
         // Scale the moments correctly

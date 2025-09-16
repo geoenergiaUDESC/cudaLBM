@@ -99,26 +99,61 @@ namespace LBM
         {
             return 0x01;
         } // 1 << 0
+        template <typename T>
+        __device__ [[nodiscard]] inline T West() const noexcept
+        {
+            return static_cast<T>(nodeType() == WEST());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST() noexcept
         {
             return 0x02;
         } // 1 << 1
+
+        template <typename T>
+        __device__ [[nodiscard]] inline T East() const noexcept
+        {
+            return static_cast<T>(nodeType() == EAST());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH() noexcept
         {
             return 0x04;
         } // 1 << 2
+
+        template <typename T>
+        __device__ [[nodiscard]] inline T South() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH() noexcept
         {
             return 0x08;
         } // 1 << 3
+
+        template <typename T>
+        __device__ [[nodiscard]] inline T North() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t BACK() noexcept
         {
             return 0x10;
         } // 1 << 4
+
+        template <typename T>
+        __device__ [[nodiscard]] inline T Back() const noexcept
+        {
+            return static_cast<T>(nodeType() == BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t FRONT() noexcept
         {
             return 0x20;
         } // 1 << 5
+
+        template <typename T>
+        __device__ [[nodiscard]] inline T Front() const noexcept
+        {
+            return static_cast<T>(nodeType() == FRONT());
+        }
 
         /**
          * @name Corner Boundary Types
@@ -129,33 +164,73 @@ namespace LBM
         {
             return SOUTH() | WEST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthWestBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_WEST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST_FRONT() noexcept
         {
             return SOUTH() | WEST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthWestFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_WEST_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST_BACK() noexcept
         {
             return SOUTH() | EAST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthEastBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_EAST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST_FRONT() noexcept
         {
             return SOUTH() | EAST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthEastFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_EAST_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST_BACK() noexcept
         {
             return NORTH() | WEST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthWestBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_WEST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST_FRONT() noexcept
         {
             return NORTH() | WEST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthWestFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_WEST_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST_BACK() noexcept
         {
             return NORTH() | EAST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthEastBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_EAST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST_FRONT() noexcept
         {
             return NORTH() | EAST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthEastFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_EAST_FRONT());
         }
 
         /**
@@ -167,49 +242,109 @@ namespace LBM
         {
             return SOUTH() | WEST();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthWest() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_WEST());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST() noexcept
         {
             return SOUTH() | EAST();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthEast() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_EAST());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST() noexcept
         {
             return NORTH() | WEST();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthWest() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_WEST());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST() noexcept
         {
             return NORTH() | EAST();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthEast() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_EAST());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_BACK() noexcept
         {
             return WEST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T WestBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == WEST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_FRONT() noexcept
         {
             return WEST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T WestFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == WEST_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_BACK() noexcept
         {
             return EAST() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T EastBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == EAST_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_FRONT() noexcept
         {
             return EAST() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T EastFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == EAST_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_BACK() noexcept
         {
             return SOUTH() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_FRONT() noexcept
         {
             return SOUTH() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T SouthFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == SOUTH_FRONT());
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_BACK() noexcept
         {
             return NORTH() | BACK();
         }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthBack() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_BACK());
+        }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_FRONT() noexcept
         {
             return NORTH() | FRONT();
+        }
+        template <typename T>
+        __device__ [[nodiscard]] inline T NorthFront() const noexcept
+        {
+            return static_cast<T>(nodeType() == NORTH_FRONT());
         }
 
         /**

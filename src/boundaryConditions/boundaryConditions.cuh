@@ -104,9 +104,12 @@ namespace LBM
             const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
+            // Arithmetic mask for boundary points
+            const scalar_t boundaryMask = boundaryNormal.boundaryMask();
+
             // Branchless computation of u, v and w
             moments(label_constant<1>()) =
-                boundaryNormal.isBoundary() *
+                boundaryMask *
                 (static_cast<scalar_t>(
                      normalVector::NORTH() |
                      normalVector::NORTH_WEST_BACK() |
@@ -118,12 +121,12 @@ namespace LBM
                      normalVector::NORTH_EAST() |
                      normalVector::NORTH_WEST()) *
                  device::u_inf);
-            moments(label_constant<2>()) = boundaryNormal.isBoundary() * static_cast<scalar_t>(0);
-            moments(label_constant<3>()) = boundaryNormal.isBoundary() * static_cast<scalar_t>(0);
+            moments(label_constant<2>()) = boundaryMask * static_cast<scalar_t>(0);
+            moments(label_constant<3>()) = boundaryMask * static_cast<scalar_t>(0);
 
             // Branchless computation of mxx
             moments(label_constant<4>()) =
-                boundaryNormal.isBoundary() *
+                boundaryMask *
                 (static_cast<scalar_t>(
                      normalVector::NORTH() |
                      normalVector::NORTH_WEST_BACK() |
@@ -137,10 +140,10 @@ namespace LBM
                  (device::u_inf * device::u_inf));
 
             // Branchless computation of myy
-            moments(label_constant<7>()) = boundaryNormal.isBoundary() * static_cast<scalar_t>(0);
+            moments(label_constant<7>()) = boundaryMask * static_cast<scalar_t>(0);
 
             // Branchless computation of mzz
-            moments(label_constant<9>()) = boundaryNormal.isBoundary() * static_cast<scalar_t>(0);
+            moments(label_constant<9>()) = boundaryMask * static_cast<scalar_t>(0);
 
             // Branchless computation of mxy_I
             const scalar_t mxy_I =
@@ -203,11 +206,11 @@ namespace LBM
                 (normalVector::NORTH_FRONT() * (-static_cast<scalar_t>(72) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega))) +
                 (normalVector::NORTH_EAST() * (static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega + static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega))) +
                 (normalVector::NORTH_WEST() * (-static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega - static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega)));
-            moments(label_constant<0>()) = boundaryNormal.isBoundary() * rho;
+            moments(label_constant<0>()) = boundaryMask * rho;
 
             // Branchless computation of mxy
             moments(label_constant<5>()) =
-                boundaryNormal.isBoundary() *
+                boundaryMask *
                 ((normalVector::SOUTH_WEST() * ((static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::SOUTH_EAST() * ((static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::WEST() * (static_cast<scalar_t>(2) * mxy_I * rho_I / rho)) +
@@ -219,7 +222,7 @@ namespace LBM
 
             // Branchless computation of mxz
             moments(label_constant<6>()) =
-                boundaryNormal.isBoundary() *
+                boundaryMask *
                 ((normalVector::WEST_BACK() * ((static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::WEST_FRONT() * ((static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::EAST_BACK() * ((static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
@@ -231,7 +234,7 @@ namespace LBM
 
             // Branchless computation of myz
             moments(label_constant<8>()) =
-                boundaryNormal.isBoundary() *
+                boundaryMask *
                 ((normalVector::SOUTH_BACK() * ((static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::SOUTH_FRONT() * ((static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
                  (normalVector::SOUTH() * (static_cast<scalar_t>(2) * myz_I * rho_I / rho)) +

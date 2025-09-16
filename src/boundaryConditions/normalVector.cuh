@@ -258,6 +258,14 @@ namespace LBM
         {
             return !isBoundary();
         }
+        __device__ [[nodiscard]] inline scalar_t boundaryMask() const noexcept
+        {
+            return static_cast<scalar_t>(isBoundary());
+        }
+        __device__ [[nodiscard]] inline scalar_t interiorMask() const noexcept
+        {
+            return static_cast<scalar_t>(isInterior());
+        }
 
         /**
          * @brief Get the node type bitmask

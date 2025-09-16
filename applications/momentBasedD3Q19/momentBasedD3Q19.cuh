@@ -138,11 +138,11 @@ namespace LBM
             fGhost.ptr<5>());
 
         // Calculate the moments either at the boundary or interior
-        {
-            const normalVector boundaryNormal;
-            VelocitySet::calculateMoments(pop, moments, boundaryNormal);
-            boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
-        }
+        // {
+        const normalVector boundaryNormal;
+        VelocitySet::calculateMoments(pop, moments, boundaryNormal);
+        boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
+        // }
 
         // Scale the moments correctly
         velocitySet::scale(moments);

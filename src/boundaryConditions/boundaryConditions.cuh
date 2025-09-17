@@ -143,14 +143,46 @@ namespace LBM
             const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
-            // Branchless computation of mxyI
-            const scalar_t mxyI = mxy_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
+            // // Branchless computation of mxyI
+            // const scalar_t mxyI = mxy_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
 
-            // Branchless computation of mxzI
-            const scalar_t mxzI = mxz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
+            // // Branchless computation of mxzI
+            // const scalar_t mxzI = mxz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
 
-            // Branchless computation of myzI
-            const scalar_t myzI = myz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
+            // // Branchless computation of myzI
+            // const scalar_t myzI = myz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
+
+            const scalar_t mxyI =
+                (boundaryNormal.SouthWest<scalar_t>() * (pop(label_constant<8>()))) +
+                (boundaryNormal.SouthEast<scalar_t>() * (-pop(label_constant<13>()))) +
+                (boundaryNormal.West<scalar_t>() * ((pop(label_constant<8>()) - pop(label_constant<14>())))) +
+                (boundaryNormal.East<scalar_t>() * ((pop(label_constant<7>()) - pop(label_constant<13>())))) +
+                (boundaryNormal.South<scalar_t>() * ((pop(label_constant<8>()) - pop(label_constant<13>())))) +
+                (boundaryNormal.North<scalar_t>() * ((pop(label_constant<7>()) - pop(label_constant<14>())))) +
+                (boundaryNormal.NorthEast<scalar_t>() * (pop(label_constant<7>()))) +
+                (boundaryNormal.NorthWest<scalar_t>() * (-pop(label_constant<14>()))) * inv_rho_I;
+
+            // Branchless computation of mxz_I
+            const scalar_t mxzI =
+                (boundaryNormal.WestBack<scalar_t>() * (pop(label_constant<10>()))) +
+                (boundaryNormal.WestFront<scalar_t>() * (-pop(label_constant<16>()))) +
+                (boundaryNormal.EastBack<scalar_t>() * (-pop(label_constant<15>()))) +
+                (boundaryNormal.EastFront<scalar_t>() * (pop(label_constant<9>()))) +
+                (boundaryNormal.West<scalar_t>() * ((pop(label_constant<10>()) - pop(label_constant<16>())))) +
+                (boundaryNormal.East<scalar_t>() * ((pop(label_constant<9>()) - pop(label_constant<15>())))) +
+                (boundaryNormal.Back<scalar_t>() * ((pop(label_constant<10>()) - pop(label_constant<15>())))) +
+                (boundaryNormal.Front<scalar_t>() * ((pop(label_constant<9>()) - pop(label_constant<16>())))) * inv_rho_I;
+
+            // Branchless computation of myz_I
+            const scalar_t myzI =
+                (boundaryNormal.SouthBack<scalar_t>() * (pop(label_constant<12>()))) +
+                (boundaryNormal.SouthFront<scalar_t>() * (-pop(label_constant<18>()))) +
+                (boundaryNormal.South<scalar_t>() * ((pop(label_constant<12>()) - pop(label_constant<18>())))) +
+                (boundaryNormal.Back<scalar_t>() * ((pop(label_constant<12>()) - pop(label_constant<17>())))) +
+                (boundaryNormal.Front<scalar_t>() * ((pop(label_constant<11>()) - pop(label_constant<18>())))) +
+                (boundaryNormal.North<scalar_t>() * ((pop(label_constant<11>()) - pop(label_constant<17>())))) +
+                (boundaryNormal.NorthBack<scalar_t>() * (-pop(label_constant<17>()))) +
+                (boundaryNormal.NorthFront<scalar_t>() * (pop(label_constant<11>()))) * inv_rho_I;
 
             // Arithmetic mask for boundary points
             // const scalar_t boundaryMask = boundaryNormal.boundaryMask();

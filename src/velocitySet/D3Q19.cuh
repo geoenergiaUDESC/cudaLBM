@@ -595,37 +595,6 @@ namespace LBM
             std::cout << std::endl;
         }
 
-    private:
-        /**
-         * @brief Number of velocity components in the lattice
-         **/
-        static constexpr const label_t Q_ = 19;
-
-        /**
-         * @brief Number of velocity components on each lattice face
-         **/
-        static constexpr const label_t QF_ = 5;
-
-        /**
-         * @brief Implementation of the print loop
-         * @note This function effectively unrolls the loop at compile-time and checks for its bounds
-         **/
-        template <const label_t q_ = 0>
-        __host__ static inline void printAll(const label_constant<q_> q = label_constant<0>()) noexcept
-        {
-            // Loop over the velocity set, print to terminal
-            host::constexpr_for<q(), Q()>(
-                [&](const auto Q)
-                {
-                    std::cout
-                        << "    [" << label_constant<Q>() << "] = {"
-                        << host_w_q<double>()[label_constant<Q>()] << ", "
-                        << host_cx<int>()[label_constant<Q>()] << ", "
-                        << host_cy<int>()[label_constant<Q>()] << ", "
-                        << host_cz<int>()[label_constant<Q>()] << "};" << std::endl;
-                });
-        }
-
         /**
          * @brief Determines if a discrete velocity direction is incoming relative to a boundary normal
          * @tparam T Return type (typically numeric type)
@@ -660,6 +629,37 @@ namespace LBM
             const bool cond_z = (boundaryNormal.isFront() & nzNeg(q)) | (boundaryNormal.isBack() & nzPos(q));
 
             return static_cast<T>(!(cond_x | cond_y | cond_z));
+        }
+
+    private:
+        /**
+         * @brief Number of velocity components in the lattice
+         **/
+        static constexpr const label_t Q_ = 19;
+
+        /**
+         * @brief Number of velocity components on each lattice face
+         **/
+        static constexpr const label_t QF_ = 5;
+
+        /**
+         * @brief Implementation of the print loop
+         * @note This function effectively unrolls the loop at compile-time and checks for its bounds
+         **/
+        template <const label_t q_ = 0>
+        __host__ static inline void printAll(const label_constant<q_> q = label_constant<0>()) noexcept
+        {
+            // Loop over the velocity set, print to terminal
+            host::constexpr_for<q(), Q()>(
+                [&](const auto Q)
+                {
+                    std::cout
+                        << "    [" << label_constant<Q>() << "] = {"
+                        << host_w_q<double>()[label_constant<Q>()] << ", "
+                        << host_cx<int>()[label_constant<Q>()] << ", "
+                        << host_cy<int>()[label_constant<Q>()] << ", "
+                        << host_cz<int>()[label_constant<Q>()] << "};" << std::endl;
+                });
         }
     };
 }

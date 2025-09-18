@@ -396,30 +396,36 @@ namespace LBM
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()));
 
-            const scalar_t multiplyTerm_0 = moments(label_constant<0>()) * w_0<scalar_t>();
-            pop(label_constant<0>()) = multiplyTerm_0 * pics2;
+            {
+                const scalar_t rhow = moments(label_constant<0>()) * w_0<scalar_t>();
+                pop(label_constant<0>()) = rhow * pics2;
+            }
 
-            const scalar_t multiplyTerm_1 = moments(label_constant<0>()) * w_1<scalar_t>();
-            pop(label_constant<1>()) = multiplyTerm_1 * (pics2 + moments(label_constant<1>()) + moments(label_constant<4>()));
-            pop(label_constant<2>()) = multiplyTerm_1 * (pics2 - moments(label_constant<1>()) + moments(label_constant<4>()));
-            pop(label_constant<3>()) = multiplyTerm_1 * (pics2 + moments(label_constant<2>()) + moments(label_constant<7>()));
-            pop(label_constant<4>()) = multiplyTerm_1 * (pics2 - moments(label_constant<2>()) + moments(label_constant<7>()));
-            pop(label_constant<5>()) = multiplyTerm_1 * (pics2 + moments(label_constant<3>()) + moments(label_constant<9>()));
-            pop(label_constant<6>()) = multiplyTerm_1 * (pics2 - moments(label_constant<3>()) + moments(label_constant<9>()));
+            {
+                const scalar_t rhow = moments(label_constant<0>()) * w_1<scalar_t>();
+                pop(label_constant<1>()) = rhow * (pics2 + moments(label_constant<1>()) + moments(label_constant<4>()));
+                pop(label_constant<2>()) = rhow * (pics2 - moments(label_constant<1>()) + moments(label_constant<4>()));
+                pop(label_constant<3>()) = rhow * (pics2 + moments(label_constant<2>()) + moments(label_constant<7>()));
+                pop(label_constant<4>()) = rhow * (pics2 - moments(label_constant<2>()) + moments(label_constant<7>()));
+                pop(label_constant<5>()) = rhow * (pics2 + moments(label_constant<3>()) + moments(label_constant<9>()));
+                pop(label_constant<6>()) = rhow * (pics2 - moments(label_constant<3>()) + moments(label_constant<9>()));
+            }
 
-            const scalar_t multiplyTerm_2 = moments(label_constant<0>()) * w_2<scalar_t>();
-            pop(label_constant<7>()) = multiplyTerm_2 * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<5>()));
-            pop(label_constant<8>()) = multiplyTerm_2 * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<5>()));
-            pop(label_constant<9>()) = multiplyTerm_2 * (pics2 + moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) + moments(label_constant<6>()));
-            pop(label_constant<10>()) = multiplyTerm_2 * (pics2 - moments(label_constant<1>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) + moments(label_constant<6>()));
-            pop(label_constant<11>()) = multiplyTerm_2 * (pics2 + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + moments(label_constant<8>()));
-            pop(label_constant<12>()) = multiplyTerm_2 * (pics2 - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + moments(label_constant<8>()));
-            pop(label_constant<13>()) = multiplyTerm_2 * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) - moments(label_constant<5>()));
-            pop(label_constant<14>()) = multiplyTerm_2 * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) - moments(label_constant<5>()));
-            pop(label_constant<15>()) = multiplyTerm_2 * (pics2 + moments(label_constant<1>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>()));
-            pop(label_constant<16>()) = multiplyTerm_2 * (pics2 - moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>()));
-            pop(label_constant<17>()) = multiplyTerm_2 * (pics2 + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
-            pop(label_constant<18>()) = multiplyTerm_2 * (pics2 - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
+            {
+                const scalar_t rhow = moments(label_constant<0>()) * w_2<scalar_t>();
+                pop(label_constant<7>()) = rhow * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<5>()));
+                pop(label_constant<8>()) = rhow * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<5>()));
+                pop(label_constant<9>()) = rhow * (pics2 + moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) + moments(label_constant<6>()));
+                pop(label_constant<10>()) = rhow * (pics2 - moments(label_constant<1>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) + moments(label_constant<6>()));
+                pop(label_constant<11>()) = rhow * (pics2 + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + moments(label_constant<8>()));
+                pop(label_constant<12>()) = rhow * (pics2 - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + moments(label_constant<8>()));
+                pop(label_constant<13>()) = rhow * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) - moments(label_constant<5>()));
+                pop(label_constant<14>()) = rhow * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<4>()) + moments(label_constant<7>()) - moments(label_constant<5>()));
+                pop(label_constant<15>()) = rhow * (pics2 + moments(label_constant<1>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>()));
+                pop(label_constant<16>()) = rhow * (pics2 - moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>()));
+                pop(label_constant<17>()) = rhow * (pics2 + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
+                pop(label_constant<18>()) = rhow * (pics2 - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
+            }
         }
 
         /**

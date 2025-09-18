@@ -77,43 +77,67 @@ namespace LBM
          **/
         [[nodiscard]] inline consteval boundaryConditions() {};
 
-        template <class VelocitySet>
+        /**
+         * @brief Branchless computation of the x/y off-diagonal incoming moment
+         * @tparam Q Number of elements in the velocity set
+         * @param[in] pop Population density array at current lattice node
+         * @param[in] boundaryNormal Normal vector information at boundary node]
+         * @param[in] inv_rho_I Inverse of the incoming density
+         * @return The x/y off-diagonal incoming moment
+         **/
+        template <const label_t Q>
         __device__ [[nodiscard]] static inline constexpr scalar_t mxy_I(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, Q> &pop,
             const normalVector &boundaryNormal,
             const scalar_t inv_rho_I) noexcept
         {
-            return ((VelocitySet::template incomingSwitch<scalar_t>(label_constant<7>(), boundaryNormal) * pop(label_constant<7>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<3>(), boundaryNormal) * pop(label_constant<13>())) +
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<8>(), boundaryNormal) * pop(label_constant<8>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<14>(), boundaryNormal) * pop(label_constant<14>()))) *
-                   inv_rho_I;
+            return inv_rho_I *
+                   (pop(label_constant<8>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.South<bool>() + boundaryNormal.SouthWest<bool>()) +
+                    pop(label_constant<7>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.North<bool>() + boundaryNormal.NorthEast<bool>()) -
+                    pop(label_constant<13>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.South<bool>() + boundaryNormal.SouthEast<bool>()) -
+                    pop(label_constant<14>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.North<bool>() + boundaryNormal.NorthWest<bool>()));
         }
 
-        template <class VelocitySet>
+        /**
+         * @brief Branchless computation of the x/z off-diagonal incoming moment
+         * @tparam Q Number of elements in the velocity set
+         * @param[in] pop Population density array at current lattice node
+         * @param[in] boundaryNormal Normal vector information at boundary node]
+         * @param[in] inv_rho_I Inverse of the incoming density
+         * @return The x/z off-diagonal incoming moment
+         **/
+        template <const label_t Q>
         __device__ [[nodiscard]] static inline constexpr scalar_t mxz_I(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, Q> &pop,
             const normalVector &boundaryNormal,
             const scalar_t inv_rho_I) noexcept
         {
-            return ((VelocitySet::template incomingSwitch<scalar_t>(label_constant<9>(), boundaryNormal) * pop(label_constant<9>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<15>(), boundaryNormal) * pop(label_constant<15>())) +
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<10>(), boundaryNormal) * pop(label_constant<10>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<16>(), boundaryNormal) * pop(label_constant<16>()))) *
-                   inv_rho_I;
+            return inv_rho_I *
+                   (pop(label_constant<9>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.EastFront<bool>()) +
+                    pop(label_constant<10>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.WestBack<bool>()) -
+                    pop(label_constant<15>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.EastBack<bool>()) -
+                    pop(label_constant<16>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.WestFront<bool>()));
         }
 
-        template <class VelocitySet>
+        /**
+         * @brief Branchless computation of the y/z off-diagonal incoming moment
+         * @tparam Q Number of elements in the velocity set
+         * @param[in] pop Population density array at current lattice node
+         * @param[in] boundaryNormal Normal vector information at boundary node]
+         * @param[in] inv_rho_I Inverse of the incoming density
+         * @return The y/z off-diagonal incoming moment
+         **/
+        template <const label_t Q>
         __device__ [[nodiscard]] static inline constexpr scalar_t myz_I(
-            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, Q> &pop,
             const normalVector &boundaryNormal,
             const scalar_t inv_rho_I) noexcept
         {
-            return ((VelocitySet::template incomingSwitch<scalar_t>(label_constant<11>(), boundaryNormal) * pop(label_constant<11>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<17>(), boundaryNormal) * pop(label_constant<17>())) +
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<12>(), boundaryNormal) * pop(label_constant<12>())) -
-                    (VelocitySet::template incomingSwitch<scalar_t>(label_constant<18>(), boundaryNormal) * pop(label_constant<18>()))) *
-                   inv_rho_I;
+            return inv_rho_I *
+                   (pop(label_constant<11>()) * static_cast<scalar_t>(boundaryNormal.North<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.NorthFront<bool>()) +
+                    pop(label_constant<12>()) * static_cast<scalar_t>(boundaryNormal.South<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.SouthBack<bool>()) -
+                    pop(label_constant<17>()) * static_cast<scalar_t>(boundaryNormal.North<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.NorthBack<bool>()) -
+                    pop(label_constant<18>()) * static_cast<scalar_t>(boundaryNormal.South<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.SouthFront<bool>()));
         }
 
         /**
@@ -143,77 +167,15 @@ namespace LBM
             const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
-            // // Branchless computation of mxyI
-            // const scalar_t mxyI = mxy_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
-
-            // // Branchless computation of mxzI
-            // const scalar_t mxzI = mxz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
-
-            // // Branchless computation of myzI
-            // const scalar_t myzI = myz_I<VelocitySet>(pop, boundaryNormal, inv_rho_I);
-
-            const scalar_t mxyI =
-                inv_rho_I *
-                (pop(label_constant<8>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.South<bool>() + boundaryNormal.SouthWest<bool>()) +
-                 pop(label_constant<7>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.North<bool>() + boundaryNormal.NorthEast<bool>()) -
-                 pop(label_constant<13>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.South<bool>() + boundaryNormal.SouthEast<bool>()) -
-                 pop(label_constant<14>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.North<bool>() + boundaryNormal.NorthWest<bool>()));
-
-            const scalar_t mxzI =
-                inv_rho_I *
-                (pop(label_constant<9>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.EastFront<bool>()) +
-                 pop(label_constant<10>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.WestBack<bool>()) -
-                 pop(label_constant<15>()) * static_cast<scalar_t>(boundaryNormal.East<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.EastBack<bool>()) -
-                 pop(label_constant<16>()) * static_cast<scalar_t>(boundaryNormal.West<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.WestFront<bool>()));
-
-            // const scalar_t mxyI =
-            //     (boundaryNormal.SouthWest<scalar_t>() * (pop(label_constant<8>()))) +
-            //     (boundaryNormal.SouthEast<scalar_t>() * (-pop(label_constant<13>()))) +
-            //     (boundaryNormal.West<scalar_t>() * ((pop(label_constant<8>()) - pop(label_constant<14>())))) +
-            //     (boundaryNormal.East<scalar_t>() * ((pop(label_constant<7>()) - pop(label_constant<13>())))) +
-            //     (boundaryNormal.South<scalar_t>() * ((pop(label_constant<8>()) - pop(label_constant<13>())))) +
-            //     (boundaryNormal.North<scalar_t>() * ((pop(label_constant<7>()) - pop(label_constant<14>())))) +
-            //     (boundaryNormal.NorthEast<scalar_t>() * (pop(label_constant<7>()))) +
-            //     (boundaryNormal.NorthWest<scalar_t>() * (-pop(label_constant<14>()))) * inv_rho_I;
-
-            // Branchless computation of mxz_I
-            // const scalar_t mxzI =
-            //     (boundaryNormal.WestBack<scalar_t>() * (pop(label_constant<10>()))) +
-            //     (boundaryNormal.WestFront<scalar_t>() * (-pop(label_constant<16>()))) +
-            //     (boundaryNormal.EastBack<scalar_t>() * (-pop(label_constant<15>()))) +
-            //     (boundaryNormal.EastFront<scalar_t>() * (pop(label_constant<9>()))) +
-            //     (boundaryNormal.West<scalar_t>() * ((pop(label_constant<10>()) - pop(label_constant<16>())))) +
-            //     (boundaryNormal.East<scalar_t>() * ((pop(label_constant<9>()) - pop(label_constant<15>())))) +
-            //     (boundaryNormal.Back<scalar_t>() * ((pop(label_constant<10>()) - pop(label_constant<15>())))) +
-            //     (boundaryNormal.Front<scalar_t>() * ((pop(label_constant<9>()) - pop(label_constant<16>())))) * inv_rho_I;
-
-            const scalar_t myzI =
-                inv_rho_I *
-                (pop(label_constant<11>()) * static_cast<scalar_t>(boundaryNormal.North<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.NorthFront<bool>()) +
-                 pop(label_constant<12>()) * static_cast<scalar_t>(boundaryNormal.South<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.SouthBack<bool>()) -
-                 pop(label_constant<17>()) * static_cast<scalar_t>(boundaryNormal.North<bool>() + boundaryNormal.Back<bool>() + boundaryNormal.NorthBack<bool>()) -
-                 pop(label_constant<18>()) * static_cast<scalar_t>(boundaryNormal.South<bool>() + boundaryNormal.Front<bool>() + boundaryNormal.SouthFront<bool>()));
-
-            // Branchless computation of myz_I
-            // const scalar_t myzI =
-            //     (boundaryNormal.SouthBack<scalar_t>() * (pop(label_constant<12>()))) +
-            //     (boundaryNormal.SouthFront<scalar_t>() * (-pop(label_constant<18>()))) +
-            //     (boundaryNormal.South<scalar_t>() * ((pop(label_constant<12>()) - pop(label_constant<18>())))) +
-            //     (boundaryNormal.Back<scalar_t>() * ((pop(label_constant<12>()) - pop(label_constant<17>())))) +
-            //     (boundaryNormal.Front<scalar_t>() * ((pop(label_constant<11>()) - pop(label_constant<18>())))) +
-            //     (boundaryNormal.North<scalar_t>() * ((pop(label_constant<11>()) - pop(label_constant<17>())))) +
-            //     (boundaryNormal.NorthBack<scalar_t>() * (-pop(label_constant<17>()))) +
-            //     (boundaryNormal.NorthFront<scalar_t>() * (pop(label_constant<11>()))) * inv_rho_I;
-
-            // Arithmetic mask for boundary points
-            // const scalar_t boundaryMask = boundaryNormal.boundaryMask();
+            // Branchless computation of the incoming off-diagonal moments
+            const scalar_t mxyI = mxy_I(pop, boundaryNormal, inv_rho_I);
+            const scalar_t mxzI = mxz_I(pop, boundaryNormal, inv_rho_I);
+            const scalar_t myzI = myz_I(pop, boundaryNormal, inv_rho_I);
 
             // Branchless computation of rho
             const scalar_t rho =
-                (boundaryNormal.SouthWestBack<scalar_t>() * (static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7))) +
-                (boundaryNormal.SouthWestFront<scalar_t>() * (static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7))) +
-                (boundaryNormal.SouthEastBack<scalar_t>() * (static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7))) +
-                (boundaryNormal.SouthEastFront<scalar_t>() * (static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7))) +
+                (static_cast<scalar_t>(boundaryNormal.SouthWestBack<bool>() || boundaryNormal.SouthWestFront<bool>() || boundaryNormal.SouthEastBack<bool>() || boundaryNormal.SouthEastFront<bool>()) *
+                 (static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7))) +
                 (boundaryNormal.SouthWest<scalar_t>() * (static_cast<scalar_t>(36) * (rho_I - mxyI * rho_I + mxyI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
                 (boundaryNormal.SouthEast<scalar_t>() * (-static_cast<scalar_t>(36) * (-rho_I - mxyI * rho_I + mxyI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
                 (boundaryNormal.WestBack<scalar_t>() * (static_cast<scalar_t>(36) * (rho_I - mxzI * rho_I + mxzI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
@@ -222,16 +184,12 @@ namespace LBM
                 (boundaryNormal.EastFront<scalar_t>() * (static_cast<scalar_t>(36) * (rho_I - mxzI * rho_I + mxzI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
                 (boundaryNormal.SouthBack<scalar_t>() * (static_cast<scalar_t>(36) * (rho_I - myzI * rho_I + myzI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
                 (boundaryNormal.SouthFront<scalar_t>() * (-static_cast<scalar_t>(36) * (-rho_I - myzI * rho_I + myzI * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega))) +
-                (boundaryNormal.West<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.East<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.South<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.Back<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.Front<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.North<scalar_t>() * (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
-                (boundaryNormal.NorthWestBack<scalar_t>() * (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
-                (boundaryNormal.NorthWestFront<scalar_t>() * (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
-                (boundaryNormal.NorthEastBack<scalar_t>() * (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
-                (boundaryNormal.NorthEastFront<scalar_t>() * (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
+                (static_cast<scalar_t>(boundaryNormal.West<bool>() || boundaryNormal.East<bool>() || boundaryNormal.South<bool>() || boundaryNormal.Back<bool>() || boundaryNormal.Front<bool>() || boundaryNormal.North<bool>()) *
+                 (static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5))) +
+                (static_cast<scalar_t>(boundaryNormal.NorthWestBack<bool>() || boundaryNormal.NorthWestFront<bool>()) *
+                 (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
+                (static_cast<scalar_t>(boundaryNormal.NorthEastBack<bool>() || boundaryNormal.NorthEastBack<bool>()) *
+                 (-static_cast<scalar_t>(24) * rho_I / (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf))) +
                 (boundaryNormal.NorthBack<scalar_t>() * (static_cast<scalar_t>(72) * (-rho_I - myzI * rho_I + myzI * rho_I * device::omega) / (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega))) +
                 (boundaryNormal.NorthFront<scalar_t>() * (-static_cast<scalar_t>(72) * (rho_I - myzI * rho_I + myzI * rho_I * device::omega) / (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega))) +
                 (boundaryNormal.NorthEast<scalar_t>() * (static_cast<scalar_t>(36) * (rho_I - mxyI * rho_I + mxyI * rho_I * device::omega) / (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega + static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega))) +
@@ -240,53 +198,34 @@ namespace LBM
 
             // Branchless computation of u, v and w
             moments(label_constant<1>()) =
-                (static_cast<scalar_t>(
-                     boundaryNormal.North<bool>() ||
-                     boundaryNormal.NorthWestBack<bool>() ||
-                     boundaryNormal.NorthWestFront<bool>() ||
-                     boundaryNormal.NorthEastBack<bool>() ||
-                     boundaryNormal.NorthEastFront<bool>() ||
-                     boundaryNormal.NorthBack<bool>() ||
-                     boundaryNormal.NorthFront<bool>() ||
-                     boundaryNormal.NorthEast<bool>() ||
-                     boundaryNormal.NorthWest<bool>()) *
+                (static_cast<scalar_t>(boundaryNormal.North<bool>() || boundaryNormal.NorthWestBack<bool>() || boundaryNormal.NorthWestFront<bool>() || boundaryNormal.NorthEastBack<bool>() || boundaryNormal.NorthEastFront<bool>() || boundaryNormal.NorthBack<bool>() || boundaryNormal.NorthFront<bool>() || boundaryNormal.NorthEast<bool>() || boundaryNormal.NorthWest<bool>()) *
                  device::u_inf);
             moments(label_constant<2>()) = static_cast<scalar_t>(0);
             moments(label_constant<3>()) = static_cast<scalar_t>(0);
 
             // Branchless computation of mxx
             moments(label_constant<4>()) =
-                (static_cast<scalar_t>(
-                     boundaryNormal.North<bool>() ||
-                     boundaryNormal.NorthWestBack<bool>() ||
-                     boundaryNormal.NorthWestFront<bool>() ||
-                     boundaryNormal.NorthEastBack<bool>() ||
-                     boundaryNormal.NorthEastFront<bool>() ||
-                     boundaryNormal.NorthBack<bool>() ||
-                     boundaryNormal.NorthFront<bool>() ||
-                     boundaryNormal.NorthEast<bool>() ||
-                     boundaryNormal.NorthWest<bool>()) *
+                (static_cast<scalar_t>(boundaryNormal.North<bool>() || boundaryNormal.NorthWestBack<bool>() || boundaryNormal.NorthWestFront<bool>() || boundaryNormal.NorthEastBack<bool>() || boundaryNormal.NorthEastFront<bool>() || boundaryNormal.NorthBack<bool>() || boundaryNormal.NorthFront<bool>() || boundaryNormal.NorthEast<bool>() || boundaryNormal.NorthWest<bool>()) *
                  (device::u_inf * device::u_inf));
 
             // Branchless computation of mxy
             moments(label_constant<5>()) =
                 ((boundaryNormal.SouthWest<scalar_t>() * ((static_cast<scalar_t>(36) * mxyI * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
                  (boundaryNormal.SouthEast<scalar_t>() * ((static_cast<scalar_t>(36) * mxyI * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (static_cast<scalar_t>(boundaryNormal.West<bool>() || boundaryNormal.East<bool>() || boundaryNormal.South<bool>()) * (static_cast<scalar_t>(2) * mxyI * rho_I / rho)) +
+                 (static_cast<scalar_t>(boundaryNormal.West<bool>() || boundaryNormal.East<bool>() || boundaryNormal.South<bool>()) *
+                  (static_cast<scalar_t>(2) * mxyI * rho_I / rho)) +
                  (boundaryNormal.North<scalar_t>() * ((static_cast<scalar_t>(6) * mxyI * rho_I - device::u_inf * rho) / (static_cast<scalar_t>(3) * rho))) +
                  (boundaryNormal.NorthEast<scalar_t>() * ((static_cast<scalar_t>(36) * mxyI * rho_I - rho - static_cast<scalar_t>(3) * device::u_inf * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) / (static_cast<scalar_t>(9) * rho))) +
                  (boundaryNormal.NorthWest<scalar_t>() * ((static_cast<scalar_t>(36) * mxyI * rho_I + rho - static_cast<scalar_t>(3) * device::u_inf * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) / (static_cast<scalar_t>(9) * rho))));
 
             // Branchless computation of mxz
             moments(label_constant<6>()) =
-                ((boundaryNormal.WestBack<scalar_t>() * ((static_cast<scalar_t>(36) * mxzI * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (boundaryNormal.WestFront<scalar_t>() * ((static_cast<scalar_t>(36) * mxzI * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (boundaryNormal.EastBack<scalar_t>() * ((static_cast<scalar_t>(36) * mxzI * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (boundaryNormal.EastFront<scalar_t>() * ((static_cast<scalar_t>(36) * mxzI * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (boundaryNormal.West<scalar_t>() * (static_cast<scalar_t>(2) * mxzI * rho_I / rho)) +
-                 (boundaryNormal.East<scalar_t>() * (static_cast<scalar_t>(2) * mxzI * rho_I / rho)) +
-                 (boundaryNormal.Back<scalar_t>() * (static_cast<scalar_t>(2) * mxzI * rho_I / rho)) +
-                 (boundaryNormal.Front<scalar_t>() * (static_cast<scalar_t>(2) * mxzI * rho_I / rho)));
+                (static_cast<scalar_t>(boundaryNormal.WestFront<bool>() || boundaryNormal.EastBack<bool>()) *
+                 ((static_cast<scalar_t>(36) * mxzI * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
+                (static_cast<scalar_t>(boundaryNormal.WestBack<bool>() || boundaryNormal.EastFront<bool>()) *
+                 ((static_cast<scalar_t>(36) * mxzI * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
+                (static_cast<scalar_t>(boundaryNormal.West<bool>() || boundaryNormal.East<bool>() || boundaryNormal.Back<bool>() || boundaryNormal.Front<bool>()) *
+                 (static_cast<scalar_t>(2) * mxzI * rho_I / rho));
 
             // Branchless computation of myy
             moments(label_constant<7>()) = static_cast<scalar_t>(0);
@@ -295,10 +234,8 @@ namespace LBM
             moments(label_constant<8>()) =
                 ((boundaryNormal.SouthBack<scalar_t>() * ((static_cast<scalar_t>(36) * myzI * rho_I - rho) / (static_cast<scalar_t>(9) * rho))) +
                  (boundaryNormal.SouthFront<scalar_t>() * ((static_cast<scalar_t>(36) * myzI * rho_I + rho) / (static_cast<scalar_t>(9) * rho))) +
-                 (boundaryNormal.South<scalar_t>() * (static_cast<scalar_t>(2) * myzI * rho_I / rho)) +
-                 (boundaryNormal.Back<scalar_t>() * (static_cast<scalar_t>(2) * myzI * rho_I / rho)) +
-                 (boundaryNormal.Front<scalar_t>() * (static_cast<scalar_t>(2) * myzI * rho_I / rho)) +
-                 (boundaryNormal.North<scalar_t>() * (static_cast<scalar_t>(2) * myzI * rho_I / rho)) +
+                 static_cast<scalar_t>(boundaryNormal.South<bool>() || boundaryNormal.Back<bool>() || boundaryNormal.Front<bool>() || boundaryNormal.North<bool>()) *
+                     (static_cast<scalar_t>(2) * myzI * rho_I / rho) +
                  (boundaryNormal.NorthBack<scalar_t>() * ((static_cast<scalar_t>(72) * myzI * rho_I + static_cast<scalar_t>(2) * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) / (static_cast<scalar_t>(18) * rho))) +
                  (boundaryNormal.NorthFront<scalar_t>() * ((static_cast<scalar_t>(72) * myzI * rho_I - static_cast<scalar_t>(2) * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) / (static_cast<scalar_t>(18) * rho))));
 

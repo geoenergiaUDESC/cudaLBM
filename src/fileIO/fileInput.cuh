@@ -253,7 +253,7 @@ namespace LBM
                                 const std::string dimStr = line.substr(pos + 1, end - pos - 1);
                                 const unsigned long long dimValue = std::stoull(dimStr);
 
-                                // Check for overflow before casting to size_t
+                                // Check for overflow before casting to std::size_t
                                 if (dimValue > std::numeric_limits<std::size_t>::max())
                                 {
                                     throw std::runtime_error("Dimension value too large at line " + std::to_string(lineNumber));
@@ -319,10 +319,10 @@ namespace LBM
                             throw std::runtime_error("Invalid file position (negative)");
                         }
 
-                        // Check for overflow before casting to size_t
+                        // Check for overflow before casting to std::size_t
                         if (static_cast<unsigned long long>(dataPos) > std::numeric_limits<std::size_t>::max())
                         {
-                            throw std::runtime_error("File position too large for size_t");
+                            throw std::runtime_error("File position too large for std::size_t");
                         }
 
                         dataStartPos = static_cast<std::size_t>(dataPos);
@@ -359,7 +359,7 @@ namespace LBM
                             const unsigned long long count = std::stoull(
                                 line.substr(startBracket + 1, endBracket - startBracket - 1));
 
-                            // Check for overflow before casting to size_t
+                            // Check for overflow before casting to std::size_t
                             if (count > std::numeric_limits<std::size_t>::max())
                             {
                                 throw std::runtime_error("Field names count too large at line " + std::to_string(lineNumber));

@@ -37,18 +37,18 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    VTU binary file writer
+    VTS binary file writer
 
 Namespace
     LBM::postProcess
 
 SourceFiles
-    VTU.cuh
+    VTS.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_VTU_CUH
-#define __MBLBM_VTU_CUH
+#ifndef __MBLBM_VTS_CUH
+#define __MBLBM_VTS_CUH
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
@@ -62,19 +62,19 @@ namespace LBM
          * @tparam IndexType The data type for the mesh indices (uint32_t or uint64_t).
          */
         template <typename IndexType>
-        __host__ void writeVTU_impl(
+        __host__ void writeVTS_impl(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,
             const host::latticeMesh &mesh,
             const std::vector<std::string> &solutionVarNames) noexcept
         {
+            // For a structured grid, we need different calculations
             const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
+            const label_t numCells = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
             const std::size_t numVars = solutionVars.size();
 
+            // Get points in the correct order for structured grid (i fastest, then j, then k)
             const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
-            const std::vector<IndexType> connectivity = meshConnectivity<false, IndexType>(mesh);
-            const std::vector<IndexType> offsets = meshOffsets<IndexType>(mesh);
 
             std::ofstream outFile(fileName, std::ios::binary);
             if (!outFile)
@@ -86,11 +86,17 @@ namespace LBM
             std::stringstream xml;
             uint64_t currentOffset = 0;
 
-            xml << "<?xml version=\"1.0\"?>\n";
-            xml << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-            xml << "  <UnstructuredGrid>\n";
-            xml << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
+            // Calculate extents - note the -1 for the maximum indices
+            const label_t dimX = mesh.nx() - 1;
+            const label_t dimY = mesh.ny() - 1;
+            const label_t dimZ = mesh.nz() - 1;
 
+            xml << "<?xml version=\"1.0\"?>\n";
+            xml << "<VTKFile type=\"StructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+            xml << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+            xml << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+
+            // Point data (same as before)
             xml << "      <PointData Scalars=\"" << (solutionVarNames.empty() ? "" : solutionVarNames[0]) << "\">\n";
             for (std::size_t i = 0; i < numVars; ++i)
             {
@@ -99,44 +105,34 @@ namespace LBM
             }
             xml << "      </PointData>\n";
 
+            // Points section (same as before)
             xml << "      <Points>\n";
             xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
             xml << "      </Points>\n";
             currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
 
-            xml << "      <Cells>\n";
-            // Usa o IndexType para obter o nome do tipo VTK correto
-            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + connectivity.size() * sizeof(IndexType);
-
-            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + offsets.size() * sizeof(IndexType);
-
-            xml << "        <DataArray type=\"" << getVtkTypeName<uint8_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            xml << "      </Cells>\n";
+            // NO Cells section for StructuredGrid - this is the key difference!
 
             xml << "    </Piece>\n";
-            xml << "  </UnstructuredGrid>\n";
+            xml << "  </StructuredGrid>\n";
             xml << "  <AppendedData encoding=\"raw\">_";
 
             outFile << xml.str();
 
+            // Write point data arrays
             for (const auto &varData : solutionVars)
             {
                 writeBinaryBlock(varData, outFile);
             }
-            writeBinaryBlock(points, outFile);
-            writeBinaryBlock(connectivity, outFile);
-            writeBinaryBlock(offsets, outFile);
 
-            const std::vector<uint8_t> types(numElements, 12); // 12 é o código VTK para hexaedro
-            writeBinaryBlock(types, outFile);
+            // Write points
+            writeBinaryBlock(points, outFile);
 
             outFile << "</AppendedData>\n";
             outFile << "</VTKFile>\n";
 
             outFile.close();
-            std::cout << "Successfully wrote VTU file: " << fileName << "\n";
+            std::cout << "Successfully wrote structured VTU file: " << fileName << "\n";
         }
 
         /**
@@ -144,15 +140,15 @@ namespace LBM
          * This function checks the mesh size and dispatches to the implementation with
          * the appropriate index type (32-bit or 64-bit).
          */
-        __host__ void writeVTU(
+        __host__ void writeVTS(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,
             const host::latticeMesh &mesh,
             const std::vector<std::string> &solutionVarNames) noexcept
         {
-            const std::string fileExtension = ".vtu";
+            const std::string fileExtension = ".vts";
 
-            std::cout << "Writing VTU unstructured grid to " << fileName << fileExtension << std::endl;
+            std::cout << "Writing VTS structured grid to " << fileName << fileExtension << std::endl;
 
             const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
             const std::size_t numVars = solutionVars.size();
@@ -175,13 +171,13 @@ namespace LBM
 
             if (numNodes >= limit32)
             {
-                std::cout << "Info: Mesh is large. Using 64-bit indices for VTU file.\n";
-                writeVTU_impl<uint64_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+                std::cout << "Info: Mesh is large. Using 64-bit indices for VTS file.\n";
+                writeVTS_impl<uint64_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
             }
             else
             {
-                std::cout << "Info: Mesh is small. Using 32-bit indices for VTU file.\n";
-                writeVTU_impl<uint32_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+                std::cout << "Info: Mesh is small. Using 32-bit indices for VTS file.\n";
+                writeVTS_impl<uint32_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
             }
         }
     }

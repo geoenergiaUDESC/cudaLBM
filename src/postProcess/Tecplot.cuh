@@ -81,19 +81,20 @@ namespace LBM
          * - Node count consistency across all arrays
          * - File accessibility checks
          **/
-        void writeTecplot(
+        __host__ void writeTecplot(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,
             const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames,
-            const std::string &title) noexcept
+            const std::vector<std::string> &solutionVarNames) noexcept
         {
+            const std::string fileExtension = ".dat";
+
             // Info on entering the function
-            std::cout << "Writing tecplot unstructured grid to file" << fileName << std::endl;
+            std::cout << "Writing tecplot unstructured grid to file" << fileName + fileExtension << std::endl;
 
             // Check input sizes
             const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            const size_t numVars = solutionVars.size();
+            const std::size_t numVars = solutionVars.size();
 
             // Validate variable count matches names
             if (numVars != solutionVarNames.size())
@@ -103,7 +104,7 @@ namespace LBM
             }
 
             // Validate each variable has correct number of nodes
-            for (size_t i = 0; i < numVars; i++)
+            for (std::size_t i = 0; i < numVars; i++)
             {
                 if (solutionVars[i].size() != numNodes)
                 {
@@ -112,10 +113,10 @@ namespace LBM
                 }
             }
 
-            std::ofstream outFile(fileName);
+            std::ofstream outFile(fileName + fileExtension);
             if (!outFile)
             {
-                std::cerr << "Error opening file: " << fileName << "\n";
+                std::cerr << "Error opening file: " << fileName + fileExtension << "\n";
                 return;
             }
 
@@ -123,7 +124,7 @@ namespace LBM
             outFile << std::setprecision(50);
 
             // Write Tecplot header
-            outFile << "TITLE = \"" << title << "\"\n";
+            // outFile << "TITLE = \"" << title << "\"\n";
             outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
             for (auto &name : solutionVarNames)
             {
@@ -135,7 +136,7 @@ namespace LBM
             const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
             outFile << "ZONE T=\"Hexahedral Zone\", NODES=" << numNodes << ", ELEMENTS=" << numElements << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK\n";
 
-            const std::vector<double> coords = meshCoordinates<double>(mesh);
+            const std::vector<scalar_t> coords = meshCoordinates<scalar_t>(mesh);
 
             // Write node coordinates (X, Y, Z blocks)
             // Write X
@@ -176,7 +177,7 @@ namespace LBM
 
             outFile.close();
 
-            std::cout << "Successfully wrote Tecplot file: " << fileName << "\n";
+            std::cout << "Successfully wrote Tecplot file: " << fileName + fileExtension << "\n";
         }
     }
 }

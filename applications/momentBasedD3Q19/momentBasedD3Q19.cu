@@ -157,8 +157,18 @@ int main(const int argc, const char *const argv[])
                 z_stream_segment_size * stream);
         }
 
+        for (label_t stream = 0; stream < NStreams; stream++)
+        {
+            cudaStreamSynchronize(streamsLBM[stream]);
+        }
+
         // Halo pointer swap
         blockHalo.swap();
+    }
+
+    for (label_t stream = 0; stream < NStreams; stream++)
+    {
+        cudaStreamDestroy(streamsLBM[stream]);
     }
 
     return 0;

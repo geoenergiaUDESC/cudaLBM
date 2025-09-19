@@ -146,7 +146,9 @@ namespace LBM
         }
         else
         {
-            boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
+            const boundaryConditions<VelocitySet> boundaries(pop, boundaryNormal);
+            boundaries.calculateMoments(pop, moments, boundaryNormal);
+            // boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
         }
         // }
 

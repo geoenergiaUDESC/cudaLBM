@@ -336,13 +336,17 @@ namespace LBM
             return tx + block::nx() * (ty + block::ny() * (pop + QF * (bx + nxBlocks * (by + nyBlocks * bz))));
         }
 
-        [[nodiscard]] const std::array<cudaStream_t, 1> createCudaStream() noexcept
+        template <const label_t nStreams>
+        [[nodiscard]] const std::array<cudaStream_t, nStreams> createCudaStreams() noexcept
         {
-            std::array<cudaStream_t, 1> streamsLBM;
+            std::array<cudaStream_t, 4> streamsLBM;
 
-            checkCudaErrors(cudaDeviceSynchronize());
-            checkCudaErrors(cudaStreamCreate(&streamsLBM[0]));
-            checkCudaErrors(cudaDeviceSynchronize());
+            for (label_t stream = 0; stream < nStreams; stream++)
+            {
+                checkCudaErrors(cudaDeviceSynchronize());
+                checkCudaErrors(cudaStreamCreate(&streamsLBM[stream]));
+                checkCudaErrors(cudaDeviceSynchronize());
+            }
 
             return streamsLBM;
         }

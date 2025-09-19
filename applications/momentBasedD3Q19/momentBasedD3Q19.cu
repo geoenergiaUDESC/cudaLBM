@@ -51,6 +51,8 @@ SourceFiles
 
 using namespace LBM;
 
+constexpr const label_t NStreams = 4;
+
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -63,9 +65,6 @@ int main(const int argc, const char *const argv[])
     const host::latticeMesh mesh(programCtrl);
 
     VelocitySet::print();
-
-    // Setup Streams
-    const std::array<cudaStream_t, 1> streamsLBM = host::createCudaStream();
 
     // Allocate the arrays on the host first
     const host::array<scalar_t, VelocitySet> h_rho("rho", mesh, programCtrl);
@@ -115,6 +114,16 @@ int main(const int argc, const char *const argv[])
          h_m_zz.arr()},
         mesh);
 
+    // Setup Streams
+    const std::array<cudaStream_t, NStreams> streamsLBM = host::createCudaStreams<NStreams>();
+
+    const label_t z_stream_segment_size = mesh.nz() / NStreams;
+
+    const dim3 blockDimensions{
+        static_cast<uint32_t>(mesh.nx() / block::nx()),
+        static_cast<uint32_t>(mesh.ny() / block::ny()),
+        static_cast<uint32_t>(mesh.nz() / (NStreams * block::nz()))};
+
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
     const runTimeIO IO(mesh, programCtrl);
@@ -139,10 +148,14 @@ int main(const int argc, const char *const argv[])
         }
 
         // Main kernel
-        momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[0]>>>(
-            devPtrs,
-            blockHalo.fGhost(),
-            blockHalo.gGhost());
+        for (label_t stream = 0; stream < NStreams; stream++)
+        {
+            momentBasedD3Q19<<<blockDimensions, mesh.threadBlock(), 0, streamsLBM[stream]>>>(
+                devPtrs,
+                blockHalo.fGhost(),
+                blockHalo.gGhost(),
+                z_stream_segment_size * stream);
+        }
 
         // Halo pointer swap
         blockHalo.swap();

@@ -146,6 +146,11 @@ int main(const int argc, const char *const argv[])
                 momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
 
+        for (label_t stream = 0; stream < NStreams; stream++)
+        {
+            cudaStreamSynchronize(streamsLBM[stream]);
+        }
+
         // Halo pointer swap
         blockHalo.swap();
     }

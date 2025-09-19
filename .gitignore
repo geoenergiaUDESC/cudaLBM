@@ -60,5 +60,6 @@ lidDrivenCavity/m_zz
 lidDrivenCavity/nodeTypes
 lidDrivenCavity/*.dat
 lidDrivenCavity/*.vtu
+lidDrivenCavity/*.vts
 lidDrivenCavity/*.LBMBin
 build

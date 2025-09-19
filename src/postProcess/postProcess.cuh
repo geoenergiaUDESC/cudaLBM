@@ -164,10 +164,68 @@ namespace LBM
 
             return offsets;
         }
+
+        /**
+         * @brief Obtain the name of the type that corresponds to the C++ data type
+         * @tparam T The C++ data type (e.g. float, int64_t)
+         * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
+         **/
+        template <typename T>
+        [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
+        {
+            if constexpr (std::is_same_v<T, float>)
+            {
+                return "Float32";
+            }
+            else if constexpr (std::is_same_v<T, double>)
+            {
+                return "Float64";
+            }
+            else if constexpr (std::is_same_v<T, int32_t>)
+            {
+                return "Int32";
+            }
+            else if constexpr (std::is_same_v<T, uint32_t>)
+            {
+                return "UInt32";
+            }
+            else if constexpr (std::is_same_v<T, int64_t>)
+            {
+                return "Int64";
+            }
+            else if constexpr (std::is_same_v<T, uint64_t>)
+            {
+                return "UInt64";
+            }
+            else if constexpr (std::is_same_v<T, uint8_t>)
+            {
+                return "UInt8";
+            }
+            else if constexpr (std::is_same_v<T, int8_t>)
+            {
+                return "Int8";
+            }
+            else
+            {
+                static_assert(std::is_same_v<T, void>, "Unsupported type for getVtkTypeName");
+                return "Unknown";
+            }
+        }
+
+        template <typename T>
+        __host__ void writeBinaryBlock(const std::vector<T> vec, std::ofstream &outFile)
+        {
+            const uint64_t blockSize = vec.size() * sizeof(T);
+
+            outFile.write(reinterpret_cast<const char *>(&blockSize), sizeof(uint64_t));
+
+            outFile.write(reinterpret_cast<const char *>(vec.data()), static_cast<std::streamsize>(blockSize));
+        };
     }
 }
 
 #include "Tecplot.cuh"
 #include "VTU.cuh"
+#include "VTS.cuh"
 
 #endif

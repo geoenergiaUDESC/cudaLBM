@@ -62,31 +62,31 @@ int main(const int argc, const char *const argv[])
 
     const std::string conversion = getConversionType(programCtrl);
 
-    for (label_t timeStep = fileIO::getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+    auto it = writers.find(conversion);
+
+    // Check if the writer is valid
+    if (it != writers.end())
     {
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
-            programCtrl,
-            {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-            timeStep);
+        const WriterFunction writer = it->second;
 
-        const std::vector<std::vector<scalar_t>> soa = fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh);
-
-        auto it = writers.find(conversion);
-
-        if (it != writers.end())
+        for (label_t timeStep = fileIO::getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
-            const std::string extension = (conversion == "vtu") ? ".vtu" : ".dat";
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+                programCtrl,
+                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                timeStep);
 
-            const std::string filename = programCtrl.caseName() + "_" + std::to_string(fileNameIndices[timeStep]) + extension;
+            const std::vector<std::vector<scalar_t>> soa = fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh);
 
-            const WriterFunction writer = it->second;
+            const std::string filename = programCtrl.caseName() + "_" + std::to_string(fileNameIndices[timeStep]);
 
-            writer(soa, filename, mesh, hostMoments.varNames(), "Title");
+            writer(soa, filename, mesh, hostMoments.varNames());
         }
-        else
-        {
-            throw std::runtime_error("Unsupported conversion format: " + conversion);
-        }
+    }
+    else
+    {
+        // Throw
+        throw std::runtime_error(invalidWriter(writers, conversion));
     }
 
     return 0;

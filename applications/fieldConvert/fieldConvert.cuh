@@ -68,8 +68,7 @@ namespace LBM
         const std::vector<std::vector<scalar_t>> &,
         const std::string &,
         const host::latticeMesh &,
-        const std::vector<std::string> &,
-        const std::string &);
+        const std::vector<std::string> &);
 
     /**
      * @brief Veriefies if the command line has the argument -type
@@ -106,7 +105,33 @@ namespace LBM
      **/
     const std::unordered_map<std::string, WriterFunction> writers = {
         {"vtu", postProcess::writeVTU},
+        {"vts", postProcess::writeVTS},
         {"tecplot", postProcess::writeTecplot}};
+
+    __host__ [[nodiscard]] const std::string invalidWriter(const std::unordered_map<std::string, WriterFunction> &writerNames, const std::string &conversion) noexcept
+    {
+        std::vector<std::string> supportedFormats;
+        for (const auto &pair : writerNames)
+        {
+            supportedFormats.push_back(pair.first);
+        }
+
+        // Sort them alphabetically
+        std::sort(supportedFormats.begin(), supportedFormats.end());
+
+        // Create the error message with supported formats
+        std::string errorMsg = "Unsupported conversion format: " + conversion + "\nSupported formats are: ";
+        for (std::size_t i = 0; i < supportedFormats.size(); ++i)
+        {
+            if (i != 0)
+            {
+                errorMsg += ", ";
+            }
+            errorMsg += supportedFormats[i];
+        }
+
+        return errorMsg;
+    }
 }
 
 #endif

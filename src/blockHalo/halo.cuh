@@ -299,6 +299,7 @@ namespace LBM
                 /* write to global pop **/
                 if (West(x))
                 { // w
+<<<<<<< HEAD
                     gx0[idxPopX<0, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<2>());
                     gx0[idxPopX<1, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<8>());
                     gx0[idxPopX<2, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<10>());
@@ -312,10 +313,26 @@ namespace LBM
                     gx1[idxPopX<2, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<9>());
                     gx1[idxPopX<3, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<13>());
                     gx1[idxPopX<4, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<15>());
+=======
+                    gx0[idxPopX<0, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<2>());
+                    gx0[idxPopX<1, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<8>());
+                    gx0[idxPopX<2, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<10>());
+                    gx0[idxPopX<3, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<14>());
+                    gx0[idxPopX<4, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<16>());
+                }
+                if (East(x))
+                { // e
+                    gx1[idxPopX<0, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<1>());
+                    gx1[idxPopX<1, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<7>());
+                    gx1[idxPopX<2, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<9>());
+                    gx1[idxPopX<3, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<13>());
+                    gx1[idxPopX<4, VelocitySet::QF()>(ty, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<15>());
+>>>>>>> 82b3f24 (Initial commit)
                 }
 
                 if (South(y))
                 { // s
+<<<<<<< HEAD
                     gy0[idxPopY<0, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<4>());
                     gy0[idxPopY<1, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<8>());
                     gy0[idxPopY<2, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<12>());
@@ -329,10 +346,26 @@ namespace LBM
                     gy1[idxPopY<2, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<11>());
                     gy1[idxPopY<3, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<14>());
                     gy1[idxPopY<4, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<17>());
+=======
+                    gy0[idxPopY<0, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<4>());
+                    gy0[idxPopY<1, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<8>());
+                    gy0[idxPopY<2, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<12>());
+                    gy0[idxPopY<3, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<13>());
+                    gy0[idxPopY<4, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<18>());
+                }
+                if (North(y))
+                { // n
+                    gy1[idxPopY<0, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<3>());
+                    gy1[idxPopY<1, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<7>());
+                    gy1[idxPopY<2, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<11>());
+                    gy1[idxPopY<3, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<14>());
+                    gy1[idxPopY<4, VelocitySet::QF()>(tx, tz, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<17>());
+>>>>>>> 82b3f24 (Initial commit)
                 }
 
                 if (Back(z))
                 { // b
+<<<<<<< HEAD
                     gz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<6>());
                     gz0[idxPopZ<1, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<10>());
                     gz0[idxPopZ<2, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<12>());
@@ -346,6 +379,21 @@ namespace LBM
                     gz1[idxPopZ<2, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<11>());
                     gz1[idxPopZ<3, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<16>());
                     gz1[idxPopZ<4, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset)] = pop(label_constant<18>());
+=======
+                    gz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<6>());
+                    gz0[idxPopZ<1, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<10>());
+                    gz0[idxPopZ<2, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<12>());
+                    gz0[idxPopZ<3, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<15>());
+                    gz0[idxPopZ<4, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<17>());
+                }
+                if (Front(z))
+                {
+                    gz1[idxPopZ<0, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<5>());
+                    gz1[idxPopZ<1, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<9>());
+                    gz1[idxPopZ<2, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<11>());
+                    gz1[idxPopZ<3, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<16>());
+                    gz1[idxPopZ<4, VelocitySet::QF()>(tx, ty, blockIdx.x, blockIdx.y, blockIdx.z)] = pop(label_constant<18>());
+>>>>>>> 82b3f24 (Initial commit)
                 }
             }
 

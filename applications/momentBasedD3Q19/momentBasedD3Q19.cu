@@ -51,7 +51,7 @@ SourceFiles
 
 using namespace LBM;
 
-constexpr const label_t NStreams = 4;
+__host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
 
 int main(const int argc, const char *const argv[])
 {
@@ -66,28 +66,20 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
-    // Allocate the arrays on the host first
-    const host::array<scalar_t, VelocitySet> h_rho("rho", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_u("u", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_v("v", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_w("w", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_xx("m_xx", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_xy("m_xy", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_xz("m_xz", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_yy("m_yy", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_yz("m_yz", mesh, programCtrl);
-    const host::array<scalar_t, VelocitySet> h_m_zz("m_zz", mesh, programCtrl);
+    // Setup Streams
+    const std::array<cudaStream_t, NStreams()> streamsLBM = host::createCudaStreams<NStreams()>();
 
-    device::array<scalar_t> rho(h_rho, mesh);
-    device::array<scalar_t> u(h_u, mesh);
-    device::array<scalar_t> v(h_v, mesh);
-    device::array<scalar_t> w(h_w, mesh);
-    device::array<scalar_t> mxx(h_m_xx, mesh);
-    device::array<scalar_t> mxy(h_m_xy, mesh);
-    device::array<scalar_t> mxz(h_m_xz, mesh);
-    device::array<scalar_t> myy(h_m_yy, mesh);
-    device::array<scalar_t> myz(h_m_yz, mesh);
-    device::array<scalar_t> mzz(h_m_zz, mesh);
+    // Allocate the arrays on the device
+    device::array<scalar_t> rho(host::array<scalar_t, VelocitySet>("rho", mesh, programCtrl));
+    device::array<scalar_t> u(host::array<scalar_t, VelocitySet>("u", mesh, programCtrl));
+    device::array<scalar_t> v(host::array<scalar_t, VelocitySet>("v", mesh, programCtrl));
+    device::array<scalar_t> w(host::array<scalar_t, VelocitySet>("w", mesh, programCtrl));
+    device::array<scalar_t> mxx(host::array<scalar_t, VelocitySet>("m_xx", mesh, programCtrl));
+    device::array<scalar_t> mxy(host::array<scalar_t, VelocitySet>("m_xy", mesh, programCtrl));
+    device::array<scalar_t> mxz(host::array<scalar_t, VelocitySet>("m_xz", mesh, programCtrl));
+    device::array<scalar_t> myy(host::array<scalar_t, VelocitySet>("m_yy", mesh, programCtrl));
+    device::array<scalar_t> myz(host::array<scalar_t, VelocitySet>("m_yz", mesh, programCtrl));
+    device::array<scalar_t> mzz(host::array<scalar_t, VelocitySet>("m_zz", mesh, programCtrl));
 
     const device::ptrCollection<10, scalar_t> devPtrs(
         rho.ptr(),
@@ -148,19 +140,11 @@ int main(const int argc, const char *const argv[])
         }
 
         // Main kernel
-        for (label_t stream = 0; stream < NStreams; stream++)
-        {
-            momentBasedD3Q19<<<blockDimensions, mesh.threadBlock(), 0, streamsLBM[stream]>>>(
-                devPtrs,
-                blockHalo.fGhost(),
-                blockHalo.gGhost(),
-                z_stream_segment_size * stream);
-        }
-
-        for (label_t stream = 0; stream < NStreams; stream++)
-        {
-            cudaStreamSynchronize(streamsLBM[stream]);
-        }
+        host::constexpr_for<0, NStreams()>(
+            [&](const auto stream)
+            {
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+            });
 
         // Halo pointer swap
         blockHalo.swap();

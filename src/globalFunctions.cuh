@@ -297,7 +297,11 @@ namespace LBM
         template <const label_t nStreams>
         [[nodiscard]] const std::array<cudaStream_t, nStreams> createCudaStreams() noexcept
         {
+<<<<<<< HEAD
             std::array<cudaStream_t, 4> streamsLBM;
+=======
+            std::array<cudaStream_t, nStreams> streamsLBM;
+>>>>>>> 82b3f24 (Initial commit)
 
             for (label_t stream = 0; stream < nStreams; stream++)
             {

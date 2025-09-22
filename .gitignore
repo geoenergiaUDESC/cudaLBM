@@ -34,32 +34,21 @@
 # Additional files
 .vscode
 opt
-LBM
 thirdParty/openmpi*
 thirdParty/ucx
 thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
-testCompute.sh
-allTest.sh
-meshTools/mesh
-meshTools/caseInfo
-meshTools/meshTools
-lidDrivenCavity/mesh
-unitTest
-lidDrivenCavity/0
-lidDrivenCavity/rho
-lidDrivenCavity/u
-lidDrivenCavity/v
-lidDrivenCavity/w
-lidDrivenCavity/m_xx
-lidDrivenCavity/m_xy
-lidDrivenCavity/m_xz
-lidDrivenCavity/m_yy
-lidDrivenCavity/m_yz
-lidDrivenCavity/m_zz
-lidDrivenCavity/nodeTypes
+build
+
+# Lid driven cavity directory ignores
 lidDrivenCavity/*.dat
 lidDrivenCavity/*.vtu
 lidDrivenCavity/*.vts
 lidDrivenCavity/*.LBMBin
-build
+
+# Unit test directory ignores
+unitTests/ComputeSanitizerTest/*.dat
+unitTests/ComputeSanitizerTest/*.vtu
+unitTests/ComputeSanitizerTest/*.vts
+unitTests/ComputeSanitizerTest/*.LBMBin
+unitTests/ComputeSanitizerTest/logs

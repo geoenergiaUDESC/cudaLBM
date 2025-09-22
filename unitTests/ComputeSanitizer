@@ -1,0 +1,115 @@
+#*---------------------------------------------------------------------------*#
+#                                                                             #
+# cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          #
+# Developed at UDESC - State University of Santa Catarina                     #
+# Website: https://www.udesc.br                                               #
+# Github: https://github.com/geoenergiaUDESC/cudaLBM                          #
+#                                                                             #
+#*---------------------------------------------------------------------------*#
+
+#!/bin/bash
+
+cd ComputeSanitizerTest
+
+# Define which GPUs to test (modify this array as needed)
+GPUS=(0 1)  # Example: test GPUs 0 and 1
+# GPUS=(0)     # Example: test only GPU 0
+# GPUS=(0 1 2) # Example: test GPUs 0, 1, and 2
+
+# Define common flags
+COMMON_FLAGS="--print-limit 1000 --check-bulk-copy=yes --check-device-heap=yes --check-exit-code=yes --racecheck-detect-level=error --racecheck-memcpy-async=yes --racecheck-num-workers=0 --racecheck-report=analysis --check-optix-leaks --check-warpgroup-mma=yes --check-api-memory-access=yes --check-optix --track-unused-memory"
+
+# Define tools to test
+TOOLS=("memcheck" "racecheck" "synccheck" "initcheck")
+
+# Create a timestamp for log files
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_DIR="logs/log_$TIMESTAMP"
+mkdir -p "$LOG_DIR"
+
+# Arrays to store results
+RESULTS=()
+FAILED_TESTS=()
+
+# Print header using printf
+printf "/*---------------------------------------------------------------------------*\\ \n"
+printf "|                                                                             |\n"
+printf "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |\n"
+printf "| Developed at UDESC - State University of Santa Catarina                     |\n"
+printf "| Website: https://www.udesc.br                                               |\n"
+printf "| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |\n"
+printf "|                                                                             |\n"
+printf "\\*---------------------------------------------------------------------------*/\n"
+printf "\n"
+printf "ComputeSanitizer:\n"
+printf "{\n"
+printf "    deviceList: [%s];\n" "${GPUS[*]}"
+printf "    Log directory: %s\n" "$LOG_DIR"
+printf "\n"
+
+# Run tests for each GPU
+for GPU in "${GPUS[@]}"; do
+    printf "    GPU %d:\n" "$GPU"
+    printf "    {\n"
+    for TOOL in "${TOOLS[@]}"; do
+        TEST_NAME="${TOOL}"
+        LOG_FILE="$LOG_DIR/${TEST_NAME}_GPU${GPU}.log"
+        
+        printf "        %s:" "$TEST_NAME"
+        
+        # Clean case and run test, capturing output and exit code
+        source cleanCase.sh
+        compute-sanitizer --tool="$TOOL" $COMMON_FLAGS momentBasedD3Q19 -GPU "$GPU" > "$LOG_FILE" 2>&1
+        EXIT_CODE=$?
+        
+        # Store result
+        if [ $EXIT_CODE -eq 0 ]; then
+            RESULTS+=("$TEST_NAME on GPU $GPU: PASS")
+            printf " PASS\n"
+        else
+            RESULTS+=("$TEST_NAME on GPU $GPU: FAIL (exit code: $EXIT_CODE)")
+            FAILED_TESTS+=("$TEST_NAME on GPU $GPU")
+            printf " FAIL (see %s)\n" "$LOG_FILE"
+        fi
+    done
+    printf "    };\n"
+    printf "\n"
+done
+
+# Clean up and exit directory
+source cleanCase.sh
+cd ../
+
+# Print summary
+
+# Calculate counts before using them
+TOTAL_TESTS=${#RESULTS[@]}
+FAILED_COUNT=${#FAILED_TESTS[@]}
+PASSED_COUNT=$((TOTAL_TESTS - FAILED_COUNT))
+
+if [ $FAILED_COUNT -gt 0 ]; then
+    for result in "${RESULTS[@]}"; do
+        printf "%s\n" "$result"
+    done
+    printf "\n"
+fi
+
+# Final status
+if [ $FAILED_COUNT -eq 0 ]; then
+    printf "    All unit tests passed (%d/%d)\n" "$PASSED_COUNT" "$TOTAL_TESTS"
+    EXIT_STATUS=0
+else
+    printf "    Some unit tests failed (%d/%d passed)\n" "$PASSED_COUNT" "$TOTAL_TESTS"
+    printf "\n"
+    printf "    Failed tests:\n"
+    for test in "${FAILED_TESTS[@]}"; do
+        printf "      - %s\n" "$test"
+    done
+    printf "\n"
+    printf "    Check individual log files in: ComputeSanitizerTest/%s\n" "$LOG_DIR"
+    EXIT_STATUS=1
+fi
+printf "};\n"
+
+# Use return instead of exit to avoid closing the terminal
+return $EXIT_STATUS 2>/dev/null || exit $EXIT_STATUS

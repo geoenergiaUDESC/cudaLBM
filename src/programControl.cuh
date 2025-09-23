@@ -68,15 +68,12 @@ namespace LBM
          **/
         [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
-              caseName_(string::extractParameter<std::string>(string::readFile("caseInfo"), "caseName")),
+              caseName_(string::extractParameter<std::string>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
-              Lx_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Lx")),
-              Ly_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Ly")),
-              Lz_(string::extractParameter<scalar_t>(string::readFile("caseInfo"), "Lz")),
-              nTimeSteps_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nTimeSteps")),
-              saveInterval_(string::extractParameter<label_t>(string::readFile("caseInfo"), "saveInterval")),
-              infoInterval_(string::extractParameter<label_t>(string::readFile("caseInfo"), "infoInterval")),
+              nTimeSteps_(string::extractParameter<label_t>(string::readFile("programControl"), "nTimeSteps")),
+              saveInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "saveInterval")),
+              infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
               latestTime_(fileIO::latestTime(caseName_))
         {
             static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
@@ -92,9 +89,9 @@ namespace LBM
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "\\*---------------------------------------------------------------------------*/" << std::endl;
             std::cout << std::endl;
-            std::cout << "Executable: " << input_.commandLine()[0] << std::endl;
             std::cout << "programControl:" << std::endl;
             std::cout << "{" << std::endl;
+            std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
             std::cout << "    deviceList: [";
             if (deviceList().size() > 1)
             {
@@ -104,17 +101,14 @@ namespace LBM
                 }
             }
             std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
-            std::cout << "    Case: " << caseName_ << ";" << std::endl;
+            std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
-            std::cout << "    Lx = " << Lx_ << ";" << std::endl;
-            std::cout << "    Ly = " << Ly_ << ";" << std::endl;
-            std::cout << "    Lz = " << Lz_ << ";" << std::endl;
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
             std::cout << "    latestTime = " << latestTime_ << ";" << std::endl;
-            std::cout << "    Scalar type: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << std::endl;
-            std::cout << "    Label type: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << std::endl;
+            std::cout << "    scalarType: " << ((sizeof(scalar_t) == 4) ? "32 bit" : "64 bit") << ";" << std::endl;
+            std::cout << "    labelType: " << ((sizeof(label_t) == 4) ? "uint32_t" : "uint64_t") << ";" << std::endl;
             std::cout << "};" << std::endl;
             std::cout << std::endl;
 
@@ -216,11 +210,6 @@ namespace LBM
             return input_.commandLine();
         }
 
-        __host__ [[nodiscard]] inline constexpr const pointVector L() const noexcept
-        {
-            return {Lx_, Ly_, Lz_};
-        }
-
     private:
         /**
          * @brief A reference to the input control object
@@ -243,13 +232,6 @@ namespace LBM
         const scalar_t u_inf_;
 
         /**
-         * @brief Characteristic domain length in the x, y and z directions
-         **/
-        const scalar_t Lx_;
-        const scalar_t Ly_;
-        const scalar_t Lz_;
-
-        /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
          **/
         const label_t nTimeSteps_;
@@ -265,7 +247,7 @@ namespace LBM
         template <typename T>
         [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
         {
-            return string::extractParameter<T>(string::readFile("caseInfo"), varName);
+            return string::extractParameter<T>(string::readFile("programControl"), varName);
         }
     };
 }

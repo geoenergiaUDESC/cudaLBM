@@ -76,28 +76,32 @@ namespace LBM
              * @param[in] programCtrl Program control object containing simulation parameters
              * @throws Error if mesh dimensions are invalid or GPU memory is insufficient
              *
-             * This constructor reads mesh dimensions from the "caseInfo" file and performs:
+             * This constructor reads mesh dimensions from the "programControl" file and performs:
              * - Validation of block decomposition compatibility
              * - Memory requirement checking for GPU
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
             [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
-                : nx_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nx")),
-                  ny_(string::extractParameter<label_t>(string::readFile("caseInfo"), "ny")),
-                  nz_(string::extractParameter<label_t>(string::readFile("caseInfo"), "nz")),
+                : nx_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nx")),
+                  ny_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "ny")),
+                  nz_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nz")),
                   nPoints_(nx_ * ny_ * nz_),
-                  L_(programCtrl.L())
+                  L_(
+                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")})
             {
-#ifdef VERBOSE
-                std::cout << "Allocated global latticeMesh object:" << std::endl;
+                std::cout << "latticeMesh:" << std::endl;
                 std::cout << "{" << std::endl;
                 std::cout << "    nx = " << nx_ << ";" << std::endl;
                 std::cout << "    ny = " << ny_ << ";" << std::endl;
                 std::cout << "    nz = " << nz_ << ";" << std::endl;
+                std::cout << "    Lx = " << L_.x << ";" << std::endl;
+                std::cout << "    Ly = " << L_.y << ";" << std::endl;
+                std::cout << "    Lz = " << L_.z << ";" << std::endl;
                 std::cout << "};" << std::endl;
                 std::cout << std::endl;
-#endif
 
                 // Perform a block dimensions safety check
                 {

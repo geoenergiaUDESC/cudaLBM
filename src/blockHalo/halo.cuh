@@ -70,12 +70,56 @@ namespace LBM
         public:
             /**
              * @brief Constructs halo regions from moment data and mesh
-             * @param[in] fMom Moment representation of distribution functions
+             * @param[in] mesh Lattice mesh defining simulation domain
+             * @param[in] programCtrl Program control parameters
+             **/
+            [[nodiscard]] halo(
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl) noexcept
+                : fGhost_(haloFace<VelocitySet>(
+                      host::array<scalar_t, VelocitySet>("rho", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("u", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("v", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("w", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xx", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xy", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xz", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_yy", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_yz", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_zz", mesh, programCtrl),
+                      mesh)),
+                  gGhost_(haloFace<VelocitySet>(
+                      host::array<scalar_t, VelocitySet>("rho", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("u", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("v", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("w", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xx", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xy", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_xz", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_yy", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_yz", mesh, programCtrl),
+                      host::array<scalar_t, VelocitySet>("m_zz", mesh, programCtrl),
+                      mesh)) {};
+
+            /**
+             * @brief Constructs halo regions from moment data and mesh
+             * @param[in] rho,u,v,w,m_xx,m_xy,m_xz,m_yy,m_yz,m_zz Moment representation of distribution functions
              * @param[in] mesh Lattice mesh defining simulation domain
              **/
-            [[nodiscard]] halo(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
-                : fGhost_(haloFace<VelocitySet>(fMom, mesh)),
-                  gGhost_(haloFace<VelocitySet>(fMom, mesh)) {};
+            [[nodiscard]] halo(
+                const host::array<scalar_t, VelocitySet> &rho,
+                const host::array<scalar_t, VelocitySet> &u,
+                const host::array<scalar_t, VelocitySet> &v,
+                const host::array<scalar_t, VelocitySet> &w,
+                const host::array<scalar_t, VelocitySet> &m_xx,
+                const host::array<scalar_t, VelocitySet> &m_xy,
+                const host::array<scalar_t, VelocitySet> &m_xz,
+                const host::array<scalar_t, VelocitySet> &m_yy,
+                const host::array<scalar_t, VelocitySet> &m_yz,
+                const host::array<scalar_t, VelocitySet> &m_zz,
+                const host::latticeMesh &mesh) noexcept
+                : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
+                  gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)) {};
 
             /**
              * @brief Default destructor

@@ -73,8 +73,7 @@ namespace LBM
     /**
      * @brief Veriefies if the command line has the argument -type
      * @return A string representing the convertion type passed at the command line
-     * @param argc First argument passed to main
-     * @param argv Second argument passed to main
+     * @param[in] programCtrl Program control parameters
      **/
     __host__ [[nodiscard]] const std::string getConversionType(const programControl &programCtrl)
     {
@@ -87,7 +86,7 @@ namespace LBM
                     if (arg + 1 == programCtrl.commandLine().size())
                     {
                         throw std::runtime_error("Conversion type not specified: the correct syntax is -type T");
-                        return 0;
+                        return "";
                     }
                     else
                     {
@@ -98,6 +97,8 @@ namespace LBM
         }
 
         throw std::runtime_error("Mandatory parameter -type not specified: the correct syntax is -type T");
+
+        return "";
     }
 
     /**

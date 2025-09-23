@@ -66,10 +66,10 @@ namespace LBM
              * @post Device memory is allocated and initialized with host data
              **/
             template <class VelocitySet>
-            [[nodiscard]] array(const host::array<T, VelocitySet> &hostArray, const host::latticeMesh &mesh)
+            [[nodiscard]] array(const host::array<T, VelocitySet> &hostArray)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   name_(hostArray.name()),
-                  mesh_(mesh){};
+                  mesh_(hostArray.mesh()){};
 
             /**
              * @brief Destructor - automatically releases device memory

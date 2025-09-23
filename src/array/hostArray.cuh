@@ -76,7 +76,8 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : arr_(initialise_array(mesh, name, programCtrl)),
-                  name_(name) {};
+                  name_(name),
+                  mesh_(mesh) {};
 
             /**
              * @brief Destructor for the host array class
@@ -101,6 +102,15 @@ namespace LBM
                 return name_;
             }
 
+            /**
+             * @brief Get the mesh
+             * @return Const reference to mesh
+             **/
+            __host__ [[nodiscard]] inline constexpr const host::latticeMesh &mesh() const noexcept
+            {
+                return mesh_;
+            }
+
         private:
             /**
              * @brief The underlying std::vector
@@ -111,6 +121,11 @@ namespace LBM
              * @brief Names of the solution variable
              **/
             const std::string name_;
+
+            /**
+             * @brief Reference to the lattice mesh
+             **/
+            const host::latticeMesh mesh_;
 
             /**
              * @brief Initialize array from file or initial conditions

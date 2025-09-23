@@ -74,13 +74,24 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining simulation domain
              * @post All six halo faces are allocated and initialized with population data
              **/
-            [[nodiscard]] haloFace(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) noexcept
-                : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(fMom, mesh))),
-                  x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(fMom, mesh))),
-                  y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(fMom, mesh))),
-                  y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(fMom, mesh))),
-                  z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(fMom, mesh))),
-                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(fMom, mesh))) {};
+            [[nodiscard]] haloFace(
+                const host::array<scalar_t, VelocitySet> &rho,
+                const host::array<scalar_t, VelocitySet> &u,
+                const host::array<scalar_t, VelocitySet> &v,
+                const host::array<scalar_t, VelocitySet> &w,
+                const host::array<scalar_t, VelocitySet> &m_xx,
+                const host::array<scalar_t, VelocitySet> &m_xy,
+                const host::array<scalar_t, VelocitySet> &m_xz,
+                const host::array<scalar_t, VelocitySet> &m_yy,
+                const host::array<scalar_t, VelocitySet> &m_yz,
+                const host::array<scalar_t, VelocitySet> &m_zz,
+                const host::latticeMesh &mesh) noexcept
+                : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))) {};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -231,7 +242,18 @@ namespace LBM
              * @return Initialized population data for the specified halo face
              **/
             template <const label_t faceIndex, const label_t side>
-            __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(const std::vector<std::vector<scalar_t>> &fMom, const host::latticeMesh &mesh) const noexcept
+            __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
+                const host::array<scalar_t, VelocitySet> &rho,
+                const host::array<scalar_t, VelocitySet> &u,
+                const host::array<scalar_t, VelocitySet> &v,
+                const host::array<scalar_t, VelocitySet> &w,
+                const host::array<scalar_t, VelocitySet> &m_xx,
+                const host::array<scalar_t, VelocitySet> &m_xy,
+                const host::array<scalar_t, VelocitySet> &m_xz,
+                const host::array<scalar_t, VelocitySet> &m_yy,
+                const host::array<scalar_t, VelocitySet> &m_yz,
+                const host::array<scalar_t, VelocitySet> &m_zz,
+                const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
 
@@ -259,16 +281,17 @@ namespace LBM
 
                                         // Contiguous moment access
                                         const std::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
-                                            std::array<scalar_t, 10>{rho0<scalar_t>() + fMom[0][base],
-                                                                     fMom[1][base],
-                                                                     fMom[2][base],
-                                                                     fMom[3][base],
-                                                                     fMom[4][base],
-                                                                     fMom[5][base],
-                                                                     fMom[6][base],
-                                                                     fMom[7][base],
-                                                                     fMom[8][base],
-                                                                     fMom[9][base]});
+                                            std::array<scalar_t, 10>{
+                                                rho0<scalar_t>() + rho.arr()[base],
+                                                u.arr()[base],
+                                                v.arr()[base],
+                                                w.arr()[base],
+                                                m_xx.arr()[base],
+                                                m_xy.arr()[base],
+                                                m_xz.arr()[base],
+                                                m_yy.arr()[base],
+                                                m_yz.arr()[base],
+                                                m_zz.arr()[base]});
 
                                         // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
                                         handleGhostCells<faceIndex, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);

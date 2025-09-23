@@ -11,15 +11,9 @@
 
 caseName        lidDrivenCavity;
 
-nx              64;
-
-ny              64;
-
-nz              64;
-
 Re              10000;
 
-u_inf           0.0064;
+u_inf           0.0256;
 
 startFrom       latestTime;
 
@@ -27,14 +21,8 @@ startTime       0;
 
 nTimeSteps      201;
 
-saveInterval    2000;
+saveInterval    20000;
 
 infoInterval    20;
-
-Lx              1.0;
-
-Ly              1.0;
-
-Lz              1.0;
 
 \*---------------------------------------------------------------------------*/

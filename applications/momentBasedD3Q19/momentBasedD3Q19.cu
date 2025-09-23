@@ -137,15 +137,15 @@ int main(const int argc, const char *const argv[])
         }
 
         // Checkpoint
-        if (programCtrl.save(timeStep))
-        {
-            fileIO::writeFile(
-                programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
-                mesh,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-                host::toHost(devPtrs, mesh),
-                timeStep);
-        }
+        // if (programCtrl.save(timeStep))
+        // {
+        //     fileIO::writeFile(
+        //         programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
+        //         mesh,
+        //         {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+        //         host::toHost(devPtrs, mesh),
+        //         timeStep);
+        // }
 
         // Main kernel
         for (label_t stream = 0; stream < NStreams; stream++)

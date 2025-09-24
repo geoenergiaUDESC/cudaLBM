@@ -51,8 +51,33 @@ SourceFiles
 
 using namespace LBM;
 
-int main()
+int main(const int argc, const char *const argv[])
 {
+    const inputControl input(argc, argv);
+
+    // If we supply the -countDevices argument, just do the device count
+    if (input.isArgPresent("-countDevices"))
+    {
+        const deviceIndex_t deviceCount = countDevices<false>();
+
+        std::cout << "(";
+        if (deviceCount > 1)
+        {
+            for (deviceIndex_t index = 0; index < deviceCount - 1; index++)
+            {
+                std::cout << index << " ";
+            }
+            std::cout << deviceCount - 1;
+        }
+        else
+        {
+            std::cout << 0;
+        }
+        std::cout << ")" << std::endl;
+
+        return 0;
+    }
+
     const std::string CUDALBM_ARCHITECTURE_DETECTION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_DETECTION", "Automatic");
     const std::string CUDALBM_ARCHITECTURE_VERSION = getEnvironmentVariable("CUDALBM_ARCHITECTURE_VERSION");
     const std::string CUDALBM_BUILD_DIR = getEnvironmentVariable("CUDALBM_BUILD_DIR");
@@ -93,11 +118,11 @@ int main()
     }
     else
     {
-        const deviceIndex_t deviceCount = countDevices();
+        const deviceIndex_t deviceCount = countDevices<false>();
 
         std::string all_arch_flags = "";
 
-        for (int i = 0; i < deviceCount; ++i)
+        for (deviceIndex_t i = 0; i < deviceCount; ++i)
         {
             const cudaDeviceProp props = getDeviceProperties(i);
 

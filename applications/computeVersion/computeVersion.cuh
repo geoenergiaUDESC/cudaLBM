@@ -53,6 +53,7 @@ SourceFiles
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/LBMTypedefs.cuh"
 #include "../../src/globalFunctions.cuh"
+#include "../../src/inputControl.cuh"
 
 namespace LBM
 {
@@ -60,27 +61,48 @@ namespace LBM
      * @brief Queries and returns the number of available CUDA devices.
      * @details Checks for CUDA devices and handles potential errors during device querying.
      * @return The number of CUDA devices available. Returns 0 if no devices are found.
+     * @tparam throws If true, the function may throw. If not, the function returns 0 on error.
      * @throws std::runtime_error If CUDA device query fails or returns an invalid count.
      **/
+    template <const bool throws>
     __host__ [[nodiscard]] deviceIndex_t countDevices()
     {
         deviceIndex_t deviceCount = 0;
 
         if (cudaGetDeviceCount(&deviceCount) != cudaSuccess)
         {
-            throw std::runtime_error("Error querying CUDA devices. Is the driver installed correctly?");
+            if constexpr (throws)
+            {
+                throw std::runtime_error("Error querying CUDA devices. Is the driver installed correctly?");
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         if (deviceCount < 0)
         {
-            throw std::runtime_error("Error querying CUDA devices. Device count is negative.");
+            if constexpr (throws)
+            {
+                throw std::runtime_error("Error querying CUDA devices. Device count is negative.");
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         if (deviceCount == 0)
         {
-            // throw std::runtime_error("No CUDA devices found on the system.");
-            std::cout << "No CUDA devices found on the system." << std::endl;
-            return 0;
+            if constexpr (throws)
+            {
+                throw std::runtime_error("No CUDA devices found on the system.");
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         return deviceCount;

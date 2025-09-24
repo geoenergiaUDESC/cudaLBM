@@ -66,9 +66,6 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
-    // Setup Streams
-    const std::array<cudaStream_t, NStreams()> streamsLBM = host::createCudaStreams<NStreams()>();
-
     // Allocate the arrays on the device
     device::array<scalar_t> rho(host::array<scalar_t, VelocitySet>("rho", mesh, programCtrl));
     device::array<scalar_t> u(host::array<scalar_t, VelocitySet>("u", mesh, programCtrl));
@@ -93,28 +90,17 @@ int main(const int argc, const char *const argv[])
         myz.ptr(),
         mzz.ptr());
 
-    device::halo<VelocitySet> blockHalo(
-        {h_rho.arr(),
-         h_u.arr(),
-         h_v.arr(),
-         h_w.arr(),
-         h_m_xx.arr(),
-         h_m_xy.arr(),
-         h_m_xz.arr(),
-         h_m_yy.arr(),
-         h_m_yz.arr(),
-         h_m_zz.arr()},
-        mesh);
+    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
 
     // Setup Streams
-    const std::array<cudaStream_t, NStreams> streamsLBM = host::createCudaStreams<NStreams>();
+    const std::array<cudaStream_t, NStreams()> streamsLBM = host::createCudaStreams<NStreams()>();
 
-    const label_t z_stream_segment_size = mesh.nz() / NStreams;
+    // const label_t z_stream_segment_size = mesh.nz() / NStreams();
 
-    const dim3 blockDimensions{
-        static_cast<uint32_t>(mesh.nx() / block::nx()),
-        static_cast<uint32_t>(mesh.ny() / block::ny()),
-        static_cast<uint32_t>(mesh.nz() / (NStreams * block::nz()))};
+    // const dim3 blockDimensions{
+    //     static_cast<uint32_t>(mesh.nx() / block::nx()),
+    //     static_cast<uint32_t>(mesh.ny() / block::ny()),
+    //     static_cast<uint32_t>(mesh.nz() / (NStreams() * block::nz()))};
 
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
@@ -146,16 +132,16 @@ int main(const int argc, const char *const argv[])
                 momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
 
-        for (label_t stream = 0; stream < NStreams; stream++)
-        {
-            cudaStreamSynchronize(streamsLBM[stream]);
-        }
+        // for (label_t stream = 0; stream < NStreams; stream++)
+        // {
+        //     cudaStreamSynchronize(streamsLBM[stream]);
+        // }
 
         // Halo pointer swap
         blockHalo.swap();
     }
 
-    for (label_t stream = 0; stream < NStreams; stream++)
+    for (label_t stream = 0; stream < NStreams(); stream++)
     {
         cudaStreamDestroy(streamsLBM[stream]);
     }

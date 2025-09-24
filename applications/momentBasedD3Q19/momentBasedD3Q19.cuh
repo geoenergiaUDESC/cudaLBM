@@ -72,8 +72,7 @@ namespace LBM
     launchBounds __global__ void momentBasedD3Q19(
         const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> fGhost,
-        const device::ptrCollection<6, scalar_t> gGhost,
-        const label_t zPointerOffset)
+        const device::ptrCollection<6, scalar_t> gGhost)
     {
         // Always a multiple of 32, so no need to check this(I think)
         // if (device::out_of_bounds())
@@ -82,11 +81,7 @@ namespace LBM
         // }
 
         // const label_t idx = device::idx();
-<<<<<<< HEAD
-        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z + zPointerOffset);
-=======
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
->>>>>>> 82b3f24 (Initial commit)
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -141,8 +136,7 @@ namespace LBM
             fGhost.ptr<2>(),
             fGhost.ptr<3>(),
             fGhost.ptr<4>(),
-            fGhost.ptr<5>(),
-            zPointerOffset);
+            fGhost.ptr<5>());
 
         // Calculate the moments either at the boundary or interior
         {
@@ -182,8 +176,7 @@ namespace LBM
             gGhost.ptr<2>(),
             gGhost.ptr<3>(),
             gGhost.ptr<4>(),
-            gGhost.ptr<5>(),
-            zPointerOffset);
+            gGhost.ptr<5>());
     }
 }
 

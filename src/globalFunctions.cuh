@@ -113,48 +113,6 @@ namespace LBM
     [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
     /**
-     * @brief Block dimensions descriptor
-     * @details Stores lattice dimensions in 3D space
-     **/
-    struct blockLabel_t
-    {
-        const label_t nx; // < Lattice points in x-direction
-        const label_t ny; // < Lattice points in y-direction
-        const label_t nz; // < Lattice points in z-direction
-    };
-
-    /**
-     * @brief Point indices descriptor
-     * @details Stores point indices in 3D space
-     **/
-    struct pointLabel_t
-    {
-        const label_t x; // < Lattice point in x-direction
-        const label_t y; // < Lattice point in y-direction
-        const label_t z; // < Lattice point in z-direction
-    };
-
-    /**
-     * @brief 1D range descriptor [begin, end)
-     **/
-    struct blockPartitionRange_t
-    {
-        const label_t begin; // < Inclusive start index
-        const label_t end;   // < Exclusive end index
-    };
-
-    /**
-     * @brief 3D block range descriptor
-     * @details Defines a rectangular region in lattice space
-     **/
-    struct blockRange_t
-    {
-        const blockPartitionRange_t xRange; // < X-dimension range
-        const blockPartitionRange_t yRange; // < Y-dimension range
-        const blockPartitionRange_t zRange; // < Z-dimension range
-    };
-
-    /**
      * @brief Host-side indexing operations
      **/
     namespace host
@@ -556,17 +514,35 @@ namespace LBM
         return 1.0;
     }
 
+    /**
+     * @brief Queries a device and gets its properties
+     * @param[in] deviceID The ID of the device to query
+     * @return A cudaDeviceProp struct containing the properties of deviceID
+     **/
     __host__ [[nodiscard]] const cudaDeviceProp getDeviceProperties(const int deviceID)
     {
         cudaDeviceProp props;
-        const cudaError_t error = cudaGetDeviceProperties(&props, deviceID);
 
-        if (error != cudaSuccess)
+        if (cudaGetDeviceProperties(&props, deviceID) != cudaSuccess)
         {
-            throw std::runtime_error("some exception here");
+            throw std::runtime_error("Failed to get CUDA device properties");
         }
 
         return props;
+    }
+
+    /**
+     * @brief Allocates a symbol of type T to the device
+     * @param[in] symbol The symbol to which the value is to be copied
+     * @param[in] src The value to copy to the symbol
+     **/
+    template <typename T>
+    void copyToSymbol(const T &symbol, const T value)
+    {
+        cudaDeviceSynchronize();
+        const T valueTemp = value;
+        checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T)));
+        cudaDeviceSynchronize();
     }
 }
 

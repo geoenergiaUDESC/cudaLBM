@@ -80,6 +80,12 @@ namespace LBM
 
             static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
 
+            // Get the launch time
+            const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+            // Get current working directory
+            const std::filesystem::path launchDirectory = std::filesystem::current_path();
+
             std::cout << "/*---------------------------------------------------------------------------*\\" << std::endl;
             std::cout << "|                                                                             |" << std::endl;
             std::cout << "| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |" << std::endl;
@@ -92,6 +98,8 @@ namespace LBM
             std::cout << "programControl:" << std::endl;
             std::cout << "{" << std::endl;
             std::cout << "    programName: " << input_.commandLine()[0] << ";" << std::endl;
+            std::cout << "    launchTime: " << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S") << ";" << std::endl;
+            std::cout << "    launchDirectory: " << launchDirectory.string() << ";" << std::endl;
             std::cout << "    deviceList: [";
             if (deviceList().size() > 1)
             {

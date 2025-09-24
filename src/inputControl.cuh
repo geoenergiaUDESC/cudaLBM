@@ -52,6 +52,7 @@ SourceFiles
 
 #include "LBMIncludes.cuh"
 #include "LBMTypedefs.cuh"
+#include "strings.cuh"
 
 namespace LBM
 {
@@ -214,7 +215,7 @@ namespace LBM
             }
             else
             {
-                if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate"))
+                if ((executableName() == "fieldConvert") | (executableName() == "fieldCalculate") | (executableName() == "computeVersion"))
                 {
                     return {0};
                 }

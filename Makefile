@@ -34,7 +34,7 @@ directories:
 # Compile and run computeVersion to generate hardware.info
 $(CUDALBM_INCLUDE_DIR)/hardware.info: directories
 	@ $(MAKE) -C applications/computeVersion install
-	@ $(CUDALBM_BIN_DIR)/computeVersion
+	@ computeVersion
 
 # Compile computeVersion (tool subdirectories)
 $(TOOL_SUBDIRS): directories

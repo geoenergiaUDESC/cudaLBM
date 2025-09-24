@@ -165,46 +165,29 @@ namespace LBM
                     }
                 }
 
-                const scalar_t ReTemp = programCtrl.Re();
-                const scalar_t u_infTemp = programCtrl.u_inf();
-                const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
-                const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
-                const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
-                const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
-                const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
+                // Allocate programControl symbols on the GPU (clean up later)
+                {
+                    const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
+                    const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
+                    const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
+                    const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
+                    const scalar_t omegaVar_d2Temp = omegaTemp * static_cast<scalar_t>(0.5);
 
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::Re, &ReTemp, sizeof(device::Re)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::u_inf, &u_infTemp, sizeof(device::u_inf)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::tau, &tauTemp, sizeof(device::tau)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::omega, &omegaTemp, sizeof(device::omega)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::t_omegaVar, &t_omegaVarTemp, sizeof(device::t_omegaVar)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::omegaVar_d2, &omegaVar_d2Temp, sizeof(device::omegaVar_d2)));
-                cudaDeviceSynchronize();
+                    copyToSymbol(device::Re, programCtrl.Re());
+                    copyToSymbol(device::u_inf, programCtrl.u_inf());
+                    copyToSymbol(device::tau, tauTemp);
+                    copyToSymbol(device::omega, omegaTemp);
+                    copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
+                    copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+                }
 
-                const label_t nxBlocksTemp = nxBlocks();
-                const label_t nyBlocksTemp = nyBlocks();
-                const label_t nzBlocksTemp = nzBlocks();
-
-                // Allocate symbols on the GPU
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::nx, &nx_, sizeof(device::nx)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::ny, &ny_, sizeof(device::ny)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::nz, &nz_, sizeof(device::nz)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_X, &nxBlocksTemp, sizeof(device::NUM_BLOCK_X)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Y, &nyBlocksTemp, sizeof(device::NUM_BLOCK_Y)));
-                cudaDeviceSynchronize();
-                checkCudaErrors(cudaMemcpyToSymbol(device::NUM_BLOCK_Z, &nzBlocksTemp, sizeof(device::NUM_BLOCK_Z)));
-                cudaDeviceSynchronize();
+                // Allocate mesh symbols on the GPU
+                copyToSymbol(device::nx, nx_);
+                copyToSymbol(device::ny, ny_);
+                copyToSymbol(device::nz, nz_);
+                copyToSymbol(device::NUM_BLOCK_X, nxBlocks());
+                copyToSymbol(device::NUM_BLOCK_Y, nyBlocks());
+                copyToSymbol(device::NUM_BLOCK_Z, nzBlocks());
             };
 
             /**

@@ -55,7 +55,6 @@ SourceFiles
 
 namespace LBM
 {
-
     /**
      * @brief Shorthand for __restrict__
      **/
@@ -86,6 +85,10 @@ namespace LBM
 #elif SCALAR_PRECISION_64
     typedef double scalar_t;
 #endif
+
+    /**
+     * @brief Struct used to hold three-dimensional coordinates of a point
+     **/
     struct pointVector
     {
         const scalar_t x;
@@ -103,6 +106,48 @@ namespace LBM
 #elif LABEL_SIZE_64
     typedef uint64_t label_t;
 #endif
+
+    /**
+     * @brief Block dimensions descriptor
+     * @details Stores lattice dimensions in 3D space
+     **/
+    struct blockLabel_t
+    {
+        const label_t nx; // < Lattice points in x-direction
+        const label_t ny; // < Lattice points in y-direction
+        const label_t nz; // < Lattice points in z-direction
+    };
+
+    /**
+     * @brief Point indices descriptor
+     * @details Stores point indices in 3D space
+     **/
+    struct pointLabel_t
+    {
+        const label_t x; // < Lattice point in x-direction
+        const label_t y; // < Lattice point in y-direction
+        const label_t z; // < Lattice point in z-direction
+    };
+
+    /**
+     * @brief 1D range descriptor [begin, end)
+     **/
+    struct blockPartitionRange_t
+    {
+        const label_t begin; // < Inclusive start index
+        const label_t end;   // < Exclusive end index
+    };
+
+    /**
+     * @brief 3D block range descriptor
+     * @details Defines a rectangular region in lattice space
+     **/
+    struct blockRange_t
+    {
+        const blockPartitionRange_t xRange; // < X-dimension range
+        const blockPartitionRange_t yRange; // < Y-dimension range
+        const blockPartitionRange_t zRange; // < Z-dimension range
+    };
 
     /**
      * @brief Type used to contain a variable or variables over a block of shared memory
@@ -283,12 +328,12 @@ namespace LBM
     template <const ctorType::type T>
     using constructorType = const std::integral_constant<ctorType::type, T>;
 
-    /**
-     * @brief Device constant variables
-     * @note These variables MUST be initialised on the GPU at program start with cudaMemcpyToSymbol
-     **/
     namespace device
     {
+        /**
+         * @brief Device constant variables
+         * @note These variables MUST be initialised on the GPU at program start with cudaMemcpyToSymbol
+         **/
         __device__ __constant__ label_t nx;
         __device__ __constant__ label_t ny;
         __device__ __constant__ label_t nz;

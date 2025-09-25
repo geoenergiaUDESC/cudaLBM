@@ -80,7 +80,8 @@ namespace LBM
         //     return;
         // }
 
-        const label_t idx = device::idx();
+        // const label_t idx = device::idx();
+        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS()>(

@@ -53,6 +53,84 @@ using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
 
+namespace LBM
+{
+    template <const label_t N>
+    class streamHandler
+    {
+    public:
+        __host__ [[nodiscard]] streamHandler() noexcept
+            : streams_(createCudaStreams())
+        {
+            static_assert(N > 0, "Number of CUDA streams must be positive!");
+        }
+
+        ~streamHandler() noexcept
+        {
+            if constexpr (N == 1)
+            {
+                cudaStreamSynchronize(streams_[0]);
+                cudaStreamDestroy(streams_[0]);
+            }
+            else
+            {
+                for (label_t stream = 0; stream < N; stream++)
+                {
+                    cudaStreamSynchronize(streams_[stream]);
+                }
+                for (label_t stream = 0; stream < N; stream++)
+                {
+                    cudaStreamDestroy(streams_[stream]);
+                }
+            }
+        }
+
+        inline void synchronizeAll() const noexcept
+        {
+            host::constexpr_for<0, N>(
+                [&](const auto stream)
+                {
+                    cudaStreamSynchronize(streams_[stream]);
+                });
+        }
+
+        template <const label_t stream_>
+        inline void synchronize(const std::integral_constant<label_t, stream_> stream) const noexcept
+        {
+            static_assert(stream_ < N, "Attempting to access an invalid stream: stream number must be < N");
+            cudaStreamSynchronize(streams_[stream()]);
+        }
+
+        template <const label_t stream_>
+        __device__ cudaStream_t &operator[](const std::integral_constant<label_t, stream_> stream) const noexcept
+        {
+            return streams_[stream()];
+        }
+
+        __host__ [[nodiscard]] inline const std::array<cudaStream_t, N> &streams() const noexcept
+        {
+            return streams_;
+        }
+
+    private:
+        __host__ [[nodiscard]] static const std::array<cudaStream_t, N> createCudaStreams() noexcept
+        {
+            std::array<cudaStream_t, N> streamsLBM;
+
+            for (label_t stream = 0; stream < N; stream++)
+            {
+                checkCudaErrors(cudaDeviceSynchronize());
+                checkCudaErrors(cudaStreamCreate(&streamsLBM[stream]));
+                checkCudaErrors(cudaDeviceSynchronize());
+            }
+
+            return streamsLBM;
+        }
+
+        const std::array<cudaStream_t, N> streams_;
+    };
+}
+
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -93,7 +171,7 @@ int main(const int argc, const char *const argv[])
     device::halo<VelocitySet> blockHalo(mesh, programCtrl);
 
     // Setup Streams
-    const std::array<cudaStream_t, NStreams()> streamsLBM = host::createCudaStreams<NStreams()>();
+    const streamHandler<NStreams()> streamsLBM;
 
     // const label_t z_stream_segment_size = mesh.nz() / NStreams();
 
@@ -129,21 +207,18 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                momentBasedD3Q19<<<
+                    mesh.gridBlock(),
+                    mesh.threadBlock(),
+                    0,
+                    streamsLBM.streams()[stream]>>>(
+                    devPtrs,
+                    blockHalo.fGhost(),
+                    blockHalo.gGhost());
             });
-
-        // for (label_t stream = 0; stream < NStreams; stream++)
-        // {
-        //     cudaStreamSynchronize(streamsLBM[stream]);
-        // }
 
         // Halo pointer swap
         blockHalo.swap();
-    }
-
-    for (label_t stream = 0; stream < NStreams(); stream++)
-    {
-        cudaStreamDestroy(streamsLBM[stream]);
     }
 
     return 0;

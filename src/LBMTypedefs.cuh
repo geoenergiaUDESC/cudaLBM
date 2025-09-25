@@ -205,7 +205,7 @@ namespace LBM
              * @pre index_ must be in range [0, N-1]
              * @note No runtime bounds checking - compile-time safe
              **/
-            template <label_t index_>
+            template <const label_t index_>
             __device__ T &operator()(const label_constant<index_> index) __restrict__ noexcept
             {
                 return data_[index()];
@@ -219,7 +219,7 @@ namespace LBM
              * @pre index_ must be in range [0, N-1]
              * @note No runtime bounds checking - compile-time safe
              **/
-            template <label_t index_>
+            template <const label_t index_>
             __device__ const T &operator()(const label_constant<index_> index) __restrict__ const noexcept
             {
                 return data_[index()];

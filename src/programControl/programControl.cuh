@@ -50,11 +50,11 @@ SourceFiles
 #ifndef __MBLBM_PROGRAMCONTROL_CUH
 #define __MBLBM_PROGRAMCONTROL_CUH
 
-#include "LBMIncludes.cuh"
-#include "LBMTypedefs.cuh"
-#include "strings.cuh"
-#include "inputControl.cuh"
-#include "fileIO/fileIO.cuh"
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../strings.cuh"
+#include "../inputControl.cuh"
+#include "../fileIO/fileIO.cuh"
 
 namespace LBM
 {
@@ -259,5 +259,7 @@ namespace LBM
         }
     };
 }
+
+#include "streamHandler.cuh"
 
 #endif

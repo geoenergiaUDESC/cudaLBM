@@ -71,37 +71,6 @@ namespace LBM
         const std::vector<std::string> &);
 
     /**
-     * @brief Veriefies if the command line has the argument -type
-     * @return A string representing the convertion type passed at the command line
-     * @param[in] programCtrl Program control parameters
-     **/
-    __host__ [[nodiscard]] const std::string getConversionType(const programControl &programCtrl)
-    {
-        if (programCtrl.input().isArgPresent("-type"))
-        {
-            for (label_t arg = 0; arg < programCtrl.commandLine().size(); arg++)
-            {
-                if (programCtrl.commandLine()[arg] == "-type")
-                {
-                    if (arg + 1 == programCtrl.commandLine().size())
-                    {
-                        throw std::runtime_error("Conversion type not specified: the correct syntax is -type T");
-                        return "";
-                    }
-                    else
-                    {
-                        return programCtrl.commandLine()[arg + 1];
-                    }
-                }
-            }
-        }
-
-        throw std::runtime_error("Mandatory parameter -type not specified: the correct syntax is -type T");
-
-        return "";
-    }
-
-    /**
      * @brief Unordered map of the writer types to the appropriate functions
      **/
     const std::unordered_map<std::string, WriterFunction> writers = {

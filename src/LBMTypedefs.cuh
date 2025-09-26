@@ -325,8 +325,19 @@ namespace LBM
             READ_IF_PRESENT = 2
         } type;
     }
-    template <const ctorType::type T>
-    using constructorType = const std::integral_constant<ctorType::type, T>;
+    // template <const ctorType::type T>
+    // using constructorType = const std::integral_constant<ctorType::type, T>;
+
+    namespace tType
+    {
+        typedef enum Enum : int
+        {
+            instantaneous = 0,
+            timeAverage = 1
+        } type;
+    }
+    // template <const tType::type T>
+    // using timeType = const std::integral_constant<tType::type, T>;
 
     namespace device
     {

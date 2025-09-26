@@ -60,7 +60,7 @@ namespace LBM
          * @tparam T Data type of array elements
          * @tparam VelocitySet Velocity set configuration for LBM simulation
          **/
-        template <typename T, class VelocitySet>
+        template <typename T, class VelocitySet, const tType::type TimeType>
         class array
         {
         public:
@@ -78,6 +78,18 @@ namespace LBM
                 : arr_(initialise_array(mesh, name, programCtrl)),
                   name_(name),
                   mesh_(mesh) {};
+
+            // In this version of the constructor:
+            // Read a pre-defined caseName
+            // Read the fieldNames from the file
+            // Also read the data from the file
+            // [[nodiscard]] array(
+            //     const std::string &caseName,
+            //     const host::latticeMesh &mesh,
+            //     const label_t time)
+            //     : arr_(initialise_array(caseName, mesh, time)),
+            //       name_(name),
+            //       mesh_(mesh) {};
 
             /**
              * @brief Destructor for the host array class
@@ -109,6 +121,11 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const host::latticeMesh &mesh() const noexcept
             {
                 return mesh_;
+            }
+
+            __host__ [[nodiscard]] inline consteval tType::type timeType() const noexcept
+            {
+                return TimeType;
             }
 
         private:
@@ -146,6 +163,26 @@ namespace LBM
                 else
                 {
                     return initialConditions(mesh, fieldName);
+                }
+            }
+
+            // Initialises the array from the caseName
+            [[nodiscard]] const std::vector<T> initialise_array(
+                const std::string &caseName,
+                const host::latticeMesh &mesh,
+                const label_t time)
+            {
+                if (fileIO::hasIndexedFiles(caseName))
+                {
+                    // Should take the field name rather than the case name
+                    const std::string fileName = caseName + "_" + std::to_string(time) + ".LBMBin";
+
+                    return fileIO::readFieldByName<T>(fileName, caseName);
+                }
+                else
+                {
+                    // Should throw if not found
+                    return initialConditions(mesh, caseName);
                 }
             }
 
@@ -258,6 +295,14 @@ namespace LBM
                 : arr_(initialiseVector(programCtrl)),
                   varNames_(varNames) {};
 
+            // Constructs from a file prefix
+            [[nodiscard]] arrayCollection(
+                const std::string &fileNamePrefix,
+                const std::vector<std::string> &varNames,
+                const label_t timeIndex)
+                : arr_(initialiseVector(fileNamePrefix, timeIndex)),
+                  varNames_(varNames) {};
+
             /**
              * @brief Destructor for the host arrayCollection class
              **/
@@ -310,8 +355,23 @@ namespace LBM
                 }
 
                 const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
-                std::cout << "Reading from file " << fileName << std::endl;
-                std::cout << std::endl;
+                // std::cout << "Reading from file " << fileName << std::endl;
+                // std::cout << std::endl;
+                return fileIO::readFieldFile<T>(fileName);
+            }
+
+            [[nodiscard]] const std::vector<T> initialiseVector(const std::string &fileNamePrefix, const label_t timeIndex) const
+            {
+                static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
+
+                // Get the latest time step
+                if (!fileIO::hasIndexedFiles(fileNamePrefix))
+                {
+                    throw std::runtime_error("Did not find indexed case files");
+                }
+                const std::string fileName = fileNamePrefix + "_" + std::to_string(fileIO::timeIndices(fileNamePrefix)[timeIndex]) + ".LBMBin";
+                // std::cout << "Reading from file " << fileName << std::endl;
+                // std::cout << std::endl;
                 return fileIO::readFieldFile<T>(fileName);
             }
 
@@ -330,8 +390,8 @@ namespace LBM
                 if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                 {
                     const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin";
-                    std::cout << "Reading from file " << fileName << std::endl;
-                    std::cout << std::endl;
+                    // std::cout << "Reading from file " << fileName << std::endl;
+                    // std::cout << std::endl;
                     return fileIO::readFieldFile<T>(fileName);
                 }
                 else

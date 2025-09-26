@@ -54,7 +54,7 @@ namespace LBM
 {
     namespace device
     {
-        template <typename T>
+        template <typename T, class VelocitySet, const tType::type TimeType>
         class array
         {
         public:
@@ -65,11 +65,40 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining array dimensions
              * @post Device memory is allocated and initialized with host data
              **/
-            template <class VelocitySet>
-            [[nodiscard]] array(const host::array<T, VelocitySet> &hostArray)
+            [[nodiscard]] array(const host::array<T, VelocitySet, TimeType> &hostArray)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   name_(hostArray.name()),
-                  mesh_(hostArray.mesh()){};
+                  mesh_(hostArray.mesh()) {};
+
+            /**
+             * @brief Constructs a device array with field initialization
+             * @param[in] name Name identifier for the field
+             * @param[in] mesh Lattice mesh defining array dimensions
+             * @param[in] programCtrl Program control parameters
+             * @post Array is initialized from latest time step or initial conditions
+             **/
+            [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh,
+                const programControl &programCtrl)
+                : ptr_(toDevice(host::array<T, VelocitySet, TimeType>(name, mesh, programCtrl))),
+                  name_(name),
+                  mesh_(mesh) {};
+
+            /**
+             * @brief Constructs a device array with field initialization
+             * @param[in] name Name identifier for the field
+             * @param[in] mesh Lattice mesh defining array dimensions
+             * @param[in] value The uniform value to initialise the array to
+             * @post Array is initialized from latest time step or initial conditions
+             **/
+            [[nodiscard]] array(
+                const std::string &name,
+                const host::latticeMesh &mesh,
+                const T value)
+                : ptr_(device::allocateArray<T>(mesh.nPoints(), value)),
+                  name_(name),
+                  mesh_(mesh) {};
 
             /**
              * @brief Destructor - automatically releases device memory
@@ -137,6 +166,11 @@ namespace LBM
                 return mesh_.nPoints();
             }
 
+            __host__ [[nodiscard]] inline consteval tType::type timeType() const noexcept
+            {
+                return TimeType;
+            }
+
         private:
             /**
              * @brief Pointer to the data
@@ -152,6 +186,16 @@ namespace LBM
              * @brief Reference to the mesh
              **/
             const host::latticeMesh &mesh_;
+
+            /**
+             * @brief Copies the underlying std::vector of a host::array type to the device
+             * @param[in] hostArray The host::array to be copied to the device
+             * @return A pointer to the copied data
+             **/
+            __host__ [[nodiscard]] T *toDevice(const host::array<T, VelocitySet, TimeType> &hostArray)
+            {
+                return device::allocateArray<T>(hostArray.arr());
+            }
         };
     }
 }

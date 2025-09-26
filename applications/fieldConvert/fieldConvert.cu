@@ -52,35 +52,102 @@ SourceFiles
 
 using namespace LBM;
 
+// Define here a mapping of std::strings to std::vector<std::string>
+// that maps names like StrainRateTensor to S_xx, S_xy, S_xz... etc
+// Call it something like the functionObjectRegistry
+
+const std::unordered_map<std::string, std::vector<std::string>> fieldNamesMap = {
+    {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}}};
+
+const std::vector<std::string> defaultFieldNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+
+[[nodiscard]] const std::vector<std::string> &FieldNames(
+    const std::string &fileNamePrefix,
+    const bool doCustomField)
+{
+    if (!doCustomField)
+    {
+        return defaultFieldNames;
+    }
+    else
+    {
+        const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = fieldNamesMap.find(fileNamePrefix);
+        const bool foundField = namesIterator != fieldNamesMap.end();
+        if (!foundField)
+        {
+            // Throw an exception: invalid field name
+            throw std::runtime_error("Invalid argument passed to -fieldName");
+        }
+        else
+        {
+            return namesIterator->second;
+        }
+    }
+}
+
+[[nodiscard]] host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> initialiseArrays(
+    const std::string &fileNamePrefix,
+    const programControl &programCtrl,
+    const std::vector<std::string> &fieldNames,
+    const label_t timeStep,
+    const bool doCustomField)
+{
+    // Construct from a custom field name
+    if (doCustomField)
+    {
+        return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(fileNamePrefix, fieldNames, timeStep);
+    }
+    // Otherwise construct from default field names
+    else
+    {
+        return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(programCtrl, fieldNames, timeStep);
+    }
+}
+
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
 
     const host::latticeMesh mesh(programCtrl);
 
-    const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+    // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
+    const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
+    const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
 
-    const std::string conversion = getConversionType(programCtrl);
+    // Now get the std::vector of std::strings corresponding to the prefix
+    const std::vector<std::string> &fieldNames = FieldNames(fileNamePrefix, doCustomField);
 
-    auto it = writers.find(conversion);
+    // Get the time indices
+    const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
+
+    // Get the conversion type
+    const std::string conversion = programCtrl.getArgument("-type");
+
+    // Leave unchanged
+    const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
 
     // Check if the writer is valid
     if (it != writers.end())
     {
         const WriterFunction writer = it->second;
 
-        for (label_t timeStep = fileIO::getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+        for (label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+            // Get the file name at the present time step
+            const std::string filename = fileNamePrefix + "_" + std::to_string(fileNameIndices[timeStep]);
+
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments = initialiseArrays(
+                fileNamePrefix,
                 programCtrl,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-                timeStep);
+                fieldNames,
+                timeStep,
+                doCustomField);
 
-            const std::vector<std::vector<scalar_t>> soa = fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh);
-
-            const std::string filename = programCtrl.caseName() + "_" + std::to_string(fileNameIndices[timeStep]);
-
-            writer(soa, filename, mesh, hostMoments.varNames());
+            writer(
+                fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh),
+                filename,
+                mesh,
+                hostMoments.varNames());
         }
     }
     else

@@ -54,6 +54,23 @@ namespace LBM
 {
     namespace fileIO
     {
+        // Get the time type string
+        template <const tType::type TimeType>
+        __host__ [[nodiscard]] const std::string timeTypeString() noexcept
+        {
+            static_assert((TimeType == tType::instantaneous || (TimeType == tType::timeAverage)), "Time type must be either instantaneous or timeAverage");
+
+            if constexpr (TimeType == tType::instantaneous)
+            {
+                return "instantaneous";
+            }
+
+            if constexpr (TimeType == tType::timeAverage)
+            {
+                return "timeAverage";
+            }
+        }
+
         /**
          * @brief Implementation of the writing of the binary file
          * @param fileName Name of the file to be written
@@ -62,14 +79,21 @@ namespace LBM
          * @param fields The solution variables encoded in interleaved AoS format
          * @param timeStep The current time step
          **/
-        template <typename T, class M>
-        __host__ void writeFile(const std::string &fileName, const M &mesh, const std::vector<std::string> &varNames, const std::vector<T> &fields, const label_t timeStep)
+        template <const tType::type TimeType, typename T, class M>
+        __host__ void writeFile(
+            const std::string &fileName,
+            const M &mesh,
+            const std::vector<std::string> &varNames,
+            const std::vector<T> &fields,
+            const label_t timeStep)
         {
             static_assert(std::is_floating_point<T>::value, "T must be floating point");
 
             static_assert(std::endian::native == std::endian::little | std::endian::native == std::endian::big, "File system must be either little or big endian");
 
             static_assert(sizeof(T) == 4 | sizeof(T) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
+
+            static_assert((TimeType == tType::instantaneous || (TimeType == tType::timeAverage)), "Time type must be either instantaneous or timeAverage");
 
             const std::size_t nVars = varNames.size();
             const std::size_t nPoints = static_cast<std::size_t>(mesh.nx()) * static_cast<std::size_t>(mesh.ny()) * static_cast<std::size_t>(mesh.nz());
@@ -115,7 +139,7 @@ namespace LBM
             out << "\ttimeStep\t" << timeStep << ";" << std::endl;
             out << std::endl;
             // For now, only writing instantaneous fields
-            out << "\ttimeType\tinstantaneous;" << std::endl;
+            out << "\ttimeType\t" << timeTypeString<TimeType>() << ";" << std::endl;
             out << std::endl;
             out << "\tfieldNames[" << nVars << "]" << std::endl;
             out << "\t{" << std::endl;

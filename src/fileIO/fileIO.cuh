@@ -238,10 +238,17 @@ namespace LBM
          * @param[in] isLatestTime Flag indicating whether to start from latest time
          * @return Starting index (0 for earliest, last index for latest)
          **/
-        template <class PC>
-        __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl, const bool isLatestTime)
+        template <class ProgramControl>
+        __host__ [[nodiscard]] label_t getStartIndex(const ProgramControl &programCtrl, const bool isLatestTime)
         {
             const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+
+            return isLatestTime ? static_cast<label_t>(fileNameIndices.size() - 1) : 0;
+        }
+
+        __host__ [[nodiscard]] label_t getStartIndex(const std::string fileNamePrefix, const bool isLatestTime)
+        {
+            const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
 
             return isLatestTime ? static_cast<label_t>(fileNameIndices.size() - 1) : 0;
         }
@@ -252,10 +259,16 @@ namespace LBM
          * @param[in] programCtrl Program control object
          * @return Starting index determined by command line arguments
          **/
-        template <class PC>
-        __host__ [[nodiscard]] label_t getStartIndex(const PC &programCtrl)
+        template <class ProgramControl>
+        __host__ [[nodiscard]] label_t getStartIndex(const ProgramControl &programCtrl)
         {
             return getStartIndex(programCtrl, programCtrl.input().isArgPresent("-latestTime"));
+        }
+
+        template <class ProgramControl>
+        __host__ [[nodiscard]] label_t getStartIndex(const std::string fileNamePrefix, const ProgramControl &programCtrl)
+        {
+            return getStartIndex(fileNamePrefix, programCtrl.input().isArgPresent("-latestTime"));
         }
     }
 }

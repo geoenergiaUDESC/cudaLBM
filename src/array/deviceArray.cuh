@@ -54,7 +54,7 @@ namespace LBM
 {
     namespace device
     {
-        template <typename T, class VelocitySet, const tType::type TimeType>
+        template <typename T, class VelocitySet, const time::type TimeType>
         class array
         {
         public:
@@ -97,6 +97,14 @@ namespace LBM
                 const host::latticeMesh &mesh,
                 const T value)
                 : ptr_(device::allocateArray<T>(mesh.nPoints(), value)),
+                  name_(name),
+                  mesh_(mesh) {};
+
+            /**
+             * @brief Allocates no memory on the device
+             **/
+            [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
+                : ptr_(nullptr),
                   name_(name),
                   mesh_(mesh) {};
 
@@ -166,7 +174,7 @@ namespace LBM
                 return mesh_.nPoints();
             }
 
-            __host__ [[nodiscard]] inline consteval tType::type timeType() const noexcept
+            __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
             {
                 return TimeType;
             }

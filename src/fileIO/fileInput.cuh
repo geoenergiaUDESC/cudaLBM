@@ -417,7 +417,8 @@ namespace LBM
                             }
 
                             // Check for duplicate field names
-                            if (std::find(fieldNamesVec.begin(), fieldNamesVec.end(), fieldName) != fieldNamesVec.end())
+                            // if (std::find(fieldNamesVec.begin(), fieldNamesVec.end(), fieldName) != fieldNamesVec.end())
+                            if (string::containsString(fieldNamesVec, fieldName))
                             {
                                 throw std::runtime_error("Duplicate field name '" + fieldName + "' at line " + std::to_string(lineNumber));
                             }

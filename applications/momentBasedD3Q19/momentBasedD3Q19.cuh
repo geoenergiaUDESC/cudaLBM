@@ -57,6 +57,7 @@ SourceFiles
 #include "../../src/blockHalo/blockHalo.cuh"
 #include "../../src/fileIO/fileIO.cuh"
 #include "../../src/runTimeIO/runTimeIO.cuh"
+#include "../../src/functionObjects/objectRegistry.cuh"
 
 namespace LBM
 {

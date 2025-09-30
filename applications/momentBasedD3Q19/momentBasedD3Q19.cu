@@ -53,37 +53,9 @@ using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
 
-// const bool
-
-// Definition of a test kernel for S_xx
-// This kind of register-light kernel may benefit from varying the block dimensions
-// Also see if we can maximise the occupancy since we are not using shared mem
-launchBounds __global__ void StrainRateTensor(
-    const scalar_t *const ptrRestrict u_Alpha,
-    const scalar_t *const ptrRestrict u_Beta,
-    const scalar_t *const ptrRestrict m_AlphaBeta,
-    scalar_t *const ptrRestrict S_AlphaBeta)
-{
-    // Calculate the index
-    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
-
-    // Read from global memory
-    const scalar_t uAlpha = u_Alpha[idx];
-    const scalar_t uBeta = u_Beta[idx];
-    const scalar_t mAlphaBeta = m_AlphaBeta[idx];
-
-    // Calculate here
-    const scalar_t S = velocitySet::as2<scalar_t>() * ((uAlpha * uBeta) - mAlphaBeta) / device::tau;
-
-    // Coalesced write to global memory
-    S_AlphaBeta[idx] = S;
-}
-
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
-
-    const bool calculateStrainRateTensor = true;
 
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());
@@ -94,17 +66,19 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
+    objectRegistry<VelocitySet> runTimeObjects(mesh);
+
     // Allocate the arrays on the device
-    device::array<scalar_t, VelocitySet, tType::instantaneous> rho("rho", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> u("u", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> v("v", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> w("w", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> mxx("m_xx", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> mxy("m_xy", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> mxz("m_xz", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> myy("m_yy", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> myz("m_yz", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> mzz("m_zz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     const device::ptrCollection<10, scalar_t> devPtrs(
         rho.ptr(),
@@ -123,28 +97,14 @@ int main(const int argc, const char *const argv[])
     // Setup Streams
     const streamHandler<NStreams()> streamsLBM;
 
-    // Allocate the strain rate tensor components on the device
-    // Fix this to make it initialise from an initial condition or checkpoint file as in other arrays
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_xx("S_xx", mesh, 0);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_xy("S_xy", mesh, 0);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_xz("S_xz", mesh, 0);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_yy("S_yy", mesh, 0);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_yz("S_yz", mesh, 0);
-    device::array<scalar_t, VelocitySet, tType::instantaneous> S_zz("S_zz", mesh, 0);
     const device::ptrCollection<6, scalar_t> SPtrs(
-        S_xx.ptr(),
-        S_xy.ptr(),
-        S_xz.ptr(),
-        S_yy.ptr(),
-        S_yz.ptr(),
-        S_zz.ptr());
-
-    // const label_t z_stream_segment_size = mesh.nz() / NStreams();
-
-    // const dim3 blockDimensions{
-    //     static_cast<uint32_t>(mesh.nx() / block::nx()),
-    //     static_cast<uint32_t>(mesh.ny() / block::ny()),
-    //     static_cast<uint32_t>(mesh.nz() / (NStreams() * block::nz()))};
+        runTimeObjects.S().xx(), runTimeObjects.S().xy(),
+        runTimeObjects.S().xz(), runTimeObjects.S().yy(),
+        runTimeObjects.S().yz(), runTimeObjects.S().zz());
+    const device::ptrCollection<6, scalar_t> SMeanPtrs(
+        runTimeObjects.S().xxMean(), runTimeObjects.S().xyMean(),
+        runTimeObjects.S().xzMean(), runTimeObjects.S().yyMean(),
+        runTimeObjects.S().yzMean(), runTimeObjects.S().zzMean());
 
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
@@ -161,20 +121,30 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
-            fileIO::writeFile<tType::instantaneous>(
+            fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                functionObjects::solutionVariableNames,
                 host::toHost(devPtrs, mesh),
                 timeStep);
 
-            if (calculateStrainRateTensor)
+            if (runTimeObjects.S().calculate())
             {
-                fileIO::writeFile<tType::instantaneous>(
-                    "S_" + std::to_string(timeStep) + ".LBMBin",
+                fileIO::writeFile<time::instantaneous>(
+                    runTimeObjects.S().fieldName() + "_" + std::to_string(timeStep) + ".LBMBin",
                     mesh,
-                    {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"},
+                    runTimeObjects.S().componentNames(),
                     host::toHost(SPtrs, mesh),
+                    timeStep);
+            }
+
+            if (runTimeObjects.S().calculateMean())
+            {
+                fileIO::writeFile<time::timeAverage>(
+                    runTimeObjects.S().fieldNameMean() + "_" + std::to_string(timeStep) + ".LBMBin",
+                    mesh,
+                    runTimeObjects.S().componentNamesMean(),
+                    host::toHost(SMeanPtrs, mesh),
                     timeStep);
             }
         }
@@ -183,30 +153,11 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<
-                    mesh.gridBlock(),
-                    mesh.threadBlock(),
-                    0,
-                    streamsLBM.streams()[stream]>>>(
-                    devPtrs,
-                    blockHalo.fGhost(),
-                    blockHalo.gGhost());
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
 
         // Calculate S kernel
-        if (calculateStrainRateTensor)
-        {
-            host::constexpr_for<0, NStreams()>(
-                [&](const auto stream)
-                {
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(u.ptr(), u.ptr(), mxx.ptr(), S_xx.ptr());
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(u.ptr(), v.ptr(), mxy.ptr(), S_xy.ptr());
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(u.ptr(), w.ptr(), mxz.ptr(), S_xz.ptr());
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(v.ptr(), v.ptr(), myy.ptr(), S_yy.ptr());
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(v.ptr(), w.ptr(), myz.ptr(), S_yz.ptr());
-                    StrainRateTensor<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(w.ptr(), w.ptr(), mzz.ptr(), S_zz.ptr());
-                });
-        }
+        runTimeObjects.calculate(devPtrs, timeStep, streamsLBM);
 
         // Halo pointer swap
         blockHalo.swap();

@@ -60,7 +60,7 @@ namespace LBM
          * @tparam T Data type of array elements
          * @tparam VelocitySet Velocity set configuration for LBM simulation
          **/
-        template <typename T, class VelocitySet, const tType::type TimeType>
+        template <typename T, class VelocitySet, const time::type TimeType>
         class array
         {
         public:
@@ -123,7 +123,7 @@ namespace LBM
                 return mesh_;
             }
 
-            __host__ [[nodiscard]] inline consteval tType::type timeType() const noexcept
+            __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
             {
                 return TimeType;
             }

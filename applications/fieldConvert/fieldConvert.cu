@@ -56,10 +56,10 @@ using namespace LBM;
 // that maps names like StrainRateTensor to S_xx, S_xy, S_xz... etc
 // Call it something like the functionObjectRegistry
 
-const std::unordered_map<std::string, std::vector<std::string>> fieldNamesMap = {
-    {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}}};
+// const std::unordered_map<std::string, std::vector<std::string>> fieldNamesMap = {
+//     {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}}};
 
-const std::vector<std::string> defaultFieldNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+// const std::vector<std::string> defaultFieldNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
 
 [[nodiscard]] const std::vector<std::string> &FieldNames(
     const std::string &fileNamePrefix,
@@ -67,12 +67,12 @@ const std::vector<std::string> defaultFieldNames{"rho", "u", "v", "w", "m_xx", "
 {
     if (!doCustomField)
     {
-        return defaultFieldNames;
+        return functionObjects::solutionVariableNames;
     }
     else
     {
-        const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = fieldNamesMap.find(fileNamePrefix);
-        const bool foundField = namesIterator != fieldNamesMap.end();
+        const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
+        const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
         if (!foundField)
         {
             // Throw an exception: invalid field name

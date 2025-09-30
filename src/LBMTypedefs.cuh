@@ -328,7 +328,7 @@ namespace LBM
     // template <const ctorType::type T>
     // using constructorType = const std::integral_constant<ctorType::type, T>;
 
-    namespace tType
+    namespace time
     {
         typedef enum Enum : int
         {
@@ -336,8 +336,8 @@ namespace LBM
             timeAverage = 1
         } type;
     }
-    // template <const tType::type T>
-    // using timeType = const std::integral_constant<tType::type, T>;
+    // template <const time::::type T>
+    // using timeType = const std::integral_constant<time::::type, T>;
 
     namespace device
     {

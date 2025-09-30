@@ -55,17 +55,17 @@ namespace LBM
     namespace fileIO
     {
         // Get the time type string
-        template <const tType::type TimeType>
+        template <const time::type TimeType>
         __host__ [[nodiscard]] const std::string timeTypeString() noexcept
         {
-            static_assert((TimeType == tType::instantaneous || (TimeType == tType::timeAverage)), "Time type must be either instantaneous or timeAverage");
+            static_assert((TimeType == time::instantaneous || (TimeType == time::timeAverage)), "Time type must be either instantaneous or timeAverage");
 
-            if constexpr (TimeType == tType::instantaneous)
+            if constexpr (TimeType == time::instantaneous)
             {
                 return "instantaneous";
             }
 
-            if constexpr (TimeType == tType::timeAverage)
+            if constexpr (TimeType == time::timeAverage)
             {
                 return "timeAverage";
             }
@@ -79,7 +79,7 @@ namespace LBM
          * @param fields The solution variables encoded in interleaved AoS format
          * @param timeStep The current time step
          **/
-        template <const tType::type TimeType, typename T, class M>
+        template <const time::type TimeType, typename T, class M>
         __host__ void writeFile(
             const std::string &fileName,
             const M &mesh,
@@ -93,7 +93,7 @@ namespace LBM
 
             static_assert(sizeof(T) == 4 | sizeof(T) == 8, "Error writing file: scalar_t must be either 32 or 64 bit");
 
-            static_assert((TimeType == tType::instantaneous || (TimeType == tType::timeAverage)), "Time type must be either instantaneous or timeAverage");
+            static_assert((TimeType == time::instantaneous || (TimeType == time::timeAverage)), "Time type must be either instantaneous or timeAverage");
 
             const std::size_t nVars = varNames.size();
             const std::size_t nPoints = static_cast<std::size_t>(mesh.nx()) * static_cast<std::size_t>(mesh.ny()) * static_cast<std::size_t>(mesh.nz());

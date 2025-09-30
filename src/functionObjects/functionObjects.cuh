@@ -37,71 +37,53 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Function definitions and includes specific to the fieldConvert executable
+    File containing a list of all valid function object names
 
 Namespace
-    LBM
+    LBM::host
 
 SourceFiles
-    fieldConvert.cuh
+    functionObjects.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_FIELDCONVERT_CUH
-#define __MBLBM_FIELDCONVERT_CUH
-
-#include "../../src/LBMIncludes.cuh"
-#include "../../src/LBMTypedefs.cuh"
-#include "../../src/array/array.cuh"
-#include "../../src/collision/collision.cuh"
-#include "../../src/blockHalo/blockHalo.cuh"
-#include "../../src/fileIO/fileIO.cuh"
-#include "../../src/runTimeIO/runTimeIO.cuh"
-#include "../../src/postProcess/postProcess.cuh"
-#include "../../src/inputControl.cuh"
-#include "../../src/functionObjects/objectRegistry.cuh"
+#ifndef __MBLBM_FUNCTIONOBJECTS_CUH
+#define __MBLBM_FUNCTIONOBJECTS_CUH
 
 namespace LBM
 {
-    using VelocitySet = D3Q19;
-
-    using WriterFunction = void (*)(
-        const std::vector<std::vector<scalar_t>> &,
-        const std::string &,
-        const host::latticeMesh &,
-        const std::vector<std::string> &);
-
-    /**
-     * @brief Unordered map of the writer types to the appropriate functions
-     **/
-    const std::unordered_map<std::string, WriterFunction> writers = {
-        {"vtu", postProcess::writeVTU},
-        {"vts", postProcess::writeVTS},
-        {"tecplot", postProcess::writeTecplot}};
-
-    __host__ [[nodiscard]] const std::string invalidWriter(const std::unordered_map<std::string, WriterFunction> &writerNames, const std::string &conversion) noexcept
+    namespace functionObjects
     {
-        std::vector<std::string> supportedFormats;
-        for (const auto &pair : writerNames)
+        const std::vector<std::string> solutionVariableNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+
+        const std::unordered_map<std::string, std::vector<std::string>> fieldComponentsMap = {
+            {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
+            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}}};
+
+        template <typename T>
+        __device__ [[nodiscard]] inline constexpr T timeAverage(const T fMean, const T f, const T invNewCount) noexcept
         {
-            supportedFormats.push_back(pair.first);
+            return fMean + (f - fMean) * invNewCount;
         }
 
-        // Sort them alphabetically
-        std::sort(supportedFormats.begin(), supportedFormats.end());
-
-        // Create the error message with supported formats
-        std::string errorMsg = "Unsupported conversion format: " + conversion + "\nSupported formats are: ";
-        for (std::size_t i = 0; i < supportedFormats.size(); ++i)
+        // Allocates either a regular or zero-initialized device array based on the allocate flag
+        template <class VelocitySet, const time::type TimeType>
+        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> functionObjectAllocator(
+            const std::string &name,
+            const host::latticeMesh &mesh,
+            const bool allocate)
         {
-            if (i != 0)
+            // If we wish to allocate the array, do so
+            if (allocate)
             {
-                errorMsg += ", ";
+                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh, 0);
             }
-            errorMsg += supportedFormats[i];
+            // Otherwise, just create the array without initializing it
+            else
+            {
+                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
+            }
         }
-
-        return errorMsg;
     }
 }
 

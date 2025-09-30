@@ -62,6 +62,34 @@ namespace LBM
             return std::find(vec.begin(), vec.end(), target) != vec.end();
         }
 
+        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> S) noexcept
+        {
+            std::string s;
+            for (std::size_t line = 0; line < S.size(); line++)
+            {
+                s = s + S[line] + "\n";
+            }
+            return s;
+        }
+
+        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> lines) noexcept
+        {
+            if (!(lines.size() > 2))
+            {
+                errorHandler(-1, "Lines must have at least 2 entries: opening bracket and closing bracket. Problematic entry:" + catenate(lines));
+            }
+
+            // Need to check that lines has > 2 elements, i.e. more than just empty brackets
+            std::vector<std::string> newLines(lines.size() - 2);
+
+            for (std::size_t line = 1; line < lines.size() - 1; line++)
+            {
+                newLines[line - 1] = lines[line];
+            }
+
+            return newLines;
+        }
+
         /**
          * @brief Trims leading and trailing whitespace from a string.
          * @param str The input string to trim.

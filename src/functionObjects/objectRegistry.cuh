@@ -58,108 +58,108 @@ SourceFiles
 
 namespace LBM
 {
-    template <class VelocitySet>
+    /**
+     * @brief Registry for managing function objects and their calculations
+     * @tparam VelocitySet The velocity set type used in LBM simulations
+     * @tparam N The number of streams (as a compile-time constant)
+     **/
+    template <class VelocitySet, const label_t N>
     class objectRegistry
     {
     public:
-        objectRegistry(const host::latticeMesh &mesh)
+        /**
+         * @brief Constructs an objectRegistry with mesh, device pointers and streams
+         * @param[in] mesh Reference to the lattice mesh
+         * @param[in] devPtrs Device pointer collection for memory management
+         * @param[in] streamsLBM Stream handler for LBM operations
+         **/
+        objectRegistry(
+            const host::latticeMesh &mesh,
+            const device::ptrCollection<10, scalar_t> &devPtrs,
+            const streamHandler<N> &streamsLBM)
             : mesh_(mesh),
               S_(
                   mesh,
-                  string::containsString(string::trim<true>(eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), "S"),
-                  string::containsString(string::trim<true>(eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), "SMean"))
-        {
-            if (string::containsString(string::trim<true>(eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), "S"))
-            {
-                std::cout << "Allocated S" << std::endl;
-            }
-            else
-            {
-                std::cout << "Did not allocate S" << std::endl;
-            }
+                  devPtrs,
+                  streamsLBM),
+              functionVector_(initialise_function_calls(S_)) {};
 
-            if (string::containsString(string::trim<true>(eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), "SMean"))
-            {
-                std::cout << "Allocated SMean" << std::endl;
-            }
-            else
-            {
-                std::cout << "Did not allocate SMean" << std::endl;
-            }
-        };
-
+        /**
+         * @brief Default destructor
+         **/
         ~objectRegistry() {};
 
-        template <const label_t N>
-        inline void calculate(const device::ptrCollection<10, scalar_t> &devPtrs, const label_t timeStep, const streamHandler<N> &streamsLBM) noexcept
+        /**
+         * @brief Executes all registered function object calculations for given time step
+         * @param[in] timeStep The current simulation time step
+         **/
+        inline void calculate(const label_t timeStep) noexcept
         {
-            S_.calculate(devPtrs, timeStep, streamsLBM);
+            for (const auto &func : functionVector_)
+            {
+                func(timeStep); // Call each function with the timeStep
+            }
         }
 
-        __host__ [[nodiscard]] inline const functionObjects::StrainRateTensor::strainRateTensor<VelocitySet> &S() const noexcept
+        /**
+         * @brief Get const reference to strain rate tensor object
+         * @return Const reference to strain rate tensor
+         **/
+        __host__ [[nodiscard]] inline const functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S() const noexcept
         {
             return S_;
         }
 
-        __host__ [[nodiscard]] inline functionObjects::StrainRateTensor::strainRateTensor<VelocitySet> &S() noexcept
+        /**
+         * @brief Get mutable reference to strain rate tensor object
+         * @return Mutable reference to strain rate tensor
+         **/
+        __host__ [[nodiscard]] inline functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S() noexcept
         {
             return S_;
         }
-
-        // inline void save(const device::ptrCollection<6, scalar_t> &SPtrs, const device::ptrCollection<6, scalar_t> &SMeanPtrs, const label_t timeStep) const noexcept
-        // {
-        //     if (S_.calculate())
-        //     {
-        //         fileIO::writeFile<time::instantaneous>(
-        //             S_.fieldName() + "_" + std::to_string(timeStep) + ".LBMBin",
-        //             mesh_,
-        //             S_.componentNames(),
-        //             host::toHost(SPtrs, mesh_),
-        //             timeStep);
-        //     }
-
-        //     if (S_.calculateMean())
-        //     {
-        //         fileIO::writeFile<time::timeAverage>(
-        //             S_.fieldNameMean() + "_" + std::to_string(timeStep) + ".LBMBin",
-        //             mesh_,
-        //             S_.componentNamesMean(),
-        //             host::toHost(SMeanPtrs, mesh_),
-        //             timeStep);
-        //     }
-        // }
 
     private:
+        /**
+         * @brief Reference to lattice mesh
+         **/
         const host::latticeMesh &mesh_;
 
-        functionObjects::StrainRateTensor::strainRateTensor<VelocitySet> S_;
+        /**
+         * @brief Strain rate tensor function object
+         **/
+        functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> S_;
 
-        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> S) noexcept
+        /**
+         * @brief Registry of function objects to invoke
+         **/
+        const std::vector<std::function<void(const label_t)>> functionVector_;
+
+        /**
+         * @brief Initializes function calls based on strain rate tensor configuration
+         * @param[in] S__ Reference to strain rate tensor object
+         * @return Vector of function objects to be executed
+         **/
+        __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> initialise_function_calls(
+            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S__) const noexcept
         {
-            std::string s;
-            for (std::size_t line = 0; line < S.size(); line++)
-            {
-                s = s + S[line] + "\n";
-            }
-            return s;
-        }
+            std::vector<std::function<void(const label_t)>> calls;
 
-        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> lines) noexcept
-        {
-            if (!(lines.size() > 2))
+            if (S__.calculate())
             {
-                errorHandler(-1, "Lines must have at least 2 entries: opening bracket and closing bracket. Problematic entry:" + catenate(lines));
+                calls.push_back(
+                    [&S__](const label_t label)
+                    { S__.calculate(label); });
             }
 
-            // Need to check that lines has > 2 elements, i.e. more than just empty brackets
-            std::vector<std::string> newLines(lines.size() - 2);
-
-            for (std::size_t line = 1; line < lines.size() - 1; line++)
+            if (S__.calculateMean())
             {
-                newLines[line - 1] = lines[line];
+                calls.push_back(
+                    [&S__](const label_t label)
+                    { S__.calculateMean(label); });
             }
 
-            return newLines;
+            return calls;
         }
     };
 }

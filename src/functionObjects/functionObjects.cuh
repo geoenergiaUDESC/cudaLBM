@@ -54,21 +54,40 @@ namespace LBM
 {
     namespace functionObjects
     {
+        /**
+         * @brief The names of the 10 solution variables of the moment representation
+         **/
         const std::vector<std::string> solutionVariableNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
 
+        /**
+         * @brief Maps the name of function objects to lists of the names of their individual components
+         **/
         const std::unordered_map<std::string, std::vector<std::string>> fieldComponentsMap = {
             {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
             {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}}};
 
+        /**
+         * @brief Calculates the time average of a variable
+         * @return The updated time average
+         * @param[in] fMean The current time average value
+         * @param[in] f The current instantaneous value
+         * @param[in] invNewCount The reciprocal of (nTimeSteps + 1)
+         **/
         template <typename T>
         __device__ [[nodiscard]] inline constexpr T timeAverage(const T fMean, const T f, const T invNewCount) noexcept
         {
             return fMean + (f - fMean) * invNewCount;
         }
 
-        // Allocates either a regular or zero-initialized device array based on the allocate flag
+        /**
+         * @brief Allocates either a regular or zero-initialized device array based on the allocate flag
+         * @return A device::array either allocated to a uniform value or non-allocated
+         * @param[in] name The name of the variable to construct
+         * @param[in] mesh The lattice mesh
+         * @param[in] allocate Determines whether or not to allocate the variable
+         **/
         template <class VelocitySet, const time::type TimeType>
-        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> functionObjectAllocator(
+        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> objectAllocator(
             const std::string &name,
             const host::latticeMesh &mesh,
             const bool allocate)

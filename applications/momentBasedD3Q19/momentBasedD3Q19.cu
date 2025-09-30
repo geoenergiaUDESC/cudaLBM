@@ -66,8 +66,6 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
-    objectRegistry<VelocitySet> runTimeObjects(mesh);
-
     // Allocate the arrays on the device
     device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
@@ -92,10 +90,12 @@ int main(const int argc, const char *const argv[])
         myz.ptr(),
         mzz.ptr());
 
-    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
-
     // Setup Streams
     const streamHandler<NStreams()> streamsLBM;
+
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
+
+    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
 
     const device::ptrCollection<6, scalar_t> SPtrs(
         runTimeObjects.S().xx(), runTimeObjects.S().xy(),
@@ -157,7 +157,7 @@ int main(const int argc, const char *const argv[])
             });
 
         // Calculate S kernel
-        runTimeObjects.calculate(devPtrs, timeStep, streamsLBM);
+        runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
         blockHalo.swap();

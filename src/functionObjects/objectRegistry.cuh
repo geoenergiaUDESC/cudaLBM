@@ -82,7 +82,8 @@ namespace LBM
                   mesh,
                   devPtrs,
                   streamsLBM),
-              functionVector_(initialise_function_calls(S_)) {};
+              functionVector_(functionObjectCallInitialiser(S_)),
+              saveVector_(functionObjectSaveInitialiser(S_)) {};
 
         /**
          * @brief Default destructor
@@ -102,21 +103,15 @@ namespace LBM
         }
 
         /**
-         * @brief Get const reference to strain rate tensor object
-         * @return Const reference to strain rate tensor
+         * @brief Executes all registered function object calculations for given time step
+         * @param[in] timeStep The current simulation time step
          **/
-        __host__ [[nodiscard]] inline const functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S() const noexcept
+        inline void save(const label_t timeStep) noexcept
         {
-            return S_;
-        }
-
-        /**
-         * @brief Get mutable reference to strain rate tensor object
-         * @return Mutable reference to strain rate tensor
-         **/
-        __host__ [[nodiscard]] inline functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S() noexcept
-        {
-            return S_;
+            for (const auto &save : saveVector_)
+            {
+                save(timeStep); // Call each function with the timeStep
+            }
         }
 
     private:
@@ -137,26 +132,67 @@ namespace LBM
 
         /**
          * @brief Initializes function calls based on strain rate tensor configuration
-         * @param[in] S__ Reference to strain rate tensor object
+         * @param[in] S Reference to strain rate tensor object
          * @return Vector of function objects to be executed
          **/
-        __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> initialise_function_calls(
-            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S__) const noexcept
+        __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectCallInitialiser(
+            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S) const noexcept
         {
             std::vector<std::function<void(const label_t)>> calls;
 
-            if (S__.calculate())
+            if ((S.calculate()) && (S.calculateMean()))
             {
                 calls.push_back(
-                    [&S__](const label_t label)
-                    { S__.calculate(label); });
+                    [&S](const label_t label)
+                    { S.calculateInstantaneousAndMean(label); });
+            }
+            else
+            {
+                if (S.calculate())
+                {
+                    calls.push_back(
+                        [&S](const label_t label)
+                        { S.calculateInstantaneous(label); });
+                }
+
+                if (S.calculateMean())
+                {
+                    calls.push_back(
+                        [&S](const label_t label)
+                        { S.calculateMean(label); });
+                }
             }
 
-            if (S__.calculateMean())
+            return calls;
+        }
+
+        /**
+         * @brief Registry of function objects to save
+         **/
+        const std::vector<std::function<void(const label_t)>> saveVector_;
+
+        /**
+         * @brief Initializes save calls based on strain rate tensor configuration
+         * @param[in] S Reference to strain rate tensor object
+         * @return Vector of function objects to be executed
+         **/
+        __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectSaveInitialiser(
+            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S) const noexcept
+        {
+            std::vector<std::function<void(const label_t)>> calls;
+
+            if (S.calculate())
             {
                 calls.push_back(
-                    [&S__](const label_t label)
-                    { S__.calculateMean(label); });
+                    [&S](const label_t label)
+                    { S.saveInstantaneous(label); });
+            }
+
+            if (S.calculateMean())
+            {
+                calls.push_back(
+                    [&S](const label_t label)
+                    { S.saveMean(label); });
             }
 
             return calls;

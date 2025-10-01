@@ -238,7 +238,7 @@ namespace LBM
              * @brief Get thread block dimensions for CUDA kernel launches
              * @return dim3 structure with thread block dimensions
              **/
-            __device__ __host__ [[nodiscard]] inline consteval dim3 threadBlock() const noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval dim3 threadBlock() noexcept
             {
                 return {block::nx(), block::ny(), block::nz()};
             }

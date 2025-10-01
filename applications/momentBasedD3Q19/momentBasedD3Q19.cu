@@ -97,15 +97,6 @@ int main(const int argc, const char *const argv[])
 
     device::halo<VelocitySet> blockHalo(mesh, programCtrl);
 
-    const device::ptrCollection<6, scalar_t> SPtrs(
-        runTimeObjects.S().xx(), runTimeObjects.S().xy(),
-        runTimeObjects.S().xz(), runTimeObjects.S().yy(),
-        runTimeObjects.S().yz(), runTimeObjects.S().zz());
-    const device::ptrCollection<6, scalar_t> SMeanPtrs(
-        runTimeObjects.S().xxMean(), runTimeObjects.S().xyMean(),
-        runTimeObjects.S().xzMean(), runTimeObjects.S().yyMean(),
-        runTimeObjects.S().yzMean(), runTimeObjects.S().zzMean());
-
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
     const runTimeIO IO(mesh, programCtrl);
@@ -128,25 +119,7 @@ int main(const int argc, const char *const argv[])
                 host::toHost(devPtrs, mesh),
                 timeStep);
 
-            if (runTimeObjects.S().calculate())
-            {
-                fileIO::writeFile<time::instantaneous>(
-                    runTimeObjects.S().fieldName() + "_" + std::to_string(timeStep) + ".LBMBin",
-                    mesh,
-                    runTimeObjects.S().componentNames(),
-                    host::toHost(SPtrs, mesh),
-                    timeStep);
-            }
-
-            if (runTimeObjects.S().calculateMean())
-            {
-                fileIO::writeFile<time::timeAverage>(
-                    runTimeObjects.S().fieldNameMean() + "_" + std::to_string(timeStep) + ".LBMBin",
-                    mesh,
-                    runTimeObjects.S().componentNamesMean(),
-                    host::toHost(SMeanPtrs, mesh),
-                    timeStep);
-            }
+            runTimeObjects.save(timeStep);
         }
 
         // Main kernel

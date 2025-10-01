@@ -56,76 +56,176 @@ namespace LBM
     {
         namespace StrainRateTensor
         {
-            /**
-             * @brief Calculates the strain rate tensor component
-             * @param[in] uAlpha Velocity component in alpha direction
-             * @param[in] uBeta Velocity component in beta direction
-             * @param[in] mAlphaBeta Second order moment component
-             * @return The calculated strain rate tensor component
-             **/
-            template <typename T>
-            __device__ [[nodiscard]] inline constexpr T calculate(const T uAlpha, const T uBeta, const T mAlphaBeta) noexcept
+            namespace kernel
             {
-                return velocitySet::as2<T>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<T>(2) * device::tau);
-            }
+                /**
+                 * @brief Calculates the strain rate tensor component
+                 * @param[in] uAlpha Velocity component in alpha direction
+                 * @param[in] uBeta Velocity component in beta direction
+                 * @param[in] mAlphaBeta Second order moment component
+                 * @return The calculated strain rate tensor component
+                 **/
+                template <const label_t Index, typename T>
+                __device__ [[nodiscard]] inline constexpr T S(const T uAlpha, const T uBeta, const T mAlphaBeta) noexcept
+                {
+                    static_assert((Index == index::xx() || Index == index::yy() || Index == index::zz() || Index == index::xy() || Index == index::xz() || Index == index::yz()), "Invalid index");
 
-            /**
-             * @brief CUDA kernel for calculating time-averaged strain rate tensor components
-             * @param[in] u_Alpha Velocity field in alpha direction
-             * @param[in] u_Beta Velocity field in beta direction
-             * @param[in] m_AlphaBeta Second order moment field
-             * @param[in,out] S_AlphaBetaMean Mean strain rate tensor component to update
-             * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
-             **/
-            launchBounds __global__ void calculateMean_kernel(
-                const scalar_t *const ptrRestrict u_Alpha,
-                const scalar_t *const ptrRestrict u_Beta,
-                const scalar_t *const ptrRestrict m_AlphaBeta,
-                scalar_t *const ptrRestrict S_AlphaBetaMean,
-                const scalar_t invNewCount)
-            {
-                // Calculate the index
-                const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    if constexpr (Index == index::xx() || Index == index::yy() || Index == index::zz())
+                    {
+                        return velocitySet::as2<T>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<T>(2) * velocitySet::scale_ii<scalar_t>() * device::tau);
+                    }
+                    else
+                    {
+                        return velocitySet::as2<T>() * ((uAlpha * uBeta) - mAlphaBeta) / (static_cast<T>(2) * velocitySet::scale_ij<scalar_t>() * device::tau);
+                    }
+                }
 
-                // Read from global memory
-                const scalar_t uAlpha = u_Alpha[idx];
-                const scalar_t uBeta = u_Beta[idx];
-                const scalar_t mAlphaBeta = m_AlphaBeta[idx];
-                const scalar_t S_AlphaBetaMean_ = S_AlphaBetaMean[idx];
+                /**
+                 * @brief CUDA kernel for calculating time-averaged strain rate tensor components
+                 * @param[in] SPtrs Device pointer collection for instantaneous strain rate tensor components
+                 * @param[in] SMeanPtrs Device pointer collection for mean strain rate tensor components
+                 * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+                 **/
+                launchBounds __global__ void mean(
+                    const device::ptrCollection<6, scalar_t> SPtrs,
+                    const device::ptrCollection<6, scalar_t> SMeanPtrs,
+                    const scalar_t invNewCount)
+                {
+                    // Calculate the index
+                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-                // Update the mean
-                const scalar_t S_Mean = timeAverage(S_AlphaBetaMean_, calculate(uAlpha, uBeta, mAlphaBeta), invNewCount);
+                    // Read the instantaneous values from global memory
+                    const scalar_t S_xx = SPtrs.ptr<0>()[idx];
+                    const scalar_t S_xy = SPtrs.ptr<1>()[idx];
+                    const scalar_t S_xz = SPtrs.ptr<2>()[idx];
+                    const scalar_t S_yy = SPtrs.ptr<3>()[idx];
+                    const scalar_t S_yz = SPtrs.ptr<4>()[idx];
+                    const scalar_t S_zz = SPtrs.ptr<5>()[idx];
 
-                // Write back to global
-                S_AlphaBetaMean[idx] = S_Mean;
-            }
+                    // Read the mean values from global memory
+                    const scalar_t S_xxMean = SMeanPtrs.ptr<0>()[idx];
+                    const scalar_t S_xyMean = SMeanPtrs.ptr<1>()[idx];
+                    const scalar_t S_xzMean = SMeanPtrs.ptr<2>()[idx];
+                    const scalar_t S_yyMean = SMeanPtrs.ptr<3>()[idx];
+                    const scalar_t S_yzMean = SMeanPtrs.ptr<4>()[idx];
+                    const scalar_t S_zzMean = SMeanPtrs.ptr<5>()[idx];
 
-            /**
-             * @brief CUDA kernel for calculating instantaneous strain rate tensor components
-             * @param[in] u_Alpha Velocity field in alpha direction
-             * @param[in] u_Beta Velocity field in beta direction
-             * @param[in] m_AlphaBeta Second order moment field
-             * @param[out] SAlphaBeta Strain rate tensor component to update
-             **/
-            launchBounds __global__ void calculate_kernel(
-                const scalar_t *const ptrRestrict u_Alpha,
-                const scalar_t *const ptrRestrict u_Beta,
-                const scalar_t *const ptrRestrict m_AlphaBeta,
-                scalar_t *const ptrRestrict SAlphaBeta)
-            {
-                // Calculate the index
-                const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+                    // Update the mean value and write back to global
+                    const scalar_t S_xxMeanNew = timeAverage(S_xxMean, S_xx, invNewCount);
+                    const scalar_t S_xyMeanNew = timeAverage(S_xyMean, S_xy, invNewCount);
+                    const scalar_t S_xzMeanNew = timeAverage(S_xzMean, S_xz, invNewCount);
+                    const scalar_t S_yyMeanNew = timeAverage(S_yyMean, S_yy, invNewCount);
+                    const scalar_t S_yzMeanNew = timeAverage(S_yzMean, S_yz, invNewCount);
+                    const scalar_t S_zzMeanNew = timeAverage(S_zzMean, S_zz, invNewCount);
+                    SMeanPtrs.ptr<0>()[idx] = S_xxMeanNew;
+                    SMeanPtrs.ptr<1>()[idx] = S_xyMeanNew;
+                    SMeanPtrs.ptr<2>()[idx] = S_xzMeanNew;
+                    SMeanPtrs.ptr<3>()[idx] = S_yyMeanNew;
+                    SMeanPtrs.ptr<4>()[idx] = S_yzMeanNew;
+                    SMeanPtrs.ptr<5>()[idx] = S_zzMeanNew;
+                }
 
-                // Read from global memory
-                const scalar_t uAlpha = u_Alpha[idx];
-                const scalar_t uBeta = u_Beta[idx];
-                const scalar_t mAlphaBeta = m_AlphaBeta[idx];
+                /**
+                 * @brief CUDA kernel for calculating instantaneous and time-averaged strain rate tensor components
+                 * @param[in] devPtrs Device pointer collection containing velocity and moment fields
+                 * @param[in] SPtrs Device pointer collection for instantaneous strain rate tensor components
+                 * @param[in] SMeanPtrs Device pointer collection for mean strain rate tensor components
+                 * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
+                 **/
+                launchBounds __global__ void instantaneousAndMean(
+                    const device::ptrCollection<10, scalar_t> devPtrs,
+                    const device::ptrCollection<6, scalar_t> SPtrs,
+                    const device::ptrCollection<6, scalar_t> SMeanPtrs,
+                    const scalar_t invNewCount)
+                {
+                    // Calculate the index
+                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-                // Update the mean
-                const scalar_t S = calculate(uAlpha, uBeta, mAlphaBeta);
+                    // Read from global memory
+                    const scalar_t u = devPtrs.ptr<1>()[idx];
+                    const scalar_t v = devPtrs.ptr<2>()[idx];
+                    const scalar_t w = devPtrs.ptr<3>()[idx];
+                    const scalar_t mxx = devPtrs.ptr<4>()[idx];
+                    const scalar_t mxy = devPtrs.ptr<5>()[idx];
+                    const scalar_t mxz = devPtrs.ptr<6>()[idx];
+                    const scalar_t myy = devPtrs.ptr<7>()[idx];
+                    const scalar_t myz = devPtrs.ptr<8>()[idx];
+                    const scalar_t mzz = devPtrs.ptr<9>()[idx];
 
-                // Write back to global
-                SAlphaBeta[idx] = S;
+                    // Calculate the instantaneous and write back to global
+                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
+                    SPtrs.ptr<0>()[idx] = S_xx;
+                    SPtrs.ptr<1>()[idx] = S_xy;
+                    SPtrs.ptr<2>()[idx] = S_xz;
+                    SPtrs.ptr<3>()[idx] = S_yy;
+                    SPtrs.ptr<4>()[idx] = S_yz;
+                    SPtrs.ptr<5>()[idx] = S_zz;
+
+                    // Read the mean values from global memory
+                    const scalar_t S_xxMean = SMeanPtrs.ptr<0>()[idx];
+                    const scalar_t S_xyMean = SMeanPtrs.ptr<1>()[idx];
+                    const scalar_t S_xzMean = SMeanPtrs.ptr<2>()[idx];
+                    const scalar_t S_yyMean = SMeanPtrs.ptr<3>()[idx];
+                    const scalar_t S_yzMean = SMeanPtrs.ptr<4>()[idx];
+                    const scalar_t S_zzMean = SMeanPtrs.ptr<5>()[idx];
+
+                    // Update the mean value and write back to global
+                    const scalar_t S_xxMeanNew = timeAverage(S_xxMean, S_xx, invNewCount);
+                    const scalar_t S_xyMeanNew = timeAverage(S_xyMean, S_xy, invNewCount);
+                    const scalar_t S_xzMeanNew = timeAverage(S_xzMean, S_xz, invNewCount);
+                    const scalar_t S_yyMeanNew = timeAverage(S_yyMean, S_yy, invNewCount);
+                    const scalar_t S_yzMeanNew = timeAverage(S_yzMean, S_yz, invNewCount);
+                    const scalar_t S_zzMeanNew = timeAverage(S_zzMean, S_zz, invNewCount);
+                    SMeanPtrs.ptr<0>()[idx] = S_xxMeanNew;
+                    SMeanPtrs.ptr<1>()[idx] = S_xyMeanNew;
+                    SMeanPtrs.ptr<2>()[idx] = S_xzMeanNew;
+                    SMeanPtrs.ptr<3>()[idx] = S_yyMeanNew;
+                    SMeanPtrs.ptr<4>()[idx] = S_yzMeanNew;
+                    SMeanPtrs.ptr<5>()[idx] = S_zzMeanNew;
+                }
+
+                /**
+                 * @brief CUDA kernel for calculating instantaneous strain rate tensor components
+                 * @param[in] devPtrs Device pointer collection containing velocity and moment fields
+                 * @param[in] SPtrs Device pointer collection for instantaneous strain rate tensor components
+                 **/
+                launchBounds __global__ void instantaneous(
+                    const device::ptrCollection<10, scalar_t> devPtrs,
+                    const device::ptrCollection<6, scalar_t> SPtrs)
+                {
+                    // Calculate the index
+                    const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+                    // Read from global memory
+                    const scalar_t u = devPtrs.ptr<1>()[idx];
+                    const scalar_t v = devPtrs.ptr<2>()[idx];
+                    const scalar_t w = devPtrs.ptr<3>()[idx];
+                    const scalar_t mxx = devPtrs.ptr<4>()[idx];
+                    const scalar_t mxy = devPtrs.ptr<5>()[idx];
+                    const scalar_t mxz = devPtrs.ptr<6>()[idx];
+                    const scalar_t myy = devPtrs.ptr<7>()[idx];
+                    const scalar_t myz = devPtrs.ptr<8>()[idx];
+                    const scalar_t mzz = devPtrs.ptr<9>()[idx];
+
+                    // Calculate the instantaneous and write back to global
+                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
+                    SPtrs.ptr<0>()[idx] = S_xx;
+                    SPtrs.ptr<1>()[idx] = S_xy;
+                    SPtrs.ptr<2>()[idx] = S_xz;
+                    SPtrs.ptr<3>()[idx] = S_yy;
+                    SPtrs.ptr<4>()[idx] = S_yz;
+                    SPtrs.ptr<5>()[idx] = S_zz;
+                }
             }
 
             /**
@@ -166,8 +266,9 @@ namespace LBM
                       zzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_zzMean", mesh, calculateMean_))
                 {
                     // Set the cache config to prefer L1
-                    checkCudaErrors(cudaFuncSetCacheConfig(calculate_kernel, cudaFuncCachePreferL1));
-                    checkCudaErrors(cudaFuncSetCacheConfig(calculateMean_kernel, cudaFuncCachePreferL1));
+                    checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
+                    checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneousAndMean, cudaFuncCachePreferL1));
+                    checkCudaErrors(cudaFuncSetCacheConfig(kernel::mean, cudaFuncCachePreferL1));
                 };
 
                 /**
@@ -194,51 +295,17 @@ namespace LBM
                 }
 
                 /**
-                 * @brief Getter methods for instantaneous components
-                 **/
-                __host__ __device__ inline scalar_t *xx() noexcept { return xx_.ptr(); }
-                __host__ __device__ inline scalar_t *xy() noexcept { return xy_.ptr(); }
-                __host__ __device__ inline scalar_t *xz() noexcept { return xz_.ptr(); }
-                __host__ __device__ inline scalar_t *yy() noexcept { return yy_.ptr(); }
-                __host__ __device__ inline scalar_t *yz() noexcept { return yz_.ptr(); }
-                __host__ __device__ inline scalar_t *zz() noexcept { return zz_.ptr(); }
-
-                /**
-                 * @brief Getter methods for mean components
-                 **/
-                __host__ __device__ inline scalar_t *xxMean() noexcept { return xxMean_.ptr(); }
-                __host__ __device__ inline scalar_t *xyMean() noexcept { return xyMean_.ptr(); }
-                __host__ __device__ inline scalar_t *xzMean() noexcept { return xzMean_.ptr(); }
-                __host__ __device__ inline scalar_t *yyMean() noexcept { return yyMean_.ptr(); }
-                __host__ __device__ inline scalar_t *yzMean() noexcept { return yzMean_.ptr(); }
-                __host__ __device__ inline scalar_t *zzMean() noexcept { return zzMean_.ptr(); }
-
-                /**
                  * @brief Calculate instantaneous strain rate tensor components
                  * @param[in] timeStep Current simulation time step
                  **/
-                __host__ void calculate([[maybe_unused]] const label_t timeStep) noexcept
+                __host__ void calculateInstantaneous([[maybe_unused]] const label_t timeStep) noexcept
                 {
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<1>(), devPtrs_.ptr<4>(), xx_.ptr());
-
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<2>(), devPtrs_.ptr<5>(), xy_.ptr());
-
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<3>(), devPtrs_.ptr<6>(), xz_.ptr());
-
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<2>(), devPtrs_.ptr<2>(), devPtrs_.ptr<7>(), yy_.ptr());
-
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<2>(), devPtrs_.ptr<3>(), devPtrs_.ptr<8>(), yz_.ptr());
-
-                            StrainRateTensor::calculate_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<3>(), devPtrs_.ptr<3>(), devPtrs_.ptr<9>(), zz_.ptr());
+                            StrainRateTensor::kernel::instantaneous<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                                devPtrs_,
+                                {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()});
                         });
                 }
 
@@ -254,24 +321,66 @@ namespace LBM
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<1>(), devPtrs_.ptr<4>(), xxMean_.ptr(), invNewCount);
-
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<2>(), devPtrs_.ptr<5>(), xyMean_.ptr(), invNewCount);
-
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<1>(), devPtrs_.ptr<3>(), devPtrs_.ptr<6>(), xzMean_.ptr(), invNewCount);
-
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<2>(), devPtrs_.ptr<2>(), devPtrs_.ptr<7>(), yyMean_.ptr(), invNewCount);
-
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<2>(), devPtrs_.ptr<3>(), devPtrs_.ptr<8>(), yzMean_.ptr(), invNewCount);
-
-                            StrainRateTensor::calculateMean_kernel<<<mesh_.gridBlock(), {block::nx(), block::ny(), block::nz()}, 0, streamsLBM_.streams()[stream]>>>(
-                                devPtrs_.ptr<3>(), devPtrs_.ptr<3>(), devPtrs_.ptr<9>(), zzMean_.ptr(), invNewCount);
+                            StrainRateTensor::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                                {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()},
+                                {xxMean_.ptr(), xyMean_.ptr(), xzMean_.ptr(), yyMean_.ptr(), yzMean_.ptr(), zzMean_.ptr()},
+                                invNewCount);
                         });
+                }
+
+                /**
+                 * @brief Calculate both the instantaneous and time-averaged strain rate tensor components
+                 * @param[in] timeStep Current simulation time step
+                 **/
+                __host__ void calculateInstantaneousAndMean(const label_t timeStep) noexcept
+                {
+                    const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(timeStep + 1);
+
+                    host::constexpr_for<0, N>(
+                        [&](const auto stream)
+                        {
+                            StrainRateTensor::kernel::instantaneousAndMean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                                devPtrs_,
+                                {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()},
+                                {xxMean_.ptr(), xyMean_.ptr(), xzMean_.ptr(), yyMean_.ptr(), yzMean_.ptr(), zzMean_.ptr()},
+                                invNewCount);
+                        });
+                }
+
+                /**
+                 * @brief Saves the instantaneous strain rate tensor components to file
+                 * @param[in] timeStep Current simulation time step
+                 **/
+                __host__ void saveInstantaneous(const label_t timeStep) noexcept
+                {
+                    const device::ptrCollection<6, scalar_t> ptrs(
+                        xx_.ptr(), xy_.ptr(),
+                        xz_.ptr(), yy_.ptr(),
+                        yz_.ptr(), zz_.ptr());
+                    fileIO::writeFile<time::instantaneous>(
+                        fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
+                        mesh_,
+                        componentNames_,
+                        host::toHost(ptrs, mesh_),
+                        timeStep);
+                }
+
+                /**
+                 * @brief Saves the mean strain rate tensor components to file
+                 * @param[in] timeStep Current simulation time step
+                 **/
+                __host__ void saveMean(const label_t timeStep) noexcept
+                {
+                    const device::ptrCollection<6, scalar_t> ptrs(
+                        xxMean_.ptr(), xyMean_.ptr(),
+                        xzMean_.ptr(), yyMean_.ptr(),
+                        yzMean_.ptr(), zzMean_.ptr());
+                    fileIO::writeFile<time::timeAverage>(
+                        fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
+                        mesh_,
+                        componentNamesMean_,
+                        host::toHost(ptrs, mesh_),
+                        timeStep);
                 }
 
                 /**
@@ -315,6 +424,7 @@ namespace LBM
                  * @brief Reference to lattice mesh
                  **/
                 const host::latticeMesh &mesh_;
+
                 /**
                  * @brief Device pointer collection
                  **/

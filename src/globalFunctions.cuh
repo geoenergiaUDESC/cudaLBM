@@ -385,7 +385,6 @@ namespace LBM
         __device__ [[nodiscard]] inline label_t idxBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * tz);
-            // return tx + (ty * block::nx()) + (tz * block::nx() * block::ny());
         }
 
         /**

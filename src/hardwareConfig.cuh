@@ -124,7 +124,10 @@ namespace LBM
         template <class VelocitySet, const label_t nVars>
         __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize() noexcept
         {
-            return (VelocitySet::Q() - 1 > nVars ? VelocitySet::Q() - 1 : nVars) * (size() + padding());
+            constexpr const label_t A = (VelocitySet::Q() - 1) * block::stride();
+            constexpr const label_t B = block::size() * (nVars + 1);
+            return A > B ? A : B;
+            //            (VelocitySet::Q() - 1 > nVars ? VelocitySet::Q() - 1 : nVars) * (size() + padding());
         }
 
     }

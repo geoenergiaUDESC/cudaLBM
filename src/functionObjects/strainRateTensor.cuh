@@ -54,7 +54,7 @@ namespace LBM
 {
     namespace functionObjects
     {
-        namespace StrainRateTensor
+        namespace strainRate
         {
             namespace kernel
             {
@@ -82,25 +82,36 @@ namespace LBM
 
                 /**
                  * @brief CUDA kernel for calculating time-averaged strain rate tensor components
-                 * @param[in] SPtrs Device pointer collection for instantaneous strain rate tensor components
+                 * @param[in] devPtrs Device pointer collection containing velocity and moment fields
                  * @param[in] SMeanPtrs Device pointer collection for mean strain rate tensor components
                  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
                  **/
                 launchBounds __global__ void mean(
-                    const device::ptrCollection<6, scalar_t> SPtrs,
+                    const device::ptrCollection<10, scalar_t> devPtrs,
                     const device::ptrCollection<6, scalar_t> SMeanPtrs,
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
                     const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-                    // Read the instantaneous values from global memory
-                    const scalar_t S_xx = SPtrs.ptr<0>()[idx];
-                    const scalar_t S_xy = SPtrs.ptr<1>()[idx];
-                    const scalar_t S_xz = SPtrs.ptr<2>()[idx];
-                    const scalar_t S_yy = SPtrs.ptr<3>()[idx];
-                    const scalar_t S_yz = SPtrs.ptr<4>()[idx];
-                    const scalar_t S_zz = SPtrs.ptr<5>()[idx];
+                    // Read from global memory
+                    const scalar_t u = devPtrs.ptr<1>()[idx];
+                    const scalar_t v = devPtrs.ptr<2>()[idx];
+                    const scalar_t w = devPtrs.ptr<3>()[idx];
+                    const scalar_t mxx = devPtrs.ptr<4>()[idx];
+                    const scalar_t mxy = devPtrs.ptr<5>()[idx];
+                    const scalar_t mxz = devPtrs.ptr<6>()[idx];
+                    const scalar_t myy = devPtrs.ptr<7>()[idx];
+                    const scalar_t myz = devPtrs.ptr<8>()[idx];
+                    const scalar_t mzz = devPtrs.ptr<9>()[idx];
+
+                    // Calculate the instantaneous
+                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
 
                     // Read the mean values from global memory
                     const scalar_t S_xxMean = SMeanPtrs.ptr<0>()[idx];
@@ -234,7 +245,7 @@ namespace LBM
              * @tparam N The number of streams (compile-time constant)
              **/
             template <class VelocitySet, const label_t N>
-            class strainRateTensor
+            class tensor
             {
             public:
                 /**
@@ -243,7 +254,7 @@ namespace LBM
                  * @param[in] devPtrs Device pointer collection for memory access
                  * @param[in] streamsLBM Stream handler for CUDA operations
                  **/
-                __host__ [[nodiscard]] strainRateTensor(
+                __host__ [[nodiscard]] tensor(
                     const host::latticeMesh &mesh,
                     const device::ptrCollection<10, scalar_t> &devPtrs,
                     const streamHandler<N> &streamsLBM) noexcept
@@ -274,7 +285,7 @@ namespace LBM
                 /**
                  * @brief Default destructor
                  **/
-                ~strainRateTensor() {};
+                ~tensor() {};
 
                 /**
                  * @brief Check if instantaneous calculation is enabled
@@ -303,7 +314,7 @@ namespace LBM
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
-                            StrainRateTensor::kernel::instantaneous<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                            strainRate::kernel::instantaneous<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                                 devPtrs_,
                                 {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()});
                         });
@@ -321,8 +332,8 @@ namespace LBM
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
-                            StrainRateTensor::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
-                                {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()},
+                            strainRate::kernel::mean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                                devPtrs_,
                                 {xxMean_.ptr(), xyMean_.ptr(), xzMean_.ptr(), yyMean_.ptr(), yzMean_.ptr(), zzMean_.ptr()},
                                 invNewCount);
                         });
@@ -339,7 +350,7 @@ namespace LBM
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
-                            StrainRateTensor::kernel::instantaneousAndMean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
+                            strainRate::kernel::instantaneousAndMean<<<mesh_.gridBlock(), host::latticeMesh::threadBlock(), 0, streamsLBM_.streams()[stream]>>>(
                                 devPtrs_,
                                 {xx_.ptr(), xy_.ptr(), xz_.ptr(), yy_.ptr(), yz_.ptr(), zz_.ptr()},
                                 {xxMean_.ptr(), xyMean_.ptr(), xzMean_.ptr(), yyMean_.ptr(), yzMean_.ptr(), zzMean_.ptr()},
@@ -492,7 +503,14 @@ namespace LBM
                  **/
                 __host__ [[nodiscard]] bool initialiserSwitch(const std::string &objectName)
                 {
-                    return string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName);
+                    if (!std::filesystem::exists("functionObjects"))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName);
+                    }
                 }
             };
         }

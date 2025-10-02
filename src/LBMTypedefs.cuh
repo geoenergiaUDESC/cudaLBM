@@ -164,8 +164,8 @@ namespace LBM
     /**
      * @brief Type used for compile-time indices
      **/
-    template <const label_t q_>
-    using label_constant = const integralConstant<label_t, q_>;
+    template <const label_t label>
+    using label_constant = const integralConstant<label_t, label>;
 
     namespace thread
     {

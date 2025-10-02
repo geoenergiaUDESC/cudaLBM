@@ -123,7 +123,7 @@ namespace LBM
         /**
          * @brief Strain rate tensor function object
          **/
-        functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> S_;
+        functionObjects::strainRate::tensor<VelocitySet, N> S_;
 
         /**
          * @brief Registry of function objects to invoke
@@ -136,10 +136,11 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectCallInitialiser(
-            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S) const noexcept
+            functionObjects::strainRate::tensor<VelocitySet, N> &S) const noexcept
         {
             std::vector<std::function<void(const label_t)>> calls;
 
+            // If both instantaneous and mean calculations are enabled, calculate both in one call
             if ((S.calculate()) && (S.calculateMean()))
             {
                 calls.push_back(
@@ -148,14 +149,16 @@ namespace LBM
             }
             else
             {
-                if (S.calculate())
+                // Must be only saving instantaneous, so just calculate instantaneous without saving mean
+                if (S.calculate() && !(S.calculateMean()))
                 {
                     calls.push_back(
                         [&S](const label_t label)
                         { S.calculateInstantaneous(label); });
                 }
 
-                if (S.calculateMean())
+                // Must be only saving the mean, so just calculate mean without saving instantaneous
+                if (S.calculateMean() && !(S.calculate()))
                 {
                     calls.push_back(
                         [&S](const label_t label)
@@ -177,7 +180,7 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectSaveInitialiser(
-            functionObjects::StrainRateTensor::strainRateTensor<VelocitySet, N> &S) const noexcept
+            functionObjects::strainRate::tensor<VelocitySet, N> &S) const noexcept
         {
             std::vector<std::function<void(const label_t)>> calls;
 

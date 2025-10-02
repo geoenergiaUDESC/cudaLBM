@@ -82,7 +82,7 @@ namespace LBM
              * - Calculation of LBM relaxation parameters
              * - Initialization of device constants for GPU execution
              **/
-            [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
+            __host__ [[nodiscard]] latticeMesh(const programControl &programCtrl) noexcept
                 : nx_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nx")),
                   ny_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "ny")),
                   nz_(string::extractParameter<label_t>(string::readFile("latticeMesh"), "nz")),

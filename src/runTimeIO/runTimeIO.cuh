@@ -71,7 +71,7 @@ namespace LBM
          * @param[in] mesh Lattice mesh providing dimension information
          * @param[in] programCtrl Program control object with simulation parameters
          **/
-        [[nodiscard]] runTimeIO(
+        __host__ [[nodiscard]] runTimeIO(
             const host::latticeMesh &mesh,
             const programControl &programCtrl)
             : mesh_(mesh),
@@ -107,7 +107,7 @@ namespace LBM
          * @param[in] totalSeconds Total number of seconds to format
          * @return String formatted as HH:MM:SS (supports negative durations)
          **/
-        [[nodiscard]] static const std::string duration(const long long totalSeconds) noexcept
+        __host__ [[nodiscard]] static const std::string duration(const long long totalSeconds) noexcept
         {
             // Handle sign and absolute value conversion
             const bool isNegative = (totalSeconds < 0);
@@ -143,7 +143,7 @@ namespace LBM
          * This metric provides a standardized way to compare LBM implementation performance.
          **/
         template <typename T>
-        [[nodiscard]] static inline constexpr T MLUPS(
+        __host__ [[nodiscard]] static inline constexpr T MLUPS(
             const host::latticeMesh &mesh,
             const programControl &programCtrl,
             const std::chrono::high_resolution_clock::time_point &start,

@@ -78,10 +78,7 @@ namespace LBM
             const device::ptrCollection<10, scalar_t> &devPtrs,
             const streamHandler<N> &streamsLBM)
             : mesh_(mesh),
-              S_(
-                  mesh,
-                  devPtrs,
-                  streamsLBM),
+              S_(mesh, devPtrs, streamsLBM),
               functionVector_(functionObjectCallInitialiser(S_)),
               saveVector_(functionObjectSaveInitialiser(S_)) {};
 

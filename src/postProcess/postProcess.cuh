@@ -171,7 +171,7 @@ namespace LBM
          * @return A string containing the name of the VTK type (e.g. "Float32", "Int64")
          **/
         template <typename T>
-        [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
+        __host__ [[nodiscard]] inline consteval const char *getVtkTypeName() noexcept
         {
             if constexpr (std::is_same_v<T, float>)
             {

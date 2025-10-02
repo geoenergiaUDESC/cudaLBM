@@ -63,7 +63,7 @@ namespace LBM
          * @param[in] numStr String to check
          * @return True if string contains only digits, false otherwise
          **/
-        [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
+        __host__ [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
         {
             for (char c : numStr)
             {
@@ -81,7 +81,7 @@ namespace LBM
          * @param[in] intStr String to validate
          * @return True if string is non-empty and contains only digits
          **/
-        [[nodiscard]] inline bool isValidInteger(const std::string &intStr) noexcept
+        __host__ [[nodiscard]] inline bool isValidInteger(const std::string &intStr) noexcept
         {
             return (!intStr.empty() || isAllDigits(intStr));
         }
@@ -94,7 +94,7 @@ namespace LBM
          * Searches current directory for files with pattern: {fileName}_{number}.LBMBin
          * where {number} consists of only digits.
          **/
-        [[nodiscard]] bool hasIndexedFiles(const std::string &fileName)
+        __host__ [[nodiscard]] bool hasIndexedFiles(const std::string &fileName)
         {
             const std::filesystem::path currentDir = std::filesystem::current_path();
             const std::string prefix = fileName + "_";
@@ -161,7 +161,7 @@ namespace LBM
          * Parses files with pattern: {fileName}_{number}.LBMBin and extracts
          * the numeric portion as time indices.
          **/
-        [[nodiscard]] const std::vector<label_t> timeIndices(const std::string &fileName)
+        __host__ [[nodiscard]] const std::vector<label_t> timeIndices(const std::string &fileName)
         {
             std::vector<label_t> indices;
             const std::filesystem::path currentDir = std::filesystem::current_path();
@@ -218,7 +218,7 @@ namespace LBM
          * @param[in] fileName Case name prefix to search for
          * @return Highest time index found, or 0 if no files found
          **/
-        [[nodiscard]] label_t latestTime(const std::string &fileName)
+        __host__ [[nodiscard]] label_t latestTime(const std::string &fileName)
         {
             if (hasIndexedFiles(fileName))
             {

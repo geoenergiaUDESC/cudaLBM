@@ -71,25 +71,13 @@ namespace LBM
              * @param[in] programCtrl Program control parameters
              * @post Array is initialized from latest time step or initial conditions
              **/
-            [[nodiscard]] array(
+            __host__ [[nodiscard]] array(
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : arr_(initialise_array(mesh, name, programCtrl)),
                   name_(name),
-                  mesh_(mesh) {};
-
-            // In this version of the constructor:
-            // Read a pre-defined caseName
-            // Read the fieldNames from the file
-            // Also read the data from the file
-            // [[nodiscard]] array(
-            //     const std::string &caseName,
-            //     const host::latticeMesh &mesh,
-            //     const label_t time)
-            //     : arr_(initialise_array(caseName, mesh, time)),
-            //       name_(name),
-            //       mesh_(mesh) {};
+                  mesh_(mesh){};
 
             /**
              * @brief Destructor for the host array class
@@ -100,7 +88,7 @@ namespace LBM
              * @brief Get read-only access to underlying data
              * @return Const reference to data vector
              **/
-            [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
+            __host__ [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
             {
                 return arr_;
             }
@@ -152,7 +140,7 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if file operations fail
              **/
-            [[nodiscard]] const std::vector<T> initialise_array(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
+            __host__ [[nodiscard]] const std::vector<T> initialise_array(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
             {
                 if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                 {
@@ -167,7 +155,7 @@ namespace LBM
             }
 
             // Initialises the array from the caseName
-            [[nodiscard]] const std::vector<T> initialise_array(
+            __host__ [[nodiscard]] const std::vector<T> initialise_array(
                 const std::string &caseName,
                 const host::latticeMesh &mesh,
                 const label_t time)
@@ -192,7 +180,7 @@ namespace LBM
              * @param[in] fieldName Name of field for boundary condition lookup
              * @return Initialized data vector with boundary conditions applied
              **/
-            [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
+            __host__ [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
             {
                 const boundaryFields<VelocitySet> bField(fieldName);
 
@@ -267,9 +255,9 @@ namespace LBM
              * @param[in] varNames Names of variables to include in collection
              * @param[in] mesh Lattice mesh for dimensioning
              **/
-            [[nodiscard]] arrayCollection(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
+            __host__ [[nodiscard]] arrayCollection(const programControl &programCtrl, const std::vector<std::string> &varNames, const host::latticeMesh &mesh)
                 : arr_(initialiseVector(programCtrl, mesh)),
-                  varNames_(varNames) {};
+                  varNames_(varNames){};
 
             /**
              * @brief Construct from specific time index
@@ -277,31 +265,31 @@ namespace LBM
              * @param[in] varNames Names of variables to include
              * @param[in] timeIndex Specific time index to read from
              **/
-            [[nodiscard]] arrayCollection(
+            __host__ [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
                 const std::vector<std::string> &varNames,
                 const label_t timeIndex)
                 : arr_(initialiseVector(programCtrl, timeIndex)),
-                  varNames_(varNames) {};
+                  varNames_(varNames){};
 
             /**
              * @brief Construct from latest available time
              * @param[in] programCtrl Program control parameters
              * @param[in] varNames Names of variables to include
              **/
-            [[nodiscard]] arrayCollection(
+            __host__ [[nodiscard]] arrayCollection(
                 const programControl &programCtrl,
                 const std::vector<std::string> &varNames)
                 : arr_(initialiseVector(programCtrl)),
-                  varNames_(varNames) {};
+                  varNames_(varNames){};
 
             // Constructs from a file prefix
-            [[nodiscard]] arrayCollection(
+            __host__ [[nodiscard]] arrayCollection(
                 const std::string &fileNamePrefix,
                 const std::vector<std::string> &varNames,
                 const label_t timeIndex)
                 : arr_(initialiseVector(fileNamePrefix, timeIndex)),
-                  varNames_(varNames) {};
+                  varNames_(varNames){};
 
             /**
              * @brief Destructor for the host arrayCollection class
@@ -312,7 +300,7 @@ namespace LBM
              * @brief Get read-only access to underlying data
              * @return Const reference to data vector
              **/
-            [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
+            __host__ [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
             {
                 return arr_;
             }
@@ -344,7 +332,7 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
-            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
+            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const host::latticeMesh &mesh) const
             {
                 static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
 
@@ -360,7 +348,7 @@ namespace LBM
                 return fileIO::readFieldFile<T>(fileName);
             }
 
-            [[nodiscard]] const std::vector<T> initialiseVector(const std::string &fileNamePrefix, const label_t timeIndex) const
+            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const std::string &fileNamePrefix, const label_t timeIndex) const
             {
                 static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
 
@@ -382,7 +370,7 @@ namespace LBM
              * @return Initialized data vector
              * @throws std::runtime_error if indexed files not found
              **/
-            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const label_t timeIndex) const
+            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl, const label_t timeIndex) const
             {
                 static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");
 
@@ -405,7 +393,7 @@ namespace LBM
              * @param[in] programCtrl Program control parameters
              * @return Initialized data vector
              **/
-            [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
+            __host__ [[nodiscard]] const std::vector<T> initialiseVector(const programControl &programCtrl) const
             {
                 return initialiseVector(programCtrl, fileIO::getStartIndex(programCtrl, true));
             }

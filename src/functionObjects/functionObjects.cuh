@@ -103,6 +103,23 @@ namespace LBM
                 return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
+
+        /**
+         * @brief Initializes calculation switches based on function object configuration
+         * @param[in] objectName Name of the function object to check
+         * @return True if the object is enabled in configuration
+         **/
+        __host__ [[nodiscard]] bool initialiserSwitch(const std::string &objectName)
+        {
+            if (!std::filesystem::exists("functionObjects"))
+            {
+                return false;
+            }
+            else
+            {
+                return string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName);
+            }
+        }
     }
 }
 

@@ -17,7 +17,7 @@ namespace LBM
         /**
          * @brief Constructor for the mpiStatus class
          **/
-        [[nodiscard]] mpiStatus(int argc, char *argv[])
+        __host__ [[nodiscard]] mpiStatus(int argc, char *argv[])
             : mpiStatus_(mpiInitialise(argc, argv))
         {
             if (!mpiStatus_ == MPI_SUCCESS)
@@ -43,7 +43,7 @@ namespace LBM
          * @brief Returns the MPI status
          * @return The MPI status
          **/
-        [[nodiscard]] inline mpiError_t status() const noexcept
+        __host__ [[nodiscard]] inline mpiError_t status() const noexcept
         {
             return mpiStatus_;
         }
@@ -58,7 +58,7 @@ namespace LBM
          * @brief Initialises MPI from the input arguments
          * @return The MPI status
          **/
-        [[nodiscard]] mpiError_t mpiInitialise(int argc, char **argv) const noexcept
+        __host__ [[nodiscard]] mpiError_t mpiInitialise(int argc, char **argv) const noexcept
         {
             return static_cast<mpiError_t>(MPI_Init(&argc, &argv));
         }

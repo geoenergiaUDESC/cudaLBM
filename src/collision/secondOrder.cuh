@@ -72,7 +72,7 @@ namespace LBM
          * @brief Default constructor (consteval)
          * @return A secondOrder collision operator instance
          **/
-        [[nodiscard]] inline consteval secondOrder() noexcept {};
+        __device__ __host__ [[nodiscard]] inline consteval secondOrder() noexcept {};
 
         /**
          * @brief Perform second-order collision operation on moments

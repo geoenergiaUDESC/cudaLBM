@@ -66,9 +66,9 @@ namespace LBM
              * @brief Consteval functions used to distinguish between halo face normal directions
              * @return An unsigned integer corresponding to the correct direction
              **/
-            [[nodiscard]] static inline consteval label_t x() noexcept { return 0; }
-            [[nodiscard]] static inline consteval label_t y() noexcept { return 1; }
-            [[nodiscard]] static inline consteval label_t z() noexcept { return 2; }
+            __host__ [[nodiscard]] static inline consteval label_t x() noexcept { return 0; }
+            __host__ [[nodiscard]] static inline consteval label_t y() noexcept { return 1; }
+            __host__ [[nodiscard]] static inline consteval label_t z() noexcept { return 2; }
         }
     }
 }

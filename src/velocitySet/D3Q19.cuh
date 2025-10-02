@@ -72,13 +72,13 @@ namespace LBM
         /**
          * @brief Default constructor (consteval)
          **/
-        [[nodiscard]] inline consteval D3Q19() {};
+        __device__ __host__ [[nodiscard]] inline consteval D3Q19(){};
 
         /**
          * @brief Get number of discrete velocity directions
          * @return 19 (number of directions in D3Q19 lattice)
          **/
-        [[nodiscard]] static inline consteval label_t Q() noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval label_t Q() noexcept
         {
             return Q_;
         }
@@ -87,7 +87,7 @@ namespace LBM
          * @brief Get number of velocity components on a lattice face
          * @return 5 (number of directions crossing each face in D3Q19)
          **/
-        [[nodiscard]] static inline consteval label_t QF() noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval label_t QF() noexcept
         {
             return QF_;
         }
@@ -358,7 +358,7 @@ namespace LBM
          * @return Equilibrium distribution value for the direction
          **/
         template <typename T>
-        [[nodiscard]] static inline constexpr T f_eq(const T rhow, const T uc3, const T p1_muu) noexcept
+        __host__ [[nodiscard]] static inline constexpr T f_eq(const T rhow, const T uc3, const T p1_muu) noexcept
         {
             return (rhow * (p1_muu + uc3 * (static_cast<T>(1.0) + uc3 * static_cast<T>(0.5))));
         }

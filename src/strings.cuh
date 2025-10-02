@@ -57,12 +57,63 @@ namespace LBM
 {
     namespace string
     {
-        __host__ [[nodiscard]] bool containsString(const std::vector<std::string> &vec, const std::string &target)
+        /**
+         * @brief Left-side concatenates a string to each element of a vector of strings.
+         * @param[in] S The vector of strings to which the string will be concatenated.
+         * @param[in] s The string to concatenate to each element of S.
+         * @return A new vector of strings with s concatenated to each element of S.
+         * @note This function creates a new vector and does not modify the input vector S.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> catenate(const std::string &s, const std::vector<std::string> &S) noexcept
+        {
+            std::vector<std::string> S_new(S.size(), "");
+
+            for (std::size_t i = 0; i < S_new.size(); i++)
+            {
+                S_new[i] = s + S_new[i];
+            }
+
+            return S_new;
+        }
+
+        /**
+         * @brief Right-side concatenates a string to each element of a vector of strings.
+         * @param[in] S The vector of strings to which the string will be concatenated.
+         * @param[in] s The string to concatenate to each element of S.
+         * @return A new vector of strings with s concatenated to each element of S.
+         * @note This function creates a new vector and does not modify the input vector S.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> catenate(const std::vector<std::string> &S, const std::string &s) noexcept
+        {
+            std::vector<std::string> S_new(S.size(), "");
+
+            for (std::size_t i = 0; i < S_new.size(); i++)
+            {
+                S_new[i] = S_new[i] + s;
+            }
+
+            return S_new;
+        }
+
+        /**
+         * @brief Checks if a target string exists within a vector of strings.
+         * @param[in] vec The vector of strings to search.
+         * @param[in] target The string to search for.
+         * @return true if target is found in vec, false otherwise.
+         * @note Uses std::find for efficient searching.
+         **/
+        __host__ [[nodiscard]] bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
         {
             return std::find(vec.begin(), vec.end(), target) != vec.end();
         }
 
-        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> S) noexcept
+        /**
+         * @brief Concatenates a vector of strings into a single string with newline separators.
+         * @param[in] S The vector of strings to concatenate.
+         * @return A single string with each element of S separated by a newline character.
+         * @note This function is useful for creating multi-line strings from a list of lines.
+         **/
+        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> &S) noexcept
         {
             std::string s;
             for (std::size_t line = 0; line < S.size(); line++)
@@ -72,14 +123,34 @@ namespace LBM
             return s;
         }
 
-        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> lines) noexcept
+        /**
+         * @brief Removes the first and last lines from a vector of strings.
+         * @param[in] lines The input vector of strings.
+         * @return A new vector of strings with the first and last lines removed.
+         * @throws std::runtime_error if the input vector has 2 or fewer lines.
+         * @note This function is useful for removing enclosing braces from blocks of text.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> &lines) noexcept
         {
-            if (!(lines.size() > 2))
+            // Check minimum size requirement
+            if (lines.size() < 3)
             {
-                errorHandler(-1, "Lines must have at least 2 entries: opening bracket and closing bracket. Problematic entry:" + catenate(lines));
+                errorHandler(-1, "Lines must have at least 3 entries: opening bracket, content, and closing bracket. Problematic entry: " + catenate(lines));
             }
 
-            // Need to check that lines has > 2 elements, i.e. more than just empty brackets
+            // Check that first element is exactly "{"
+            if (lines.front() != "{")
+            {
+                errorHandler(-1, "First element must be opening brace '{'. Problematic entry: " + catenate(lines));
+            }
+
+            // Check that last element is exactly "};"
+            if (lines.back() != "};")
+            {
+                errorHandler(-1, "Last element must be closing brace with semicolon '};'. Problematic entry: " + catenate(lines));
+            }
+
+            // Create new vector without the braces
             std::vector<std::string> newLines(lines.size() - 2);
 
             for (std::size_t line = 1; line < lines.size() - 1; line++)
@@ -97,7 +168,7 @@ namespace LBM
          * @note Handles space, tab, newline, carriage return, form feed, and vertical tab.
          **/
         template <const bool trimSemicolon>
-        [[nodiscard]] const std::string trim(const std::string &str)
+        __host__ [[nodiscard]] const std::string trim(const std::string &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\n\r\f\v");
 
@@ -116,8 +187,13 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Trims leading and trailing whitespace from each string in a vector.
+         * @param str The vector of strings to trim.
+         * @return A new vector with each string trimmed.
+         **/
         template <const bool trimSemicolon>
-        [[nodiscard]] const std::vector<std::string> trim(const std::vector<std::string> &str)
+        __host__ [[nodiscard]] const std::vector<std::string> trim(const std::vector<std::string> &str)
         {
             std::vector<std::string> strTrimmed(str.size(), "");
 
@@ -135,7 +211,7 @@ namespace LBM
          * @return String with comments removed (everything after '//').
          * @note Only handles single-line comments starting with '//'.
          **/
-        [[nodiscard]] const std::string removeComments(const std::string &str)
+        __host__ [[nodiscard]] const std::string removeComments(const std::string &str)
         {
             const std::size_t commentPos = str.find("//");
             if (commentPos != std::string::npos)
@@ -151,7 +227,7 @@ namespace LBM
          * @return true if string contains only whitespace, false otherwise.
          * @note Uses std::isspace for whitespace detection.
          **/
-        [[nodiscard]] bool isOnlyWhitespace(const std::string &str)
+        __host__ [[nodiscard]] bool isOnlyWhitespace(const std::string &str)
         {
             for (char c : str)
             {
@@ -172,7 +248,7 @@ namespace LBM
          * @throws std::runtime_error if block is not found.
          * @note Handles various declaration styles including braces and semicolons.
          **/
-        [[nodiscard]] std::size_t findBlockLine(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
+        __host__ [[nodiscard]] std::size_t findBlockLine(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
         {
             for (std::size_t i = startLine; i < lines.size(); ++i)
             {
@@ -221,10 +297,7 @@ namespace LBM
          * @throws std::runtime_error for malformed blocks or unbalanced braces.
          * @note Preserves original formatting including comments in the returned block.
          **/
-        [[nodiscard]] const std::vector<std::string> extractBlock(
-            const std::vector<std::string> &lines,
-            const std::string &blockName,
-            const std::size_t startLine = 0)
+        __host__ [[nodiscard]] const std::vector<std::string> extractBlock(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
         {
             std::vector<std::string> result;
 
@@ -324,10 +397,7 @@ namespace LBM
          * @return Vector of strings containing the complete block.
          * @note Convenience wrapper for extractBlock(lines, key + " " + fieldName).
          **/
-        [[nodiscard]] const std::vector<std::string> extractBlock(
-            const std::vector<std::string> &lines,
-            const std::string &fieldName,
-            const std::string &key)
+        __host__ [[nodiscard]] const std::vector<std::string> extractBlock(const std::vector<std::string> &lines, const std::string &fieldName, const std::string &key)
         {
             return extractBlock(lines, key + " " + fieldName);
         }
@@ -337,7 +407,7 @@ namespace LBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
-        [[nodiscard]] const std::vector<std::string> readFile(const std::string_view &fileName)
+        __host__ [[nodiscard]] const std::vector<std::string> readFile(const std::string_view &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
@@ -371,7 +441,7 @@ namespace LBM
          * @return True if s is a valid number, false otherwise.
          * @note A valid number can optionally start with a '+' or '-' sign and may contain one decimal point.
          **/
-        [[nodiscard]] bool is_number(const std::string &s) noexcept
+        __host__ [[nodiscard]] bool isNumber(const std::string &s) noexcept
         {
             if (s.empty())
             {
@@ -429,7 +499,7 @@ namespace LBM
          * @param numStr The number string
          * @return True if the string is all digits, false otherwise
          **/
-        [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
+        __host__ [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
         {
             for (char c : numStr)
             {
@@ -450,7 +520,8 @@ namespace LBM
          * @return A std::vector of std::string_view objects split from s by delim
          * @note This function can be used to, for example, split a string by commas, spaces, etc
          **/
-        [[nodiscard]] const std::vector<std::string> split(const std::string_view &s, const char delim, const bool removeWhitespace = true) noexcept
+        template <const char delim>
+        __host__ [[nodiscard]] const std::vector<std::string> split(const std::string_view &s, const bool removeWhitespace = true) noexcept
         {
             std::vector<std::string> result;
             const char *left = s.begin();
@@ -476,7 +547,7 @@ namespace LBM
             return result;
         }
 
-        [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string_view &name)
+        __host__ [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string_view &name)
         {
             // Loop over S
             for (label_t i = 0; i < S.size(); i++)
@@ -485,7 +556,7 @@ namespace LBM
                 if (S[i].find(name) != std::string_view::npos)
                 {
                     // Split by space and remove whitespace
-                    const std::vector<std::string> s = split(S[i], " "[0], true);
+                    const std::vector<std::string> s = split<" "[0]>(S[i], true);
 
                     // Check that the last char is ;
                     // Perform the exit here if the above string is not equal to ;
@@ -512,7 +583,7 @@ namespace LBM
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
         template <typename T>
-        [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
+        __host__ [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
         {
             // First get the parameter line string
             const std::string toReturn = extractParameterLine(S, name);
@@ -520,7 +591,7 @@ namespace LBM
             // Is it supposed an integral value?
             if constexpr (std::is_integral_v<T>)
             {
-                if (is_number(toReturn))
+                if (isNumber(toReturn))
                 {
                     // Check if T is an unsigned integral type
                     if constexpr (std::is_unsigned_v<T>)
@@ -549,12 +620,12 @@ namespace LBM
         }
 
         template <typename T>
-        [[nodiscard]] T extractParameter(const std::string &toReturn)
+        __host__ [[nodiscard]] T extractParameter(const std::string &toReturn)
         {
             // Is it supposed an integral value?
             if constexpr (std::is_integral_v<T>)
             {
-                if (is_number(toReturn))
+                if (isNumber(toReturn))
                 {
                     // Check if T is an unsigned integral type
                     if constexpr (std::is_unsigned_v<T>)
@@ -588,7 +659,7 @@ namespace LBM
          * @param name The argument to be searched for
          * @return A std::string_view of the value argument corresponding to name
          **/
-        [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name)
+        __host__ [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name)
         {
             // Loop over the input arguments and search for name
             for (label_t i = 0; i < args.size(); i++)
@@ -621,9 +692,9 @@ namespace LBM
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/
         template <typename T>
-        [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name)
+        __host__ [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name)
         {
-            const std::vector<std::string> s_v = string::split(parseNameValuePair(args, name), ","[0], true);
+            const std::vector<std::string> s_v = string::split<","[0]>(parseNameValuePair(args, name), true);
 
             std::vector<T> arr;
             label_t arrLength = 0;
@@ -633,7 +704,7 @@ namespace LBM
                 // Should check here if the string converts to a negative number and exit
                 if constexpr (std::is_signed_v<T>)
                 {
-                    if (is_number(s_v[i]))
+                    if (isNumber(s_v[i]))
                     {
                         arr.push_back(std::stoi(std::string(s_v[i])));
                     }
@@ -644,7 +715,7 @@ namespace LBM
                 }
                 else
                 {
-                    if (is_number(s_v[i]))
+                    if (isNumber(s_v[i]))
                     {
                         arr.push_back(std::stoul(std::string(s_v[i])));
                     }

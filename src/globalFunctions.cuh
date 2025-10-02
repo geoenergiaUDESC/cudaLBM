@@ -110,7 +110,7 @@ namespace LBM
     /**
      * @brief Number of hydrodynamic moments
      **/
-    [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
+    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
     /**
      * @brief Host-side indexing operations

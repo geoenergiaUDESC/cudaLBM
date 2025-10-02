@@ -73,10 +73,10 @@ namespace LBM
          * @param[in] argv Second argument passed to main (argument vector)
          * @throws std::runtime_error if argument count is negative
          **/
-        [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
+        __host__ [[nodiscard]] inputControl(const int argc, const char *const argv[]) noexcept
             : nArgs_(nArgsCheck(argc)),
               commandLine_(parseCommandLine(argc, argv)),
-              deviceList_(initialiseDeviceList()) {};
+              deviceList_(initialiseDeviceList()){};
 
         /**
          * @brief Destructor for the inputControl class
@@ -87,7 +87,7 @@ namespace LBM
          * @brief Returns the device list as a vector of ints
          * @return const std::vector<deviceIndex_t>& The device list containing GPU indices
          **/
-        [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
+        __host__ [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return deviceList_;
         }
@@ -97,7 +97,7 @@ namespace LBM
          * @param[in] name The argument to search for
          * @return bool True if the argument is present, false otherwise
          **/
-        [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
+        __host__ [[nodiscard]] bool isArgPresent(const std::string &name) const noexcept
         {
             for (label_t i = 0; i < commandLine_.size(); i++)
             {
@@ -140,7 +140,7 @@ namespace LBM
          * @return label_t Validated number of arguments
          * @throws std::runtime_error if argument count is negative
          **/
-        [[nodiscard]] label_t nArgsCheck(const int argc) const
+        __host__ [[nodiscard]] label_t nArgsCheck(const int argc) const
         {
             // Check for a bad number of supplied arguments
             if (argc < 0)
@@ -165,7 +165,7 @@ namespace LBM
          * @param[in] argv Second argument passed to main (argument vector)
          * @return std::vector<std::string> Parsed command line arguments
          **/
-        [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
+        __host__ [[nodiscard]] const std::vector<std::string> parseCommandLine(const int argc, const char *const argv[]) const noexcept
         {
             if (argc > 0)
             {
@@ -201,7 +201,7 @@ namespace LBM
          * - Requested GPUs exceed available devices
          * @note For "fieldConvert" and "fieldCalculate" executables, -GPU flag is optional (defaults to device 0)
          **/
-        [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList() const
+        __host__ [[nodiscard]] const std::vector<deviceIndex_t> initialiseDeviceList() const
         {
             if (isArgPresent("-GPU"))
             {
@@ -230,7 +230,7 @@ namespace LBM
          * @brief Queries the number of available CUDA devices
          * @return deviceIndex_t Count of available CUDA devices
          **/
-        [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
+        __host__ [[nodiscard]] deviceIndex_t nAvailableDevices() const noexcept
         {
             deviceIndex_t deviceCount = -1;
             cudaGetDeviceCount(&deviceCount);

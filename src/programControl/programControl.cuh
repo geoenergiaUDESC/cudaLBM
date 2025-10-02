@@ -210,6 +210,34 @@ namespace LBM
         }
 
         /**
+         * @brief Veriefies if the command line has the argument -type
+         * @return A string representing the convertion type passed at the command line
+         * @param[in] programCtrl Program control parameters
+         **/
+        __host__ [[nodiscard]] const std::string getArgument(const std::string &argument) const
+        {
+            if (input_.isArgPresent(argument))
+            {
+                for (label_t arg = 0; arg < commandLine().size(); arg++)
+                {
+                    if (commandLine()[arg] == argument)
+                    {
+                        if (arg + 1 == commandLine().size())
+                        {
+                            throw std::runtime_error("Argument " + argument + " not specified: the correct syntax is " + argument + " Arg");
+                        }
+                        else
+                        {
+                            return commandLine()[arg + 1];
+                        }
+                    }
+                }
+            }
+
+            throw std::runtime_error("Argument " + argument + " not specified: the correct syntax is " + argument + " Arg");
+        }
+
+        /**
          * @brief Provides read-only access to the arguments supplied at the command line
          * @return The command line input as a vector of strings
          **/

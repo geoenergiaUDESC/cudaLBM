@@ -164,8 +164,8 @@ namespace LBM
     /**
      * @brief Type used for compile-time indices
      **/
-    template <const label_t q_>
-    using label_constant = const integralConstant<label_t, q_>;
+    template <const label_t label>
+    using label_constant = const integralConstant<label_t, label>;
 
     namespace thread
     {
@@ -325,8 +325,19 @@ namespace LBM
             READ_IF_PRESENT = 2
         } type;
     }
-    template <const ctorType::type T>
-    using constructorType = const std::integral_constant<ctorType::type, T>;
+    // template <const ctorType::type T>
+    // using constructorType = const std::integral_constant<ctorType::type, T>;
+
+    namespace time
+    {
+        typedef enum Enum : int
+        {
+            instantaneous = 0,
+            timeAverage = 1
+        } type;
+    }
+    // template <const time::::type T>
+    // using timeType = const std::integral_constant<time::::type, T>;
 
     namespace device
     {

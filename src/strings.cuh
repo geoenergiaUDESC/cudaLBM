@@ -57,22 +57,76 @@ namespace LBM
 {
     namespace string
     {
+        __host__ [[nodiscard]] bool containsString(const std::vector<std::string> &vec, const std::string &target)
+        {
+            return std::find(vec.begin(), vec.end(), target) != vec.end();
+        }
+
+        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> S) noexcept
+        {
+            std::string s;
+            for (std::size_t line = 0; line < S.size(); line++)
+            {
+                s = s + S[line] + "\n";
+            }
+            return s;
+        }
+
+        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> lines) noexcept
+        {
+            if (!(lines.size() > 2))
+            {
+                errorHandler(-1, "Lines must have at least 2 entries: opening bracket and closing bracket. Problematic entry:" + catenate(lines));
+            }
+
+            // Need to check that lines has > 2 elements, i.e. more than just empty brackets
+            std::vector<std::string> newLines(lines.size() - 2);
+
+            for (std::size_t line = 1; line < lines.size() - 1; line++)
+            {
+                newLines[line - 1] = lines[line];
+            }
+
+            return newLines;
+        }
+
         /**
          * @brief Trims leading and trailing whitespace from a string.
          * @param str The input string to trim.
          * @return Trimmed string, or empty string if only whitespace.
          * @note Handles space, tab, newline, carriage return, form feed, and vertical tab.
          **/
+        template <const bool trimSemicolon>
         [[nodiscard]] const std::string trim(const std::string &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\n\r\f\v");
+
             if (start == std::string::npos)
             {
                 return "";
             }
 
-            const std::size_t end = str.find_last_not_of(" \t\n\r\f\v");
-            return str.substr(start, end - start + 1);
+            if constexpr (trimSemicolon)
+            {
+                return str.substr(start, str.find_last_not_of(" \t\n\r\f\v;") - start + 1);
+            }
+            else
+            {
+                return str.substr(start, str.find_last_not_of(" \t\n\r\f\v") - start + 1);
+            }
+        }
+
+        template <const bool trimSemicolon>
+        [[nodiscard]] const std::vector<std::string> trim(const std::vector<std::string> &str)
+        {
+            std::vector<std::string> strTrimmed(str.size(), "");
+
+            for (std::size_t s = 0; s < str.size(); s++)
+            {
+                strTrimmed[s] = trim<trimSemicolon>(str[s]);
+            }
+
+            return strTrimmed;
         }
 
         /**
@@ -123,13 +177,13 @@ namespace LBM
             for (std::size_t i = startLine; i < lines.size(); ++i)
             {
                 const std::string processedLine = removeComments(lines[i]);
-                const std::string trimmedLine = trim(processedLine);
+                const std::string trimmedLine = trim<false>(processedLine);
 
                 // Check if line starts with the block name
                 if (trimmedLine.compare(0, blockName.length(), blockName) == 0)
                 {
                     // Extract the rest of the line after the block name
-                    const std::string rest = trim(trimmedLine.substr(blockName.length()));
+                    const std::string rest = trim<false>(trimmedLine.substr(blockName.length()));
 
                     // Check if the next token is empty or a brace
                     if (rest.empty() || rest == "{" || rest[0] == '{')
@@ -199,7 +253,7 @@ namespace LBM
                 for (std::size_t i = blockLine + 1; i < lines.size(); ++i)
                 {
                     const std::string processedLine = removeComments(lines[i]);
-                    const std::string trimmedLine = trim(processedLine);
+                    const std::string trimmedLine = trim<false>(processedLine);
 
                     // Check for closing brace before opening brace
                     if (processedLine.find('}') != std::string::npos)

@@ -75,16 +75,16 @@ namespace LBM
              * @post All six halo faces are allocated and initialized with population data
              **/
             [[nodiscard]] haloFace(
-                const host::array<scalar_t, VelocitySet> &rho,
-                const host::array<scalar_t, VelocitySet> &u,
-                const host::array<scalar_t, VelocitySet> &v,
-                const host::array<scalar_t, VelocitySet> &w,
-                const host::array<scalar_t, VelocitySet> &m_xx,
-                const host::array<scalar_t, VelocitySet> &m_xy,
-                const host::array<scalar_t, VelocitySet> &m_xz,
-                const host::array<scalar_t, VelocitySet> &m_yy,
-                const host::array<scalar_t, VelocitySet> &m_yz,
-                const host::array<scalar_t, VelocitySet> &m_zz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
                 : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
                   x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
@@ -243,16 +243,16 @@ namespace LBM
              **/
             template <const label_t faceIndex, const label_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
-                const host::array<scalar_t, VelocitySet> &rho,
-                const host::array<scalar_t, VelocitySet> &u,
-                const host::array<scalar_t, VelocitySet> &v,
-                const host::array<scalar_t, VelocitySet> &w,
-                const host::array<scalar_t, VelocitySet> &m_xx,
-                const host::array<scalar_t, VelocitySet> &m_xy,
-                const host::array<scalar_t, VelocitySet> &m_xz,
-                const host::array<scalar_t, VelocitySet> &m_yy,
-                const host::array<scalar_t, VelocitySet> &m_yz,
-                const host::array<scalar_t, VelocitySet> &m_zz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);

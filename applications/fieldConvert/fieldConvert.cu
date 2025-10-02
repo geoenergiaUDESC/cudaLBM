@@ -58,29 +58,44 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
+    // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
+    const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
+    const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
 
-    const std::string conversion = getConversionType(programCtrl);
+    // Now get the std::vector of std::strings corresponding to the prefix
+    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
 
-    auto it = writers.find(conversion);
+    // Get the time indices
+    const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
+
+    // Get the conversion type
+    const std::string conversion = programCtrl.getArgument("-type");
+
+    // Get the writer function
+    const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
 
     // Check if the writer is valid
     if (it != writers.end())
     {
         const WriterFunction writer = it->second;
 
-        for (label_t timeStep = fileIO::getStartIndex(programCtrl); timeStep < fileNameIndices.size(); timeStep++)
+        for (label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+            // Get the file name at the present time step
+            const std::string filename = fileNamePrefix + "_" + std::to_string(fileNameIndices[timeStep]);
+
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments = initialiseArrays(
+                fileNamePrefix,
                 programCtrl,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
-                timeStep);
+                fieldNames,
+                timeStep,
+                doCustomField);
 
-            const std::vector<std::vector<scalar_t>> soa = fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh);
-
-            const std::string filename = programCtrl.caseName() + "_" + std::to_string(fileNameIndices[timeStep]);
-
-            writer(soa, filename, mesh, hostMoments.varNames());
+            writer(
+                fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh),
+                filename,
+                mesh,
+                hostMoments.varNames());
         }
     }
     else

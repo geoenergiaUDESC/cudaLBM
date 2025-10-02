@@ -71,6 +71,11 @@ namespace LBM
         {
             std::vector<T> hostFields(nPoints, 0);
 
+            if (devPtr == nullptr)
+            {
+                std::cout << "Null pointer!" << std::endl;
+            }
+
             const cudaError_t err = cudaMemcpy(hostFields.data(), devPtr, nPoints * sizeof(T), cudaMemcpyDeviceToHost);
 
             if (err != cudaSuccess)

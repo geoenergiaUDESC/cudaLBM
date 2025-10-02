@@ -59,10 +59,8 @@ namespace LBM
     {
         /**
          * @brief Auxiliary template function that performs the VTU file writing.
-         * @tparam IndexType The data type for the mesh indices (uint32_t or uint64_t).
          */
-        template <typename IndexType>
-        __host__ void writeVTS_impl(
+        __host__ void VTSWriter(
             const std::vector<std::vector<scalar_t>> &solutionVars,
             const std::string &fileName,
             const host::latticeMesh &mesh,
@@ -167,18 +165,7 @@ namespace LBM
                 }
             }
 
-            constexpr const uint64_t limit32 = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
-
-            if (numNodes >= limit32)
-            {
-                std::cout << "Info: Mesh is large. Using 64-bit indices for VTS file.\n";
-                writeVTS_impl<uint64_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
-            }
-            else
-            {
-                std::cout << "Info: Mesh is small. Using 32-bit indices for VTS file.\n";
-                writeVTS_impl<uint32_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
-            }
+            VTSWriter(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
         }
     }
 }

@@ -57,6 +57,7 @@ SourceFiles
 #include "../../src/blockHalo/blockHalo.cuh"
 #include "../../src/fileIO/fileIO.cuh"
 #include "../../src/runTimeIO/runTimeIO.cuh"
+#include "../../src/functionObjects/objectRegistry.cuh"
 
 namespace LBM
 {
@@ -102,17 +103,20 @@ namespace LBM
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    shared_buffer[moment * block::stride() + tid] = devPtrs.ptr<moment>()[idx];
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
                     if constexpr (moment == index::rho())
                     {
-                        moments[moment] = shared_buffer[moment * block::stride() + tid] + rho0<scalar_t>();
+                        moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
                     }
                     else
                     {
-                        moments[moment] = shared_buffer[moment * block::stride() + tid];
+                        moments[moment] = shared_buffer[ID];
                     }
                 });
         }
+
+        __syncthreads();
 
         // Reconstruct the population from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);

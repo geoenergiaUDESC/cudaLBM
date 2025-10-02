@@ -67,16 +67,16 @@ int main(const int argc, const char *const argv[])
     VelocitySet::print();
 
     // Allocate the arrays on the device
-    device::array<scalar_t> rho(host::array<scalar_t, VelocitySet>("rho", mesh, programCtrl));
-    device::array<scalar_t> u(host::array<scalar_t, VelocitySet>("u", mesh, programCtrl));
-    device::array<scalar_t> v(host::array<scalar_t, VelocitySet>("v", mesh, programCtrl));
-    device::array<scalar_t> w(host::array<scalar_t, VelocitySet>("w", mesh, programCtrl));
-    device::array<scalar_t> mxx(host::array<scalar_t, VelocitySet>("m_xx", mesh, programCtrl));
-    device::array<scalar_t> mxy(host::array<scalar_t, VelocitySet>("m_xy", mesh, programCtrl));
-    device::array<scalar_t> mxz(host::array<scalar_t, VelocitySet>("m_xz", mesh, programCtrl));
-    device::array<scalar_t> myy(host::array<scalar_t, VelocitySet>("m_yy", mesh, programCtrl));
-    device::array<scalar_t> myz(host::array<scalar_t, VelocitySet>("m_yz", mesh, programCtrl));
-    device::array<scalar_t> mzz(host::array<scalar_t, VelocitySet>("m_zz", mesh, programCtrl));
+    device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxx("m_xx", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxy("m_xy", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mxz("m_xz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
     const device::ptrCollection<10, scalar_t> devPtrs(
         rho.ptr(),
@@ -90,17 +90,12 @@ int main(const int argc, const char *const argv[])
         myz.ptr(),
         mzz.ptr());
 
-    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
-
     // Setup Streams
     const streamHandler<NStreams()> streamsLBM;
 
-    // const label_t z_stream_segment_size = mesh.nz() / NStreams();
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
 
-    // const dim3 blockDimensions{
-    //     static_cast<uint32_t>(mesh.nx() / block::nx()),
-    //     static_cast<uint32_t>(mesh.ny() / block::ny()),
-    //     static_cast<uint32_t>(mesh.nz() / (NStreams() * block::nz()))};
+    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
 
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
 
@@ -117,27 +112,25 @@ int main(const int argc, const char *const argv[])
         // Checkpoint
         if (programCtrl.save(timeStep))
         {
-            fileIO::writeFile(
+            fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                functionObjects::solutionVariableNames,
                 host::toHost(devPtrs, mesh),
                 timeStep);
+
+            runTimeObjects.save(timeStep);
         }
 
         // Main kernel
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<
-                    mesh.gridBlock(),
-                    mesh.threadBlock(),
-                    0,
-                    streamsLBM.streams()[stream]>>>(
-                    devPtrs,
-                    blockHalo.fGhost(),
-                    blockHalo.gGhost());
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
+
+        // Calculate S kernel
+        runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
         blockHalo.swap();

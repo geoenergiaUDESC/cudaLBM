@@ -79,6 +79,12 @@ namespace LBM
         {"vts", postProcess::writeVTS},
         {"tecplot", postProcess::writeTecplot}};
 
+    /**
+     * @brief Creates an error message for invalid writer types
+     * @param[in] writerNames Unordered map of the writer types to the appropriate functions
+     * @param[in] conversion The invalid conversion type provided by the user
+     * @return A formatted error message listing the supported formats
+     **/
     __host__ [[nodiscard]] const std::string invalidWriter(const std::unordered_map<std::string, WriterFunction> &writerNames, const std::string &conversion) noexcept
     {
         std::vector<std::string> supportedFormats;
@@ -102,6 +108,63 @@ namespace LBM
         }
 
         return errorMsg;
+    }
+
+    /**
+     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
+     * @param[in] fileNamePrefix The prefix for the field names
+     * @param[in] doCustomField Boolean indicating if a custom field is specified
+     * @return A reference to a vector of field names
+     * @throws std::runtime_error if an invalid field name is provided
+     **/
+    __host__ [[nodiscard]] host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> initialiseArrays(
+        const std::string &fileNamePrefix,
+        const programControl &programCtrl,
+        const std::vector<std::string> &fieldNames,
+        const label_t timeStep,
+        const bool doCustomField)
+    {
+        // Construct from a custom field name
+        if (doCustomField)
+        {
+            return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(fileNamePrefix, fieldNames, timeStep);
+        }
+        // Otherwise construct from default field names
+        else
+        {
+            return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(programCtrl, fieldNames, timeStep);
+        }
+    }
+
+    /**
+     * @brief Returns the field names based on the provided prefix and whether a custom field is specified
+     * @param[in] fileNamePrefix The prefix for the field names
+     * @param[in] doCustomField Boolean indicating if a custom field is specified
+     * @return A reference to a vector of field names
+     * @throws std::runtime_error if an invalid field name is provided
+     **/
+    __host__ [[nodiscard]] const std::vector<std::string> &getFieldNames(
+        const std::string &fileNamePrefix,
+        const bool doCustomField)
+    {
+        if (!doCustomField)
+        {
+            return functionObjects::solutionVariableNames;
+        }
+        else
+        {
+            const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
+            const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
+            if (!foundField)
+            {
+                // Throw an exception: invalid field name
+                throw std::runtime_error("Invalid argument passed to -fieldName");
+            }
+            else
+            {
+                return namesIterator->second;
+            }
+        }
     }
 }
 

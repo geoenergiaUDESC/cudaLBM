@@ -52,58 +52,6 @@ SourceFiles
 
 using namespace LBM;
 
-// Define here a mapping of std::strings to std::vector<std::string>
-// that maps names like StrainRateTensor to S_xx, S_xy, S_xz... etc
-// Call it something like the functionObjectRegistry
-
-// const std::unordered_map<std::string, std::vector<std::string>> fieldNamesMap = {
-//     {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}}};
-
-// const std::vector<std::string> defaultFieldNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
-
-[[nodiscard]] const std::vector<std::string> &FieldNames(
-    const std::string &fileNamePrefix,
-    const bool doCustomField)
-{
-    if (!doCustomField)
-    {
-        return functionObjects::solutionVariableNames;
-    }
-    else
-    {
-        const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
-        const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
-        if (!foundField)
-        {
-            // Throw an exception: invalid field name
-            throw std::runtime_error("Invalid argument passed to -fieldName");
-        }
-        else
-        {
-            return namesIterator->second;
-        }
-    }
-}
-
-[[nodiscard]] host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> initialiseArrays(
-    const std::string &fileNamePrefix,
-    const programControl &programCtrl,
-    const std::vector<std::string> &fieldNames,
-    const label_t timeStep,
-    const bool doCustomField)
-{
-    // Construct from a custom field name
-    if (doCustomField)
-    {
-        return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(fileNamePrefix, fieldNames, timeStep);
-    }
-    // Otherwise construct from default field names
-    else
-    {
-        return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(programCtrl, fieldNames, timeStep);
-    }
-}
-
 int main(const int argc, const char *const argv[])
 {
     const programControl programCtrl(argc, argv);
@@ -115,7 +63,7 @@ int main(const int argc, const char *const argv[])
     const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
 
     // Now get the std::vector of std::strings corresponding to the prefix
-    const std::vector<std::string> &fieldNames = FieldNames(fileNamePrefix, doCustomField);
+    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
 
     // Get the time indices
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
@@ -123,7 +71,7 @@ int main(const int argc, const char *const argv[])
     // Get the conversion type
     const std::string conversion = programCtrl.getArgument("-type");
 
-    // Leave unchanged
+    // Get the writer function
     const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
 
     // Check if the writer is valid

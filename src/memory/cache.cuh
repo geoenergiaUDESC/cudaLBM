@@ -124,22 +124,38 @@ namespace LBM
             {
                 if constexpr (policy == Policy::evict_first)
                 {
+#if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L1::evict_first [%0];" ::"l"(ptr));
+#else
+                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+#endif
                 }
                 else if constexpr (policy == Policy::evict_last)
                 {
+#if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L1::evict_last [%0];" ::"l"(ptr));
+#else
+                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+#endif
                 }
             }
             else if constexpr (level == Level::L2)
             {
                 if constexpr (policy == Policy::evict_first)
                 {
+#if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L2::evict_first [%0];" ::"l"(ptr));
+#else
+                    asm volatile("prefetch.global.L2 [%0];" ::"l"(ptr));
+#endif
                 }
                 else if constexpr (policy == Policy::evict_last)
                 {
+#if (__CUDA_ARCH__ >= 800)
                     asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(ptr));
+#else
+                    asm volatile("prefetch.global.L1 [%0];" ::"l"(ptr));
+#endif
                 }
             }
         }

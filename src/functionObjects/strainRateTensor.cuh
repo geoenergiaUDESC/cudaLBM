@@ -37,10 +37,10 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    File containing a list of all valid function object names
+    File containing kernels and class definitions for the strain rate tensor
 
 Namespace
-    LBM::host
+    LBM::functionObjects
 
 SourceFiles
     strainRateTensor.cuh

@@ -37,10 +37,10 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    File containing a list of all valid function object names
+    File containing common definitions and functions for all function objects
 
 Namespace
-    LBM::host
+    LBM::functionObjects
 
 SourceFiles
     functionObjects.cuh
@@ -64,7 +64,9 @@ namespace LBM
          **/
         const std::unordered_map<std::string, std::vector<std::string>> fieldComponentsMap = {
             {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
-            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}}};
+            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
+            {"k", {"k"}},
+            {"kMean", {"kMean"}}};
 
         /**
          * @brief Calculates the time average of a variable

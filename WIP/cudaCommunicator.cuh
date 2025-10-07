@@ -17,7 +17,7 @@ namespace LBM
     class cudaCommunicator
     {
     public:
-        [[nodiscard]] cudaCommunicator() noexcept
+        __host__ [[nodiscard]] cudaCommunicator() noexcept
             : myRank_(myRankInitialise()),
               totalRank_(totalRankInitialise())
         {
@@ -30,7 +30,7 @@ namespace LBM
         /**
          * @brief Returns the process MPI rank
          **/
-        [[nodiscard]] inline constexpr mpiRank_t rank() const noexcept
+        __host__ [[nodiscard]] inline constexpr mpiRank_t rank() const noexcept
         {
             return myRank_;
         }
@@ -38,7 +38,7 @@ namespace LBM
         /**
          * @brief Returns the total number of MPI ranks
          **/
-        [[nodiscard]] inline constexpr mpiRank_t totalRank() const noexcept
+        __host__ [[nodiscard]] inline constexpr mpiRank_t totalRank() const noexcept
         {
             return totalRank_;
         }
@@ -53,7 +53,7 @@ namespace LBM
          * @brief Returns the process MPI rank by calling MPI_Comm_rank
          * @return The process MPI rank
          **/
-        [[nodiscard]] mpiRank_t myRankInitialise() const noexcept
+        __host__ [[nodiscard]] mpiRank_t myRankInitialise() const noexcept
         {
             mpiRank_t rank = -1;
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -69,7 +69,7 @@ namespace LBM
          * @brief Returns the total number of MPI ranks by calling MPI_Comm_size
          * @return The total number of MPI ranks
          **/
-        [[nodiscard]] mpiRank_t totalRankInitialise() const noexcept
+        __host__ [[nodiscard]] mpiRank_t totalRankInitialise() const noexcept
         {
             mpiRank_t rank = -1;
             MPI_Comm_size(MPI_COMM_WORLD, &rank);

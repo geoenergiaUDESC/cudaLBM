@@ -79,7 +79,7 @@ namespace LBM
          * @param[in] str The input string to trim
          * @return The trimmed string
          **/
-        [[nodiscard]] const std::string filestring_trim(const std::string &str)
+        __host__ [[nodiscard]] const std::string filestring_trim(const std::string &str)
         {
             const std::size_t start = str.find_first_not_of(" \t\r\n");
             const std::size_t end = str.find_last_not_of(" \t\r\n;");
@@ -96,7 +96,7 @@ namespace LBM
          * extracting metadata about grid dimensions, data format, and field names.
          * It performs comprehensive error checking for file integrity and format compliance.
          **/
-        [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &fileName)
+        __host__ [[nodiscard]] const fieldFileHeader parseFieldFileHeader(const std::string &fileName)
         {
             // Check if file exists and is accessible
             if (!std::filesystem::exists(fileName))
@@ -529,7 +529,7 @@ namespace LBM
          * all variables for each point are stored contiguously.
          **/
         template <typename T>
-        [[nodiscard]] const std::vector<T> readFieldFile(const std::string &fileName)
+        __host__ [[nodiscard]] const std::vector<T> readFieldFile(const std::string &fileName)
         {
             static_assert(std::is_floating_point_v<T>, "T must be floating point");
             static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
@@ -606,7 +606,7 @@ namespace LBM
          * reading the entire file when only specific fields are needed.
          **/
         template <typename T>
-        [[nodiscard]] const std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
+        __host__ [[nodiscard]] const std::vector<T> readFieldByName(const std::string &fileName, const std::string &fieldName)
         {
             static_assert(std::is_floating_point_v<T>, "T must be floating point");
             static_assert(std::endian::native == std::endian::little || std::endian::native == std::endian::big, "System must be little or big endian");
@@ -774,7 +774,7 @@ namespace LBM
          * are stored in separate contiguous arrays).
          **/
         template <typename T, class M>
-        [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
+        __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
         {
             const std::size_t nNodes = static_cast<std::size_t>(mesh.nx()) * mesh.ny() * mesh.nz();
 

@@ -66,7 +66,7 @@ namespace LBM
     {
     public:
         // Need to check that the length of fieldNames is 10
-        [[nodiscard]] boundaryRegion(const std::string &regionName)
+        __host__ [[nodiscard]] boundaryRegion(const std::string &regionName)
             : values_{
                   boundaryValue("rho", regionName),
                   boundaryValue("u", regionName),
@@ -89,43 +89,43 @@ namespace LBM
          * @brief Provide access to individual field values in the boundary region
          * @return The value of the specified field with appropriate scaling
          **/
-        [[nodiscard]] inline constexpr scalar_t rho() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t rho() const noexcept
         {
             return values_[index::rho()]();
         }
-        [[nodiscard]] inline constexpr scalar_t u() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t u() const noexcept
         {
             return values_[index::u()]();
         }
-        [[nodiscard]] inline constexpr scalar_t v() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t v() const noexcept
         {
             return values_[index::v()]();
         }
-        [[nodiscard]] inline constexpr scalar_t w() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t w() const noexcept
         {
             return values_[index::w()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_xx() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_xx() const noexcept
         {
             return values_[index::xx()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_xy() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_xy() const noexcept
         {
             return values_[index::xy()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_xz() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_xz() const noexcept
         {
             return values_[index::xz()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_yy() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_yy() const noexcept
         {
             return values_[index::yy()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_yz() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_yz() const noexcept
         {
             return values_[index::yz()]();
         }
-        [[nodiscard]] inline constexpr scalar_t m_zz() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t m_zz() const noexcept
         {
             return values_[index::zz()]();
         }

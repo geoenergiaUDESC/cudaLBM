@@ -69,7 +69,7 @@ namespace LBM
          * @brief Constructs boundary field values for all regions
          * @param[in] fieldName Name of the field to initialize across all regions
          **/
-        [[nodiscard]] boundaryFields(const std::string &fieldName)
+        __host__ [[nodiscard]] boundaryFields(const std::string &fieldName)
             : values_{
                   boundaryValue<VelocitySet>(fieldName, "North"),
                   boundaryValue<VelocitySet>(fieldName, "South"),
@@ -78,38 +78,38 @@ namespace LBM
                   boundaryValue<VelocitySet>(fieldName, "Front"),
                   boundaryValue<VelocitySet>(fieldName, "Back"),
                   boundaryValue<VelocitySet>(fieldName, "internalField")},
-              fieldName_(fieldName) {};
+              fieldName_(fieldName){};
 
         /**
          * @name Region Accessors
          * @brief Provide access to field values for specific boundary regions
          * @return The value of the field in the specified region
          **/
-        [[nodiscard]] inline constexpr scalar_t North() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t North() const noexcept
         {
             return values_[0]();
         }
-        [[nodiscard]] inline constexpr scalar_t South() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t South() const noexcept
         {
             return values_[1]();
         }
-        [[nodiscard]] inline constexpr scalar_t East() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t East() const noexcept
         {
             return values_[2]();
         }
-        [[nodiscard]] inline constexpr scalar_t West() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t West() const noexcept
         {
             return values_[3]();
         }
-        [[nodiscard]] inline constexpr scalar_t Front() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t Front() const noexcept
         {
             return values_[4]();
         }
-        [[nodiscard]] inline constexpr scalar_t Back() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t Back() const noexcept
         {
             return values_[5]();
         }
-        [[nodiscard]] inline constexpr scalar_t internalField() const noexcept
+        __host__ [[nodiscard]] inline constexpr scalar_t internalField() const noexcept
         {
             return values_[6]();
         }

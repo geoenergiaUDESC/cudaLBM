@@ -114,7 +114,7 @@ namespace LBM
      * @return Numerical index of the month (0 for January, 11 for December).
      * @throws std::runtime_error If the input string does not match any month abbreviation.
      **/
-    [[nodiscard]] std::size_t monthIndex(const std::string &monthStr)
+    __host__ [[nodiscard]] std::size_t monthIndex(const std::string &monthStr)
     {
         // Map month abbreviations to numbers
         const std::vector<std::string> months{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -135,7 +135,7 @@ namespace LBM
      * @details Uses the predefined __DATE__ and __TIME__ macros to determine compilation time.
      * @return Formatted timestamp string (YYYY-MM-DD HH:MM:SS).
      **/
-    [[nodiscard]] const std::string compileTimestamp()
+    __host__ [[nodiscard]] const std::string compileTimestamp()
     {
         const std::string date = __DATE__;
         const std::string time = __TIME__;
@@ -162,7 +162,7 @@ namespace LBM
      * @return The value of the environment variable, or the default value if it is not set.
      **/
     template <const bool verboseOutput = false>
-    [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable, const std::string &defaultName)
+    __host__ [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable, const std::string &defaultName)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 
@@ -192,7 +192,7 @@ namespace LBM
      * @throws std::runtime_error If the environment variable is not set.
      **/
     template <const bool verboseOutput = false>
-    [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable)
+    __host__ [[nodiscard]] const std::string getEnvironmentVariable(const std::string &envVariable)
     {
         const char *const env_ptr = std::getenv(envVariable.c_str());
 

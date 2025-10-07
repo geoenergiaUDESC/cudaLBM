@@ -71,7 +71,7 @@ namespace LBM
         /**
          * @brief Default constructor
          **/
-        [[nodiscard]] inline consteval streaming() {};
+        __device__ __host__ [[nodiscard]] inline consteval streaming(){};
 
         /**
          * @brief Saves thread population density to shared memory

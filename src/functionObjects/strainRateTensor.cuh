@@ -37,10 +37,10 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    File containing a list of all valid function object names
+    File containing kernels and class definitions for the strain rate tensor
 
 Namespace
-    LBM::host
+    LBM::functionObjects
 
 SourceFiles
     strainRateTensor.cuh
@@ -106,12 +106,12 @@ namespace LBM
                     const scalar_t mzz = devPtrs.ptr<9>()[idx];
 
                     // Calculate the instantaneous
-                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
-                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
-                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
-                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
-                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
-                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
+                    const scalar_t S_xx = S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = S<index::zz()>(w, w, mzz);
 
                     // Read the mean values from global memory
                     const scalar_t S_xxMean = SMeanPtrs.ptr<0>()[idx];
@@ -164,12 +164,12 @@ namespace LBM
                     const scalar_t mzz = devPtrs.ptr<9>()[idx];
 
                     // Calculate the instantaneous and write back to global
-                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
-                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
-                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
-                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
-                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
-                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
+                    const scalar_t S_xx = S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = S<index::zz()>(w, w, mzz);
                     SPtrs.ptr<0>()[idx] = S_xx;
                     SPtrs.ptr<1>()[idx] = S_xy;
                     SPtrs.ptr<2>()[idx] = S_xz;
@@ -224,12 +224,12 @@ namespace LBM
                     const scalar_t mzz = devPtrs.ptr<9>()[idx];
 
                     // Calculate the instantaneous and write back to global
-                    const scalar_t S_xx = kernel::S<index::xx()>(u, u, mxx);
-                    const scalar_t S_xy = kernel::S<index::xy()>(u, v, mxy);
-                    const scalar_t S_xz = kernel::S<index::xz()>(u, w, mxz);
-                    const scalar_t S_yy = kernel::S<index::yy()>(v, v, myy);
-                    const scalar_t S_yz = kernel::S<index::yz()>(v, w, myz);
-                    const scalar_t S_zz = kernel::S<index::zz()>(w, w, mzz);
+                    const scalar_t S_xx = S<index::xx()>(u, u, mxx);
+                    const scalar_t S_xy = S<index::xy()>(u, v, mxy);
+                    const scalar_t S_xz = S<index::xz()>(u, w, mxz);
+                    const scalar_t S_yy = S<index::yy()>(v, v, myy);
+                    const scalar_t S_yz = S<index::yz()>(v, w, myz);
+                    const scalar_t S_zz = S<index::zz()>(w, w, mzz);
                     SPtrs.ptr<0>()[idx] = S_xx;
                     SPtrs.ptr<1>()[idx] = S_xy;
                     SPtrs.ptr<2>()[idx] = S_xz;
@@ -364,15 +364,16 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
-                    const device::ptrCollection<6, scalar_t> ptrs(
-                        xx_.ptr(), xy_.ptr(),
-                        xz_.ptr(), yy_.ptr(),
-                        yz_.ptr(), zz_.ptr());
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNames_,
-                        host::toHost(ptrs, mesh_),
+                        host::toHost(
+                            device::ptrCollection<6, scalar_t>(
+                                xx_.ptr(), xy_.ptr(),
+                                xz_.ptr(), yy_.ptr(),
+                                yz_.ptr(), zz_.ptr()),
+                            mesh_),
                         timeStep);
                 }
 
@@ -382,15 +383,16 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-                    const device::ptrCollection<6, scalar_t> ptrs(
-                        xxMean_.ptr(), xyMean_.ptr(),
-                        xzMean_.ptr(), yyMean_.ptr(),
-                        yzMean_.ptr(), zzMean_.ptr());
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
                         componentNamesMean_,
-                        host::toHost(ptrs, mesh_),
+                        host::toHost(
+                            device::ptrCollection<6, scalar_t>(
+                                xxMean_.ptr(), xyMean_.ptr(),
+                                xzMean_.ptr(), yyMean_.ptr(),
+                                yzMean_.ptr(), zzMean_.ptr()),
+                            mesh_),
                         timeStep);
                 }
 
@@ -398,7 +400,7 @@ namespace LBM
                  * @brief Get the field name for instantaneous components
                  * @return Field name string
                  **/
-                __host__ __device__ [[nodiscard]] inline constexpr const std::string &fieldName() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const std::string &fieldName() const noexcept
                 {
                     return fieldName_;
                 }
@@ -407,7 +409,7 @@ namespace LBM
                  * @brief Get the field name for mean components
                  * @return Field name string
                  **/
-                __host__ __device__ [[nodiscard]] inline constexpr const std::string &fieldNameMean() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const std::string &fieldNameMean() const noexcept
                 {
                     return fieldNameMean_;
                 }
@@ -416,7 +418,7 @@ namespace LBM
                  * @brief Get the component names for instantaneous tensor
                  * @return Vector of component names
                  **/
-                __host__ __device__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNames() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNames() const noexcept
                 {
                     return componentNames_;
                 }
@@ -425,7 +427,7 @@ namespace LBM
                  * @brief Get the component names for mean tensor
                  * @return Vector of component names
                  **/
-                __host__ __device__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNamesMean() const noexcept
+                __device__ __host__ [[nodiscard]] inline constexpr const std::vector<std::string> &componentNamesMean() const noexcept
                 {
                     return componentNamesMean_;
                 }
@@ -484,7 +486,7 @@ namespace LBM
                 /**
                  * @brief Field name for mean components
                  **/
-                const std::string fieldNameMean_ = "SMean";
+                const std::string fieldNameMean_ = fieldName_ + "Mean";
 
                 /**
                  * @brief Instantaneous component names
@@ -494,24 +496,7 @@ namespace LBM
                 /**
                  * @brief Mean component names
                  **/
-                const std::vector<std::string> componentNamesMean_ = {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"};
-
-                /**
-                 * @brief Initializes calculation switches based on function object configuration
-                 * @param[in] objectName Name of the function object to check
-                 * @return True if the object is enabled in configuration
-                 **/
-                __host__ [[nodiscard]] bool initialiserSwitch(const std::string &objectName)
-                {
-                    if (!std::filesystem::exists("functionObjects"))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName);
-                    }
-                }
+                const std::vector<std::string> componentNamesMean_ = string::catenate(componentNames_, "Mean");
             };
         }
     }

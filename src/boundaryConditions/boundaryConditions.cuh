@@ -75,7 +75,7 @@ namespace LBM
         /**
          * @brief Default constructor (constexpr)
          **/
-        [[nodiscard]] inline consteval boundaryConditions() {};
+        __device__ __host__ [[nodiscard]] inline consteval boundaryConditions(){};
 
         /**
          * @brief Calculate moment variables at boundary nodes

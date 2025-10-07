@@ -74,7 +74,7 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining simulation domain
              * @post All six halo faces are allocated and initialized with population data
              **/
-            [[nodiscard]] haloFace(
+            __host__ [[nodiscard]] haloFace(
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
@@ -91,7 +91,7 @@ namespace LBM
                   y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
                   y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
                   z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))) {};
+                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))){};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -172,27 +172,27 @@ namespace LBM
              * @return Reference to pointer (used for buffer swapping)
              * @note These methods are specifically for pointer swapping and should not be used elsewhere
              **/
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &x0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &x0Ref() noexcept
             {
                 return x0_;
             }
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &x1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &x1Ref() noexcept
             {
                 return x1_;
             }
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &y0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &y0Ref() noexcept
             {
                 return y0_;
             }
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &y1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &y1Ref() noexcept
             {
                 return y1_;
             }
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &z0Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &z0Ref() noexcept
             {
                 return z0_;
             }
-            [[nodiscard]] inline constexpr scalar_t *ptrRestrict &z1Ref() noexcept
+            __host__ [[nodiscard]] inline constexpr scalar_t *ptrRestrict &z1Ref() noexcept
             {
                 return z1_;
             }

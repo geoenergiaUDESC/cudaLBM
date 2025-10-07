@@ -117,7 +117,7 @@ namespace LBM
             const std::string value_ = string::extractParameterLine(internalFieldBlock, "value");
 
             // Try fixing its value
-            if (string::is_number(value_))
+            if (string::isNumber(value_))
             {
                 const std::unordered_set<std::string> allowed = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
 

@@ -66,7 +66,7 @@ namespace LBM
 {
     using VelocitySet = D3Q19;
 
-    [[nodiscard]] inline consteval label_t SchemeOrder() { return 8; }
+    __host__ [[nodiscard]] inline consteval label_t SchemeOrder() { return 8; }
 
     /**
      * @brief Calculates the magnitude of a 3D vector field.
@@ -77,7 +77,7 @@ namespace LBM
      * @return A vector containing the magnitude of the vector field at each point.
      **/
     template <typename T>
-    [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
     {
         // Add a size check here
 

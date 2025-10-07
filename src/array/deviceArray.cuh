@@ -65,10 +65,10 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining array dimensions
              * @post Device memory is allocated and initialized with host data
              **/
-            [[nodiscard]] array(const host::array<T, VelocitySet, TimeType> &hostArray)
+            __host__ [[nodiscard]] array(const host::array<T, VelocitySet, TimeType> &hostArray)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   name_(hostArray.name()),
-                  mesh_(hostArray.mesh()) {};
+                  mesh_(hostArray.mesh()){};
 
             /**
              * @brief Constructs a device array with field initialization
@@ -77,13 +77,13 @@ namespace LBM
              * @param[in] programCtrl Program control parameters
              * @post Array is initialized from latest time step or initial conditions
              **/
-            [[nodiscard]] array(
+            __host__ [[nodiscard]] array(
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
                 : ptr_(toDevice(host::array<T, VelocitySet, TimeType>(name, mesh, programCtrl))),
                   name_(name),
-                  mesh_(mesh) {};
+                  mesh_(mesh){};
 
             /**
              * @brief Constructs a device array with field initialization
@@ -92,21 +92,21 @@ namespace LBM
              * @param[in] value The uniform value to initialise the array to
              * @post Array is initialized from latest time step or initial conditions
              **/
-            [[nodiscard]] array(
+            __host__ [[nodiscard]] array(
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const T value)
                 : ptr_(device::allocateArray<T>(mesh.nPoints(), value)),
                   name_(name),
-                  mesh_(mesh) {};
+                  mesh_(mesh){};
 
             /**
              * @brief Allocates no memory on the device
              **/
-            [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
+            __host__ [[nodiscard]] array(const std::string &name, const host::latticeMesh &mesh)
                 : ptr_(nullptr),
                   name_(name),
-                  mesh_(mesh) {};
+                  mesh_(mesh){};
 
             /**
              * @brief Destructor - automatically releases device memory

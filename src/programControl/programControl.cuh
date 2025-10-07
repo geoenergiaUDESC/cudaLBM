@@ -66,7 +66,7 @@ namespace LBM
          * @param argc First argument passed to main
          * @param argv Second argument passed to main
          **/
-        [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
+        __host__ [[nodiscard]] programControl(const int argc, const char *const argv[]) noexcept
             : input_(inputControl(argc, argv)),
               caseName_(string::extractParameter<std::string>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
@@ -132,7 +132,7 @@ namespace LBM
          * @brief Returns the name of the case
          * @return A const std::string
          **/
-        [[nodiscard]] inline constexpr const std::string &caseName() const noexcept
+        __host__ [[nodiscard]] inline constexpr const std::string &caseName() const noexcept
         {
             return caseName_;
         }
@@ -141,7 +141,7 @@ namespace LBM
          * @brief Returns the array of device indices
          * @return A read-only reference to deviceList_ contained within input_
          **/
-        [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
+        __host__ [[nodiscard]] inline constexpr const std::vector<deviceIndex_t> &deviceList() const noexcept
         {
             return input_.deviceList();
         }
@@ -281,7 +281,7 @@ namespace LBM
          * @param varName The name of the variable to read
          **/
         template <typename T>
-        [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
+        __host__ [[nodiscard]] T initialiseConst(const std::string varName) const noexcept
         {
             return string::extractParameter<T>(string::readFile("programControl"), varName);
         }

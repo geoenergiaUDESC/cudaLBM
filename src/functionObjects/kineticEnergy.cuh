@@ -191,10 +191,9 @@ namespace LBM
                       streamsLBM_(streamsLBM),
                       calculate_(initialiserSwitch("k")),
                       calculateMean_(initialiserSwitch("kMean")),
-                      k_(objectAllocator<VelocitySet, time::instantaneous>("k", mesh, calculate_)),
-                      kMean_(objectAllocator<VelocitySet, time::timeAverage>("kMean", mesh, calculate_))
+                      k_(objectAllocator<VelocitySet, time::instantaneous>("k", mesh)),
+                      kMean_(objectAllocator<VelocitySet, time::timeAverage>("kMean", mesh))
                 {
-
                     // Set the cache config to prefer L1
                     checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
                 };
@@ -228,7 +227,6 @@ namespace LBM
                  **/
                 __host__ void calculateInstantaneous([[maybe_unused]] const label_t timeStep) noexcept
                 {
-
                     host::constexpr_for<0, N>(
                         [&](const auto stream)
                         {
@@ -244,7 +242,6 @@ namespace LBM
                  **/
                 __host__ void calculateMean(const label_t timeStep) noexcept
                 {
-
                     const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(timeStep + 1);
 
                     // Calculate the mean
@@ -264,7 +261,6 @@ namespace LBM
                  **/
                 __host__ void calculateInstantaneousAndMean(const label_t timeStep) noexcept
                 {
-
                     const scalar_t invNewCount = static_cast<scalar_t>(1) / static_cast<scalar_t>(timeStep + 1);
 
                     host::constexpr_for<0, N>(
@@ -284,7 +280,6 @@ namespace LBM
                  **/
                 __host__ void saveInstantaneous(const label_t timeStep) noexcept
                 {
-
                     fileIO::writeFile<time::instantaneous>(
                         fieldName_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,
@@ -302,7 +297,6 @@ namespace LBM
                  **/
                 __host__ void saveMean(const label_t timeStep) noexcept
                 {
-
                     fileIO::writeFile<time::timeAverage>(
                         fieldNameMean_ + "_" + std::to_string(timeStep) + ".LBMBin",
                         mesh_,

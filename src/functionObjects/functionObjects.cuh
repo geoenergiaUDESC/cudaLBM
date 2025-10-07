@@ -82,6 +82,16 @@ namespace LBM
         }
 
         /**
+         * @brief Initializes calculation switches based on function object configuration
+         * @param[in] objectName Name of the function object to check
+         * @return True if the object is enabled in configuration
+         **/
+        __host__ [[nodiscard]] bool initialiserSwitch(const std::string &objectName)
+        {
+            return std::filesystem::exists("functionObjects") ? string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName) : false;
+        }
+
+        /**
          * @brief Allocates either a regular or zero-initialized device array based on the allocate flag
          * @return A device::array either allocated to a uniform value or non-allocated
          * @param[in] name The name of the variable to construct
@@ -91,11 +101,10 @@ namespace LBM
         template <class VelocitySet, const time::type TimeType>
         __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> objectAllocator(
             const std::string &name,
-            const host::latticeMesh &mesh,
-            const bool allocate)
+            const host::latticeMesh &mesh)
         {
             // If we wish to allocate the array, do so
-            if (allocate)
+            if (initialiserSwitch(name))
             {
                 return device::array<scalar_t, VelocitySet, TimeType>(name, mesh, 0);
             }
@@ -103,23 +112,6 @@ namespace LBM
             else
             {
                 return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
-            }
-        }
-
-        /**
-         * @brief Initializes calculation switches based on function object configuration
-         * @param[in] objectName Name of the function object to check
-         * @return True if the object is enabled in configuration
-         **/
-        __host__ [[nodiscard]] bool initialiserSwitch(const std::string &objectName)
-        {
-            if (!std::filesystem::exists("functionObjects"))
-            {
-                return false;
-            }
-            else
-            {
-                return string::containsString(string::trim<true>(string::eraseBraces(string::extractBlock(string::readFile("functionObjects"), "functionObjectList"))), objectName);
             }
         }
     }

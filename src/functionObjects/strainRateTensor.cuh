@@ -263,18 +263,18 @@ namespace LBM
                       streamsLBM_(streamsLBM),
                       calculate_(initialiserSwitch("S")),
                       calculateMean_(initialiserSwitch("SMean")),
-                      xx_(objectAllocator<VelocitySet, time::instantaneous>("S_xx", mesh)),
-                      xy_(objectAllocator<VelocitySet, time::instantaneous>("S_xy", mesh)),
-                      xz_(objectAllocator<VelocitySet, time::instantaneous>("S_xz", mesh)),
-                      yy_(objectAllocator<VelocitySet, time::instantaneous>("S_yy", mesh)),
-                      yz_(objectAllocator<VelocitySet, time::instantaneous>("S_yz", mesh)),
-                      zz_(objectAllocator<VelocitySet, time::instantaneous>("S_zz", mesh)),
-                      xxMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xxMean", mesh)),
-                      xyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xyMean", mesh)),
-                      xzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xzMean", mesh)),
-                      yyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yyMean", mesh)),
-                      yzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yzMean", mesh)),
-                      zzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_zzMean", mesh))
+                      xx_(objectAllocator<VelocitySet, time::instantaneous>("S_xx", mesh, calculate_)),
+                      xy_(objectAllocator<VelocitySet, time::instantaneous>("S_xy", mesh, calculate_)),
+                      xz_(objectAllocator<VelocitySet, time::instantaneous>("S_xz", mesh, calculate_)),
+                      yy_(objectAllocator<VelocitySet, time::instantaneous>("S_yy", mesh, calculate_)),
+                      yz_(objectAllocator<VelocitySet, time::instantaneous>("S_yz", mesh, calculate_)),
+                      zz_(objectAllocator<VelocitySet, time::instantaneous>("S_zz", mesh, calculate_)),
+                      xxMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xxMean", mesh, calculateMean_)),
+                      xyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xyMean", mesh, calculateMean_)),
+                      xzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xzMean", mesh, calculateMean_)),
+                      yyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yyMean", mesh, calculateMean_)),
+                      yzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yzMean", mesh, calculateMean_)),
+                      zzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_zzMean", mesh, calculateMean_))
                 {
                     // Set the cache config to prefer L1
                     checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));

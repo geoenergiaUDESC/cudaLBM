@@ -55,7 +55,28 @@ SourceFiles
 
 namespace LBM
 {
+    /**
+     * @brief Calculates the magnitude of a 3D vector field.
+     * @tparam T The data type of the vector components.
+     * @param u A vector representing the x-components of the vector field.
+     * @param v A vector representing the y-components of the vector field.
+     * @param w A vector representing the z-components of the vector field.
+     * @return A vector containing the magnitude of the vector field at each point.
+     **/
+    template <typename T>
+    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+    {
+        // Add a size check here
 
+        std::vector<scalar_t> magu(u.size(), 0);
+
+        for (label_t i = 0; i < u.size(); i++)
+        {
+            magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
+        }
+
+        return magu;
+    }
 }
 
 #include "derivativeSchemes/derivativeSchemes.cuh"

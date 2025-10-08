@@ -69,7 +69,7 @@ int main(const int argc, const char *const argv[])
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
 
     // Get the conversion type
-    const std::string conversion = programCtrl.getArgument("-type");
+    const std::string conversion = programCtrl.getArgument("-fileType");
 
     // Get the writer function
     const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
@@ -82,7 +82,7 @@ int main(const int argc, const char *const argv[])
         for (label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
             // Get the file name at the present time step
-            const std::string filename = fileNamePrefix + "_" + std::to_string(fileNameIndices[timeStep]);
+            const std::string fileName = fileNamePrefix + "_" + std::to_string(fileNameIndices[timeStep]);
 
             const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments = initialiseArrays(
                 fileNamePrefix,
@@ -92,8 +92,8 @@ int main(const int argc, const char *const argv[])
                 doCustomField);
 
             writer(
-                fileIO::deinterleaveAoSOptimized(hostMoments.arr(), mesh),
-                filename,
+                fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
+                fileName,
                 mesh,
                 hostMoments.varNames());
         }

@@ -69,26 +69,106 @@ namespace LBM
     __host__ [[nodiscard]] inline consteval label_t SchemeOrder() { return 8; }
 
     /**
-     * @brief Calculates the magnitude of a 3D vector field.
-     * @tparam T The data type of the vector components.
-     * @param u A vector representing the x-components of the vector field.
-     * @param v A vector representing the y-components of the vector field.
-     * @param w A vector representing the z-components of the vector field.
-     * @return A vector containing the magnitude of the vector field at each point.
+     * @brief Checks if a field contains any NaN values
+     * @param[in] field The field to check
+     * @return True if the field contains NaN values, false otherwise
      **/
-    template <typename T>
-    __host__ [[nodiscard]] const std::vector<T> mag(const std::vector<T> &u, const std::vector<T> &v, const std::vector<T> &w)
+    __host__ [[nodiscard]] inline bool containsNaN(const std::vector<scalar_t> &field) noexcept
     {
-        // Add a size check here
-
-        std::vector<scalar_t> magu(u.size(), 0);
-
-        for (label_t i = 0; i < u.size(); i++)
+        for (const auto &value : field)
         {
-            magu[i] = std::sqrt((u[i] * u[i]) + (v[i] * v[i]) + (w[i] * w[i]));
+            if (std::isnan(value))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief Checks if any of the fields in the arrayCollection contain NaN values and prints the result
+     * @param[in] variables The arrayCollection containing the fields to check
+     * @param[in] mesh The lattice mesh
+     * @param[in] timeStep The current time step for logging purposes
+     **/
+    __host__ void containsNaN(
+        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> &variables,
+        const host::latticeMesh &mesh,
+        const label_t timeStep) noexcept
+    {
+        // De-interleave the fields
+        const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(variables.arr(), mesh);
+
+        std::cout << "Time: " << timeStep << std::endl;
+        std::cout << "{" << std::endl;
+
+        std::size_t numberNaNs = 0;
+
+        // Loop over the fields checking for NaN
+        for (std::size_t field = 0; field < fields.size(); field++)
+        {
+            if (containsNaN(fields[field]))
+            {
+                std::cout << "    NaN detected in field " << variables.varNames()[field] << std::endl;
+                numberNaNs++;
+            }
         }
 
-        return magu;
+        if (numberNaNs == 0)
+        {
+            std::cout << "    No NaN values detected in any field." << std::endl;
+        }
+        else
+        {
+            std::cout << "    Total number of fields with NaN values: " << numberNaNs << std::endl;
+        }
+
+        std::cout << "};" << std::endl;
+        std::cout << std::endl;
+
+        return;
+    }
+
+    /**
+     * @brief Calculates the spatial mean of a field
+     * @param[in] field The field to calculate the mean of
+     * @return The spatial mean of the field
+     **/
+    __host__ [[nodiscard]] inline scalar_t spatialMean(const std::vector<scalar_t> &field) noexcept
+    {
+        scalar_t sum = static_cast<scalar_t>(0);
+        for (const auto &value : field)
+        {
+            sum += value;
+        }
+        return sum / static_cast<scalar_t>(field.size());
+    }
+
+    /**
+     * @brief Calculates and prints the spatial mean of each field in the arrayCollection
+     * @param[in] variables The arrayCollection containing the fields to calculate the mean of
+     * @param[in] mesh The lattice mesh
+     * @param[in] timeStep The current time step for logging purposes
+     **/
+    __host__ void spatialMean(
+        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> &variables,
+        const host::latticeMesh &mesh,
+        const label_t timeStep) noexcept
+    {
+        // De-interleave the fields
+        const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(variables.arr(), mesh);
+
+        std::cout << "Time: " << timeStep << std::endl;
+        std::cout << "{" << std::endl;
+
+        for (std::size_t field = 0; field < fields.size(); field++)
+        {
+            const scalar_t fieldMean = spatialMean(fields[field]);
+            std::cout << "    mean(" << variables.varNames()[field] << "): " << fieldMean << ";" << std::endl;
+        }
+
+        std::cout << "};" << std::endl;
+        std::cout << std::endl;
     }
 }
 

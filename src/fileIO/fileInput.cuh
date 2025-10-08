@@ -774,7 +774,7 @@ namespace LBM
          * are stored in separate contiguous arrays).
          **/
         template <typename T, class M>
-        __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoSOptimized(const std::vector<T> &fMom, const M &mesh)
+        __host__ [[nodiscard]] const std::vector<std::vector<T>> deinterleaveAoS(const std::vector<T> &fMom, const M &mesh)
         {
             const std::size_t nNodes = static_cast<std::size_t>(mesh.nx()) * mesh.ny() * mesh.nz();
 

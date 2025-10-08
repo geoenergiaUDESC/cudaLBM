@@ -114,6 +114,24 @@ namespace LBM
                 return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
             }
         }
+
+        template <class VelocitySet, const time::type TimeType>
+        __host__ [[nodiscard]] device::array<scalar_t, VelocitySet, TimeType> objectAllocator(
+            const std::string &name,
+            const host::latticeMesh &mesh,
+            const bool allocate)
+        {
+            // If we wish to allocate the array, do so
+            if (allocate)
+            {
+                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh, 0);
+            }
+            // Otherwise, just create the array without initializing it
+            else
+            {
+                return device::array<scalar_t, VelocitySet, TimeType>(name, mesh);
+            }
+        }
     }
 }
 

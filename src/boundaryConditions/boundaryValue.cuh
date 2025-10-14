@@ -152,8 +152,6 @@ namespace LBM
                 const std::unordered_set<std::string> allowed = {"m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
-                // std::cout << "Constructing equilibrium moment" << std::endl;
-
                 // It is an equilibrium moment
                 if (isMember)
                 {
@@ -165,41 +163,38 @@ namespace LBM
                     // Construct the equilibrium distribution
                     const std::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::F_eq(u.value, v.value, w.value);
 
-                    // Compute second-order moments
-                    const scalar_t pixx = (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16]) - velocitySet::cs2<scalar_t>();
-                    const scalar_t pixy = (pop[7] + pop[8] - pop[13] - pop[14]);
-                    const scalar_t pixz = (pop[9] + pop[10] - pop[15] - pop[16]);
-                    const scalar_t piyy = (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18]) - velocitySet::cs2<scalar_t>();
-                    const scalar_t piyz = (pop[11] + pop[12] - pop[17] - pop[18]);
-                    const scalar_t pizz = (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18]) - velocitySet::cs2<scalar_t>();
-
                     // Store second-order moments (this can probably be improved)
                     if (fieldName == "m_xx")
                     {
+                        const scalar_t pixx = VelocitySet::template calculateMoment<index::xx()>(pop) - velocitySet::cs2<scalar_t>();
                         return velocitySet::scale_ii<scalar_t>() * (pixx);
                     }
                     if (fieldName == "m_xy")
                     {
+                        const scalar_t pixy = VelocitySet::template calculateMoment<index::xy()>(pop);
                         return velocitySet::scale_ij<scalar_t>() * (pixy);
                     }
                     if (fieldName == "m_xz")
                     {
+                        const scalar_t pixz = VelocitySet::template calculateMoment<index::xz()>(pop);
                         return velocitySet::scale_ij<scalar_t>() * (pixz);
                     }
                     if (fieldName == "m_yy")
                     {
+                        const scalar_t piyy = VelocitySet::template calculateMoment<index::yy()>(pop) - velocitySet::cs2<scalar_t>();
                         return velocitySet::scale_ii<scalar_t>() * (piyy);
                     }
                     if (fieldName == "m_yz")
                     {
+                        const scalar_t piyz = VelocitySet::template calculateMoment<index::yz()>(pop);
                         return velocitySet::scale_ij<scalar_t>() * (piyz);
                     }
                     if (fieldName == "m_zz")
                     {
+                        const scalar_t pizz = VelocitySet::template calculateMoment<index::zz()>(pop) - velocitySet::cs2<scalar_t>();
                         return velocitySet::scale_ii<scalar_t>() * (pizz);
                     }
-
-                    throw std::runtime_error("Invalid field name \" " + fieldName + "\" for equilibrium distribution");
+                    return 0; // Should never get here
                 }
                 // Otherwise, not valid
                 else

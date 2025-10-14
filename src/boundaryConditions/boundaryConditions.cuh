@@ -100,6 +100,8 @@ namespace LBM
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal) noexcept
         {
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
+
             const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
@@ -108,9 +110,14 @@ namespace LBM
             // Static boundaries
             case normalVector::SOUTH_WEST_BACK():
             {
-                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
-
-                moments(label_constant<0>()) = rho;
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
                 moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
                 moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
                 moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
@@ -125,9 +132,14 @@ namespace LBM
             }
             case normalVector::SOUTH_WEST_FRONT():
             {
-                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
-
-                moments(label_constant<0>()) = rho;
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
                 moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
                 moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
                 moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
@@ -142,9 +154,14 @@ namespace LBM
             }
             case normalVector::SOUTH_EAST_BACK():
             {
-                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
-
-                moments(label_constant<0>()) = rho;
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
                 moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
                 moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
                 moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
@@ -159,9 +176,14 @@ namespace LBM
             }
             case normalVector::SOUTH_EAST_FRONT():
             {
-                const scalar_t rho = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
-
-                moments(label_constant<0>()) = rho;
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(label_constant<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
                 moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
                 moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
                 moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
@@ -176,48 +198,41 @@ namespace LBM
             }
             case normalVector::SOUTH_WEST():
             {
-                const scalar_t mxy_I = pop(label_constant<8>()) * inv_rho_I;
+                const scalar_t mxy_I = SOUTH_WEST_mxy_I(pop, inv_rho_I);
 
-                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
-                                     (static_cast<scalar_t>(24) + device::omega);
-                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
-
-                moments(label_constant<0>()) = rho;
-                moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
-                moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
-                moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
-                moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
-                moments(label_constant<5>()) = mxy;                      // mxy
-                moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
-                moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
-                moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
-                moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
+                moments(label_constant<0>()) = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+                moments(label_constant<1>()) = static_cast<scalar_t>(0);                                                                                                               // ux
+                moments(label_constant<2>()) = static_cast<scalar_t>(0);                                                                                                               // uy
+                moments(label_constant<3>()) = static_cast<scalar_t>(0);                                                                                                               // uz
+                moments(label_constant<4>()) = static_cast<scalar_t>(0);                                                                                                               // mxx
+                moments(label_constant<5>()) = (static_cast<scalar_t>(36) * mxy_I * rho_I - moments(label_constant<0>())) / (static_cast<scalar_t>(9) * moments(label_constant<0>())); // mxy
+                moments(label_constant<6>()) = static_cast<scalar_t>(0);                                                                                                               // mxz
+                moments(label_constant<7>()) = static_cast<scalar_t>(0);                                                                                                               // myy
+                moments(label_constant<8>()) = static_cast<scalar_t>(0);                                                                                                               // myz
+                moments(label_constant<9>()) = static_cast<scalar_t>(0);                                                                                                               // mzz
 
                 return;
             }
             case normalVector::SOUTH_EAST():
             {
-                const scalar_t mxy_I = -pop(label_constant<13>()) * inv_rho_I;
+                const scalar_t mxy_I = SOUTH_EAST_mxy_I(pop, inv_rho_I);
 
-                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
-                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
-
-                moments(label_constant<0>()) = rho;
-                moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
-                moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
-                moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
-                moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
-                moments(label_constant<5>()) = mxy;                      // mxy
-                moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
-                moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
-                moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
-                moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
+                moments(label_constant<0>()) = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+                moments(label_constant<1>()) = static_cast<scalar_t>(0);                                                                                                               // ux
+                moments(label_constant<2>()) = static_cast<scalar_t>(0);                                                                                                               // uy
+                moments(label_constant<3>()) = static_cast<scalar_t>(0);                                                                                                               // uz
+                moments(label_constant<4>()) = static_cast<scalar_t>(0);                                                                                                               // mxx
+                moments(label_constant<5>()) = (static_cast<scalar_t>(36) * mxy_I * rho_I + moments(label_constant<0>())) / (static_cast<scalar_t>(9) * moments(label_constant<0>())); // mxy
+                moments(label_constant<6>()) = static_cast<scalar_t>(0);                                                                                                               // mxz
+                moments(label_constant<7>()) = static_cast<scalar_t>(0);                                                                                                               // myy
+                moments(label_constant<8>()) = static_cast<scalar_t>(0);                                                                                                               // myz
+                moments(label_constant<9>()) = static_cast<scalar_t>(0);                                                                                                               // mzz
 
                 return;
             }
             case normalVector::WEST_BACK():
             {
-                const scalar_t mxz_I = pop(label_constant<10>()) * inv_rho_I;
+                const scalar_t mxz_I = WEST_BACK_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -238,7 +253,7 @@ namespace LBM
             }
             case normalVector::WEST_FRONT():
             {
-                const scalar_t mxz_I = -pop(label_constant<16>()) * inv_rho_I;
+                const scalar_t mxz_I = WEST_FRONT_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -259,7 +274,7 @@ namespace LBM
             }
             case normalVector::EAST_BACK():
             {
-                const scalar_t mxz_I = -pop(label_constant<15>()) * inv_rho_I;
+                const scalar_t mxz_I = EAST_BACK_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -280,7 +295,7 @@ namespace LBM
             }
             case normalVector::EAST_FRONT():
             {
-                const scalar_t mxz_I = pop(label_constant<9>()) * inv_rho_I;
+                const scalar_t mxz_I = EAST_FRONT_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -301,7 +316,7 @@ namespace LBM
             }
             case normalVector::SOUTH_BACK():
             {
-                const scalar_t myz_I = pop(label_constant<12>()) * inv_rho_I;
+                const scalar_t myz_I = SOUTH_BACK_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -322,7 +337,7 @@ namespace LBM
             }
             case normalVector::SOUTH_FRONT():
             {
-                const scalar_t myz_I = -pop(label_constant<18>()) * inv_rho_I;
+                const scalar_t myz_I = SOUTH_FRONT_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + device::omega);
@@ -343,8 +358,8 @@ namespace LBM
             }
             case normalVector::WEST():
             {
-                const scalar_t mxy_I = (pop(label_constant<8>()) - pop(label_constant<14>())) * inv_rho_I;
-                const scalar_t mxz_I = (pop(label_constant<10>()) - pop(label_constant<16>())) * inv_rho_I;
+                const scalar_t mxy_I = WEST_mxy_I(pop, inv_rho_I);
+                const scalar_t mxz_I = WEST_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -365,8 +380,8 @@ namespace LBM
             }
             case normalVector::EAST():
             {
-                const scalar_t mxy_I = (pop(label_constant<7>()) - pop(label_constant<13>())) * inv_rho_I;
-                const scalar_t mxz_I = (pop(label_constant<9>()) - pop(label_constant<15>())) * inv_rho_I;
+                const scalar_t mxy_I = EAST_mxy_I(pop, inv_rho_I);
+                const scalar_t mxz_I = EAST_mxz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -387,8 +402,8 @@ namespace LBM
             }
             case normalVector::SOUTH():
             {
-                const scalar_t mxy_I = (pop(label_constant<8>()) - pop(label_constant<13>())) * inv_rho_I;
-                const scalar_t myz_I = (pop(label_constant<12>()) - pop(label_constant<18>())) * inv_rho_I;
+                const scalar_t mxy_I = SOUTH_mxy_I(pop, inv_rho_I);
+                const scalar_t myz_I = SOUTH_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
@@ -409,8 +424,8 @@ namespace LBM
             }
             case normalVector::BACK():
             {
-                const scalar_t mxz_I = (pop(label_constant<10>()) - pop(label_constant<15>())) * inv_rho_I;
-                const scalar_t myz_I = (pop(label_constant<12>()) - pop(label_constant<17>())) * inv_rho_I;
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
@@ -431,8 +446,8 @@ namespace LBM
             }
             case normalVector::FRONT():
             {
-                const scalar_t mxz_I = (pop(label_constant<9>()) - pop(label_constant<16>())) * inv_rho_I;
-                const scalar_t myz_I = (pop(label_constant<11>()) - pop(label_constant<18>())) * inv_rho_I;
+                const scalar_t mxz_I = FRONT_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = FRONT_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
@@ -455,8 +470,8 @@ namespace LBM
             // Lid boundaries
             case normalVector::NORTH():
             {
-                const scalar_t mxy_I = (pop(label_constant<7>()) - pop(label_constant<14>())) * inv_rho_I;
-                const scalar_t myz_I = (pop(label_constant<11>()) - pop(label_constant<17>())) * inv_rho_I;
+                const scalar_t mxy_I = NORTH_mxy_I(pop, inv_rho_I);
+                const scalar_t myz_I = NORTH_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
                 const scalar_t mxy = (static_cast<scalar_t>(6) * mxy_I * rho_I - device::u_inf * rho) / (static_cast<scalar_t>(3) * rho);
@@ -549,7 +564,7 @@ namespace LBM
             }
             case normalVector::NORTH_BACK():
             {
-                const scalar_t myz_I = -pop(label_constant<17>()) * inv_rho_I;
+                const scalar_t myz_I = NORTH_BACK_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(72) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
                                      (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
@@ -571,7 +586,7 @@ namespace LBM
             }
             case normalVector::NORTH_FRONT():
             {
-                const scalar_t myz_I = pop(label_constant<11>()) * inv_rho_I;
+                const scalar_t myz_I = NORTH_FRONT_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = -static_cast<scalar_t>(72) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
                                      (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
@@ -593,7 +608,7 @@ namespace LBM
             }
             case normalVector::NORTH_EAST():
             {
-                const scalar_t mxy_I = pop(label_constant<7>()) * inv_rho_I;
+                const scalar_t mxy_I = NORTH_EAST_mxy_I(pop, inv_rho_I);
 
                 const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega + static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
@@ -615,7 +630,7 @@ namespace LBM
             }
             case normalVector::NORTH_WEST():
             {
-                const scalar_t mxy_I = -pop(label_constant<14>()) * inv_rho_I;
+                const scalar_t mxy_I = NORTH_WEST_mxy_I(pop, inv_rho_I);
 
                 const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
                                      (static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega - static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
@@ -639,6 +654,365 @@ namespace LBM
         }
 
     private:
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_WEST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return pop(label_constant<8>()) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_EAST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -pop(label_constant<13>()) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_BACK_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return (pop(label_constant<10>())) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_FRONT_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -(pop(label_constant<16>())) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_BACK_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -(pop(label_constant<15>())) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_FRONT_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return (pop(label_constant<9>())) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_BACK_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return (pop(label_constant<12>())) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_FRONT_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -(pop(label_constant<18>())) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<8>())) - (pop(label_constant<14>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) - (pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t WEST_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<10>())) - (pop(label_constant<16>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) - (pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<7>())) - (pop(label_constant<13>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) - (pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t EAST_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<9>())) - (pop(label_constant<15>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) - (pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<8>())) - (pop(label_constant<13>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) - (pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t SOUTH_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<12>())) - (pop(label_constant<18>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) - (pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t BACK_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<10>())) - (pop(label_constant<15>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) - (pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t BACK_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<12>())) - (pop(label_constant<17>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) - (pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t FRONT_mxz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<9>())) - (pop(label_constant<16>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) - (pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t FRONT_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<11>())) - (pop(label_constant<18>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) - (pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<7>())) - (pop(label_constant<14>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) - (pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return ((pop(label_constant<11>())) - (pop(label_constant<17>()))) * inv_rho_I;
+            }
+            else
+            {
+                return ((pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) - (pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>()))) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_BACK_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -(pop(label_constant<17>())) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_FRONT_myz_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return (pop(label_constant<11>())) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_EAST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return (pop(label_constant<7>())) * inv_rho_I;
+            }
+            else
+            {
+                return (pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) * inv_rho_I;
+            }
+        }
+
+        template <const label_t Q>
+        __device__ [[nodiscard]] static inline constexpr scalar_t NORTH_WEST_mxy_I(
+            const thread::array<scalar_t, Q> &pop,
+            const scalar_t inv_rho_I) noexcept
+        {
+            if constexpr (Q == 19)
+            {
+                return -(pop(label_constant<14>())) * inv_rho_I;
+            }
+            else
+            {
+                return -(pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>())) * inv_rho_I;
+            }
+        }
     };
 }
 

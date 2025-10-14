@@ -62,7 +62,7 @@ SourceFiles
 namespace LBM
 {
 
-    using VelocitySet = D3Q19;
+    using VelocitySet = D3Q27;
     using Collision = secondOrder;
 
     /**

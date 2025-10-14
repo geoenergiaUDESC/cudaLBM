@@ -94,7 +94,6 @@ namespace LBM
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
                 [&](const auto q_)
                 {
-                    // const label_t idx = q_ * block::stride() + tid;
                     s_pop[label_constant<q_ * block::stride()>() + tid] = pop(label_constant<q_ + 1>());
                 });
         }
@@ -140,6 +139,18 @@ namespace LBM
             pop(label_constant<16>()) = s_pop[label_constant<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
             pop(label_constant<17>()) = s_pop[label_constant<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
             pop(label_constant<18>()) = s_pop[label_constant<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
+
+            if constexpr (VelocitySet::Q() == 27)
+            {
+                pop(label_constant<19>()) = s_pop[label_constant<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
+                pop(label_constant<20>()) = s_pop[label_constant<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
+                pop(label_constant<21>()) = s_pop[label_constant<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
+                pop(label_constant<22>()) = s_pop[label_constant<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
+                pop(label_constant<23>()) = s_pop[label_constant<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
+                pop(label_constant<24>()) = s_pop[label_constant<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
+                pop(label_constant<25>()) = s_pop[label_constant<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
+                pop(label_constant<26>()) = s_pop[label_constant<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
+            }
         }
 
     private:

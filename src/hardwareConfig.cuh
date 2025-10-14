@@ -88,7 +88,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
-            return 8;
+            return 4;
 #elif SCALAR_PRECISION_64
             return 4;
 #endif
@@ -127,7 +127,6 @@ namespace LBM
             constexpr const label_t A = (VelocitySet::Q() - 1) * block::stride();
             constexpr const label_t B = block::size() * (nVars + 1);
             return A > B ? A : B;
-            //            (VelocitySet::Q() - 1 > nVars ? VelocitySet::Q() - 1 : nVars) * (size() + padding());
         }
 
     }

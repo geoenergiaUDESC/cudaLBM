@@ -16,7 +16,7 @@ This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
   Copyright (C) 2021 CERNN
   Developed at Universidade Federal do Paraná (UFPR)
-  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  Original authors: V. M. de Oliveira, M. A. de Somoments(label_constant<3>())a, R. F. de Somoments(label_constant<3>())a
   GitHub: https://github.com/CERNN/MR-LBM
   Licensed under GNU General Public License version 2
 
@@ -37,46 +37,46 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Definition of the D3Q19 velocity set
+    Definition of the D3Q27 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    D3Q19.cuh
+    D3Q27.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_D3Q19_CUH
-#define __MBLBM_D3Q19_CUH
+#ifndef __MBLBM_D3Q27_CUH
+#define __MBLBM_D3Q27_CUH
 
 #include "velocitySet.cuh"
 
 namespace LBM
 {
     /**
-     * @class D3Q19
-     * @brief Implements the D3Q19 velocity set for 3D Lattice Boltzmann simulations
+     * @class D3Q27
+     * @brief Implements the D3Q27 velocity set for 3D Lattice Boltzmann simulations
      * @extends velocitySet
      *
-     * This class provides the specific implementation for the D3Q19 lattice model,
-     * which includes 19 discrete velocity directions in 3D space. It contains:
+     * This class provides the specific implementation for the D3Q27 lattice model,
+     * which includes 27 discrete velocity directions in 3D space. It contains:
      * - Velocity components (cx, cy, cz) for each direction
      * - Weight coefficients for each direction
      * - Methods for moment calculation and population reconstruction
      * - Equilibrium distribution functions
      **/
-    class D3Q19 : private velocitySet
+    class D3Q27 : private velocitySet
     {
     public:
         /**
          * @brief Default constructor (consteval)
          **/
-        __device__ __host__ [[nodiscard]] inline consteval D3Q19(){};
+        __device__ __host__ [[nodiscard]] inline consteval D3Q27(){};
 
         /**
          * @brief Get number of discrete velocity directions
-         * @return 19 (number of directions in D3Q19 lattice)
+         * @return 27 (number of directions in D3Q27 lattice)
          **/
         __device__ __host__ [[nodiscard]] static inline consteval label_t Q() noexcept
         {
@@ -85,7 +85,7 @@ namespace LBM
 
         /**
          * @brief Get number of velocity components on a lattice face
-         * @return 5 (number of directions crossing each face in D3Q19)
+         * @return 9 (number of directions crossing each face in D3Q27)
          **/
         __device__ __host__ [[nodiscard]] static inline consteval label_t QF() noexcept
         {
@@ -98,7 +98,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_0() noexcept
         {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
+            return static_cast<T>(static_cast<double>(8) / static_cast<double>(27));
         }
 
         /**
@@ -107,7 +107,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_1() noexcept
         {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(18));
+            return static_cast<T>(static_cast<double>(2) / static_cast<double>(27));
         }
 
         /**
@@ -116,40 +116,51 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T w_2() noexcept
         {
-            return static_cast<T>(static_cast<double>(1) / static_cast<double>(36));
+            return static_cast<T>(static_cast<double>(1) / static_cast<double>(54));
+        }
+
+        /**
+         * @brief Get weight for diagonal directions (q=19-26)
+         **/
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T w_3() noexcept
+        {
+            return static_cast<T>(static_cast<double>(1) / static_cast<double>(216));
         }
 
         /**
          * @brief Get all weights for host computation
-         * @return Array of 19 weights in D3Q19 order
+         * @return Array of 27 weights in D3Q27 order
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_w_q() noexcept
+        __host__ [[nodiscard]] static inline consteval const std::array<T, 27> host_w_q() noexcept
         {
             // Return the component
             return {
                 w_0<T>(),
                 w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(),
-                w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
+                w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(),
+                w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>()};
         }
 
         /**
          * @brief Get all weights for device computation
-         * @return Thread array of 19 weights in D3Q19 order
+         * @return Thread array of 27 weights in D3Q27 order
          **/
         template <typename T>
-        __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> w_q() noexcept
+        __device__ [[nodiscard]] static inline consteval const thread::array<T, 27> w_q() noexcept
         {
             // Return the component
             return {
                 w_0<T>(),
                 w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(), w_1<T>(),
-                w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>()};
+                w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(), w_2<T>(),
+                w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>(), w_3<T>()};
         }
 
         /**
          * @brief Get weight for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return Weight for specified direction
          **/
@@ -165,29 +176,29 @@ namespace LBM
 
         /**
          * @brief Get x-components for all directions (host version)
-         * @return Array of 19 x-velocity components
+         * @return Array of 27 x-velocity components
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cx() noexcept
+        __host__ [[nodiscard]] static inline consteval const std::array<T, 27> host_cx() noexcept
         {
             // Return the component
-            return {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+            return {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1};
         }
 
         /**
          * @brief Get x-components for all directions (device version)
-         * @return Thread array of 19 x-velocity components
+         * @return Thread array of 27 x-velocity components
          **/
         template <typename T>
-        __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cx() noexcept
+        __device__ [[nodiscard]] static inline consteval const thread::array<T, 27> cx() noexcept
         {
             // Return the component
-            return {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0};
+            return {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1};
         }
 
         /**
          * @brief Get x-component for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return x-component for specified direction
          **/
@@ -203,7 +214,7 @@ namespace LBM
 
         /**
          * @brief Check if x-component is negative for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is negative
          **/
@@ -215,7 +226,7 @@ namespace LBM
 
         /**
          * @brief Check if x-component is positive for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is positive
          **/
@@ -227,29 +238,29 @@ namespace LBM
 
         /**
          * @brief Get y-components for all directions (host version)
-         * @return Array of 19 y-velocity components
+         * @return Array of 27 y-velocity components
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cy() noexcept
+        __host__ [[nodiscard]] static inline consteval const std::array<T, 27> host_cy() noexcept
         {
             // Return the component
-            return {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+            return {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1};
         }
 
         /**
          * @brief Get y-components for all directions (device version)
-         * @return Thread array of 19 y-velocity components
+         * @return Thread array of 27 y-velocity components
          **/
         template <typename T>
-        __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cy() noexcept
+        __device__ [[nodiscard]] static inline consteval const thread::array<T, 27> cy() noexcept
         {
             // Return the component
-            return {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1};
+            return {0, 0, 0, 1, -1, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1, 1, -1};
         }
 
         /**
          * @brief Get y-component for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return y-component for specified direction
          **/
@@ -265,7 +276,7 @@ namespace LBM
 
         /**
          * @brief Check if y-component is negative for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if y-component is negative
          **/
@@ -277,7 +288,7 @@ namespace LBM
 
         /**
          * @brief Check if x-component is positive for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if x-component is positive
          **/
@@ -289,29 +300,29 @@ namespace LBM
 
         /**
          * @brief Get z-components for all directions (host version)
-         * @return Array of 19 z-velocity components
+         * @return Array of 27 z-velocity components
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline consteval const std::array<T, 19> host_cz() noexcept
+        __host__ [[nodiscard]] static inline consteval const std::array<T, 27> host_cz() noexcept
         {
             // Return the component
-            return {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+            return {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
         }
 
         /**
          * @brief Get z-components for all directions (device version)
-         * @return Thread array of 19 z-velocity components
+         * @return Thread array of 27 z-velocity components
          **/
         template <typename T>
-        __device__ [[nodiscard]] static inline consteval const thread::array<T, 19> cz() noexcept
+        __device__ [[nodiscard]] static inline consteval const thread::array<T, 27> cz() noexcept
         {
             // Return the component
-            return {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1};
+            return {0, 0, 0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1};
         }
 
         /**
          * @brief Get z-component for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return z-component for specified direction
          **/
@@ -327,7 +338,7 @@ namespace LBM
 
         /**
          * @brief Check if z-component is negative for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if z-component is positive
          **/
@@ -339,7 +350,7 @@ namespace LBM
 
         /**
          * @brief Check if z-component is positive for specific direction
-         * @tparam q_ Direction index (0-18)
+         * @tparam q_ Direction index (0-26)
          * @param[in] q Direction index as compile-time constant
          * @return True if z-component is positive
          **/
@@ -369,10 +380,10 @@ namespace LBM
          * @param[in] u x-component of velocity
          * @param[in] v y-component of velocity
          * @param[in] w z-component of velocity
-         * @return Array of 19 equilibrium distribution values
+         * @return Array of 27 equilibrium distribution values
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr const std::array<T, 19> F_eq(const T u, const T v, const T w) noexcept
+        __host__ [[nodiscard]] static const std::array<T, 27> F_eq(const T u, const T v, const T w) noexcept
         {
             std::array<T, Q_> pop;
 
@@ -392,7 +403,7 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 19> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ static inline void reconstruct(thread::array<scalar_t, 27> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()));
 
@@ -420,20 +431,31 @@ namespace LBM
             pop(label_constant<16>()) = rhow_2 * (pics2 - moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>()));
             pop(label_constant<17>()) = rhow_2 * (pics2 + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
             pop(label_constant<18>()) = rhow_2 * (pics2 - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()));
+
+            const scalar_t rhow_3 = moments(label_constant<0>()) * w_3<scalar_t>();
+            pop(label_constant<19>()) = rhow_3 * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) + moments(label_constant<6>()) + moments(label_constant<8>())));
+            pop(label_constant<20>()) = rhow_3 * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) + moments(label_constant<6>()) + moments(label_constant<8>())));
+            pop(label_constant<21>()) = rhow_3 * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) - moments(label_constant<6>()) - moments(label_constant<8>())));
+            pop(label_constant<22>()) = rhow_3 * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) - moments(label_constant<6>()) - moments(label_constant<8>())));
+            pop(label_constant<23>()) = rhow_3 * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) - moments(label_constant<6>()) + moments(label_constant<8>())));
+            pop(label_constant<24>()) = rhow_3 * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) - moments(label_constant<6>()) + moments(label_constant<8>())));
+            pop(label_constant<25>()) = rhow_3 * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) + moments(label_constant<6>()) - moments(label_constant<8>())));
+            pop(label_constant<26>()) = rhow_3 * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) + moments(label_constant<6>()) - moments(label_constant<8>())));
         }
 
         /**
          * @brief Reconstruct population distribution from moments (return)
          * @param[in] moments Moment array (10 components)
-         * @return Population array with 19 components
+         * @return Population array with 27 components
          **/
-        __device__ static inline thread::array<scalar_t, 19> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ static inline thread::array<scalar_t, 27> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()));
 
             const scalar_t rhow_0 = moments(label_constant<0>()) * w_0<scalar_t>();
             const scalar_t rhow_1 = moments(label_constant<0>()) * w_1<scalar_t>();
             const scalar_t rhow_2 = moments(label_constant<0>()) * w_2<scalar_t>();
+            const scalar_t rhow_3 = moments(label_constant<0>()) * w_3<scalar_t>();
 
             return {
                 rhow_0 * pics2,
@@ -454,21 +476,29 @@ namespace LBM
                 rhow_2 * (pics2 + moments(label_constant<1>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>())),
                 rhow_2 * (pics2 - moments(label_constant<1>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<9>()) - moments(label_constant<6>())),
                 rhow_2 * (pics2 + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>())),
-                rhow_2 * (pics2 - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>()))};
+                rhow_2 * (pics2 - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - moments(label_constant<8>())),
+                rhow_3 * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) + moments(label_constant<6>()) + moments(label_constant<8>()))),
+                rhow_3 * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) + moments(label_constant<6>()) + moments(label_constant<8>()))),
+                rhow_3 * (pics2 + moments(label_constant<1>()) + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) - moments(label_constant<6>()) - moments(label_constant<8>()))),
+                rhow_3 * (pics2 - moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) + (moments(label_constant<5>()) - moments(label_constant<6>()) - moments(label_constant<8>()))),
+                rhow_3 * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) - moments(label_constant<6>()) + moments(label_constant<8>()))),
+                rhow_3 * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) - moments(label_constant<6>()) + moments(label_constant<8>()))),
+                rhow_3 * (pics2 - moments(label_constant<1>()) + moments(label_constant<2>()) + moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) + moments(label_constant<6>()) - moments(label_constant<8>()))),
+                rhow_3 * (pics2 + moments(label_constant<1>()) - moments(label_constant<2>()) - moments(label_constant<3>()) + moments(label_constant<4>()) + moments(label_constant<7>()) + moments(label_constant<9>()) - (moments(label_constant<5>()) + moments(label_constant<6>()) - moments(label_constant<8>())))};
         }
 
         /**
          * @brief Reconstruct population distribution from moments (host version)
          * @param[in] moments Moment array (10 components)
-         * @return Population array with 19 components
+         * @return Population array with 27 components
          **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
+        __host__ [[nodiscard]] static const std::array<scalar_t, 27> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[4] + moments[7] + moments[9]);
 
             const scalar_t rhow_0 = moments[0] * w_0<scalar_t>();
 
-            std::array<scalar_t, 19> pop;
+            std::array<scalar_t, 27> pop;
 
             pop[0] = rhow_0 * pics2;
 
@@ -494,6 +524,16 @@ namespace LBM
             pop[17] = rhow_2 * (pics2 + moments[2] - moments[3] + moments[7] + moments[9] - moments[8]);
             pop[18] = rhow_2 * (pics2 - moments[2] + moments[3] + moments[7] + moments[9] - moments[8]);
 
+            const scalar_t rhow_3 = moments[0] * w_3<scalar_t>();
+            pop[19] = rhow_3 * (pics2 + moments[1] + moments[2] + moments[3] + moments[4] + moments[7] + moments[9] + (moments[5] + moments[6] + moments[8]));
+            pop[20] = rhow_3 * (pics2 - moments[1] - moments[2] - moments[3] + moments[4] + moments[7] + moments[9] + (moments[5] + moments[6] + moments[8]));
+            pop[21] = rhow_3 * (pics2 + moments[1] + moments[2] - moments[3] + moments[4] + moments[7] + moments[9] + (moments[5] - moments[6] - moments[8]));
+            pop[22] = rhow_3 * (pics2 - moments[1] - moments[2] + moments[3] + moments[4] + moments[7] + moments[9] + (moments[5] - moments[6] - moments[8]));
+            pop[23] = rhow_3 * (pics2 + moments[1] - moments[2] + moments[3] + moments[4] + moments[7] + moments[9] - (moments[5] - moments[6] + moments[8]));
+            pop[24] = rhow_3 * (pics2 - moments[1] + moments[2] - moments[3] + moments[4] + moments[7] + moments[9] - (moments[5] - moments[6] + moments[8]));
+            pop[25] = rhow_3 * (pics2 - moments[1] + moments[2] + moments[3] + moments[4] + moments[7] + moments[9] - (moments[5] + moments[6] - moments[8]));
+            pop[26] = rhow_3 * (pics2 + moments[1] - moments[2] - moments[3] + moments[4] + moments[7] + moments[9] - (moments[5] + moments[6] - moments[8]));
+
             return pop;
         }
 
@@ -504,47 +544,47 @@ namespace LBM
          * @return Calculated moment value
          **/
         template <const label_t moment_>
-        __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 19> &pop) noexcept
+        __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 27> &pop) noexcept
         {
             if constexpr (moment_ == 0)
             {
-                return pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18];
+                return pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8] + pop[9] + pop[10] + pop[11] + pop[12] + pop[13] + pop[14] + pop[15] + pop[16] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26];
             }
             else if constexpr (moment_ == 1)
             {
-                return pop[1] - pop[2] + pop[7] - pop[8] + pop[9] - pop[10] + pop[13] - pop[14] + pop[15] - pop[16];
+                return ((pop[1] + pop[7] + pop[9] + pop[13] + pop[15] + pop[19] + pop[21] + pop[23] + pop[26]) - (pop[2] + pop[8] + pop[10] + pop[14] + pop[16] + pop[20] + pop[22] + pop[24] + pop[25]));
             }
             else if constexpr (moment_ == 2)
             {
-                return pop[3] - pop[4] + pop[7] - pop[8] + pop[11] - pop[12] + pop[14] - pop[13] + pop[17] - pop[18];
+                return ((pop[3] + pop[7] + pop[11] + pop[14] + pop[17] + pop[19] + pop[21] + pop[24] + pop[25]) - (pop[4] + pop[8] + pop[12] + pop[13] + pop[18] + pop[20] + pop[22] + pop[23] + pop[26]));
             }
             else if constexpr (moment_ == 3)
             {
-                return pop[5] - pop[6] + pop[9] - pop[10] + pop[11] - pop[12] + pop[16] - pop[15] + pop[18] - pop[17];
+                return ((pop[5] + pop[9] + pop[11] + pop[16] + pop[18] + pop[19] + pop[22] + pop[23] + pop[25]) - (pop[6] + pop[10] + pop[12] + pop[15] + pop[17] + pop[20] + pop[21] + pop[24] + pop[26]));
             }
             else if constexpr (moment_ == 4)
             {
-                return pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16];
+                return (pop[1] + pop[2] + pop[7] + pop[8] + pop[9] + pop[10] + pop[13] + pop[14] + pop[15] + pop[16] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]);
             }
             else if constexpr (moment_ == 5)
             {
-                return pop[7] - pop[13] + pop[8] - pop[14];
+                return ((pop[7] + pop[8] + pop[19] + pop[20] + pop[21] + pop[22]) - (pop[13] + pop[14] + pop[23] + pop[24] + pop[25] + pop[26]));
             }
             else if constexpr (moment_ == 6)
             {
-                return pop[9] - pop[15] + pop[10] - pop[16];
+                return ((pop[9] + pop[10] + pop[19] + pop[20] + pop[23] + pop[24]) - (pop[15] + pop[16] + pop[21] + pop[22] + pop[25] + pop[26]));
             }
             else if constexpr (moment_ == 7)
             {
-                return pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18];
+                return (pop[3] + pop[4] + pop[7] + pop[8] + pop[11] + pop[12] + pop[13] + pop[14] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]);
             }
             else if constexpr (moment_ == 8)
             {
-                return pop[11] - pop[17] + pop[12] - pop[18];
+                return ((pop[11] + pop[12] + pop[19] + pop[20] + pop[25] + pop[26]) - (pop[17] + pop[18] + pop[21] + pop[22] + pop[23] + pop[24]));
             }
             else if constexpr (moment_ == 9)
             {
-                return pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18];
+                return (pop[5] + pop[6] + pop[9] + pop[10] + pop[11] + pop[12] + pop[15] + pop[16] + pop[17] + pop[18] + pop[19] + pop[20] + pop[21] + pop[22] + pop[23] + pop[24] + pop[25] + pop[26]);
             }
             else
             {
@@ -554,27 +594,27 @@ namespace LBM
 
         /**
          * @brief Calculate moments from population distribution
-         * @param[in] pop Population array (19 components)
+         * @param[in] pop Population array (27 components)
          * @param[out] moments Moment array to be filled (10 components)
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 27> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
-            // Equation 3
-            moments(label_constant<0>()) = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
-            const scalar_t invRho = static_cast<scalar_t>(1) / moments(label_constant<0>());
+            // Density
+            moments[0] = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<24>()) + pop(label_constant<25>()) + pop(label_constant<26>());
+            const scalar_t invRho = static_cast<scalar_t>(1) / moments[0];
 
-            // Equation 4 + force correction
-            moments(label_constant<1>()) = ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho;
-            moments(label_constant<2>()) = ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho;
-            moments(label_constant<3>()) = ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho;
+            // Velocities
+            moments[1] = ((pop(label_constant<1>()) + pop(label_constant<7>()) + pop(label_constant<9>()) + pop(label_constant<13>()) + pop(label_constant<15>()) + pop(label_constant<19>()) + pop(label_constant<21>()) + pop(label_constant<23>()) + pop(label_constant<26>())) - (pop(label_constant<2>()) + pop(label_constant<8>()) + pop(label_constant<10>()) + pop(label_constant<14>()) + pop(label_constant<16>()) + pop(label_constant<20>()) + pop(label_constant<22>()) + pop(label_constant<24>()) + pop(label_constant<25>()))) * invRho;
+            moments[2] = ((pop(label_constant<3>()) + pop(label_constant<7>()) + pop(label_constant<11>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<19>()) + pop(label_constant<21>()) + pop(label_constant<24>()) + pop(label_constant<25>())) - (pop(label_constant<4>()) + pop(label_constant<8>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<18>()) + pop(label_constant<20>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<26>()))) * invRho;
+            moments[3] = ((pop(label_constant<5>()) + pop(label_constant<9>()) + pop(label_constant<11>()) + pop(label_constant<16>()) + pop(label_constant<18>()) + pop(label_constant<19>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<25>())) - (pop(label_constant<6>()) + pop(label_constant<10>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<17>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<24>()) + pop(label_constant<26>()))) * invRho;
 
-            // Equation 5
-            moments(label_constant<4>()) = (pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>())) * invRho - cs2<scalar_t>();
-            moments(label_constant<5>()) = (pop(label_constant<7>()) - pop(label_constant<13>()) + pop(label_constant<8>()) - pop(label_constant<14>())) * invRho;
-            moments(label_constant<6>()) = (pop(label_constant<9>()) - pop(label_constant<15>()) + pop(label_constant<10>()) - pop(label_constant<16>())) * invRho;
-            moments(label_constant<7>()) = (pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
-            moments(label_constant<8>()) = (pop(label_constant<11>()) - pop(label_constant<17>()) + pop(label_constant<12>()) - pop(label_constant<18>())) * invRho;
-            moments(label_constant<9>()) = (pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>())) * invRho - cs2<scalar_t>();
+            // Higher order moments
+            moments[4] = (pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<24>()) + pop(label_constant<25>()) + pop(label_constant<26>())) * invRho - cs2<scalar_t>();
+            moments[5] = ((pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<22>())) - (pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<23>()) + pop(label_constant<24>()) + pop(label_constant<25>()) + pop(label_constant<26>()))) * invRho;
+            moments[6] = ((pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<23>()) + pop(label_constant<24>())) - (pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<25>()) + pop(label_constant<26>()))) * invRho;
+            moments[7] = (pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<17>()) + pop(label_constant<18>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<24>()) + pop(label_constant<25>()) + pop(label_constant<26>())) * invRho - cs2<scalar_t>();
+            moments[8] = ((pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<25>()) + pop(label_constant<26>())) - (pop(label_constant<17>()) + pop(label_constant<18>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<24>()))) * invRho;
+            moments[9] = (pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>()) + pop(label_constant<19>()) + pop(label_constant<20>()) + pop(label_constant<21>()) + pop(label_constant<22>()) + pop(label_constant<23>()) + pop(label_constant<24>()) + pop(label_constant<25>()) + pop(label_constant<26>())) * invRho - cs2<scalar_t>();
         }
 
         /**
@@ -585,7 +625,7 @@ namespace LBM
          * @return Incoming density (ρ_I) for boundary treatment
          **/
         template <class B_N>
-        __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const thread::array<scalar_t, 19> &pop, const B_N &boundaryNormal) noexcept
+        __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const thread::array<scalar_t, 27> &pop, const B_N &boundaryNormal) noexcept
         {
             return (
                 (incomingSwitch<scalar_t>(label_constant<0>(), boundaryNormal) * pop(label_constant<0>())) +
@@ -606,7 +646,15 @@ namespace LBM
                 (incomingSwitch<scalar_t>(label_constant<15>(), boundaryNormal) * pop(label_constant<15>())) +
                 (incomingSwitch<scalar_t>(label_constant<16>(), boundaryNormal) * pop(label_constant<16>())) +
                 (incomingSwitch<scalar_t>(label_constant<17>(), boundaryNormal) * pop(label_constant<17>())) +
-                (incomingSwitch<scalar_t>(label_constant<18>(), boundaryNormal) * pop(label_constant<18>())));
+                (incomingSwitch<scalar_t>(label_constant<18>(), boundaryNormal) * pop(label_constant<18>())) +
+                (incomingSwitch<scalar_t>(label_constant<19>(), boundaryNormal) * pop(label_constant<19>())) +
+                (incomingSwitch<scalar_t>(label_constant<20>(), boundaryNormal) * pop(label_constant<20>())) +
+                (incomingSwitch<scalar_t>(label_constant<21>(), boundaryNormal) * pop(label_constant<21>())) +
+                (incomingSwitch<scalar_t>(label_constant<22>(), boundaryNormal) * pop(label_constant<22>())) +
+                (incomingSwitch<scalar_t>(label_constant<23>(), boundaryNormal) * pop(label_constant<23>())) +
+                (incomingSwitch<scalar_t>(label_constant<24>(), boundaryNormal) * pop(label_constant<24>())) +
+                (incomingSwitch<scalar_t>(label_constant<25>(), boundaryNormal) * pop(label_constant<25>())) +
+                (incomingSwitch<scalar_t>(label_constant<26>(), boundaryNormal) * pop(label_constant<26>())));
         }
 
         /**
@@ -614,7 +662,7 @@ namespace LBM
          **/
         __host__ static void print() noexcept
         {
-            std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
+            std::cout << "D3Q27 {w, cx, cy, cz}:" << std::endl;
             std::cout << "{" << std::endl;
             printAll();
             std::cout << "};" << std::endl;
@@ -625,12 +673,12 @@ namespace LBM
         /**
          * @brief Number of velocity components in the lattice
          **/
-        static constexpr const label_t Q_ = 19;
+        static constexpr const label_t Q_ = 27;
 
         /**
          * @brief Number of velocity components on each lattice face
          **/
-        static constexpr const label_t QF_ = 5;
+        static constexpr const label_t QF_ = 9;
 
         /**
          * @brief Implementation of the print loop

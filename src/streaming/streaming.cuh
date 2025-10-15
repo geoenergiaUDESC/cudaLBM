@@ -94,7 +94,19 @@ namespace LBM
             device::constexpr_for<0, (VelocitySet::Q() - 1)>(
                 [&](const auto q_)
                 {
-                    // const label_t idx = q_ * block::stride() + tid;
+                    s_pop[label_constant<q_ * block::stride()>() + tid] = pop(label_constant<q_ + 1>());
+                });
+        }
+
+        template <class VelocitySet>
+        __device__ static inline void save(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            scalar_t *const ptrRestrict s_pop,
+            const label_t tid) noexcept
+        {
+            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
+                [&](const auto q_)
+                {
                     s_pop[label_constant<q_ * block::stride()>() + tid] = pop(label_constant<q_ + 1>());
                 });
         }
@@ -140,6 +152,62 @@ namespace LBM
             pop(label_constant<16>()) = s_pop[label_constant<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
             pop(label_constant<17>()) = s_pop[label_constant<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
             pop(label_constant<18>()) = s_pop[label_constant<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
+
+            if constexpr (VelocitySet::Q() == 27)
+            {
+                pop(label_constant<19>()) = s_pop[label_constant<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
+                pop(label_constant<20>()) = s_pop[label_constant<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
+                pop(label_constant<21>()) = s_pop[label_constant<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
+                pop(label_constant<22>()) = s_pop[label_constant<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
+                pop(label_constant<23>()) = s_pop[label_constant<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
+                pop(label_constant<24>()) = s_pop[label_constant<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
+                pop(label_constant<25>()) = s_pop[label_constant<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
+                pop(label_constant<26>()) = s_pop[label_constant<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
+            }
+        }
+
+        template <class VelocitySet>
+        __device__ static inline void pull(
+            thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const scalar_t *const ptrRestrict s_pop) noexcept
+        {
+            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
+            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
+            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
+            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
+            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
+            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
+
+            pop(label_constant<1>()) = s_pop[label_constant<0 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, threadIdx.z)];
+            pop(label_constant<2>()) = s_pop[label_constant<1 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, threadIdx.z)];
+            pop(label_constant<3>()) = s_pop[label_constant<2 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, threadIdx.z)];
+            pop(label_constant<4>()) = s_pop[label_constant<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
+            pop(label_constant<5>()) = s_pop[label_constant<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
+            pop(label_constant<6>()) = s_pop[label_constant<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
+            pop(label_constant<7>()) = s_pop[label_constant<6 * block::stride()>() + device::idxBlock(xm1, ym1, threadIdx.z)];
+            pop(label_constant<8>()) = s_pop[label_constant<7 * block::stride()>() + device::idxBlock(xp1, yp1, threadIdx.z)];
+            pop(label_constant<9>()) = s_pop[label_constant<8 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zm1)];
+            pop(label_constant<10>()) = s_pop[label_constant<9 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zp1)];
+            pop(label_constant<11>()) = s_pop[label_constant<10 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zm1)];
+            pop(label_constant<12>()) = s_pop[label_constant<11 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zp1)];
+            pop(label_constant<13>()) = s_pop[label_constant<12 * block::stride()>() + device::idxBlock(xm1, yp1, threadIdx.z)];
+            pop(label_constant<14>()) = s_pop[label_constant<13 * block::stride()>() + device::idxBlock(xp1, ym1, threadIdx.z)];
+            pop(label_constant<15>()) = s_pop[label_constant<14 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zp1)];
+            pop(label_constant<16>()) = s_pop[label_constant<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
+            pop(label_constant<17>()) = s_pop[label_constant<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
+            pop(label_constant<18>()) = s_pop[label_constant<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
+
+            if constexpr (VelocitySet::Q() == 27)
+            {
+                pop(label_constant<19>()) = s_pop[label_constant<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
+                pop(label_constant<20>()) = s_pop[label_constant<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
+                pop(label_constant<21>()) = s_pop[label_constant<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
+                pop(label_constant<22>()) = s_pop[label_constant<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
+                pop(label_constant<23>()) = s_pop[label_constant<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
+                pop(label_constant<24>()) = s_pop[label_constant<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
+                pop(label_constant<25>()) = s_pop[label_constant<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
+                pop(label_constant<26>()) = s_pop[label_constant<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
+            }
         }
 
     private:

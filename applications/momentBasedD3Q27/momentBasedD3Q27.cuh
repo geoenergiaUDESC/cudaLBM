@@ -43,12 +43,12 @@ Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q19.cuh
+    momentBasedD3Q27.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDD3Q19_CUH
-#define __MBLBM_MOMENTBASEDD3Q19_CUH
+#ifndef __MBLBM_MOMENTBASEDD3Q27_CUH
+#define __MBLBM_MOMENTBASEDD3Q27_CUH
 
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/LBMTypedefs.cuh"
@@ -62,18 +62,18 @@ SourceFiles
 namespace LBM
 {
 
-    using VelocitySet = D3Q19;
+    using VelocitySet = D3Q27;
     using Collision = secondOrder;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
-#define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
+#define launchBoundsD3Q27 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
      * @param devPtrs Collection of 10 pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
-    launchBoundsD3Q19 __global__ void momentBasedD3Q19(
+    launchBoundsD3Q27 __global__ void momentBasedD3Q27(
         const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)

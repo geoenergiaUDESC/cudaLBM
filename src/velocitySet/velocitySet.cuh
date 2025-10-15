@@ -145,5 +145,6 @@ namespace LBM
 }
 
 #include "D3Q19.cuh"
+#include "D3Q27.cuh"
 
 #endif

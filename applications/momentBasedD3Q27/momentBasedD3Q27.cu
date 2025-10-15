@@ -37,17 +37,17 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Implementation of the moment representation with the D3Q19 velocity set
+    Implementation of the moment representation with the D3Q27 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q19.cu
+    momentBasedD3Q27.cu
 
 \*---------------------------------------------------------------------------*/
 
-#include "momentBasedD3Q19.cuh"
+#include "momentBasedD3Q27.cuh"
 
 using namespace LBM;
 
@@ -99,8 +99,8 @@ int main(const int argc, const char *const argv[])
 
     constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t));
 
-    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetAttribute(momentBasedD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
+    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q27, cudaFuncCachePreferShared));
+    checkCudaErrors(cudaFuncSetAttribute(momentBasedD3Q27, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -133,7 +133,7 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                momentBasedD3Q27<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
 
         // Calculate S kernel

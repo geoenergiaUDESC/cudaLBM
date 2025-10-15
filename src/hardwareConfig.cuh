@@ -88,7 +88,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t nz() noexcept
         {
 #ifdef SCALAR_PRECISION_32
-            return 4;
+            return 8;
 #elif SCALAR_PRECISION_64
             return 4;
 #endif
@@ -122,22 +122,22 @@ namespace LBM
          * @brief Total size of the shared memory
          **/
         template <class VelocitySet, const label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize() noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize(const label_t size = 1) noexcept
         {
             constexpr const label_t A = (VelocitySet::Q() - 1) * block::stride();
             constexpr const label_t B = block::size() * (nVars + 1);
-            return A > B ? A : B;
+            return (A > B ? A : B) * size;
         }
 
+        /**
+         * @brief Launch bounds information
+         * @note These variables are device specific - enable modification later
+         **/
+        __host__ [[nodiscard]] inline consteval label_t maxThreads() noexcept
+        {
+            return block::nx() * block::ny() * block::nz();
+        }
     }
-
-    /**
-     * @brief Launch bounds information
-     * @note These variables are device specific - enable modification later
-     **/
-    __host__ [[nodiscard]] inline consteval label_t MAX_THREADS_PER_BLOCK() noexcept { return block::nx() * block::ny() * block::nz(); }
-    __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
-#define launchBounds __launch_bounds__(MAX_THREADS_PER_BLOCK(), MIN_BLOCKS_PER_MP())
 }
 
 #endif

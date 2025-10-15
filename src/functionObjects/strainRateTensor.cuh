@@ -58,6 +58,9 @@ namespace LBM
         {
             namespace kernel
             {
+                __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 3; }
+#define launchBounds __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
+
                 /**
                  * @brief Calculates the strain rate tensor component
                  * @param[in] uAlpha Velocity component in alpha direction

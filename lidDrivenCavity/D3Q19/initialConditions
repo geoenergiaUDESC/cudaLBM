@@ -56,7 +56,11 @@ field u
 
     North
     {
+<<<<<<< HEAD
         value   0;
+=======
+        value   0.0256;
+>>>>>>> b576c70 (Add D3Q27 case to lidDrivenCavity)
     };
 
     South
@@ -170,7 +174,11 @@ field m_xx
 
     North
     {
+<<<<<<< HEAD
         value   0;
+=======
+        value   equilibrium;
+>>>>>>> b576c70 (Add D3Q27 case to lidDrivenCavity)
     };
 
     South
@@ -389,4 +397,8 @@ field m_zz
     };
 };
 
+<<<<<<< HEAD
 \*---------------------------------------------------------------------------*/
+=======
+\*---------------------------------------------------------------------------*/
+>>>>>>> b576c70 (Add D3Q27 case to lidDrivenCavity)

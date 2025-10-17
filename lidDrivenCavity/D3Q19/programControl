@@ -1,0 +1,30 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+caseName        turbulentJet;
+
+Re              3000;
+
+u_inf           0.016;
+
+L_char          16;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      1000001;
+
+saveInterval    10000;
+
+infoInterval    10000;
+
+\*---------------------------------------------------------------------------*/

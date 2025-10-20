@@ -102,9 +102,19 @@ namespace LBM
          * @return true if target is found in vec, false otherwise.
          * @note Uses std::find for efficient searching.
          **/
-        __host__ [[nodiscard]] bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
+        __host__ [[nodiscard]] inline constexpr bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
         {
             return std::find(vec.begin(), vec.end(), target) != vec.end();
+        }
+
+        __host__ [[nodiscard]] inline constexpr bool containsAnyChar(const std::string &str, const char c) noexcept
+        {
+            return str.find_first_of(c) != std::string::npos;
+        }
+
+        __host__ [[nodiscard]] inline constexpr bool containsAnyChar(const std::string &str, const char (&c)[2]) noexcept
+        {
+            return str.find_first_of(c[0]) != std::string::npos;
         }
 
         /**

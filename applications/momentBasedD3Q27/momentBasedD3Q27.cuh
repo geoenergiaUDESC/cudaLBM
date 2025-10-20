@@ -107,7 +107,7 @@ namespace LBM
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {
-                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
                     shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
                     if constexpr (moment == index::rho())
                     {
@@ -169,7 +169,7 @@ namespace LBM
         VelocitySet::reconstruct(pop, moments);
 
         // Coalesced write to global memory
-        moments[0] = moments[0] - rho0<scalar_t>();
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS()>(
             [&](const auto moment)
             {

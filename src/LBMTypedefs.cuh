@@ -210,7 +210,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ T &operator()(const label_constant<index_> index) __restrict__ noexcept
+            __device__ T &operator[](const label_constant<index_> index) __restrict__ noexcept
             {
                 return data_[index()];
             }
@@ -224,7 +224,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ const T &operator()(const label_constant<index_> index) __restrict__ const noexcept
+            __device__ const T &operator[](const label_constant<index_> index) __restrict__ const noexcept
             {
                 return data_[index()];
             }
@@ -288,6 +288,19 @@ namespace LBM
             __device__ [[nodiscard]] inline consteval label_t size() const noexcept
             {
                 return N;
+            }
+
+            /**
+             * @brief Returns the sum of the elements of the array
+             * @return Sum of all of the elements (N)
+             * @note Constexpr function - potentially evaluated at compile time
+             **/
+            __device__ [[nodiscard]] inline constexpr T sum() const noexcept
+            {
+                return [&]<const label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return (data_[Is] + ...);
+                }(std::make_index_sequence<N>{});
             }
 
         private:

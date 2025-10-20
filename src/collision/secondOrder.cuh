@@ -92,14 +92,14 @@ namespace LBM
         {
             // Velocity updates are removed since force terms are zero
             // Diagonal moment updates (remove force terms)
-            moments(m_i<4>()) = device::t_omegaVar * moments(m_i<4>()) + device::omegaVar_d2 * (moments(m_i<1>())) * (moments(m_i<1>()));
-            moments(m_i<7>()) = device::t_omegaVar * moments(m_i<7>()) + device::omegaVar_d2 * (moments(m_i<2>())) * (moments(m_i<2>()));
-            moments(m_i<9>()) = device::t_omegaVar * moments(m_i<9>()) + device::omegaVar_d2 * (moments(m_i<3>())) * (moments(m_i<3>()));
+            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * (moments[m_i<1>()]) * (moments[m_i<1>()]);
+            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * (moments[m_i<2>()]) * (moments[m_i<2>()]);
+            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * (moments[m_i<3>()]) * (moments[m_i<3>()]);
 
             // Off-diagonal moment updates (remove force terms)
-            moments(m_i<5>()) = device::t_omegaVar * moments(m_i<5>()) + device::omega * (moments(m_i<1>())) * (moments(m_i<2>()));
-            moments(m_i<6>()) = device::t_omegaVar * moments(m_i<6>()) + device::omega * (moments(m_i<1>())) * (moments(m_i<3>()));
-            moments(m_i<8>()) = device::t_omegaVar * moments(m_i<8>()) + device::omega * (moments(m_i<2>())) * (moments(m_i<3>()));
+            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<2>()]);
+            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<3>()]);
+            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]);
         }
 
     private:

@@ -112,7 +112,321 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-            // Round inflow + static when is_jet == 0
+            // Static boundaries
+            case normalVector::SOUTH_WEST_BACK():
+            {
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_WEST_FRONT():
+            {
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_EAST_BACK():
+            {
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_EAST_FRONT():
+            {
+                if constexpr (VelocitySet::Q() == 19)
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
+                }
+                else
+                {
+                    moments(m_i<0>()) = static_cast<scalar_t>(216) * rho_I / static_cast<scalar_t>(125);
+                }
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_WEST():
+            {
+                const scalar_t mxy_I = SOUTH_WEST_mxy_I(pop, inv_rho_I);
+
+                moments(m_i<0>()) = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+                moments(m_i<1>()) = static_cast<scalar_t>(0);                                                                                         // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);                                                                                         // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);                                                                                         // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0);                                                                                         // mxx
+                moments(m_i<5>()) = (static_cast<scalar_t>(36) * mxy_I * rho_I - moments(m_i<0>())) / (static_cast<scalar_t>(9) * moments(m_i<0>())); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);                                                                                         // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);                                                                                         // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);                                                                                         // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);                                                                                         // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_EAST():
+            {
+                const scalar_t mxy_I = SOUTH_EAST_mxy_I(pop, inv_rho_I);
+
+                moments(m_i<0>()) = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+                moments(m_i<1>()) = static_cast<scalar_t>(0);                                                                                         // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);                                                                                         // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);                                                                                         // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0);                                                                                         // mxx
+                moments(m_i<5>()) = (static_cast<scalar_t>(36) * mxy_I * rho_I + moments(m_i<0>())) / (static_cast<scalar_t>(9) * moments(m_i<0>())); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);                                                                                         // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);                                                                                         // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);                                                                                         // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);                                                                                         // mzz
+
+                return;
+            }
+            case normalVector::WEST_BACK():
+            {
+                const scalar_t mxz_I = WEST_BACK_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::WEST_FRONT():
+            {
+                const scalar_t mxz_I = WEST_FRONT_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::EAST_BACK():
+            {
+                const scalar_t mxz_I = EAST_BACK_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::EAST_FRONT():
+            {
+                const scalar_t mxz_I = EAST_FRONT_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxz_I * rho_I + mxz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t mxz = (static_cast<scalar_t>(36) * mxz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_BACK():
+            {
+                const scalar_t myz_I = SOUTH_BACK_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = myz;                      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH_FRONT():
+            {
+                const scalar_t myz_I = SOUTH_FRONT_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(36) * myz_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = myz;                      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::WEST():
+            {
+                const scalar_t mxy_I = WEST_mxy_I(pop, inv_rho_I);
+                const scalar_t mxz_I = WEST_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = mxy;                      // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::EAST():
+            {
+                const scalar_t mxy_I = EAST_mxy_I(pop, inv_rho_I);
+                const scalar_t mxz_I = EAST_mxz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = mxy;                      // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0); // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
+            case normalVector::SOUTH():
+            {
+                const scalar_t mxy_I = SOUTH_mxy_I(pop, inv_rho_I);
+                const scalar_t myz_I = SOUTH_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = static_cast<scalar_t>(2) * mxy_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = mxy;                      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0); // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = myz;                      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
+                return;
+            }
             case normalVector::BACK():
             {
                 const label_t x = threadIdx.x + block::nx() * blockIdx.x;
@@ -127,149 +441,225 @@ namespace LBM
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments(label_constant<0>()) = rho;                                            // rho
-                moments(label_constant<1>()) = static_cast<scalar_t>(0);                       // ux
-                moments(label_constant<2>()) = static_cast<scalar_t>(0);                       // uy
-                moments(label_constant<3>()) = is_jet * device::u_inf;                         // uz
-                moments(label_constant<4>()) = static_cast<scalar_t>(0);                       // mxx
-                moments(label_constant<5>()) = static_cast<scalar_t>(0);                       // mxy
-                moments(label_constant<6>()) = mxz;                                            // mxz
-                moments(label_constant<7>()) = static_cast<scalar_t>(0);                       // myy
-                moments(label_constant<8>()) = myz;                                            // myz
-                moments(label_constant<9>()) = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = myz;                      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
 
-                already_handled = true;
+                return;
+            }
+            case normalVector::FRONT():
+            {
+                const scalar_t mxz_I = FRONT_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = FRONT_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = static_cast<scalar_t>(0); // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0); // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0); // uz
+                moments(m_i<4>()) = static_cast<scalar_t>(0); // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0); // mxy
+                moments(m_i<6>()) = mxz;                      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0); // myy
+                moments(m_i<8>()) = myz;                      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0); // mzz
+
                 return;
             }
 
-// Periodic
-#include "include/periodic.cuh"
-
-// Dirichlet with prescribed z velocity tangential to the plane
-// #include "include/tanDirichlet.cuh"
-
-// Outflow (zero-gradient) at front face
-#include "include/IRBCNeumann.cuh"
-
-            // Call static boundaries for uncovered cases
-            default:
+            // Lid boundaries
+            case normalVector::NORTH():
             {
-                if (!already_handled)
-                {
-                    switch (boundaryNormal.nodeType())
-                    {
-#include "boundaryFallback.cuh"
-                    }
-                }
+                const scalar_t mxy_I = NORTH_mxy_I(pop, inv_rho_I);
+                const scalar_t myz_I = NORTH_myz_I(pop, inv_rho_I);
 
-                break;
-            }
-            }
-        }
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxy = (static_cast<scalar_t>(6) * mxy_I * rho_I - device::u_inf * rho) / (static_cast<scalar_t>(3) * rho);
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-    private:
-        __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::nx - 1);
-        }
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = mxy;                           // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = myz;                           // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
 
-        __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::ny - 1);
-        }
-
-        __device__ [[nodiscard]] static inline scalar_t radius() noexcept
-        {
-            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
-        }
-
-        __device__ [[nodiscard]] static inline scalar_t r2() noexcept
-        {
-            return radius() * radius();
-        }
-
-        template <typename T = uint8_t>
-        __device__ static inline void printOnce(
-            const T caseId,
-            const char *name) noexcept
-        {
-            if (atomicExch(&printedFallback[caseId], true) == false)
-            {
-                printf("[fallback] %s applied\n", name);
-            }
-        }
-
-        __device__ [[nodiscard]] static inline constexpr int boundaryTarget(
-            const int nThreads,
-            const int offset) noexcept
-        {
-            return (offset > 0) ? 0 : (offset < 0 ? nThreads - 1 : (nThreads >> 1));
-        }
-
-        __device__ [[nodiscard]] static inline bool isBoundaryThread(const int3 offset) noexcept
-        {
-            const int tx = boundaryTarget(block::nx(), offset.x);
-            const int ty = boundaryTarget(block::ny(), offset.y);
-            const int tz = boundaryTarget(block::nz(), offset.z);
-
-            return (static_cast<int>(threadIdx.x) == tx) && (static_cast<int>(threadIdx.y) == ty) && (static_cast<int>(threadIdx.z) == tz);
-        }
-
-        template <typename T = const char *>
-        __device__ static inline void printThreadMapping(
-            const T label,
-            const int3 offset) noexcept
-        {
-            if (!isBoundaryThread(offset))
                 return;
-
-            const int gx = threadIdx.x + block::nx() * blockIdx.x;
-            const int gy = threadIdx.y + block::ny() * blockIdx.y;
-            const int gz = threadIdx.z + block::nz() * blockIdx.z;
-
-            const int gx_int = gx + offset.x;
-            const int gy_int = gy + offset.y;
-            const int gz_int = gz + offset.z;
-
-            const int bx = (offset.x == 0);
-            const int by = (offset.y == 0);
-            const int bz = (offset.z == 0);
-            const int key = (bx) | (by << 1) | (bz << 2);
-
-            switch (key)
+            }
+            case normalVector::NORTH_WEST_BACK():
             {
-            case 0:
-                printf("[%s] global=(%d,%d,%d) -> interior=(%d,%d,%d)\n",
-                       label, gx, gy, gz, gx_int, gy_int, gz_int);
-                break;
-            case 1:
-                printf("[%s] global=(%c,%d,%d) -> interior=(%c,%d,%d)\n",
-                       label, 'x', gy, gz, 'x', gy_int, gz_int);
-                break;
-            case 2:
-                printf("[%s] global=(%d,%c,%d) -> interior=(%d,%c,%d)\n",
-                       label, gx, 'y', gz, gx_int, 'y', gz_int);
-                break;
-            case 3:
-                printf("[%s] global=(%c,%c,%d) -> interior=(%c,%c,%d)\n",
-                       label, 'x', 'y', gz, 'x', 'y', gz_int);
-                break;
-            case 4:
-                printf("[%s] global=(%d,%d,%c) -> interior=(%d,%d,%c)\n",
-                       label, gx, gy, 'z', gx_int, gy_int, 'z');
-                break;
-            case 5:
-                printf("[%s] global=(%c,%d,%c) -> interior=(%c,%d,%c)\n",
-                       label, 'x', gy, 'z', 'x', gy_int, 'z');
-                break;
-            case 6:
-                printf("[%s] global=(%d,%c,%c) -> interior=(%d,%c,%c)\n",
-                       label, gx, 'y', 'z', gx_int, 'y', 'z');
-                break;
-            case 7:
-                printf("[%s] global=(%c,%c,%c) -> interior=(%c,%c,%c)\n",
-                       label, 'x', 'y', 'z', 'x', 'y', 'z');
-                break;
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_WEST_FRONT():
+            {
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) - static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_EAST_BACK():
+            {
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_EAST_FRONT():
+            {
+                const scalar_t rho = -static_cast<scalar_t>(24) * rho_I /
+                                     (-static_cast<scalar_t>(14) + static_cast<scalar_t>(8) * device::u_inf + static_cast<scalar_t>(9) * device::u_inf * device::u_inf);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_BACK():
+            {
+                const scalar_t myz_I = NORTH_BACK_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(72) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I + static_cast<scalar_t>(2) * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(18) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = myz;                           // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_FRONT():
+            {
+                const scalar_t myz_I = NORTH_FRONT_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = -static_cast<scalar_t>(72) * (rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) /
+                                     (-static_cast<scalar_t>(48) - static_cast<scalar_t>(2) * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t myz = (static_cast<scalar_t>(72) * myz_I * rho_I - static_cast<scalar_t>(2) * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(18) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = static_cast<scalar_t>(0);      // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = myz;                           // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_EAST():
+            {
+                const scalar_t mxy_I = NORTH_EAST_mxy_I(pop, inv_rho_I);
+
+                const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) - static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega + static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho - static_cast<scalar_t>(3) * device::u_inf * rho - static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = mxy;                           // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
+            case normalVector::NORTH_WEST():
+            {
+                const scalar_t mxy_I = NORTH_WEST_mxy_I(pop, inv_rho_I);
+
+                const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) /
+                                     (static_cast<scalar_t>(24) + static_cast<scalar_t>(18) * device::u_inf - static_cast<scalar_t>(18) * device::u_inf * device::u_inf + device::omega - static_cast<scalar_t>(3) * device::u_inf * device::omega + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * device::omega);
+                const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho - static_cast<scalar_t>(3) * device::u_inf * rho + static_cast<scalar_t>(3) * device::u_inf * device::u_inf * rho) /
+                                     (static_cast<scalar_t>(9) * rho);
+
+                moments(m_i<0>()) = rho;
+                moments(m_i<1>()) = device::u_inf;                 // ux
+                moments(m_i<2>()) = static_cast<scalar_t>(0);      // uy
+                moments(m_i<3>()) = static_cast<scalar_t>(0);      // uz
+                moments(m_i<4>()) = device::u_inf * device::u_inf; // mxx
+                moments(m_i<5>()) = mxy;                           // mxy
+                moments(m_i<6>()) = static_cast<scalar_t>(0);      // mxz
+                moments(m_i<7>()) = static_cast<scalar_t>(0);      // myy
+                moments(m_i<8>()) = static_cast<scalar_t>(0);      // myz
+                moments(m_i<9>()) = static_cast<scalar_t>(0);      // mzz
+
+                return;
+            }
             }
         }
 
@@ -280,11 +670,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return pop(label_constant<8>()) * inv_rho_I;
+                return pop(q_i<8>()) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) * inv_rho_I;
+                return (pop(q_i<8>()) + pop(q_i<20>()) + pop(q_i<22>())) * inv_rho_I;
             }
         }
 
@@ -295,11 +685,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -pop(label_constant<13>()) * inv_rho_I;
+                return -pop(q_i<13>()) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>())) * inv_rho_I;
+                return -(pop(q_i<13>()) + pop(q_i<23>()) + pop(q_i<26>())) * inv_rho_I;
             }
         }
 
@@ -310,11 +700,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return (pop(label_constant<10>())) * inv_rho_I;
+                return (pop(q_i<10>())) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) * inv_rho_I;
+                return (pop(q_i<10>()) + pop(q_i<20>()) + pop(q_i<24>())) * inv_rho_I;
             }
         }
 
@@ -325,11 +715,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop(label_constant<16>())) * inv_rho_I;
+                return -(pop(q_i<16>())) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>())) * inv_rho_I;
+                return -(pop(q_i<16>()) + pop(q_i<22>()) + pop(q_i<25>())) * inv_rho_I;
             }
         }
 
@@ -340,11 +730,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop(label_constant<15>())) * inv_rho_I;
+                return -(pop(q_i<15>())) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>())) * inv_rho_I;
+                return -(pop(q_i<15>()) + pop(q_i<21>()) + pop(q_i<26>())) * inv_rho_I;
             }
         }
 
@@ -355,11 +745,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return (pop(label_constant<9>())) * inv_rho_I;
+                return (pop(q_i<9>())) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) * inv_rho_I;
+                return (pop(q_i<9>()) + pop(q_i<19>()) + pop(q_i<23>())) * inv_rho_I;
             }
         }
 
@@ -370,11 +760,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return (pop(label_constant<12>())) * inv_rho_I;
+                return (pop(q_i<12>())) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) * inv_rho_I;
+                return (pop(q_i<12>()) + pop(q_i<20>()) + pop(q_i<26>())) * inv_rho_I;
             }
         }
 
@@ -385,11 +775,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop(label_constant<18>())) * inv_rho_I;
+                return -(pop(q_i<18>())) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>())) * inv_rho_I;
+                return -(pop(q_i<18>()) + pop(q_i<22>()) + pop(q_i<23>())) * inv_rho_I;
             }
         }
 
@@ -400,11 +790,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<8>())) - (pop(label_constant<14>()))) * inv_rho_I;
+                return ((pop(q_i<8>())) - (pop(q_i<14>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) - (pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>()))) * inv_rho_I;
+                return ((pop(q_i<8>()) + pop(q_i<20>()) + pop(q_i<22>())) - (pop(q_i<14>()) + pop(q_i<24>()) + pop(q_i<25>()))) * inv_rho_I;
             }
         }
 
@@ -415,11 +805,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<10>())) - (pop(label_constant<16>()))) * inv_rho_I;
+                return ((pop(q_i<10>())) - (pop(q_i<16>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) - (pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>()))) * inv_rho_I;
+                return ((pop(q_i<10>()) + pop(q_i<20>()) + pop(q_i<24>())) - (pop(q_i<16>()) + pop(q_i<22>()) + pop(q_i<25>()))) * inv_rho_I;
             }
         }
 
@@ -430,11 +820,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<7>())) - (pop(label_constant<13>()))) * inv_rho_I;
+                return ((pop(q_i<7>())) - (pop(q_i<13>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) - (pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>()))) * inv_rho_I;
+                return ((pop(q_i<7>()) + pop(q_i<19>()) + pop(q_i<21>())) - (pop(q_i<13>()) + pop(q_i<23>()) + pop(q_i<26>()))) * inv_rho_I;
             }
         }
 
@@ -445,11 +835,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<9>())) - (pop(label_constant<15>()))) * inv_rho_I;
+                return ((pop(q_i<9>())) - (pop(q_i<15>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) - (pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>()))) * inv_rho_I;
+                return ((pop(q_i<9>()) + pop(q_i<19>()) + pop(q_i<23>())) - (pop(q_i<15>()) + pop(q_i<21>()) + pop(q_i<26>()))) * inv_rho_I;
             }
         }
 
@@ -460,11 +850,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<8>())) - (pop(label_constant<13>()))) * inv_rho_I;
+                return ((pop(q_i<8>())) - (pop(q_i<13>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<8>()) + pop(label_constant<20>()) + pop(label_constant<22>())) - (pop(label_constant<13>()) + pop(label_constant<23>()) + pop(label_constant<26>()))) * inv_rho_I;
+                return ((pop(q_i<8>()) + pop(q_i<20>()) + pop(q_i<22>())) - (pop(q_i<13>()) + pop(q_i<23>()) + pop(q_i<26>()))) * inv_rho_I;
             }
         }
 
@@ -475,11 +865,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<12>())) - (pop(label_constant<18>()))) * inv_rho_I;
+                return ((pop(q_i<12>())) - (pop(q_i<18>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) - (pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>()))) * inv_rho_I;
+                return ((pop(q_i<12>()) + pop(q_i<20>()) + pop(q_i<26>())) - (pop(q_i<18>()) + pop(q_i<22>()) + pop(q_i<23>()))) * inv_rho_I;
             }
         }
 
@@ -490,11 +880,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<10>())) - (pop(label_constant<15>()))) * inv_rho_I;
+                return ((pop(q_i<10>())) - (pop(q_i<15>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<10>()) + pop(label_constant<20>()) + pop(label_constant<24>())) - (pop(label_constant<15>()) + pop(label_constant<21>()) + pop(label_constant<26>()))) * inv_rho_I;
+                return ((pop(q_i<10>()) + pop(q_i<20>()) + pop(q_i<24>())) - (pop(q_i<15>()) + pop(q_i<21>()) + pop(q_i<26>()))) * inv_rho_I;
             }
         }
 
@@ -505,11 +895,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<12>())) - (pop(label_constant<17>()))) * inv_rho_I;
+                return ((pop(q_i<12>())) - (pop(q_i<17>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<12>()) + pop(label_constant<20>()) + pop(label_constant<26>())) - (pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>()))) * inv_rho_I;
+                return ((pop(q_i<12>()) + pop(q_i<20>()) + pop(q_i<26>())) - (pop(q_i<17>()) + pop(q_i<21>()) + pop(q_i<24>()))) * inv_rho_I;
             }
         }
 
@@ -520,11 +910,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<9>())) - (pop(label_constant<16>()))) * inv_rho_I;
+                return ((pop(q_i<9>())) - (pop(q_i<16>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<9>()) + pop(label_constant<19>()) + pop(label_constant<23>())) - (pop(label_constant<16>()) + pop(label_constant<22>()) + pop(label_constant<25>()))) * inv_rho_I;
+                return ((pop(q_i<9>()) + pop(q_i<19>()) + pop(q_i<23>())) - (pop(q_i<16>()) + pop(q_i<22>()) + pop(q_i<25>()))) * inv_rho_I;
             }
         }
 
@@ -535,11 +925,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<11>())) - (pop(label_constant<18>()))) * inv_rho_I;
+                return ((pop(q_i<11>())) - (pop(q_i<18>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) - (pop(label_constant<18>()) + pop(label_constant<22>()) + pop(label_constant<23>()))) * inv_rho_I;
+                return ((pop(q_i<11>()) + pop(q_i<19>()) + pop(q_i<25>())) - (pop(q_i<18>()) + pop(q_i<22>()) + pop(q_i<23>()))) * inv_rho_I;
             }
         }
 
@@ -550,11 +940,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<7>())) - (pop(label_constant<14>()))) * inv_rho_I;
+                return ((pop(q_i<7>())) - (pop(q_i<14>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) - (pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>()))) * inv_rho_I;
+                return ((pop(q_i<7>()) + pop(q_i<19>()) + pop(q_i<21>())) - (pop(q_i<14>()) + pop(q_i<24>()) + pop(q_i<25>()))) * inv_rho_I;
             }
         }
 
@@ -565,11 +955,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return ((pop(label_constant<11>())) - (pop(label_constant<17>()))) * inv_rho_I;
+                return ((pop(q_i<11>())) - (pop(q_i<17>()))) * inv_rho_I;
             }
             else
             {
-                return ((pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) - (pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>()))) * inv_rho_I;
+                return ((pop(q_i<11>()) + pop(q_i<19>()) + pop(q_i<25>())) - (pop(q_i<17>()) + pop(q_i<21>()) + pop(q_i<24>()))) * inv_rho_I;
             }
         }
 
@@ -580,11 +970,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop(label_constant<17>())) * inv_rho_I;
+                return -(pop(q_i<17>())) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<17>()) + pop(label_constant<21>()) + pop(label_constant<24>())) * inv_rho_I;
+                return -(pop(q_i<17>()) + pop(q_i<21>()) + pop(q_i<24>())) * inv_rho_I;
             }
         }
 
@@ -595,11 +985,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return (pop(label_constant<11>())) * inv_rho_I;
+                return (pop(q_i<11>())) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<11>()) + pop(label_constant<19>()) + pop(label_constant<25>())) * inv_rho_I;
+                return (pop(q_i<11>()) + pop(q_i<19>()) + pop(q_i<25>())) * inv_rho_I;
             }
         }
 
@@ -610,11 +1000,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return (pop(label_constant<7>())) * inv_rho_I;
+                return (pop(q_i<7>())) * inv_rho_I;
             }
             else
             {
-                return (pop(label_constant<7>()) + pop(label_constant<19>()) + pop(label_constant<21>())) * inv_rho_I;
+                return (pop(q_i<7>()) + pop(q_i<19>()) + pop(q_i<21>())) * inv_rho_I;
             }
         }
 
@@ -625,11 +1015,11 @@ namespace LBM
         {
             if constexpr (Q == 19)
             {
-                return -(pop(label_constant<14>())) * inv_rho_I;
+                return -(pop(q_i<14>())) * inv_rho_I;
             }
             else
             {
-                return -(pop(label_constant<14>()) + pop(label_constant<24>()) + pop(label_constant<25>())) * inv_rho_I;
+                return -(pop(q_i<14>()) + pop(q_i<24>()) + pop(q_i<25>())) * inv_rho_I;
             }
         }
     };

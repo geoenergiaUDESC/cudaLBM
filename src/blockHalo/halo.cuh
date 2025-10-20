@@ -210,94 +210,94 @@ namespace LBM
 
                 if (tx == 0)
                 { // w
-                    pop(label_constant<1>()) = __ldg(&fx1[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
-                    pop(label_constant<7>()) = __ldg(&fx1[idxPopX<1, VelocitySet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
-                    pop(label_constant<9>()) = __ldg(&fx1[idxPopX<2, VelocitySet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
-                    pop(label_constant<13>()) = __ldg(&fx1[idxPopX<3, VelocitySet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-                    pop(label_constant<15>()) = __ldg(&fx1[idxPopX<4, VelocitySet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop(q_i<1>()) = __ldg(&fx1[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
+                    pop(q_i<7>()) = __ldg(&fx1[idxPopX<1, VelocitySet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop(q_i<9>()) = __ldg(&fx1[idxPopX<2, VelocitySet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
+                    pop(q_i<13>()) = __ldg(&fx1[idxPopX<3, VelocitySet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop(q_i<15>()) = __ldg(&fx1[idxPopX<4, VelocitySet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<19>()) = __ldg(&fx1[idxPopX<5, VelocitySet::QF()>(tym1, tzm1, bxm1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<21>()) = __ldg(&fx1[idxPopX<6, VelocitySet::QF()>(tym1, tzp1, bxm1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<23>()) = __ldg(&fx1[idxPopX<7, VelocitySet::QF()>(typ1, tzm1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<26>()) = __ldg(&fx1[idxPopX<8, VelocitySet::QF()>(typ1, tzp1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<19>()) = __ldg(&fx1[idxPopX<5, VelocitySet::QF()>(tym1, tzm1, bxm1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<21>()) = __ldg(&fx1[idxPopX<6, VelocitySet::QF()>(tym1, tzp1, bxm1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<23>()) = __ldg(&fx1[idxPopX<7, VelocitySet::QF()>(typ1, tzm1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<26>()) = __ldg(&fx1[idxPopX<8, VelocitySet::QF()>(typ1, tzp1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     }
                 }
                 else if (tx == (block::nx() - 1))
                 { // e
-                    pop(label_constant<2>()) = __ldg(&fx0[idxPopX<0, VelocitySet::QF()>(ty, tz, bxp1, by, bz)]);
-                    pop(label_constant<8>()) = __ldg(&fx0[idxPopX<1, VelocitySet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-                    pop(label_constant<10>()) = __ldg(&fx0[idxPopX<2, VelocitySet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                    pop(label_constant<14>()) = __ldg(&fx0[idxPopX<3, VelocitySet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
-                    pop(label_constant<16>()) = __ldg(&fx0[idxPopX<4, VelocitySet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
+                    pop(q_i<2>()) = __ldg(&fx0[idxPopX<0, VelocitySet::QF()>(ty, tz, bxp1, by, bz)]);
+                    pop(q_i<8>()) = __ldg(&fx0[idxPopX<1, VelocitySet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop(q_i<10>()) = __ldg(&fx0[idxPopX<2, VelocitySet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop(q_i<14>()) = __ldg(&fx0[idxPopX<3, VelocitySet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop(q_i<16>()) = __ldg(&fx0[idxPopX<4, VelocitySet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<20>()) = __ldg(&fx0[idxPopX<5, VelocitySet::QF()>(typ1, tzp1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<22>()) = __ldg(&fx0[idxPopX<6, VelocitySet::QF()>(typ1, tzm1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<24>()) = __ldg(&fx0[idxPopX<7, VelocitySet::QF()>(tym1, tzp1, bxp1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<25>()) = __ldg(&fx0[idxPopX<8, VelocitySet::QF()>(tym1, tzm1, bxp1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<20>()) = __ldg(&fx0[idxPopX<5, VelocitySet::QF()>(typ1, tzp1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<22>()) = __ldg(&fx0[idxPopX<6, VelocitySet::QF()>(typ1, tzm1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<24>()) = __ldg(&fx0[idxPopX<7, VelocitySet::QF()>(tym1, tzp1, bxp1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<25>()) = __ldg(&fx0[idxPopX<8, VelocitySet::QF()>(tym1, tzm1, bxp1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
                     }
                 }
 
                 if (ty == 0)
                 { // s
-                    pop(label_constant<3>()) = __ldg(&fy1[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, bym1, bz)]);
-                    pop(label_constant<7>()) = __ldg(&fy1[idxPopY<1, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
-                    pop(label_constant<11>()) = __ldg(&fy1[idxPopY<2, VelocitySet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
-                    pop(label_constant<14>()) = __ldg(&fy1[idxPopY<3, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
-                    pop(label_constant<17>()) = __ldg(&fy1[idxPopY<4, VelocitySet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop(q_i<3>()) = __ldg(&fy1[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, bym1, bz)]);
+                    pop(q_i<7>()) = __ldg(&fy1[idxPopY<1, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
+                    pop(q_i<11>()) = __ldg(&fy1[idxPopY<2, VelocitySet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
+                    pop(q_i<14>()) = __ldg(&fy1[idxPopY<3, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
+                    pop(q_i<17>()) = __ldg(&fy1[idxPopY<4, VelocitySet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<19>()) = __ldg(&fy1[idxPopY<5, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<21>()) = __ldg(&fy1[idxPopY<6, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<24>()) = __ldg(&fy1[idxPopY<7, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<25>()) = __ldg(&fy1[idxPopY<8, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<19>()) = __ldg(&fy1[idxPopY<5, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<21>()) = __ldg(&fy1[idxPopY<6, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<24>()) = __ldg(&fy1[idxPopY<7, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<25>()) = __ldg(&fy1[idxPopY<8, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
                     }
                 }
                 else if (ty == (block::ny() - 1))
                 { // n
-                    pop(label_constant<4>()) = __ldg(&fy0[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, byp1, bz)]);
-                    pop(label_constant<8>()) = __ldg(&fy0[idxPopY<1, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
-                    pop(label_constant<12>()) = __ldg(&fy0[idxPopY<2, VelocitySet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                    pop(label_constant<13>()) = __ldg(&fy0[idxPopY<3, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
-                    pop(label_constant<18>()) = __ldg(&fy0[idxPopY<4, VelocitySet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
+                    pop(q_i<4>()) = __ldg(&fy0[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, byp1, bz)]);
+                    pop(q_i<8>()) = __ldg(&fy0[idxPopY<1, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
+                    pop(q_i<12>()) = __ldg(&fy0[idxPopY<2, VelocitySet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop(q_i<13>()) = __ldg(&fy0[idxPopY<3, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
+                    pop(q_i<18>()) = __ldg(&fy0[idxPopY<4, VelocitySet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<20>()) = __ldg(&fy0[idxPopY<5, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop(label_constant<22>()) = __ldg(&fy0[idxPopY<6, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<23>()) = __ldg(&fy0[idxPopY<7, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
-                        pop(label_constant<26>()) = __ldg(&fy0[idxPopY<8, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<20>()) = __ldg(&fy0[idxPopY<5, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop(q_i<22>()) = __ldg(&fy0[idxPopY<6, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<23>()) = __ldg(&fy0[idxPopY<7, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
+                        pop(q_i<26>()) = __ldg(&fy0[idxPopY<8, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     }
                 }
 
                 if (tz == 0)
                 { // b
-                    pop(label_constant<5>()) = __ldg(&fz1[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzm1)]);
-                    pop(label_constant<9>()) = __ldg(&fz1[idxPopZ<1, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
-                    pop(label_constant<11>()) = __ldg(&fz1[idxPopZ<2, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
-                    pop(label_constant<16>()) = __ldg(&fz1[idxPopZ<3, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
-                    pop(label_constant<18>()) = __ldg(&fz1[idxPopZ<4, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                    pop(q_i<5>()) = __ldg(&fz1[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzm1)]);
+                    pop(q_i<9>()) = __ldg(&fz1[idxPopZ<1, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
+                    pop(q_i<11>()) = __ldg(&fz1[idxPopZ<2, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
+                    pop(q_i<16>()) = __ldg(&fz1[idxPopZ<3, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
+                    pop(q_i<18>()) = __ldg(&fz1[idxPopZ<4, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<19>()) = __ldg(&fz1[idxPopZ<5, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
-                        pop(label_constant<22>()) = __ldg(&fz1[idxPopZ<6, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-                        pop(label_constant<23>()) = __ldg(&fz1[idxPopZ<7, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-                        pop(label_constant<25>()) = __ldg(&fz1[idxPopZ<8, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
+                        pop(q_i<19>()) = __ldg(&fz1[idxPopZ<5, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
+                        pop(q_i<22>()) = __ldg(&fz1[idxPopZ<6, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                        pop(q_i<23>()) = __ldg(&fz1[idxPopZ<7, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                        pop(q_i<25>()) = __ldg(&fz1[idxPopZ<8, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
                     }
                 }
                 else if (tz == (block::nz() - 1))
                 { // f
-                    pop(label_constant<6>()) = __ldg(&fz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzp1)]);
-                    pop(label_constant<10>()) = __ldg(&fz0[idxPopZ<1, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
-                    pop(label_constant<12>()) = __ldg(&fz0[idxPopZ<2, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-                    pop(label_constant<15>()) = __ldg(&fz0[idxPopZ<3, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
-                    pop(label_constant<17>()) = __ldg(&fz0[idxPopZ<4, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
+                    pop(q_i<6>()) = __ldg(&fz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzp1)]);
+                    pop(q_i<10>()) = __ldg(&fz0[idxPopZ<1, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
+                    pop(q_i<12>()) = __ldg(&fz0[idxPopZ<2, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                    pop(q_i<15>()) = __ldg(&fz0[idxPopZ<3, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
+                    pop(q_i<17>()) = __ldg(&fz0[idxPopZ<4, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        pop(label_constant<20>()) = __ldg(&fz0[idxPopZ<5, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-                        pop(label_constant<21>()) = __ldg(&fz0[idxPopZ<6, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
-                        pop(label_constant<24>()) = __ldg(&fz0[idxPopZ<7, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
-                        pop(label_constant<26>()) = __ldg(&fz0[idxPopZ<8, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                        pop(q_i<20>()) = __ldg(&fz0[idxPopZ<5, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                        pop(q_i<21>()) = __ldg(&fz0[idxPopZ<6, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
+                        pop(q_i<24>()) = __ldg(&fz0[idxPopZ<7, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
+                        pop(q_i<26>()) = __ldg(&fz0[idxPopZ<8, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
                     }
                 }
             }
@@ -339,94 +339,94 @@ namespace LBM
                 /* write to global pop **/
                 if (West(x))
                 { // w
-                    gx0[idxPopX<0, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<2>());
-                    gx0[idxPopX<1, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<8>());
-                    gx0[idxPopX<2, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<10>());
-                    gx0[idxPopX<3, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<14>());
-                    gx0[idxPopX<4, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<16>());
+                    gx0[idxPopX<0, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<2>());
+                    gx0[idxPopX<1, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<8>());
+                    gx0[idxPopX<2, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<10>());
+                    gx0[idxPopX<3, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<14>());
+                    gx0[idxPopX<4, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<16>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gx0[idxPopX<5, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<20>());
-                        gx0[idxPopX<6, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<22>());
-                        gx0[idxPopX<7, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<24>());
-                        gx0[idxPopX<8, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<25>());
+                        gx0[idxPopX<5, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<20>());
+                        gx0[idxPopX<6, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<22>());
+                        gx0[idxPopX<7, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<24>());
+                        gx0[idxPopX<8, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<25>());
                     }
                 }
                 if (East(x))
                 { // e
-                    gx1[idxPopX<0, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<1>());
-                    gx1[idxPopX<1, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<7>());
-                    gx1[idxPopX<2, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<9>());
-                    gx1[idxPopX<3, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<13>());
-                    gx1[idxPopX<4, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<15>());
+                    gx1[idxPopX<0, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<1>());
+                    gx1[idxPopX<1, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<7>());
+                    gx1[idxPopX<2, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<9>());
+                    gx1[idxPopX<3, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<13>());
+                    gx1[idxPopX<4, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<15>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gx1[idxPopX<5, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<19>());
-                        gx1[idxPopX<6, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<21>());
-                        gx1[idxPopX<7, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<23>());
-                        gx1[idxPopX<8, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(label_constant<26>());
+                        gx1[idxPopX<5, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<19>());
+                        gx1[idxPopX<6, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<21>());
+                        gx1[idxPopX<7, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<23>());
+                        gx1[idxPopX<8, VelocitySet::QF()>(ty, tz, bx, by, bz)] = pop(q_i<26>());
                     }
                 }
 
                 if (South(y))
                 { // s
-                    gy0[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<4>());
-                    gy0[idxPopY<1, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<8>());
-                    gy0[idxPopY<2, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<12>());
-                    gy0[idxPopY<3, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<13>());
-                    gy0[idxPopY<4, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<18>());
+                    gy0[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<4>());
+                    gy0[idxPopY<1, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<8>());
+                    gy0[idxPopY<2, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<12>());
+                    gy0[idxPopY<3, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<13>());
+                    gy0[idxPopY<4, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<18>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gy0[idxPopY<5, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<20>());
-                        gy0[idxPopY<6, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<22>());
-                        gy0[idxPopY<7, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<23>());
-                        gy0[idxPopY<8, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<26>());
+                        gy0[idxPopY<5, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<20>());
+                        gy0[idxPopY<6, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<22>());
+                        gy0[idxPopY<7, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<23>());
+                        gy0[idxPopY<8, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<26>());
                     }
                 }
                 if (North(y))
                 { // n
-                    gy1[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<3>());
-                    gy1[idxPopY<1, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<7>());
-                    gy1[idxPopY<2, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<11>());
-                    gy1[idxPopY<3, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<14>());
-                    gy1[idxPopY<4, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<17>());
+                    gy1[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<3>());
+                    gy1[idxPopY<1, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<7>());
+                    gy1[idxPopY<2, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<11>());
+                    gy1[idxPopY<3, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<14>());
+                    gy1[idxPopY<4, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<17>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gy1[idxPopY<5, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<19>());
-                        gy1[idxPopY<6, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<21>());
-                        gy1[idxPopY<7, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<24>());
-                        gy1[idxPopY<8, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(label_constant<25>());
+                        gy1[idxPopY<5, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<19>());
+                        gy1[idxPopY<6, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<21>());
+                        gy1[idxPopY<7, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<24>());
+                        gy1[idxPopY<8, VelocitySet::QF()>(tx, tz, bx, by, bz)] = pop(q_i<25>());
                     }
                 }
 
                 if (Back(z))
                 { // b
-                    gz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<6>());
-                    gz0[idxPopZ<1, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<10>());
-                    gz0[idxPopZ<2, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<12>());
-                    gz0[idxPopZ<3, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<15>());
-                    gz0[idxPopZ<4, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<17>());
+                    gz0[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<6>());
+                    gz0[idxPopZ<1, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<10>());
+                    gz0[idxPopZ<2, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<12>());
+                    gz0[idxPopZ<3, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<15>());
+                    gz0[idxPopZ<4, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<17>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gz0[idxPopZ<5, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<20>());
-                        gz0[idxPopZ<6, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<21>());
-                        gz0[idxPopZ<7, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<24>());
-                        gz0[idxPopZ<8, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<26>());
+                        gz0[idxPopZ<5, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<20>());
+                        gz0[idxPopZ<6, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<21>());
+                        gz0[idxPopZ<7, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<24>());
+                        gz0[idxPopZ<8, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<26>());
                     }
                 }
                 if (Front(z))
                 {
-                    gz1[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<5>());
-                    gz1[idxPopZ<1, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<9>());
-                    gz1[idxPopZ<2, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<11>());
-                    gz1[idxPopZ<3, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<16>());
-                    gz1[idxPopZ<4, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<18>());
+                    gz1[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<5>());
+                    gz1[idxPopZ<1, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<9>());
+                    gz1[idxPopZ<2, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<11>());
+                    gz1[idxPopZ<3, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<16>());
+                    gz1[idxPopZ<4, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<18>());
                     if constexpr (VelocitySet::Q() == 27)
                     {
-                        gz1[idxPopZ<5, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<19>());
-                        gz1[idxPopZ<6, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<22>());
-                        gz1[idxPopZ<7, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<23>());
-                        gz1[idxPopZ<8, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(label_constant<25>());
+                        gz1[idxPopZ<5, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<19>());
+                        gz1[idxPopZ<6, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<22>());
+                        gz1[idxPopZ<7, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<23>());
+                        gz1[idxPopZ<8, VelocitySet::QF()>(tx, ty, bx, by, bz)] = pop(q_i<25>());
                     }
                 }
             }

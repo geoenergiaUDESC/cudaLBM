@@ -166,6 +166,10 @@ namespace LBM
      **/
     template <const label_t label>
     using label_constant = const integralConstant<label_t, label>;
+    template <const label_t label>
+    using q_i = const integralConstant<label_t, label>;
+    template <const label_t label>
+    using m_i = const integralConstant<label_t, label>;
 
     namespace thread
     {

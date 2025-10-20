@@ -190,6 +190,27 @@ namespace LBM
                 copyToSymbol(device::NUM_BLOCK_Z, nzBlocks());
             };
 
+            // Constructor to initialise a cut plane
+            __host__ [[nodiscard]] latticeMesh(const label_t nx, const label_t ny, const label_t nz) noexcept
+                : nx_(nx),
+                  ny_(ny),
+                  nz_(nz),
+                  nPoints_(nx_ * ny_ * nz_),
+                  L_(
+                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+
+            __host__ [[nodiscard]] latticeMesh(const blockLabel_t meshDimensions) noexcept
+                : nx_(meshDimensions.nx),
+                  ny_(meshDimensions.ny),
+                  nz_(meshDimensions.nz),
+                  nPoints_(nx_ * ny_ * nz_),
+                  L_(
+                      {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}) { ; }
+
             /**
              * @name Grid Dimension Accessors
              * @brief Provide access to grid dimensions
@@ -259,6 +280,15 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const pointVector &L() const noexcept
             {
                 return L_;
+            }
+
+            /**
+             * @brief Get the number of physical dimensions of the mesh
+             * @return Const reference to pointVector containing domain size
+             **/
+            __host__ [[nodiscard]] inline constexpr label_t nDims() const noexcept
+            {
+                return static_cast<label_t>(nx_ > 1) + static_cast<label_t>(ny_ > 1) + static_cast<label_t>(nz_ > 1);
             }
 
         private:

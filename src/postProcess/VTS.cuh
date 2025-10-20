@@ -67,8 +67,8 @@ namespace LBM
             const std::vector<std::string> &solutionVarNames) noexcept
         {
             // For a structured grid, we need different calculations
-            const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            const label_t numCells = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
+            // const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
+            // const label_t numCells = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
             const std::size_t numVars = solutionVars.size();
 
             // Get points in the correct order for structured grid (i fastest, then j, then k)
@@ -105,7 +105,7 @@ namespace LBM
 
             // Points section (same as before)
             xml << "      <Points>\n";
-            xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+            xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
             xml << "      </Points>\n";
             currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
 

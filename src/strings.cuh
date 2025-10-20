@@ -107,6 +107,16 @@ namespace LBM
             return std::find(vec.begin(), vec.end(), target) != vec.end();
         }
 
+        __host__ [[nodiscard]] inline constexpr bool containsAnyChar(const std::string &str, const char c) noexcept
+        {
+            return str.find_first_of(c) != std::string::npos;
+        }
+
+        __host__ [[nodiscard]] inline constexpr bool containsAnyChar(const std::string &str, const char (&c)[2]) noexcept
+        {
+            return str.find_first_of(c[0]) != std::string::npos;
+        }
+
         /**
          * @brief Finds the position of a char within a string
          * @param[in] str The string to search

@@ -129,15 +129,15 @@ namespace LBM
         __device__ static inline void scale(thread::array<scalar_t, 10> &moments) noexcept
         {
             // Scale the moments correctly
-            moments(label_constant<1>()) = scale_i<scalar_t>() * (moments(label_constant<1>()));
-            moments(label_constant<2>()) = scale_i<scalar_t>() * (moments(label_constant<2>()));
-            moments(label_constant<3>()) = scale_i<scalar_t>() * (moments(label_constant<3>()));
-            moments(label_constant<4>()) = scale_ii<scalar_t>() * (moments(label_constant<4>()));
-            moments(label_constant<5>()) = scale_ij<scalar_t>() * (moments(label_constant<5>()));
-            moments(label_constant<6>()) = scale_ij<scalar_t>() * (moments(label_constant<6>()));
-            moments(label_constant<7>()) = scale_ii<scalar_t>() * (moments(label_constant<7>()));
-            moments(label_constant<8>()) = scale_ij<scalar_t>() * (moments(label_constant<8>()));
-            moments(label_constant<9>()) = scale_ii<scalar_t>() * (moments(label_constant<9>()));
+            moments[m_i<1>()] = scale_i<scalar_t>() * (moments[m_i<1>()]);
+            moments[m_i<2>()] = scale_i<scalar_t>() * (moments[m_i<2>()]);
+            moments[m_i<3>()] = scale_i<scalar_t>() * (moments[m_i<3>()]);
+            moments[m_i<4>()] = scale_ii<scalar_t>() * (moments[m_i<4>()]);
+            moments[m_i<5>()] = scale_ij<scalar_t>() * (moments[m_i<5>()]);
+            moments[m_i<6>()] = scale_ij<scalar_t>() * (moments[m_i<6>()]);
+            moments[m_i<7>()] = scale_ii<scalar_t>() * (moments[m_i<7>()]);
+            moments[m_i<8>()] = scale_ij<scalar_t>() * (moments[m_i<8>()]);
+            moments[m_i<9>()] = scale_ii<scalar_t>() * (moments[m_i<9>()]);
         }
 
     private:

@@ -209,7 +209,21 @@ namespace LBM
                   L_(
                       {string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lx"),
                        string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Ly"),
-                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}) { ; }
+                       string::extractParameter<scalar_t>(string::readFile("latticeMesh"), "Lz")}){};
+
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh, const blockLabel_t meshDimensions) noexcept
+                : nx_(meshDimensions.nx),
+                  ny_(meshDimensions.ny),
+                  nz_(meshDimensions.nz),
+                  nPoints_(nx_ * ny_ * nz_),
+                  L_(mesh.L()){};
+
+            __host__ [[nodiscard]] latticeMesh(const host::latticeMesh &mesh) noexcept
+                : nx_(mesh.nx()),
+                  ny_(mesh.ny()),
+                  nz_(mesh.nz()),
+                  nPoints_(nx_ * ny_ * nz_),
+                  L_(mesh.L()){};
 
             /**
              * @name Grid Dimension Accessors

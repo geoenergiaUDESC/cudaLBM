@@ -140,7 +140,60 @@ namespace LBM
             moments[m_i<9>()] = scale_ii<scalar_t>() * (moments[m_i<9>()]);
         }
 
+        /**
+         * @brief Calculate incoming density for boundary conditions
+         * @tparam B_N Boundary normal type
+         * @param[in] pop Population distribution
+         * @param[in] boundaryNormal Boundary normal information
+         * @return Incoming density (rho_I) for boundary treatment
+         **/
+        template <class VelocitySet, class B_N>
+        __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const B_N &boundaryNormal) noexcept
+        {
+            return [&]<const label_t... Is>(std::index_sequence<Is...>)
+            {
+                return ((incomingSwitch<scalar_t, VelocitySet>(q_i<Is>(), boundaryNormal) * pop[Is]) + ...);
+            }(std::make_index_sequence<VelocitySet::Q()>{});
+        }
+
     private:
+        /**
+         * @brief Determines if a discrete velocity direction is incoming relative to a boundary normal
+         * @tparam T Return type (typically numeric type)
+         * @tparam B_N Type of boundary normal object with directional methods
+         * @tparam q_ Compile-time velocity direction index
+         * @param[in] q Compile-time constant representing velocity direction
+         * @param[in] boundaryNormal Boundary normal information with directional methods
+         * @return T 1 if velocity is incoming (pointing into domain), 0 if outgoing
+         *
+         * @details Checks if velocity components oppose boundary normal direction:
+         * - For East boundary (normal.x > 0): checks negative x-velocity component
+         * - For West boundary (normal.x < 0): checks positive x-velocity component
+         * - For North boundary (normal.y > 0): checks negative y-velocity component
+         * - For South boundary (normal.y < 0): checks positive y-velocity component
+         * - For Front boundary (normal.z > 0): checks negative z-velocity component
+         * - For Back boundary (normal.z < 0): checks positive z-velocity component
+         * Returns 1 only if no incoming component is detected on any axis
+         **/
+        template <typename T, class VelocitySet, class B_N, const label_t q_>
+        __device__ [[nodiscard]] static inline constexpr T incomingSwitch(const q_i<q_> q, const B_N &boundaryNormal) noexcept
+        {
+            // boundaryNormal.x > 0  => EAST boundary
+            // boundaryNormal.x < 0  => WEST boundary
+            const bool cond_x = (boundaryNormal.isEast() & VelocitySet::nxNeg(q)) | (boundaryNormal.isWest() & VelocitySet::nxPos(q));
+
+            // boundaryNormal.y > 0  => NORTH boundary
+            // boundaryNormal.y < 0  => SOUTH boundary
+            const bool cond_y = (boundaryNormal.isNorth() & VelocitySet::nyNeg(q)) | (boundaryNormal.isSouth() & VelocitySet::nyPos(q));
+
+            // boundaryNormal.z > 0  => FRONT boundary
+            // boundaryNormal.z < 0  => BACK boundary
+            const bool cond_z = (boundaryNormal.isFront() & VelocitySet::nzNeg(q)) | (boundaryNormal.isBack() & VelocitySet::nzPos(q));
+
+            return static_cast<T>(!(cond_x | cond_y | cond_z));
+        }
     };
 }
 

@@ -45,6 +45,7 @@ lidDrivenCavity/*/*.dat
 lidDrivenCavity/*/*.vtu
 lidDrivenCavity/*/*.vts
 lidDrivenCavity/*/*.LBMBin
+lidDrivenCavity/*/*/*.vts
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat

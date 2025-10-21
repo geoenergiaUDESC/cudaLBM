@@ -352,7 +352,7 @@ namespace LBM
         /**
          * @brief Calculate equilibrium distribution function for a direction
          * @tparam T Data type for calculation
-         * @param[in] rhow Weighted density (w_q[q] * ρ)
+         * @param[in] rhow Weighted density (w_q[q] * rho)
          * @param[in] uc3 3 * (u·c_q) = 3*(u*cx + v*cy + w*cz)
          * @param[in] p1_muu 1 - 1.5*(u² + v² + w²)
          * @return Second-order equilibrium distribution value for the direction
@@ -578,38 +578,6 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate incoming density for boundary conditions
-         * @tparam B_N Boundary normal type
-         * @param[in] pop Population distribution
-         * @param[in] boundaryNormal Boundary normal information
-         * @return Incoming density (ρ_I) for boundary treatment
-         **/
-        template <class B_N>
-        __device__ [[nodiscard]] static inline constexpr scalar_t rho_I(const thread::array<scalar_t, 19> &pop, const B_N &boundaryNormal) noexcept
-        {
-            return (
-                (incomingSwitch<scalar_t>(q_i<0>(), boundaryNormal) * pop[q_i<0>()]) +
-                (incomingSwitch<scalar_t>(q_i<1>(), boundaryNormal) * pop[q_i<1>()]) +
-                (incomingSwitch<scalar_t>(q_i<2>(), boundaryNormal) * pop[q_i<2>()]) +
-                (incomingSwitch<scalar_t>(q_i<3>(), boundaryNormal) * pop[q_i<3>()]) +
-                (incomingSwitch<scalar_t>(q_i<4>(), boundaryNormal) * pop[q_i<4>()]) +
-                (incomingSwitch<scalar_t>(q_i<5>(), boundaryNormal) * pop[q_i<5>()]) +
-                (incomingSwitch<scalar_t>(q_i<6>(), boundaryNormal) * pop[q_i<6>()]) +
-                (incomingSwitch<scalar_t>(q_i<7>(), boundaryNormal) * pop[q_i<7>()]) +
-                (incomingSwitch<scalar_t>(q_i<8>(), boundaryNormal) * pop[q_i<8>()]) +
-                (incomingSwitch<scalar_t>(q_i<9>(), boundaryNormal) * pop[q_i<9>()]) +
-                (incomingSwitch<scalar_t>(q_i<10>(), boundaryNormal) * pop[q_i<10>()]) +
-                (incomingSwitch<scalar_t>(q_i<11>(), boundaryNormal) * pop[q_i<11>()]) +
-                (incomingSwitch<scalar_t>(q_i<12>(), boundaryNormal) * pop[q_i<12>()]) +
-                (incomingSwitch<scalar_t>(q_i<13>(), boundaryNormal) * pop[q_i<13>()]) +
-                (incomingSwitch<scalar_t>(q_i<14>(), boundaryNormal) * pop[q_i<14>()]) +
-                (incomingSwitch<scalar_t>(q_i<15>(), boundaryNormal) * pop[q_i<15>()]) +
-                (incomingSwitch<scalar_t>(q_i<16>(), boundaryNormal) * pop[q_i<16>()]) +
-                (incomingSwitch<scalar_t>(q_i<17>(), boundaryNormal) * pop[q_i<17>()]) +
-                (incomingSwitch<scalar_t>(q_i<18>(), boundaryNormal) * pop[q_i<18>()]));
-        }
-
-        /**
          * @brief Print velocity set information to terminal
          **/
         __host__ static void print() noexcept
@@ -650,42 +618,6 @@ namespace LBM
                         << host_cy<int>()[q_i<Q>()] << ", "
                         << host_cz<int>()[q_i<Q>()] << "};" << std::endl;
                 });
-        }
-
-        /**
-         * @brief Determines if a discrete velocity direction is incoming relative to a boundary normal
-         * @tparam T Return type (typically numeric type)
-         * @tparam B_N Type of boundary normal object with directional methods
-         * @tparam q_ Compile-time velocity direction index
-         * @param[in] q Compile-time constant representing velocity direction
-         * @param[in] boundaryNormal Boundary normal information with directional methods
-         * @return T 1 if velocity is incoming (pointing into domain), 0 if outgoing
-         *
-         * @details Checks if velocity components oppose boundary normal direction:
-         * - For East boundary (normal.x > 0): checks negative x-velocity component
-         * - For West boundary (normal.x < 0): checks positive x-velocity component
-         * - For North boundary (normal.y > 0): checks negative y-velocity component
-         * - For South boundary (normal.y < 0): checks positive y-velocity component
-         * - For Front boundary (normal.z > 0): checks negative z-velocity component
-         * - For Back boundary (normal.z < 0): checks positive z-velocity component
-         * Returns 1 only if no incoming component is detected on any axis
-         **/
-        template <typename T, class B_N, const label_t q_>
-        __device__ [[nodiscard]] static inline constexpr T incomingSwitch(const q_i<q_> q, const B_N &boundaryNormal) noexcept
-        {
-            // boundaryNormal.x > 0  => EAST boundary
-            // boundaryNormal.x < 0  => WEST boundary
-            const bool cond_x = (boundaryNormal.isEast() & nxNeg(q)) | (boundaryNormal.isWest() & nxPos(q));
-
-            // boundaryNormal.y > 0  => NORTH boundary
-            // boundaryNormal.y < 0  => SOUTH boundary
-            const bool cond_y = (boundaryNormal.isNorth() & nyNeg(q)) | (boundaryNormal.isSouth() & nyPos(q));
-
-            // boundaryNormal.z > 0  => FRONT boundary
-            // boundaryNormal.z < 0  => BACK boundary
-            const bool cond_z = (boundaryNormal.isFront() & nzNeg(q)) | (boundaryNormal.isBack() & nzPos(q));
-
-            return static_cast<T>(!(cond_x | cond_y | cond_z));
         }
     };
 }

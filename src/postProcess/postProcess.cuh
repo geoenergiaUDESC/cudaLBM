@@ -86,9 +86,9 @@ namespace LBM
                     {
                         const label_t idx = k * ny * nx + j * nx + i;
                         // Do the conversion in double, then cast to the desired type
-                        coords[3 * idx + 0] = static_cast<T>((static_cast<double>(L.x) * static_cast<double>(i)) / static_cast<double>(nx - 1));
-                        coords[3 * idx + 1] = static_cast<T>((static_cast<double>(L.y) * static_cast<double>(j)) / static_cast<double>(ny - 1));
-                        coords[3 * idx + 2] = static_cast<T>((static_cast<double>(L.z) * static_cast<double>(k)) / static_cast<double>(nz - 1));
+                        coords[3 * idx + 0] = static_cast<T>((static_cast<double>(L.x) * static_cast<double>(i * static_cast<label_t>(nx > 1))) / static_cast<double>(nx - static_cast<label_t>(nx > 1)));
+                        coords[3 * idx + 1] = static_cast<T>((static_cast<double>(L.y) * static_cast<double>(j * static_cast<label_t>(ny > 1))) / static_cast<double>(ny - static_cast<label_t>(ny > 1)));
+                        coords[3 * idx + 2] = static_cast<T>((static_cast<double>(L.z) * static_cast<double>(k * static_cast<label_t>(nz > 1))) / static_cast<double>(nz - static_cast<label_t>(nz > 1)));
                     }
                 }
             }

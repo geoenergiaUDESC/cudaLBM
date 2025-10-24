@@ -29,18 +29,10 @@ startFrom       latestTime;
 
 startTime       0;
 
-<<<<<<< HEAD
-nTimeSteps      1000001;
+nTimeSteps      10001;
 
-saveInterval    10000;
+saveInterval    1000;
 
-infoInterval    10000;
-=======
-nTimeSteps      200001;
-
-saveInterval    20000;
-
-infoInterval    2000;
->>>>>>> b576c70 (Add D3Q27 case to lidDrivenCavity)
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

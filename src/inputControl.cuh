@@ -123,9 +123,9 @@ namespace LBM
          * @brief Returns the name of the currently running executable
          * @return const std::string& The executable name
          **/
-        __host__ [[nodiscard]] inline constexpr const std::string &executableName() const noexcept
+        __host__ [[nodiscard]] inline const std::string &executableName() const noexcept
         {
-            return commandLine_[0];
+            return commandLine_[0]; // /\ BRENO: REMOVED CONSTEXPR HERE, DIDN'T RUN ON MY LAPTOP
         }
 
     private:

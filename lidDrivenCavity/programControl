@@ -19,10 +19,10 @@ startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      200001;
+nTimeSteps      10001;
 
-saveInterval    20000;
+saveInterval    1000;
 
-infoInterval    2000;
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

@@ -37,7 +37,7 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A class applying boundary conditions to the lid driven cavity case
+    A class applying boundary conditions to the turbulent jet case
 
 Namespace
     LBM
@@ -58,17 +58,15 @@ SourceFiles
 #include "boundaryRegion.cuh"
 #include "boundaryFields.cuh"
 
-#define BC_JET
-
 namespace LBM
 {
     /**
      * @class boundaryConditions
      * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
      *
-     * This class implements the boundary condition treatment for the D3Q19 lattice model
-     * in lid-driven cavity flow simulations. It handles both static wall boundaries and
-     * moving lid boundaries using moment-based boundary conditions derived from the
+     * This class implements the boundary condition treatment for the D3Q19 lattice 
+     * model in turbulent jet flow simulations. It handles both static wall and
+     * inflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
     class boundaryConditions
@@ -86,11 +84,11 @@ namespace LBM
          * @param[out] moments Moment variables array to be populated
          * @param[in] boundaryNormal Normal vector information at boundary node
          *
-         * This method implements the moment-based boundary condition treatment for
-         * the D3Q19 lattice model. It handles various boundary types including:
-         * - Static wall boundaries (all velocity components zero)
-         * - Moving lid boundaries (prescribed tangential velocity)
-         * - Corner and edge cases with specialized treatment
+         * This method implements the moment-based boundary condition treatment 
+         * for the D3Q19 lattice model. Currently, it handles only the inflow  
+         * (jet) boundary located at the BACK face of the domain. The inflow 
+         * imposes a round, piecewise prescribed axial velocity profile in the
+         * center of the inlet plane. All other boundaries are treated as static.
          *
          * The method uses the regularized LBM approach to reconstruct boundary
          * moments from available population information, ensuring mass conservation
@@ -100,18 +98,107 @@ namespace LBM
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
-            const normalVector &boundaryNormal) noexcept
+            const normalVector &boundaryNormal,
+            scalar_t* shared_buffer) noexcept
         {
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
 
             const scalar_t rho_I = VelocitySet::rho_I(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
-            #if defined(BC_LID)
-                #include "ldcBoundaries.cuh"
-            #elif defined(BC_JET)
-                #include "jetBoundaries.cuh"
-            #endif
+            switch (boundaryNormal.nodeType())
+            {   
+                // Static boundaries (z != 0 && z!= NZ - 1)
+                #include "jetStaticBoundaries.cuh"
+
+                // Inflow boundary
+                case normalVector::BACK():
+                {
+                    const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                    const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+
+                    constexpr const scalar_t R = static_cast<scalar_t>(6);
+                    const scalar_t is_jet = static_cast<scalar_t>( 
+                        (x - (device::nx - 1) / 2) * (x - (device::nx - 1) / 2) + 
+                        (y - (device::ny - 1) / 2) * (y - (device::ny - 1) / 2) < 
+                        (R * R) 
+                    );
+
+                    const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                    const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+
+                    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                    const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                    moments(label_constant<0>()) = rho;                             
+                    moments(label_constant<1>()) = static_cast<scalar_t>(0);         
+                    moments(label_constant<2>()) = static_cast<scalar_t>(0);        
+                    moments(label_constant<3>()) = is_jet * device::u_inf;           
+                    moments(label_constant<4>()) = static_cast<scalar_t>(0);        
+                    moments(label_constant<5>()) = static_cast<scalar_t>(0);         
+                    moments(label_constant<6>()) = mxz;                              
+                    moments(label_constant<7>()) = static_cast<scalar_t>(0);         
+                    moments(label_constant<8>()) = myz;                              
+                    moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
+
+                    return;
+                }
+
+                //#define STATIC_FRONT
+
+                #if defined(STATIC_FRONT)
+                    // Static boundary
+                    case normalVector::FRONT():
+                    {
+                        const scalar_t mxz_I = FRONT_mxz_I(pop, inv_rho_I);
+                        const scalar_t myz_I = FRONT_myz_I(pop, inv_rho_I);
+
+                        const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                        const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                        const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                        moments(label_constant<0>()) = rho;
+                        moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
+                        moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
+                        moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
+                        moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
+                        moments(label_constant<5>()) = static_cast<scalar_t>(0); // mxy
+                        moments(label_constant<6>()) = mxz;                      // mxz
+                        moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
+                        moments(label_constant<8>()) = myz;                      // myz
+                        moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
+
+                        return;
+                    }
+                #else
+                    // Outflow boundary 
+                    case normalVector::FRONT():
+                    {
+                        const label_t tid_interior = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+
+                        device::constexpr_for<0, NUMBER_MOMENTS()>(
+                            [&] (const auto moment)
+                            {
+                                const label_t ID_interior =
+                                    tid_interior * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+
+                                const scalar_t m_in = shared_buffer[ID_interior];
+
+                                if constexpr (moment == index::rho())
+                                {
+                                    moments[moment] = m_in + rho0<scalar_t>();
+                                }
+                                else
+                                {
+                                    moments[moment] = m_in;
+                                }
+                            });
+
+                        return;
+                    }
+                #endif
+            }
         }
 
     private:

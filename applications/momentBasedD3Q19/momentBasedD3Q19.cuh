@@ -151,7 +151,7 @@ namespace LBM
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
+                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
             else
             {

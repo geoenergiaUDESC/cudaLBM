@@ -100,7 +100,7 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
-            scalar_t* shared_buffer) noexcept
+            const scalar_t* shared_buffer) noexcept
         {
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
 
@@ -148,57 +148,20 @@ namespace LBM
 
                 //#define STATIC_FRONT
 
-                #if defined(STATIC_FRONT)
-                    // Static boundary
-                    case normalVector::FRONT():
-                    {
-                        const scalar_t mxz_I = FRONT_mxz_I(pop, inv_rho_I);
-                        const scalar_t myz_I = FRONT_myz_I(pop, inv_rho_I);
+                case normalVector::FRONT():
+                {
+                    // Outflow boundary
+                    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
-                        const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-                        const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
-                        const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
-
-                        moments(label_constant<0>()) = rho;
-                        moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
-                        moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
-                        moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
-                        moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
-                        moments(label_constant<5>()) = static_cast<scalar_t>(0); // mxy
-                        moments(label_constant<6>()) = mxz;                      // mxz
-                        moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
-                        moments(label_constant<8>()) = myz;                      // myz
-                        moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
-
-                        return;
-                    }
-                #else
-                    // Outflow boundary 
-                    case normalVector::FRONT():
-                    {
-                        const label_t tid_interior = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
-
-                        device::constexpr_for<0, NUMBER_MOMENTS()>(
-                            [&] (const auto moment)
-                            {
-                                const label_t ID_interior =
-                                    tid_interior * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-
-                                const scalar_t m_in = shared_buffer[ID_interior];
-
-                                if constexpr (moment == index::rho())
-                                {
-                                    moments[moment] = m_in + rho0<scalar_t>();
-                                }
-                                else
-                                {
-                                    moments[moment] = m_in;
-                                }
-                            });
-
-                        return;
-                    }
-                #endif
+                    device::constexpr_for<0, NUMBER_MOMENTS()>(
+                        [&](const auto moment)
+                        {
+                            const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                            moments[moment] = shared_buffer[ID];
+                        });
+                        
+                    return;
+                }
             }
         }
 

@@ -65,8 +65,8 @@ namespace LBM
      * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
      *
      * This class implements the boundary condition treatment for the D3Q19 lattice 
-     * model in turbulent jet flow simulations. It handles both static wall and
-     * inflow boundaries using moment-based boundary conditions derived from the
+     * model in turbulent jet flow simulations. It handles static wall, inflow, and 
+     * outflow boundaries using moment-based boundary conditions derived from the 
      * regularized LBM approach.
      **/
     class boundaryConditions
@@ -85,10 +85,9 @@ namespace LBM
          * @param[in] boundaryNormal Normal vector information at boundary node
          *
          * This method implements the moment-based boundary condition treatment 
-         * for the D3Q19 lattice model. Currently, it handles only the inflow  
-         * (jet) boundary located at the BACK face of the domain. The inflow 
-         * imposes a round, piecewise prescribed axial velocity profile in the
-         * center of the inlet plane. All other boundaries are treated as static.
+         * for the D3Q19 lattice model. Currently, it handles both the inflow  
+         * (jet) boundary located at the BACK face of the domain and the outflow 
+         * boundary located at the FRONT face. 
          *
          * The method uses the regularized LBM approach to reconstruct boundary
          * moments from available population information, ensuring mass conservation

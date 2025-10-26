@@ -148,19 +148,19 @@ namespace LBM
 
         /* =============================== BRENO: =============================== */
         /* Reconstruct post-stream moments into shared buffer for boundary access */
-
-        thread::array<scalar_t, NUMBER_MOMENTS()> moments_post;
-
+        
         // Compute post-stream/halo moments from populations
-        VelocitySet::calculateMoments(pop, moments_post);
+        VelocitySet::calculateMoments(pop, moments);
+        {
+            // Update the shared buffer with the refreshed moment fields 
+            device::constexpr_for<0, NUMBER_MOMENTS()>(
+                [&](const auto moment)
+                {
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    shared_buffer[ID] = moments[moment]; 
+                });
+        }
 
-        // Update the shared buffer with the refreshed moment fields 
-        device::constexpr_for<0, NUMBER_MOMENTS()>(
-            [&](const auto moment)
-            {
-                const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                shared_buffer[ID] = moments_post[moment]; 
-            });
         __syncthreads();
 
         /* ====================================================================== */  

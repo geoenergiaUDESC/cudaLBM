@@ -9,7 +9,7 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        lidDrivenCavity;
+caseName        turbulentJet;
 
 Re              10000;
 

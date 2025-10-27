@@ -107,12 +107,11 @@ namespace LBM
             const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
+            bool already_handled = false;
+
             switch (boundaryNormal.nodeType())
             {   
-                // Static boundaries (z != 0 && z!= NZ - 1)
-                #include "jetStaticBoundaries.cuh"
-
-                // Inflow boundary
+                // Round inflow + no-slip 
                 case normalVector::BACK():
                 {
                     const label_t x = threadIdx.x + block::nx() * blockIdx.x;
@@ -143,15 +142,23 @@ namespace LBM
                     moments(label_constant<8>()) = myz;                              
                     moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
 
+                    already_handled = true;
+
                     return;
                 }
 
-                //#define STATIC_FRONT
+                // No-slip at the corners and edges
+                #include "backNoSlip.cuh"
 
+                // Outflow (zero-gradient) boundaries
+                //case normalVector::EAST():
+                //case normalVector::WEST():
+                //case normalVector::NORTH():
+                //case normalVector::SOUTH():
                 case normalVector::FRONT():
                 {
-                    // Outflow boundary
-                    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
+                    const int3 offset = boundaryNormal.interiorOffset();
+                    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto moment)
@@ -159,8 +166,24 @@ namespace LBM
                             const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
                             moments[moment] = shared_buffer[ID];
                         });
+
+                    already_handled = true;
                         
                     return;
+                }
+                
+                // Call static boundaries for uncovered cases
+                default:
+                {
+                    if (!already_handled)
+                    {
+                        switch (boundaryNormal.nodeType())
+                        {
+                            #include "jetFallback.cuh"
+                        }
+                    }
+
+                    break;
                 }
             }
         }

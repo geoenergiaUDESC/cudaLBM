@@ -115,7 +115,7 @@ namespace LBM
                     const label_t x = threadIdx.x + block::nx() * blockIdx.x;
                     const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
-                    constexpr const scalar_t R = static_cast<scalar_t>(6);
+                    const scalar_t R = static_cast<scalar_t>(0.5) * device::L_char;
                     const scalar_t is_jet = static_cast<scalar_t>( 
                         (x - (device::nx - 1) / 2) * (x - (device::nx - 1) / 2) + 
                         (y - (device::ny - 1) / 2) * (y - (device::ny - 1) / 2) < 

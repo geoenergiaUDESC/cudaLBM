@@ -351,6 +351,7 @@ namespace LBM
         __device__ __constant__ scalar_t Re;
         __device__ __constant__ scalar_t tau;
         __device__ __constant__ scalar_t u_inf;
+        __device__ __constant__ scalar_t L_char;
         __device__ __constant__ scalar_t omega;
         __device__ __constant__ scalar_t t_omegaVar;
         __device__ __constant__ scalar_t omegaVar_d2;

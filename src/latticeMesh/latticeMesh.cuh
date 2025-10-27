@@ -167,7 +167,7 @@ namespace LBM
 
                 // Allocate programControl symbols on the GPU (clean up later)
                 {
-                    const scalar_t viscosityTemp = programCtrl.u_inf() * static_cast<scalar_t>(nx_ - 1) / programCtrl.Re();
+                    const scalar_t viscosityTemp = (programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.Re();
                     const scalar_t tauTemp = static_cast<scalar_t>(0.5) + static_cast<scalar_t>(3.0) * viscosityTemp;
                     const scalar_t omegaTemp = static_cast<scalar_t>(1.0) / tauTemp;
                     const scalar_t t_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp;
@@ -175,6 +175,7 @@ namespace LBM
 
                     copyToSymbol(device::Re, programCtrl.Re());
                     copyToSymbol(device::u_inf, programCtrl.u_inf());
+                    copyToSymbol(device::L_char, programCtrl.L_char());
                     copyToSymbol(device::tau, tauTemp);
                     copyToSymbol(device::omega, omegaTemp);
                     copyToSymbol(device::t_omegaVar, t_omegaVarTemp);

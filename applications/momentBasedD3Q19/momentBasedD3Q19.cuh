@@ -149,10 +149,10 @@ namespace LBM
         /* =============================== BRENO: =============================== */
         /* Reconstruct post-stream moments into shared buffer for boundary access */
         
-        // Compute post-stream/halo moments from populations
+        // Compute post-stream moments from populations
         VelocitySet::calculateMoments(pop, moments);
         {
-            // Update the shared buffer with the refreshed moment fields 
+            // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS()>(
                 [&](const auto moment)
                 {

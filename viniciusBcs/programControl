@@ -9,7 +9,7 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        turbulentJet;
+caseName        viniciusBcs;
 
 Re              3000;
 
@@ -21,10 +21,10 @@ startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      1000001;
+nTimeSteps      501;
 
-saveInterval    10000;
+saveInterval    1;
 
-infoInterval    10;
+infoInterval    1;
 
 \*---------------------------------------------------------------------------*/

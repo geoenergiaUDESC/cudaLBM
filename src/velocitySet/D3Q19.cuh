@@ -350,7 +350,7 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate equilibrium distribution function for a direction
+         * @brief Calculate (second-order) equilibrium distribution function for a direction
          * @tparam T Data type for calculation
          * @param[in] rhow Weighted density (w_q[q] * rho)
          * @param[in] uc3 3 * (u·c_q) = 3*(u*cx + v*cy + w*cz)
@@ -364,7 +364,7 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate full equilibrium distribution for given velocity
+         * @brief Calculate (second-order) full equilibrium distribution for given velocity
          * @tparam T Data type for calculation
          * @param[in] u x-component of velocity
          * @param[in] v y-component of velocity
@@ -388,7 +388,7 @@ namespace LBM
         }
 
         /**
-         * @brief Reconstruct population distribution from moments (in-place)
+         * @brief Reconstruct population distribution from moments (in-place) (second-order)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/

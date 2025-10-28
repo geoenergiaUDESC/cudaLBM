@@ -350,12 +350,12 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate equilibrium distribution function for a direction
+         * @brief Calculate (second-order) equilibrium distribution function for a direction
          * @tparam T Data type for calculation
          * @param[in] rhow Weighted density (w_q[q] * ρ)
          * @param[in] uc3 3 * (u·c_q) = 3*(u*cx + v*cy + w*cz)
          * @param[in] p1_muu 1 - 1.5*(u² + v² + w²)
-         * @return Equilibrium distribution value for the direction
+         * @return Second-order equilibrium distribution value for the direction
          **/
         template <typename T>
         __host__ [[nodiscard]] static inline constexpr T f_eq(const T rhow, const T uc3, const T p1_muu) noexcept
@@ -364,12 +364,12 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate full equilibrium distribution for given velocity
+         * @brief Calculate (second-order) full equilibrium distribution for given velocity
          * @tparam T Data type for calculation
          * @param[in] u x-component of velocity
          * @param[in] v y-component of velocity
          * @param[in] w z-component of velocity
-         * @return Array of 19 equilibrium distribution values
+         * @return Array of 19 second-order equilibrium distribution values
          **/
         template <typename T>
         __host__ [[nodiscard]] static inline constexpr const std::array<T, 19> F_eq(const T u, const T v, const T w) noexcept
@@ -388,7 +388,7 @@ namespace LBM
         }
 
         /**
-         * @brief Reconstruct population distribution from moments (in-place)
+         * @brief Reconstruct population distribution from moments (in-place) (second-order)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/
@@ -423,7 +423,19 @@ namespace LBM
         }
 
         /**
-         * @brief Reconstruct population distribution from moments (return)
+         * @brief Reconstruct population distribution from moments (in-place) (first-order)
+         * @param[out] pop Population array to be filled
+         * @param[in] moments Moment array (10 components)
+         **/
+        /*
+        __device__ static inline void g_reconstruct(thread::array<scalar_t, 19> &pop, const thread:array<scalar_t, NUMBER_MOMENTS() &moments) noexcept
+        {
+            
+        } 
+        */
+
+        /**
+         * @brief Reconstruct population distribution from moments (return) (second-order)
          * @param[in] moments Moment array (10 components)
          * @return Population array with 19 components
          **/
@@ -563,7 +575,7 @@ namespace LBM
             moments(label_constant<0>()) = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
             const scalar_t invRho = static_cast<scalar_t>(1) / moments(label_constant<0>());
 
-            // Equation 4 + force correction
+            // Equation 4 
             moments(label_constant<1>()) = ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho;
             moments(label_constant<2>()) = ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho;
             moments(label_constant<3>()) = ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho;

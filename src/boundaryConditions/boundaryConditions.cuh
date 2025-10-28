@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Vinicius Czarnobay, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -64,9 +64,9 @@ namespace LBM
      * @class boundaryConditions
      * @brief Applies boundary conditions for lid-driven cavity simulations using moment representation
      *
-     * This class implements the boundary condition treatment for the D3Q19 lattice 
-     * model in turbulent jet flow simulations. It handles static wall, inflow, and 
-     * outflow boundaries using moment-based boundary conditions derived from the 
+     * This class implements the boundary condition treatment for the D3Q19 lattice
+     * model in turbulent jet flow simulations. It handles static wall, inflow, and
+     * outflow boundaries using moment-based boundary conditions derived from the
      * regularized LBM approach.
      **/
     class boundaryConditions
@@ -84,10 +84,10 @@ namespace LBM
          * @param[out] moments Moment variables array to be populated
          * @param[in] boundaryNormal Normal vector information at boundary node
          *
-         * This method implements the moment-based boundary condition treatment 
-         * for the D3Q19 lattice model. Currently, it handles both the inflow  
-         * (jet) boundary located at the BACK face of the domain and the outflow 
-         * boundary located at the FRONT face. 
+         * This method implements the moment-based boundary condition treatment
+         * for the D3Q19 lattice model. Currently, it handles both the inflow
+         * (jet) boundary located at the BACK face of the domain and the outflow
+         * boundary located at the FRONT face.
          *
          * The method uses the regularized LBM approach to reconstruct boundary
          * moments from available population information, ensuring mass conservation
@@ -98,7 +98,7 @@ namespace LBM
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal,
-            const scalar_t* shared_buffer) noexcept
+            const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
 
@@ -108,19 +108,20 @@ namespace LBM
             bool already_handled = false;
 
             switch (boundaryNormal.nodeType())
-            {   
-                // Round inflow + no-slip 
+            {
+                // Round inflow + no-slip
                 case normalVector::BACK():
                 {
                     const label_t x = threadIdx.x + block::nx() * blockIdx.x;
                     const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
                     const scalar_t R = static_cast<scalar_t>(0.5) * device::L_char;
-                    const scalar_t is_jet = static_cast<scalar_t>( 
-                        (x - (device::nx - 1) / 2) * (x - (device::nx - 1) / 2) + 
-                        (y - (device::ny - 1) / 2) * (y - (device::ny - 1) / 2) < 
-                        (R * R) 
-                    );
+                    const scalar_t is_jet = static_cast<scalar_t>(
+                        (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) *
+                        (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) +
+                        (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) *
+                        (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) <
+                        (R * R));
 
                     const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
                     const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
@@ -129,15 +130,15 @@ namespace LBM
                     const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                     const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                    moments(label_constant<0>()) = rho;                             
-                    moments(label_constant<1>()) = static_cast<scalar_t>(0);         
-                    moments(label_constant<2>()) = static_cast<scalar_t>(0);        
-                    moments(label_constant<3>()) = is_jet * device::u_inf;           
-                    moments(label_constant<4>()) = static_cast<scalar_t>(0);        
-                    moments(label_constant<5>()) = static_cast<scalar_t>(0);         
-                    moments(label_constant<6>()) = mxz;                              
-                    moments(label_constant<7>()) = static_cast<scalar_t>(0);         
-                    moments(label_constant<8>()) = myz;                              
+                    moments(label_constant<0>()) = rho;
+                    moments(label_constant<1>()) = static_cast<scalar_t>(0);
+                    moments(label_constant<2>()) = static_cast<scalar_t>(0);
+                    moments(label_constant<3>()) = is_jet * device::u_inf;
+                    moments(label_constant<4>()) = static_cast<scalar_t>(0);
+                    moments(label_constant<5>()) = static_cast<scalar_t>(0);
+                    moments(label_constant<6>()) = mxz;
+                    moments(label_constant<7>()) = static_cast<scalar_t>(0);
+                    moments(label_constant<8>()) = myz;
                     moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
 
                     already_handled = true;
@@ -146,30 +147,17 @@ namespace LBM
                 }
 
                 // No-slip at the corners and edges
-                #include "backNoSlip.cuh"
+                #include "include/backNoSlip.cuh"
+
+                // case normalVector::SOUTH_WEST_FRONT():
+                // case normalVector::SOUTH_EAST_FRONT():
+                // case normalVector::NORTH_WEST_FRONT():
+                // case normalVector::NORTH_EAST_FRONT():
 
                 // Outflow (zero-gradient) boundaries
-                //case normalVector::EAST():
-                //case normalVector::WEST():
-                //case normalVector::NORTH():
-                //case normalVector::SOUTH():
-                case normalVector::FRONT():
-                {
-                    const int3 offset = boundaryNormal.interiorOffset();
-                    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+                #include "include/vinicius.cuh"
+                //#include "include/breno.cuh"
 
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
-                        [&](const auto moment)
-                        {
-                            const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                            moments[moment] = shared_buffer[ID];
-                        });
-
-                    already_handled = true;
-                        
-                    return;
-                }
-                
                 // Call static boundaries for uncovered cases
                 default:
                 {
@@ -177,7 +165,7 @@ namespace LBM
                     {
                         switch (boundaryNormal.nodeType())
                         {
-                            #include "jetFallback.cuh"
+                            #include "include/fallback.cuh"
                         }
                     }
 

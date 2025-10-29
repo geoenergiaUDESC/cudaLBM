@@ -6,14 +6,14 @@ case normalVector::NORTH():
 case normalVector::NORTH_EAST(): 
 case normalVector::NORTH_WEST(): 
 case normalVector::NORTH_FRONT():
-//case normalVector::NORTH_EAST_FRONT():
-//case normalVector::NORTH_WEST_FRONT():
+case normalVector::NORTH_EAST_FRONT():
+case normalVector::NORTH_WEST_FRONT():
 case normalVector::SOUTH(): 
 case normalVector::SOUTH_EAST(): 
 case normalVector::SOUTH_WEST(): 
 case normalVector::SOUTH_FRONT(): 
-//case normalVector::SOUTH_EAST_FRONT():
-//case normalVector::SOUTH_WEST_FRONT():
+case normalVector::SOUTH_EAST_FRONT():
+case normalVector::SOUTH_WEST_FRONT():
 case normalVector::FRONT(): 
 {
     const int3 offset = boundaryNormal.interiorOffset();

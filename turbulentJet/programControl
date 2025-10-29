@@ -15,7 +15,7 @@ Re              3000;
 
 u_inf           0.016;
 
-L_char          16;
+L_char          8;
 
 startFrom       latestTime;
 
@@ -25,6 +25,6 @@ nTimeSteps      1000001;
 
 saveInterval    10000;
 
-infoInterval    1000;
+infoInterval    10000;
 
 \*---------------------------------------------------------------------------*/

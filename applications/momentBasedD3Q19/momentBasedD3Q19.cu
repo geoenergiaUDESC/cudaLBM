@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
     Implementation of the moment representation with the D3Q19 velocity set
@@ -55,7 +55,7 @@ __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; 
 
 int main(const int argc, const char *const argv[])
 {
-    const programControl programCtrl(argc, argv);
+    const programControl programCtrl(argc, argv);   
 
     // Set cuda device
     checkCudaErrors(cudaDeviceSynchronize());

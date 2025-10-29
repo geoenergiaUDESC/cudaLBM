@@ -109,7 +109,7 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-                // Round inflow + no-slip
+                // Round inflow + static when is_jet == 0
                 case normalVector::BACK():
                 {
                     const label_t x = threadIdx.x + block::nx() * blockIdx.x;
@@ -146,17 +146,9 @@ namespace LBM
                     return;
                 }
 
-                // No-slip at the corners and edges
-                #include "include/backNoSlip.cuh"
-
-                // case normalVector::SOUTH_WEST_FRONT():
-                // case normalVector::SOUTH_EAST_FRONT():
-                // case normalVector::NORTH_WEST_FRONT():
-                // case normalVector::NORTH_EAST_FRONT():
-
                 // Outflow (zero-gradient) boundaries
-                #include "include/vinicius.cuh"
-                //#include "include/breno.cuh"
+                //#include "include/vinicius.cuh"
+                #include "include/breno.cuh"
 
                 // Call static boundaries for uncovered cases
                 default:

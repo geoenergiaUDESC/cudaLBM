@@ -9,24 +9,26 @@ case normalVector::EAST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
-    moments[label_constant<5>()] = -((-static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxy
-    moments[label_constant<6>()] = -((-static_cast<scalar_t>(6) * mxz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxz
-    moments[label_constant<7>()] = -((-static_cast<scalar_t>(4) * myy_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // myy
+    moments[label_constant<5>()] = -(-static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
+    moments[label_constant<6>()] = -(-static_cast<scalar_t>(6) * mxz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
+    moments[label_constant<7>()] = -(-static_cast<scalar_t>(4) * myy_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // myy
     moments[label_constant<8>()] = (myz_I * rho_I) / rho; // myz
-    moments[label_constant<9>()] = -((static_cast<scalar_t>(4) * myy_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mzz
+    moments[label_constant<9>()] = -(static_cast<scalar_t>(4) * myy_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mzz
 
     already_handled = true;
 
     return;
 }
-case normalVector::EAST_FRONT(): // FURO DE ROTEIRO
+case normalVector::EAST_FRONT(): 
 {
     const scalar_t mxy_I = ((pop[label_constant<7>()]) - (pop[label_constant<13>()])) * inv_rho_I;
     const scalar_t myz_I = ((pop[label_constant<11>()]) - (pop[label_constant<18>()])) * inv_rho_I;
@@ -34,17 +36,19 @@ case normalVector::EAST_FRONT(): // FURO DE ROTEIRO
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = (static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
     moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
     moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
-    moments[label_constant<5>()] = (static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy  
+    moments[label_constant<8>()] = (static_cast<scalar_t>(6) * myz_I * rho_I - moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // myz  
     moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
 
     already_handled = true;
@@ -62,22 +66,24 @@ case normalVector::WEST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
         
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
-    moments[label_constant<5>()] = -((-static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxy
-    moments[label_constant<6>()] = -((-static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxz
-    moments[label_constant<7>()] = -((-static_cast<scalar_t>(4) * myy_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I 
+    moments[label_constant<5>()] = -(-static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
+    moments[label_constant<6>()] = -(-static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
+    moments[label_constant<7>()] = -(-static_cast<scalar_t>(4) * myy_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I 
     - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho 
-    - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // myy
+    - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // myy
     moments[label_constant<8>()] = (myz_I * rho_I) / rho; // myz
-    moments[label_constant<9>()] = -((static_cast<scalar_t>(4) * myy_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I 
+    moments[label_constant<9>()] = -(static_cast<scalar_t>(4) * myy_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I 
     - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho 
-    - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mzz
+    - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mzz
 
     already_handled = true;
 
@@ -91,12 +97,14 @@ case normalVector::WEST_FRONT():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = (static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
     moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
@@ -119,22 +127,24 @@ case normalVector::NORTH():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
-    moments[label_constant<4>()] = -((-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I 
+    // IRBC-Neumann
+    moments[label_constant<4>()] = -(-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I 
         - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho 
-        - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mxx
-    moments[label_constant<5>()] = -((-static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxy
+        - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mxx
+    moments[label_constant<5>()] = -(-static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
     moments[label_constant<6>()] = (mxz_I * rho_I) / rho; // mxz
     moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
-    moments[label_constant<8>()] = -((-static_cast<scalar_t>(6) * myz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho)); // myz
-    moments[label_constant<9>()] = -((static_cast<scalar_t>(4) * mxx_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I 
+    moments[label_constant<8>()] = -(-static_cast<scalar_t>(6) * myz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // myz
+    moments[label_constant<9>()] = -(static_cast<scalar_t>(4) * mxx_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I 
         - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho 
-        - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mzz
+        - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mzz
 
     already_handled = true;
 
@@ -148,12 +158,14 @@ case normalVector::NORTH_EAST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
@@ -173,12 +185,14 @@ case normalVector::NORTH_WEST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
@@ -199,15 +213,63 @@ case normalVector::NORTH_FRONT():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = (static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
+    moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
+    moments[label_constant<8>()] = moments[label_constant<2>()] * moments[label_constant<3>()]; // myz
+    moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
+
+    already_handled = true;
+
+    return;
+}
+case normalVector::NORTH_EAST_FRONT():
+{
+    const int3 offset = boundaryNormal.interiorOffset();
+    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+
+    // Neumann
+    moments[label_constant<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
+    moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
+    moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
+    moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
+
+    // IRBC-Neumann
+    moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
+    moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
+    moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
+    moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
+    moments[label_constant<8>()] = moments[label_constant<2>()] * moments[label_constant<3>()]; // myz
+    moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
+
+    already_handled = true;
+
+    return;
+}
+case normalVector::NORTH_WEST_FRONT():
+{
+    const int3 offset = boundaryNormal.interiorOffset();
+    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+    
+    // Neumann
+    moments[label_constant<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
+    moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
+    moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
+    moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
+
+    // IRBC-Neumann 
+    moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
+    moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
+    moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
     moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
     moments[label_constant<8>()] = moments[label_constant<2>()] * moments[label_constant<3>()]; // myz
     moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
@@ -227,18 +289,20 @@ case normalVector::SOUTH():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
-    moments[label_constant<4>()] = -((-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mxx
-    moments[label_constant<5>()] = -((-static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho)); // mxy
+    // IRBC-Neumann
+    moments[label_constant<4>()] = -(-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mxx
+    moments[label_constant<5>()] = -(-static_cast<scalar_t>(6) * mxy_I * rho_I - moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy
     moments[label_constant<6>()] = (mxz_I * rho_I) / rho; // mxz
     moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
-    moments[label_constant<8>()] = -((-static_cast<scalar_t>(6) * myz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho)); // myz
-    moments[label_constant<9>()] = -((static_cast<scalar_t>(4) * mxx_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mzz
+    moments[label_constant<8>()] = -(-static_cast<scalar_t>(6) * myz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // myz
+    moments[label_constant<9>()] = -(static_cast<scalar_t>(4) * mxx_I * rho_I - static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho - static_cast<scalar_t>(3) * moments[label_constant<3>()] * moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(6) * rho); // mzz
 
     already_handled = true;
 
@@ -252,12 +316,14 @@ case normalVector::SOUTH_EAST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
@@ -277,12 +343,14 @@ case normalVector::SOUTH_WEST():
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
+    // IRBC-Neumann
     moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I + moments[label_constant<3>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
@@ -294,7 +362,7 @@ case normalVector::SOUTH_WEST():
 
     return;
 }
-case normalVector::SOUTH_FRONT(): // POSSÍVEL FURO DE ROTEIRO
+case normalVector::SOUTH_FRONT(): 
 {
     const scalar_t mxy_I = ((pop[label_constant<8>()]) - (pop[label_constant<13>()])) * inv_rho_I;
     const scalar_t mxz_I = ((pop[label_constant<9>()]) - (pop[label_constant<16>()])) * inv_rho_I;
@@ -302,13 +370,15 @@ case normalVector::SOUTH_FRONT(): // POSSÍVEL FURO DE ROTEIRO
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
-    moments[label_constant<4>()] = static_cast<scalar_t>(0); // mxx
+    // IRBC-Neumann
+    moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
     moments[label_constant<5>()] = (static_cast<scalar_t>(6) * mxy_I * rho_I + moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxy  
     moments[label_constant<6>()] = (static_cast<scalar_t>(6) * mxz_I * rho_I - moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
     moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
@@ -319,7 +389,53 @@ case normalVector::SOUTH_FRONT(): // POSSÍVEL FURO DE ROTEIRO
 
     return;
 }
-case normalVector::FRONT(): // POSSÍVEL FURO DE ROTEIRO
+case normalVector::SOUTH_EAST_FRONT():
+{
+    const int3 offset = boundaryNormal.interiorOffset();
+    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+
+    // Neumann
+    moments[label_constant<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
+    moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
+    moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
+    moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
+
+    // IRBC-Neumann
+    moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
+    moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
+    moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
+    moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
+    moments[label_constant<8>()] = moments[label_constant<2>()] * moments[label_constant<3>()]; // myz
+    moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
+
+    already_handled = true;
+
+    return;
+}
+case normalVector::SOUTH_WEST_FRONT():
+{
+    const int3 offset = boundaryNormal.interiorOffset();
+    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+
+    // Neumann
+    moments[label_constant<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
+    moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
+    moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
+    moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
+
+    // IRBC-Neumann
+    moments[label_constant<4>()] = moments[label_constant<1>()] * moments[label_constant<1>()]; // mxx
+    moments[label_constant<5>()] = moments[label_constant<1>()] * moments[label_constant<2>()]; // mxy
+    moments[label_constant<6>()] = moments[label_constant<1>()] * moments[label_constant<3>()]; // mxz
+    moments[label_constant<7>()] = moments[label_constant<2>()] * moments[label_constant<2>()]; // myy
+    moments[label_constant<8>()] = moments[label_constant<2>()] * moments[label_constant<3>()]; // myz
+    moments[label_constant<9>()] = moments[label_constant<3>()] * moments[label_constant<3>()]; // mzz
+
+    already_handled = true;
+
+    return;
+}
+case normalVector::FRONT(): 
 {
     const scalar_t mxz_I = FRONT_mxz_I(pop, inv_rho_I);
     const scalar_t myz_I = FRONT_myz_I(pop, inv_rho_I);
@@ -330,17 +446,19 @@ case normalVector::FRONT(): // POSSÍVEL FURO DE ROTEIRO
     const int3 offset = boundaryNormal.interiorOffset();
     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
+    // Neumann
     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<0>()];
     moments[label_constant<0>()] = rho;
     moments[label_constant<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<1>()];
     moments[label_constant<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<2>()];
     moments[label_constant<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + label_constant<3>()];
 
-    moments[label_constant<4>()] = -(-static_cast<scalar_t>(4) *  mxx_I * rho_I + static_cast<scalar_t>(4) * myy_I * rho_I 
+    // IRBC-Neumann
+    moments[label_constant<4>()] = -(-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * myy_I * rho_I 
     - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho 
     - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(6) * rho); // mxx
     moments[label_constant<5>()] = (mxy_I * rho_I) / rho; // mxy
-    moments[label_constant<6>()] = -(-static_cast<scalar_t>(6) * rho_I + moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
+    moments[label_constant<6>()] = -(-static_cast<scalar_t>(6) * mxz_I * rho_I + moments[label_constant<1>()] * rho) / (static_cast<scalar_t>(3) * rho); // mxz
     moments[label_constant<7>()] = -(static_cast<scalar_t>(4) * mxx_I * rho_I - static_cast<scalar_t>(4) * myy_I * rho_I 
     - static_cast<scalar_t>(3) * moments[label_constant<1>()] * moments[label_constant<1>()] * rho 
     - static_cast<scalar_t>(3) * moments[label_constant<2>()] * moments[label_constant<2>()] * rho) / (static_cast<scalar_t>(6) * rho); // myy

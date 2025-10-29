@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
     Main kernel for the moment representation with the D3Q19 velocity set
@@ -70,7 +70,7 @@ namespace LBM
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
+     * @param devPtrs Collection of NUMBER_MOMENTS() pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void momentBasedD3Q19(

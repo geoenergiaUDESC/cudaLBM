@@ -53,6 +53,7 @@ SourceFiles
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 
+#include "include/printOnce.cuh"
 #include "normalVector.cuh"
 #include "boundaryValue.cuh"
 #include "boundaryRegion.cuh"
@@ -146,9 +147,11 @@ namespace LBM
                     return;
                 }
 
+                #include "include/backNoSlip.cuh"
+
                 // Outflow (zero-gradient) boundaries
-                //#include "include/vinicius.cuh"
-                #include "include/breno.cuh"
+                #include "include/vinicius.cuh"
+                //#include "include/breno.cuh"
 
                 // Call static boundaries for uncovered cases
                 default:

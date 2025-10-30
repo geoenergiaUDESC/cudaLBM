@@ -103,6 +103,14 @@ namespace LBM
                 std::cout << "};" << std::endl;
                 std::cout << std::endl;
 
+                std::cout << "block:" << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    nx = " << block::nx() << ";" << std::endl;
+                std::cout << "    ny = " << block::ny() << ";" << std::endl;
+                std::cout << "    nz = " << block::nz() << ";" << std::endl;
+                std::cout << "};" << std::endl;
+                std::cout << std::endl;
+
                 // Perform a block dimensions safety check
                 {
                     if (!(block::nx() * nxBlocks() == nx_))

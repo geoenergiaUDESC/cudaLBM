@@ -89,8 +89,19 @@ namespace LBM
         {
             const std::string fileExtension = ".dat";
 
+            const std::string directoryPrefix = "postProcess";
+
+            if (!std::filesystem::is_directory(directoryPrefix))
+            {
+                if (!std::filesystem::create_directory(directoryPrefix))
+                {
+                    std::cout << "Could not create directory: " + directoryPrefix << std::endl;
+                    // throw std::runtime_error("Could not create directory: " + directoryPrefix);
+                }
+            }
+
             // Info on entering the function
-            std::cout << "Writing tecplot unstructured grid to file" << fileName + fileExtension << std::endl;
+            std::cout << "Writing Tecplot unstructured grid to " << directoryPrefix << "/" << fileName << fileExtension << std::endl;
 
             // Check input sizes
             const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
@@ -113,10 +124,10 @@ namespace LBM
                 }
             }
 
-            std::ofstream outFile(fileName + fileExtension);
+            std::ofstream outFile(directoryPrefix + "/" + fileName + fileExtension);
             if (!outFile)
             {
-                std::cerr << "Error opening file: " << fileName + fileExtension << "\n";
+                std::cerr << "Error opening file: " << directoryPrefix + "/" + fileName + fileExtension << "\n";
                 return;
             }
 
@@ -177,7 +188,7 @@ namespace LBM
 
             outFile.close();
 
-            std::cout << "Successfully wrote Tecplot file: " << fileName + fileExtension << "\n";
+            std::cout << "Successfully wrote Tecplot file: " << directoryPrefix + "/" + fileName + fileExtension << "\n";
         }
     }
 }

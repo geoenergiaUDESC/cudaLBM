@@ -62,6 +62,12 @@ int main(const int argc, const char *const argv[])
     const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
     const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
 
+    // If we have supplied the -cutPlane argument, set the flag to true
+    const bool doCutPlane = programCtrl.input().isArgPresent("-cutPlane");
+
+    // Get the mesh for processing
+    const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
+
     // Now get the std::vector of std::strings corresponding to the prefix
     const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
 
@@ -81,21 +87,21 @@ int main(const int argc, const char *const argv[])
 
         for (label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
-            // Get the file name at the present time step
-            const std::string fileName = fileNamePrefix + "_" + std::to_string(fileNameIndices[timeStep]);
-
             const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments = initialiseArrays(
                 fileNamePrefix,
                 programCtrl,
                 fieldNames,
-                timeStep,
-                doCustomField);
+                timeStep);
+
+            const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
+
+            const std::string fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
 
             writer(
-                fileIO::deinterleaveAoS(hostMoments.arr(), mesh),
+                fields,
                 fileName,
-                mesh,
-                hostMoments.varNames());
+                newMesh,
+                fieldNames);
         }
     }
     else

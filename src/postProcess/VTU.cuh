@@ -152,7 +152,18 @@ namespace LBM
         {
             const std::string fileExtension = ".vtu";
 
-            std::cout << "Writing VTU unstructured grid to " << fileName << fileExtension << std::endl;
+            const std::string directoryPrefix = "postProcess";
+
+            if (!std::filesystem::is_directory(directoryPrefix))
+            {
+                if (!std::filesystem::create_directory(directoryPrefix))
+                {
+                    std::cout << "Could not create directory: " + directoryPrefix << std::endl;
+                    // throw std::runtime_error("Could not create directory: " + directoryPrefix);
+                }
+            }
+
+            std::cout << "Writing VTU unstructured grid to " << directoryPrefix << "/" << fileName << fileExtension << std::endl;
 
             const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
             const std::size_t numVars = solutionVars.size();
@@ -176,12 +187,12 @@ namespace LBM
             if (numNodes >= limit32)
             {
                 std::cout << "Info: Mesh is large. Using 64-bit indices for VTU file.\n";
-                VTUWriter<uint64_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+                VTUWriter<uint64_t>(solutionVars, directoryPrefix + "/" + fileName + fileExtension, mesh, solutionVarNames);
             }
             else
             {
                 std::cout << "Info: Mesh is small. Using 32-bit indices for VTU file.\n";
-                VTUWriter<uint32_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+                VTUWriter<uint32_t>(solutionVars, directoryPrefix + "/" + fileName + fileExtension, mesh, solutionVarNames);
             }
         }
     }

@@ -146,7 +146,17 @@ namespace LBM
         {
             const std::string fileExtension = ".vts";
 
-            std::cout << "Writing VTS structured grid to " << fileName << fileExtension << std::endl;
+            const std::string directoryPrefix = "postProcess";
+
+            if (!std::filesystem::is_directory(directoryPrefix))
+            {
+                if (!std::filesystem::create_directory(directoryPrefix))
+                {
+                    std::cout << "Could not create directory: " + directoryPrefix << std::endl;
+                }
+            }
+
+            std::cout << "Writing VTS structured grid to " << directoryPrefix << "/" << fileName << fileExtension << std::endl;
 
             const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
             const std::size_t numVars = solutionVars.size();
@@ -165,7 +175,7 @@ namespace LBM
                 }
             }
 
-            VTSWriter(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+            VTSWriter(solutionVars, directoryPrefix + "/" + fileName + fileExtension, mesh, solutionVarNames);
         }
     }
 }

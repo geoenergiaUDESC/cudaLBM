@@ -97,10 +97,6 @@ int main(const int argc, const char *const argv[])
 
             const std::string fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
 
-            const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
-
-            const std::string fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
-
             writer(
                 fields,
                 fileName,

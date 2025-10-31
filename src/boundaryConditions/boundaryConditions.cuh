@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
     A class applying boundary conditions to the turbulent jet case
@@ -58,6 +58,10 @@ SourceFiles
 #include "boundaryValue.cuh"
 #include "boundaryRegion.cuh"
 #include "boundaryFields.cuh"
+
+#define FACES
+#define CORNERS
+// #define EDGES
 
 namespace LBM
 {
@@ -147,11 +151,14 @@ namespace LBM
                     return;
                 }
 
-                #include "include/backNoSlip.cuh"
+                // Boundary cases are ordered following:
+                // WEST, EAST comes first
+                // SOUTH, NORTH comes next
+                // BACK, FRONT comes last
 
                 // Outflow (zero-gradient) boundaries
-                #include "include/vinicius.cuh"
-                // #include "include/breno.cuh"
+                #include "include/IRBCNeumann.cuh"
+                //#include "include/Neumann.cuh"
 
                 // Call static boundaries for uncovered cases
                 default:

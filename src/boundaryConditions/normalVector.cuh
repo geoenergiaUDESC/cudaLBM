@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
     A class used to compute the normal vector of a boundary lattice
@@ -121,63 +121,17 @@ namespace LBM
         } // 1 << 5
 
         /**
-         * @name Corner Boundary Types
-         * @brief Bitmask values for corner configurations (8 types)
-         * @return Bitmask value for the specified corner configuration
-         **/
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST_BACK() noexcept
-        {
-            return SOUTH() | WEST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST_FRONT() noexcept
-        {
-            return SOUTH() | WEST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST_BACK() noexcept
-        {
-            return SOUTH() | EAST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST_FRONT() noexcept
-        {
-            return SOUTH() | EAST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST_BACK() noexcept
-        {
-            return NORTH() | WEST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST_FRONT() noexcept
-        {
-            return NORTH() | WEST() | FRONT();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST_BACK() noexcept
-        {
-            return NORTH() | EAST() | BACK();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST_FRONT() noexcept
-        {
-            return NORTH() | EAST() | FRONT();
-        }
-
-        /**
          * @name Edge Boundary Types
          * @brief Bitmask values for edge configurations (12 types)
          * @return Bitmask value for the specified edge configuration
          **/
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_WEST() noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_SOUTH() noexcept
         {
-            return SOUTH() | WEST();
+            return WEST() | SOUTH();
         }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t SOUTH_EAST() noexcept
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_NORTH() noexcept
         {
-            return SOUTH() | EAST();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_WEST() noexcept
-        {
-            return NORTH() | WEST();
-        }
-        __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_EAST() noexcept
-        {
-            return NORTH() | EAST();
+            return WEST() | NORTH();
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_BACK() noexcept
         {
@@ -186,6 +140,14 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_FRONT() noexcept
         {
             return WEST() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_SOUTH() noexcept
+        {
+            return EAST() | SOUTH();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_NORTH() noexcept
+        {
+            return EAST() | NORTH();
         }
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_BACK() noexcept
         {
@@ -210,6 +172,44 @@ namespace LBM
         __device__ __host__ [[nodiscard]] static inline consteval uint8_t NORTH_FRONT() noexcept
         {
             return NORTH() | FRONT();
+        }
+
+        /**
+         * @name Corner Boundary Types
+         * @brief Bitmask values for corner configurations (8 types)
+         * @return Bitmask value for the specified corner configuration
+         **/
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_SOUTH_BACK() noexcept
+        {
+            return WEST() | SOUTH() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_SOUTH_FRONT() noexcept
+        {
+            return WEST() | SOUTH() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_NORTH_BACK() noexcept
+        {
+            return WEST() | NORTH() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t WEST_NORTH_FRONT() noexcept
+        {
+            return WEST() | NORTH() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_SOUTH_BACK() noexcept
+        {
+            return EAST() | SOUTH() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_SOUTH_FRONT() noexcept
+        {
+            return EAST() | SOUTH() | FRONT();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_NORTH_BACK() noexcept
+        {
+            return EAST() | NORTH() | BACK();
+        }
+        __device__ __host__ [[nodiscard]] static inline consteval uint8_t EAST_NORTH_FRONT() noexcept
+        {
+            return EAST() | NORTH() | FRONT();
         }
 
         /**
@@ -304,7 +304,7 @@ namespace LBM
          * @return Bitmask representing boundary configuration
          *
          * The bitmask is constructed as follows:
-         * - Bit 0: West boundary (x == 0)
+         * - Bit 0: West boundary (x == 0)r
          * - Bit 1: East boundary (x == device::nx - 1)
          * - Bit 2: South boundary (y == 0)
          * - Bit 3: North boundary (y == device::ny - 1)

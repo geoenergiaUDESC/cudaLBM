@@ -1,6 +1,6 @@
 # For Ubuntu-24.04
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y build-essential
+sudo apt install -y gcc g++ gfortran cmake-curses-gui build-essential bison flex m4
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
 sudo apt update

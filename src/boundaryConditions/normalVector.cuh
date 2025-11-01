@@ -304,7 +304,7 @@ namespace LBM
          * @return Bitmask representing boundary configuration
          *
          * The bitmask is constructed as follows:
-         * - Bit 0: West boundary (x == 0)r
+         * - Bit 0: West boundary (x == 0)
          * - Bit 1: East boundary (x == device::nx - 1)
          * - Bit 2: South boundary (y == 0)
          * - Bit 3: North boundary (y == device::ny - 1)

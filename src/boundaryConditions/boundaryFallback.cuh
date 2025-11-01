@@ -201,7 +201,7 @@ case normalVector::WEST_SOUTH():
 {
     printOnce(normalVector::WEST_SOUTH(), "WEST_SOUTH");
     
-    const scalar_t mxy_I = SOUTH_WEST_mxy_I(pop, inv_rho_I);
+    const scalar_t mxy_I = WEST_SOUTH_mxy_I(pop, inv_rho_I);
 
     const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
@@ -223,7 +223,7 @@ case normalVector::WEST_NORTH():
 {
     printOnce(normalVector::WEST_NORTH(), "WEST_NORTH");
     
-    const scalar_t mxy_I = NORTH_WEST_mxy_I(pop, inv_rho_I);
+    const scalar_t mxy_I = WEST_NORTH_mxy_I(pop, inv_rho_I);
 
     const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
@@ -288,7 +288,7 @@ case normalVector::EAST_SOUTH():
 {
     printOnce(normalVector::EAST_SOUTH(), "EAST_SOUTH");
     
-    const scalar_t mxy_I = SOUTH_EAST_mxy_I(pop, inv_rho_I);
+    const scalar_t mxy_I = EAST_SOUTH_mxy_I(pop, inv_rho_I);
 
     const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
@@ -310,7 +310,7 @@ case normalVector::EAST_NORTH():
 {
     printOnce(normalVector::EAST_NORTH(), "EAST_NORTH");
     
-    const scalar_t mxy_I = NORTH_EAST_mxy_I(pop, inv_rho_I);
+    const scalar_t mxy_I = EAST_NORTH_mxy_I(pop, inv_rho_I);
 
     const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);

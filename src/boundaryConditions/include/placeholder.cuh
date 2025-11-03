@@ -37,14 +37,10 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Temporary Neumann boundary implementation used as a placeholder for development and testing
+    Temporary boundary implementation used as a placeholder for development and testing
 
 SourceFiles
     Neumann.cuh
-
-Notes
-    Copies second-order moments from the interior node, which should instead
-    be computed according to the IRBC formulation (see IRBCNeumann.cuh).
 
     This file is intended to be included directly inside a switch-case block.
     Do NOT use include guards (#ifndef/#define/#endif).

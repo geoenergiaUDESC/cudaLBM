@@ -43,7 +43,7 @@ SourceFiles
     Neumann.cuh
 
 Notes
-    Copies second-order moments from the interior node, which should instead 
+    Copies second-order moments from the interior node, which should instead
     be computed according to the IRBC formulation (see IRBCNeumann.cuh).
 
     This file is intended to be included directly inside a switch-case block.
@@ -51,26 +51,30 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
-case normalVector::WEST():            
-case normalVector::EAST():            
-case normalVector::SOUTH():           
-case normalVector::NORTH():            
-case normalVector::FRONT():            
-case normalVector::WEST_SOUTH():       
-case normalVector::WEST_NORTH():       
-case normalVector::WEST_FRONT():       
-case normalVector::EAST_SOUTH():      
-case normalVector::EAST_NORTH():      
-case normalVector::EAST_FRONT():       
-case normalVector::SOUTH_FRONT():     
-case normalVector::NORTH_FRONT():      
-case normalVector::WEST_SOUTH_FRONT(): 
-case normalVector::WEST_NORTH_FRONT(): 
-case normalVector::EAST_SOUTH_FRONT(): 
-case normalVector::EAST_NORTH_FRONT(): 
+case normalVector::WEST():
+case normalVector::EAST():
+case normalVector::SOUTH():
+case normalVector::NORTH():
+case normalVector::WEST_SOUTH():
+case normalVector::WEST_NORTH():
+case normalVector::EAST_SOUTH():
+case normalVector::EAST_NORTH():
 {
-    const int3 offset = boundaryNormal.interiorOffset();
-    const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
+    already_handled = true;
+    return;
+}
+
+case normalVector::FRONT():
+case normalVector::WEST_FRONT():
+case normalVector::EAST_FRONT():
+case normalVector::SOUTH_FRONT():
+case normalVector::NORTH_FRONT():
+case normalVector::WEST_SOUTH_FRONT():
+case normalVector::WEST_NORTH_FRONT():
+case normalVector::EAST_SOUTH_FRONT():
+case normalVector::EAST_NORTH_FRONT():
+{
+    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     device::constexpr_for<0, NUMBER_MOMENTS()>(
         [&](const auto moment)
@@ -80,6 +84,5 @@ case normalVector::EAST_NORTH_FRONT():
         });
 
     already_handled = true;
-
     return;
 }

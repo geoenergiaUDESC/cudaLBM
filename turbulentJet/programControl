@@ -21,10 +21,10 @@ startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      1;
+nTimeSteps      500001;
 
-saveInterval    1;
+saveInterval    5000;
 
-infoInterval    1;
+infoInterval    5000;
 
 \*---------------------------------------------------------------------------*/

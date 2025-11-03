@@ -404,6 +404,11 @@ namespace LBM
             return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
         }
 
+        __device__ [[nodiscard]] inline label_t idxGlobal(const label_t x, const label_t y, const label_t z) noexcept
+        {
+            return x + device::nx * (y + device::ny * z);
+        }
+
         /**
          * @brief Population index for X-aligned arrays (device version)
          * @tparam pop Population index

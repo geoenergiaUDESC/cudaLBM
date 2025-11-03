@@ -148,7 +148,7 @@ namespace LBM
 
         /* =============================== BRENO: =============================== */
         /* Reconstruct post-stream moments into shared buffer for boundary access */
-        
+
         // Compute post-stream moments from populations
         VelocitySet::calculateMoments(pop, moments);
         {
@@ -157,13 +157,13 @@ namespace LBM
                 [&](const auto moment)
                 {
                     const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                    shared_buffer[ID] = moments[moment]; 
+                    shared_buffer[ID] = moments[moment];
                 });
         }
 
         __syncthreads();
 
-        /* ====================================================================== */  
+        /* ====================================================================== */
 
         // Calculate the moments either at the boundary or interior
         {

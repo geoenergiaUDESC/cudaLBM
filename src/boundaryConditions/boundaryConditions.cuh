@@ -112,68 +112,68 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-                // Round inflow + static when is_jet == 0
-                case normalVector::BACK():
-                {
-                    const label_t x = threadIdx.x + block::nx() * blockIdx.x;
-                    const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+            // Round inflow + static when is_jet == 0
+            case normalVector::BACK():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
-                    const scalar_t R = static_cast<scalar_t>(0.5) * device::L_char;
-                    const scalar_t is_jet = static_cast<scalar_t>(
-                        (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) *
-                        (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) +
+                const scalar_t R = static_cast<scalar_t>(0.5) * device::L_char;
+                const scalar_t is_jet = static_cast<scalar_t>(
+                    (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) *
+                            (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) +
                         (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) *
-                        (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) <
-                        (R * R));
+                            (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) <
+                    (R * R));
 
-                    const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
-                    const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
 
-                    const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
-                    const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
-                    const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                    moments(label_constant<0>()) = rho;
-                    moments(label_constant<1>()) = static_cast<scalar_t>(0);
-                    moments(label_constant<2>()) = static_cast<scalar_t>(0);
-                    moments(label_constant<3>()) = is_jet * device::u_inf;
-                    moments(label_constant<4>()) = static_cast<scalar_t>(0);
-                    moments(label_constant<5>()) = static_cast<scalar_t>(0);
-                    moments(label_constant<6>()) = mxz;
-                    moments(label_constant<7>()) = static_cast<scalar_t>(0);
-                    moments(label_constant<8>()) = myz;
-                    moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
+                moments(label_constant<0>()) = rho;
+                moments(label_constant<1>()) = static_cast<scalar_t>(0);
+                moments(label_constant<2>()) = static_cast<scalar_t>(0);
+                moments(label_constant<3>()) = is_jet * device::u_inf;
+                moments(label_constant<4>()) = static_cast<scalar_t>(0);
+                moments(label_constant<5>()) = static_cast<scalar_t>(0);
+                moments(label_constant<6>()) = mxz;
+                moments(label_constant<7>()) = static_cast<scalar_t>(0);
+                moments(label_constant<8>()) = myz;
+                moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
 
-                    already_handled = true;
+                already_handled = true;
+                return;
+            }
 
-                    return;
-                }
-
-                // Outflow (zero-gradient) boundaries
-                #include "include/IRBCNeumann.cuh"
+// Outflow (zero-gradient) boundaries
+// #include "include/IRBCNeumann.cuh"
+#include "include/Neumann.cuh"
                 // #include "include/experimentalBC.cuh"
 
-                // Call static boundaries for uncovered cases
-                default:
+            // Call static boundaries for uncovered cases
+            default:
+            {
+                if (!already_handled)
                 {
-                    if (!already_handled)
+                    switch (boundaryNormal.nodeType())
                     {
-                        switch (boundaryNormal.nodeType())
-                        {
-                            #include "boundaryFallback.cuh"
-                        }
+#include "boundaryFallback.cuh"
                     }
-
-                    break;
                 }
+
+                break;
+            }
             }
         }
 
     private:
         template <typename T = uint8_t>
         __device__ static inline void printOnce(
-            const T caseId, 
-            const char* name) noexcept
+            const T caseId,
+            const char *name) noexcept
         {
             if (atomicExch(&printedFallback[caseId], true) == false)
             {
@@ -181,8 +181,15 @@ namespace LBM
             }
         }
 
+        __device__ [[nodiscard]] static inline label_t wrap1(
+            label_t i,
+            label_t n) noexcept
+        {
+            return (i == 0) ? (n - 2) : ((i == n - 1) ? 1 : i);
+        }
+
         __device__ [[nodiscard]] static inline constexpr int boundaryTarget(
-            const int nThreads, 
+            const int nThreads,
             const int offset) noexcept
         {
             return (offset > 0) ? 0 : (offset < 0 ? nThreads - 1 : (nThreads >> 1));
@@ -197,12 +204,13 @@ namespace LBM
             return (static_cast<int>(threadIdx.x) == tx) && (static_cast<int>(threadIdx.y) == ty) && (static_cast<int>(threadIdx.z) == tz);
         }
 
-        template <typename T = const char*>
+        template <typename T = const char *>
         __device__ static inline void printThreadMapping(
             const T label,
             const int3 offset) noexcept
         {
-            if (!isBoundaryThread(offset)) return;
+            if (!isBoundaryThread(offset))
+                return;
 
             const int gx = threadIdx.x + block::nx() * blockIdx.x;
             const int gy = threadIdx.y + block::ny() * blockIdx.y;
@@ -212,45 +220,45 @@ namespace LBM
             const int gy_int = gy + offset.y;
             const int gz_int = gz + offset.z;
 
-            const int bx = (offset.x == 0); 
-            const int by = (offset.y == 0); 
-            const int bz = (offset.z == 0); 
+            const int bx = (offset.x == 0);
+            const int by = (offset.y == 0);
+            const int bz = (offset.z == 0);
             const int key = (bx) | (by << 1) | (bz << 2);
 
             switch (key)
             {
-                case 0: 
-                    printf("[%s] global=(%d,%d,%d) -> interior=(%d,%d,%d)\n",
-                        label, gx, gy, gz, gx_int, gy_int, gz_int);
-                    break;
-                case 1: 
-                    printf("[%s] global=(%c,%d,%d) -> interior=(%c,%d,%d)\n",
-                        label, 'x', gy, gz, 'x', gy_int, gz_int);
-                    break;
-                case 2:
-                    printf("[%s] global=(%d,%c,%d) -> interior=(%d,%c,%d)\n",
-                        label, gx, 'y', gz, gx_int, 'y', gz_int);
-                    break;
-                case 3: 
-                    printf("[%s] global=(%c,%c,%d) -> interior=(%c,%c,%d)\n",
-                        label, 'x', 'y', gz, 'x', 'y', gz_int);
-                    break;
-                case 4: 
-                    printf("[%s] global=(%d,%d,%c) -> interior=(%d,%d,%c)\n",
-                        label, gx, gy, 'z', gx_int, gy_int, 'z');
-                    break;
-                case 5:
-                    printf("[%s] global=(%c,%d,%c) -> interior=(%c,%d,%c)\n",
-                        label, 'x', gy, 'z', 'x', gy_int, 'z');
-                    break;
-                case 6: 
-                    printf("[%s] global=(%d,%c,%c) -> interior=(%d,%c,%c)\n",
-                        label, gx, 'y', 'z', gx_int, 'y', 'z');
-                    break;
-                case 7: 
-                    printf("[%s] global=(%c,%c,%c) -> interior=(%c,%c,%c)\n",
-                        label, 'x', 'y', 'z', 'x', 'y', 'z');
-                    break;
+            case 0:
+                printf("[%s] global=(%d,%d,%d) -> interior=(%d,%d,%d)\n",
+                       label, gx, gy, gz, gx_int, gy_int, gz_int);
+                break;
+            case 1:
+                printf("[%s] global=(%c,%d,%d) -> interior=(%c,%d,%d)\n",
+                       label, 'x', gy, gz, 'x', gy_int, gz_int);
+                break;
+            case 2:
+                printf("[%s] global=(%d,%c,%d) -> interior=(%d,%c,%d)\n",
+                       label, gx, 'y', gz, gx_int, 'y', gz_int);
+                break;
+            case 3:
+                printf("[%s] global=(%c,%c,%d) -> interior=(%c,%c,%d)\n",
+                       label, 'x', 'y', gz, 'x', 'y', gz_int);
+                break;
+            case 4:
+                printf("[%s] global=(%d,%d,%c) -> interior=(%d,%d,%c)\n",
+                       label, gx, gy, 'z', gx_int, gy_int, 'z');
+                break;
+            case 5:
+                printf("[%s] global=(%c,%d,%c) -> interior=(%c,%d,%c)\n",
+                       label, 'x', gy, 'z', 'x', gy_int, 'z');
+                break;
+            case 6:
+                printf("[%s] global=(%d,%c,%c) -> interior=(%d,%c,%c)\n",
+                       label, gx, 'y', 'z', gx_int, 'y', 'z');
+                break;
+            case 7:
+                printf("[%s] global=(%c,%c,%c) -> interior=(%c,%c,%c)\n",
+                       label, 'x', 'y', 'z', 'x', 'y', 'z');
+                break;
             }
         }
 

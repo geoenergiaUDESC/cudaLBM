@@ -64,6 +64,7 @@ namespace LBM
 
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
+    using Halo = device::halo<VelocitySet, true, true>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
@@ -137,7 +138,7 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(
+        Halo::load(
             pop,
             fGhost.ptr<0>(),
             fGhost.ptr<1>(),
@@ -146,10 +147,7 @@ namespace LBM
             fGhost.ptr<4>(),
             fGhost.ptr<5>());
 
-        /* =============================== BRENO: =============================== */
-        /* Reconstruct post-stream moments into shared buffer for boundary access */
-        
-        // Compute post-stream moments from populations
+        // Compute post-stream moments
         VelocitySet::calculateMoments(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -157,14 +155,11 @@ namespace LBM
                 [&](const auto moment)
                 {
                     const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-                    shared_buffer[ID] = moments[moment]; 
+                    shared_buffer[ID] = moments[moment];
                 });
         }
 
         __syncthreads();
-
-        /* ====================================================================== */  
-
 
         // Calculate the moments either at the boundary or interior
         {
@@ -197,7 +192,7 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        device::halo<VelocitySet>::save(
+        Halo::save(
             pop,
             gGhost.ptr<0>(),
             gGhost.ptr<1>(),

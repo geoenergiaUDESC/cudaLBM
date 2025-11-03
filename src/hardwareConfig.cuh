@@ -119,7 +119,7 @@ namespace LBM
         }
 
         /**
-         * @brief Total size of the shared memory 
+         * @brief Total size of the shared memory
          **/
         template <class VelocitySet, const label_t nVars>
         __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize(const label_t size = 1) noexcept

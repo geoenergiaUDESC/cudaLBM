@@ -78,16 +78,16 @@ int main(const int argc, const char *const argv[])
     const std::string conversion = programCtrl.getArgument("-fileType");
 
     // Get the writer function
-    const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
+    const std::unordered_map<std::string, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
     // Check if the writer is valid
-    if (it != writers.end())
+    if (it != postProcess::writers.end())
     {
-        const WriterFunction writer = it->second;
+        const postProcess::writerFunction writer = it->second;
 
         for (label_t timeStep = fileIO::getStartIndex(fileNamePrefix, programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments = initialiseArrays(
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments = initialiseArrays(
                 fileNamePrefix,
                 programCtrl,
                 fieldNames,
@@ -107,7 +107,7 @@ int main(const int argc, const char *const argv[])
     else
     {
         // Throw
-        throw std::runtime_error(invalidWriter(writers, conversion));
+        throw std::runtime_error(invalidWriter(postProcess::writers, conversion));
     }
 
     return 0;

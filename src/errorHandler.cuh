@@ -144,18 +144,26 @@ namespace LBM
         const std::string &errorString,
         const std::source_location &loc = std::source_location::current()) noexcept
     {
-        std::cerr
-            << "Run time error error at "
-            << loc.file_name()
-            << "("
-            << loc.line()
-            << "):"
-            << loc.function_name()
-            << ": ["
-            << err
-            << "] "
-            << errorString
-            << std::endl;
+        std::cerr << "runTimeError:" << std::endl;
+        std::cerr << "{" << std::endl;
+        std::cerr << "    fileName: " << loc.file_name() << std::endl;
+        std::cerr << "    line: " << loc.line() << std::endl;
+        std::cerr << "    functionName: " << loc.function_name() << std::endl;
+        std::cerr << "    errorCode: " << err << std::endl;
+        std::cerr << "    errorMessage: " << errorString << std::endl;
+        std::cerr << "};" << std::endl;
+        // std::cerr
+        //     << "Run time error error at "
+        //     << loc.file_name()
+        //     << "("
+        //     << loc.line()
+        //     << "):"
+        //     << loc.function_name()
+        //     << ": ["
+        //     << err
+        //     << "] "
+        //     << errorString
+        //     << std::endl;
         std::exit(err);
     }
 

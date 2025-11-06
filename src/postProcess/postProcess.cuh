@@ -52,11 +52,14 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+#include "../fileSystem.cuh"
 
 namespace LBM
 {
     namespace postProcess
     {
+        __host__ [[nodiscard]] inline consteval const char *directoryPrefix() { return "postProcess"; }
+
         /**
          * @brief Calculates physical coordinates of lattice points
          * @tparam T Coordinate data type (typically scalar_t or double)
@@ -227,5 +230,6 @@ namespace LBM
 #include "Tecplot.cuh"
 #include "VTU.cuh"
 #include "VTS.cuh"
+#include "writerFunction.cuh"
 
 #endif

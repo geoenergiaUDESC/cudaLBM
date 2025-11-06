@@ -64,29 +64,13 @@ SourceFiles
 
 namespace LBM
 {
-    using VelocitySet = D3Q19;
-
-    using WriterFunction = void (*)(
-        const std::vector<std::vector<scalar_t>> &,
-        const std::string &,
-        const host::latticeMesh &,
-        const std::vector<std::string> &);
-
-    /**
-     * @brief Unordered map of the writer types to the appropriate functions
-     **/
-    const std::unordered_map<std::string, WriterFunction> writers = {
-        {"vtu", postProcess::writeVTU},
-        {"vts", postProcess::writeVTS},
-        {"tecplot", postProcess::writeTecplot}};
-
     /**
      * @brief Creates an error message for invalid writer types
      * @param[in] writerNames Unordered map of the writer types to the appropriate functions
      * @param[in] conversion The invalid conversion type provided by the user
      * @return A formatted error message listing the supported formats
      **/
-    __host__ [[nodiscard]] const std::string invalidWriter(const std::unordered_map<std::string, WriterFunction> &writerNames, const std::string &conversion) noexcept
+    __host__ [[nodiscard]] const std::string invalidWriter(const std::unordered_map<std::string, postProcess::writerFunction> &writerNames, const std::string &conversion) noexcept
     {
         std::vector<std::string> supportedFormats;
         for (const auto &pair : writerNames)
@@ -118,7 +102,7 @@ namespace LBM
      * @return A reference to a vector of field names
      * @throws std::runtime_error if an invalid field name is provided
      **/
-    __host__ [[nodiscard]] host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> initialiseArrays(
+    __host__ [[nodiscard]] host::arrayCollection<scalar_t, ctorType::MUST_READ> initialiseArrays(
         const std::string &fileNamePrefix,
         const programControl &programCtrl,
         const std::vector<std::string> &fieldNames,
@@ -127,12 +111,12 @@ namespace LBM
         // Construct from a custom field name
         if (programCtrl.input().isArgPresent("-fieldName"))
         {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(fileNamePrefix, fieldNames, timeStep);
+            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(fileNamePrefix, fieldNames, timeStep);
         }
         // Otherwise construct from default field names
         else
         {
-            return host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet>(programCtrl, fieldNames, timeStep);
+            return host::arrayCollection<scalar_t, ctorType::MUST_READ>(programCtrl, fieldNames, timeStep);
         }
     }
 
@@ -369,7 +353,7 @@ namespace LBM
     }
 
     __host__ [[nodiscard]] const std::vector<std::vector<scalar_t>> processFields(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> &hostMoments,
+        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &hostMoments,
         const host::latticeMesh &mesh,
         const programControl &programCtrl,
         const bool doCutPlane)

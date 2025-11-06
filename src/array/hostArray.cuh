@@ -243,9 +243,8 @@ namespace LBM
          * @brief Templated container for multiple field arrays with flexible initialization
          * @tparam T Data type of array elements
          * @tparam cType Constructor type specification
-         * @tparam VelocitySet Velocity set configuration for LBM simulation
          **/
-        template <typename T, const ctorType::type cType, class VelocitySet>
+        template <typename T, const ctorType::type cType>
         class arrayCollection
         {
         public:
@@ -283,7 +282,12 @@ namespace LBM
                 : arr_(initialiseVector(programCtrl)),
                   varNames_(varNames){};
 
-            // Constructs from a file prefix
+            /**
+             * @brief Construct from a file prefix
+             * @param[in] fileNamePrefix The prefix of the file
+             * @param[in] varNames Names of variables to include
+             * @param[in] timeIndex Specific time index to read from
+             **/
             __host__ [[nodiscard]] arrayCollection(
                 const std::string &fileNamePrefix,
                 const std::vector<std::string> &varNames,
@@ -343,8 +347,6 @@ namespace LBM
                 }
 
                 const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
-                // std::cout << "Reading from file " << fileName << std::endl;
-                // std::cout << std::endl;
                 return fileIO::readFieldFile<T>(fileName);
             }
 
@@ -358,8 +360,6 @@ namespace LBM
                     throw std::runtime_error("Did not find indexed case files");
                 }
                 const std::string fileName = fileNamePrefix + "_" + std::to_string(fileIO::timeIndices(fileNamePrefix)[timeIndex]) + ".LBMBin";
-                // std::cout << "Reading from file " << fileName << std::endl;
-                // std::cout << std::endl;
                 return fileIO::readFieldFile<T>(fileName);
             }
 
@@ -378,8 +378,6 @@ namespace LBM
                 if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                 {
                     const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::timeIndices(programCtrl.caseName())[timeIndex]) + ".LBMBin";
-                    // std::cout << "Reading from file " << fileName << std::endl;
-                    // std::cout << std::endl;
                     return fileIO::readFieldFile<T>(fileName);
                 }
                 else

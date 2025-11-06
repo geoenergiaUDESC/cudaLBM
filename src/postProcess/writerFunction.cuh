@@ -34,58 +34,44 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of header files necessary for compilation
+    Top-level header file for the post processing routines
 
 Namespace
-    LBM
+    LBM::postProcess
 
 SourceFiles
-    LBMIncludes.cuh
+    writeFunction.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_INCLUDES_CUH
-#define __MBLBM_INCLUDES_CUH
+#ifndef __MBLBM_WRITERFUNCTION_CUH
+#define __MBLBM_WRITERFUNCTION_CUH
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bit>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <memory>
-#include <nvrtc.h>
-// #include <mpi.h>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include "../LBMIncludes.cuh"
+#include "../LBMTypedefs.cuh"
+#include "../fileSystem.cuh"
+
+namespace LBM
+{
+    namespace postProcess
+    {
+        using writerFunction = void (*)(
+            const std::vector<std::vector<scalar_t>> &,
+            const std::string &,
+            const host::latticeMesh &,
+            const std::vector<std::string> &);
+
+        /**
+         * @brief Unordered map of the writer types to the appropriate functions
+         **/
+        const std::unordered_map<std::string, writerFunction> writers = {
+            {"vtu", VTU::write},
+            {"vts", VTS::write},
+            {"tecplot", Tecplot::write}};
+    }
+}
 
 #endif

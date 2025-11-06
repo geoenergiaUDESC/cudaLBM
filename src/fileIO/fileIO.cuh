@@ -52,6 +52,7 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+#include "../fileSystem.cuh"
 #include "../memory/memory.cuh"
 
 namespace LBM

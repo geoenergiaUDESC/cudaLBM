@@ -99,6 +99,16 @@ namespace LBM
             const std::size_t nPoints = static_cast<std::size_t>(mesh.nx()) * static_cast<std::size_t>(mesh.ny()) * static_cast<std::size_t>(mesh.nz());
             const std::size_t expectedSize = nPoints * nVars;
 
+            // Check if there is enough disk space to store the file
+            {
+                const std::size_t expectedDiskUsage = expectedSize * sizeof(T);
+                if (!fileSystem::hasEnoughSpace(expectedDiskUsage))
+                {
+                    const label_t availableSpace = fileSystem::availableDiskSpace();
+                    throw std::runtime_error("Insufficient disk space to write file " + fileName + "\nRequired: " + std::to_string(expectedDiskUsage) + "\nAvailable: " + std::to_string(availableSpace));
+                }
+            }
+
             if (fields.size() != expectedSize)
             {
                 throw std::invalid_argument("Data vector size mismatch");

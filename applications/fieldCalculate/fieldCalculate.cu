@@ -73,7 +73,7 @@ int main(const int argc, const char *const argv[])
         for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
             // We should check for field names here. Currently we are just doing the default fields
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                 programCtrl,
                 {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
                 timeStep);
@@ -93,7 +93,7 @@ int main(const int argc, const char *const argv[])
         for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
         {
             // We should check for field names here. Currently we are just doing the default fields
-            const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+            const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                 programCtrl,
                 {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
                 timeStep);
@@ -111,19 +111,19 @@ int main(const int argc, const char *const argv[])
         const std::string conversion = programCtrl.getArgument("-fileType");
 
         // Get the writer function
-        const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
+        const std::unordered_map<std::string, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
         const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
-        if (it != writers.end())
+        if (it != postProcess::writers.end())
         {
             for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
                 const std::string fileName = "vorticity_" + std::to_string(fileNameIndices[timeStep]);
 
-                const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+                const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
                     {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
                     timeStep);
@@ -133,7 +133,7 @@ int main(const int argc, const char *const argv[])
                 const std::vector<std::vector<scalar_t>> omega = derivative::curl<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
                 const std::vector<scalar_t> magomega = mag(omega[0], omega[1], omega[2]);
 
-                const WriterFunction writer = it->second;
+                const postProcess::writerFunction writer = it->second;
 
                 writer({omega[0], omega[1], omega[2], magomega}, fileName, mesh, {"omega_x", "omega_y", "omega_z", "mag[omega]"});
             }
@@ -149,19 +149,19 @@ int main(const int argc, const char *const argv[])
         const std::string conversion = programCtrl.getArgument("-fileType");
 
         // Get the writer function
-        const std::unordered_map<std::string, WriterFunction>::const_iterator it = writers.find(conversion);
+        const std::unordered_map<std::string, postProcess::writerFunction>::const_iterator it = postProcess::writers.find(conversion);
 
         // Get the time indices
         const std::vector<label_t> fileNameIndices = fileIO::timeIndices(programCtrl.caseName());
 
-        if (it != writers.end())
+        if (it != postProcess::writers.end())
         {
             for (label_t timeStep = fileIO::getStartIndex(programCtrl.caseName(), programCtrl); timeStep < fileNameIndices.size(); timeStep++)
             {
                 // Get the file name at the present time step
                 const std::string fileName = "div[U]_" + std::to_string(fileNameIndices[timeStep]);
 
-                const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> hostMoments(
+                const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
                     {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
                     timeStep);
@@ -170,7 +170,7 @@ int main(const int argc, const char *const argv[])
 
                 const std::vector<scalar_t> divu = derivative::div<SchemeOrder()>(fields[index::u()], fields[index::v()], fields[index::w()], mesh);
 
-                const WriterFunction writer = it->second;
+                const postProcess::writerFunction writer = it->second;
 
                 writer({divu}, fileName, mesh, {"div[U]"});
             }

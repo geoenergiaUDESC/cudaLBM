@@ -64,8 +64,6 @@ SourceFiles
 
 namespace LBM
 {
-    using VelocitySet = D3Q19;
-
     __host__ [[nodiscard]] inline consteval label_t SchemeOrder() { return 8; }
 
     /**
@@ -92,7 +90,7 @@ namespace LBM
      * @param[in] timeStep The current time step for logging purposes
      **/
     __host__ void containsNaN(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> &variables,
+        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &variables,
         const host::latticeMesh &mesh,
         const label_t timeStep) noexcept
     {
@@ -151,7 +149,7 @@ namespace LBM
      * @param[in] timeStep The current time step for logging purposes
      **/
     __host__ void spatialMean(
-        const host::arrayCollection<scalar_t, ctorType::MUST_READ, velocitySet> &variables,
+        const host::arrayCollection<scalar_t, ctorType::MUST_READ> &variables,
         const host::latticeMesh &mesh,
         const label_t timeStep) noexcept
     {

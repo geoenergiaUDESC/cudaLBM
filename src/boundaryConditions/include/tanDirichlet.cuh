@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Vinicius Czarnobay, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,8 +37,7 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Lateral boundaries are assigned a z-oriented prescribed velocity
-    equal to 1% of the maximum axial velocity
+    Temporary boundary implementation used as a placeholder for development and testing
 
 SourceFiles
     tanDirichlet.cuh
@@ -49,6 +48,7 @@ Notes
 
 \*---------------------------------------------------------------------------*/
 
+// Faces
 case normalVector::WEST():
 {
     const scalar_t rho = rho0<scalar_t>();
@@ -57,7 +57,7 @@ case normalVector::WEST():
     const scalar_t uy = static_cast<scalar_t>(0);
     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
 
-    moments(label_constant<0>()) = rho;     // rho
+    moments(label_constant<0>()) = rho;
     moments(label_constant<1>()) = ux;      // ux
     moments(label_constant<2>()) = uy;      // uy
     moments(label_constant<3>()) = uz;      // uz
@@ -78,7 +78,7 @@ case normalVector::EAST():
     const scalar_t uy = static_cast<scalar_t>(0);
     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
 
-    moments(label_constant<0>()) = rho;     // rho
+    moments(label_constant<0>()) = rho;
     moments(label_constant<1>()) = ux;      // ux
     moments(label_constant<2>()) = uy;      // uy
     moments(label_constant<3>()) = uz;      // uz
@@ -99,7 +99,7 @@ case normalVector::SOUTH():
     const scalar_t uy = static_cast<scalar_t>(0);
     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
 
-    moments(label_constant<0>()) = rho;     // rho
+    moments(label_constant<0>()) = rho;
     moments(label_constant<1>()) = ux;      // ux
     moments(label_constant<2>()) = uy;      // uy
     moments(label_constant<3>()) = uz;      // uz
@@ -120,7 +120,7 @@ case normalVector::NORTH():
     const scalar_t uy = static_cast<scalar_t>(0);
     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
 
-    moments(label_constant<0>()) = rho;     // rho
+    moments(label_constant<0>()) = rho;
     moments(label_constant<1>()) = ux;      // ux
     moments(label_constant<2>()) = uy;      // uy
     moments(label_constant<3>()) = uz;      // uz
@@ -133,87 +133,93 @@ case normalVector::NORTH():
 
     return;
 }
+
+// Edges
 // case normalVector::WEST_SOUTH():
 // {
-//     const scalar_t rho = rho0<scalar_t>();
+//     printOnce(normalVector::WEST_SOUTH(), "WEST_SOUTH");
 
-//     const scalar_t ux = static_cast<scalar_t>(0);
-//     const scalar_t uy = static_cast<scalar_t>(0);
-//     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
+//     const scalar_t mxy_I = WEST_SOUTH_mxy_I(pop, inv_rho_I);
 
-//     moments(label_constant<0>()) = rho;     // rho
-//     moments(label_constant<1>()) = ux;      // ux
-//     moments(label_constant<2>()) = uy;      // uy
-//     moments(label_constant<3>()) = uz;      // uz
-//     moments(label_constant<4>()) = ux * ux; // mxx
-//     moments(label_constant<5>()) = ux * uy; // mxy
-//     moments(label_constant<6>()) = ux * uz; // mxz
-//     moments(label_constant<7>()) = uy * uy; // myy
-//     moments(label_constant<8>()) = uy * uz; // myz
-//     moments(label_constant<9>()) = uz * uz; // mzz
+//     const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+//     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
+
+//     moments(label_constant<0>()) = rho;
+//     moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
+//     moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
+//     moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
+//     moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
+//     moments(label_constant<5>()) = mxy;                      // mxy
+//     moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
+//     moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
+//     moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
+//     moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
 
 //     return;
 // }
 // case normalVector::WEST_NORTH():
 // {
-//     const scalar_t rho = rho0<scalar_t>();
+//     printOnce(normalVector::WEST_NORTH(), "WEST_NORTH");
 
-//     const scalar_t ux = static_cast<scalar_t>(0);
-//     const scalar_t uy = static_cast<scalar_t>(0);
-//     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
+//     const scalar_t mxy_I = WEST_NORTH_mxy_I(pop, inv_rho_I);
 
-//     moments(label_constant<0>()) = rho;     // rho
-//     moments(label_constant<1>()) = ux;      // ux
-//     moments(label_constant<2>()) = uy;      // uy
-//     moments(label_constant<3>()) = uz;      // uz
-//     moments(label_constant<4>()) = ux * ux; // mxx
-//     moments(label_constant<5>()) = ux * uy; // mxy
-//     moments(label_constant<6>()) = ux * uz; // mxz
-//     moments(label_constant<7>()) = uy * uy; // myy
-//     moments(label_constant<8>()) = uy * uz; // myz
-//     moments(label_constant<9>()) = uz * uz; // mzz
+//     const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+//     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
 
+//     moments(label_constant<0>()) = rho;
+//     moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
+//     moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
+//     moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
+//     moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
+//     moments(label_constant<5>()) = mxy;                      // mxy
+//     moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
+//     moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
+//     moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
+//     moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
 //     return;
 // }
+
+// // Corners
 // case normalVector::EAST_SOUTH():
 // {
-//     const scalar_t rho = rho0<scalar_t>();
+//     printOnce(normalVector::EAST_SOUTH(), "EAST_SOUTH");
 
-//     const scalar_t ux = static_cast<scalar_t>(0);
-//     const scalar_t uy = static_cast<scalar_t>(0);
-//     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
+//     const scalar_t mxy_I = EAST_SOUTH_mxy_I(pop, inv_rho_I);
 
-//     moments(label_constant<0>()) = rho;     // rho
-//     moments(label_constant<1>()) = ux;      // ux
-//     moments(label_constant<2>()) = uy;      // uy
-//     moments(label_constant<3>()) = uz;      // uz
-//     moments(label_constant<4>()) = ux * ux; // mxx
-//     moments(label_constant<5>()) = ux * uy; // mxy
-//     moments(label_constant<6>()) = ux * uz; // mxz
-//     moments(label_constant<7>()) = uy * uy; // myy
-//     moments(label_constant<8>()) = uy * uz; // myz
-//     moments(label_constant<9>()) = uz * uz; // mzz
+//     const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+//     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I + rho) / (static_cast<scalar_t>(9) * rho);
+
+//     moments(label_constant<0>()) = rho;
+//     moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
+//     moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
+//     moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
+//     moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
+//     moments(label_constant<5>()) = mxy;                      // mxy
+//     moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
+//     moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
+//     moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
+//     moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
 
 //     return;
 // }
 // case normalVector::EAST_NORTH():
 // {
-//     const scalar_t rho = rho0<scalar_t>();
+//     printOnce(normalVector::EAST_NORTH(), "EAST_NORTH");
 
-//     const scalar_t ux = static_cast<scalar_t>(0);
-//     const scalar_t uy = static_cast<scalar_t>(0);
-//     const scalar_t uz = static_cast<scalar_t>(0.01) * device::u_inf;
+//     const scalar_t mxy_I = EAST_NORTH_mxy_I(pop, inv_rho_I);
 
-//     moments(label_constant<0>()) = rho;     // rho
-//     moments(label_constant<1>()) = ux;      // ux
-//     moments(label_constant<2>()) = uy;      // uy
-//     moments(label_constant<3>()) = uz;      // uz
-//     moments(label_constant<4>()) = ux * ux; // mxx
-//     moments(label_constant<5>()) = ux * uy; // mxy
-//     moments(label_constant<6>()) = ux * uz; // mxz
-//     moments(label_constant<7>()) = uy * uy; // myy
-//     moments(label_constant<8>()) = uy * uz; // myz
-//     moments(label_constant<9>()) = uz * uz; // mzz
+//     const scalar_t rho = static_cast<scalar_t>(36) * (rho_I - mxy_I * rho_I + mxy_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);
+//     const scalar_t mxy = (static_cast<scalar_t>(36) * mxy_I * rho_I - rho) / (static_cast<scalar_t>(9) * rho);
 
+//     moments(label_constant<0>()) = rho;
+//     moments(label_constant<1>()) = static_cast<scalar_t>(0); // ux
+//     moments(label_constant<2>()) = static_cast<scalar_t>(0); // uy
+//     moments(label_constant<3>()) = static_cast<scalar_t>(0); // uz
+//     moments(label_constant<4>()) = static_cast<scalar_t>(0); // mxx
+//     moments(label_constant<5>()) = mxy;                      // mxy
+//     moments(label_constant<6>()) = static_cast<scalar_t>(0); // mxz
+//     moments(label_constant<7>()) = static_cast<scalar_t>(0); // myy
+//     moments(label_constant<8>()) = static_cast<scalar_t>(0); // myz
+//     moments(label_constant<9>()) = static_cast<scalar_t>(0); // mzz
 //     return;
 // }

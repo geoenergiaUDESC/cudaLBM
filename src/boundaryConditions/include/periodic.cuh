@@ -37,10 +37,11 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Temporary boundary implementation used as a placeholder for development and testing
+    Boundary returns for (x,y). Periodicity is implemented at halo level,
+    see /src/blockHalo/halo.cuh for more informations
 
 SourceFiles
-    placeholder.cuh
+    periodic.cuh
 
     This file is intended to be included directly inside a switch-case block.
     Do NOT use include guards (#ifndef/#define/#endif).
@@ -56,29 +57,6 @@ case normalVector::WEST_NORTH():
 case normalVector::EAST_SOUTH():
 case normalVector::EAST_NORTH():
 {
-    already_handled = true;
-    return;
-}
-
-case normalVector::FRONT():
-case normalVector::WEST_FRONT():
-case normalVector::EAST_FRONT():
-case normalVector::SOUTH_FRONT():
-case normalVector::NORTH_FRONT():
-case normalVector::WEST_SOUTH_FRONT():
-case normalVector::WEST_NORTH_FRONT():
-case normalVector::EAST_SOUTH_FRONT():
-case normalVector::EAST_NORTH_FRONT():
-{
-    const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
-
-    device::constexpr_for<0, NUMBER_MOMENTS()>(
-        [&](const auto moment)
-        {
-            const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
-            moments[moment] = shared_buffer[ID];
-        });
-
     already_handled = true;
     return;
 }

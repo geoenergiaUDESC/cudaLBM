@@ -268,7 +268,7 @@ namespace LBM
             return bitmask_ & 0x3F;
         }
 
-        /** 
+        /**
          * @brief Signed offset to the domain's interior neighbor
          * @return Integer vector {dx, dy, dz} pointing inward
          **/
@@ -278,7 +278,7 @@ namespace LBM
             const int dy = static_cast<int>((bitmask_ & SOUTH()) != 0) - static_cast<int>((bitmask_ & NORTH()) != 0);
             const int dz = static_cast<int>((bitmask_ & BACK()) != 0) - static_cast<int>((bitmask_ & FRONT()) != 0);
 
-            return int3{dx, dy, dz}; 
+            return int3{dx, dy, dz};
         }
 
     private:

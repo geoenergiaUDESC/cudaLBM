@@ -118,18 +118,14 @@ namespace LBM
                 const label_t x = threadIdx.x + block::nx() * blockIdx.x;
                 const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
-                const scalar_t R = static_cast<scalar_t>(0.5) * device::L_char;
-                const scalar_t is_jet = static_cast<scalar_t>(
-                    (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) *
-                            (static_cast<scalar_t>(x) - static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2)) +
-                        (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) *
-                            (static_cast<scalar_t>(y) - static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2)) <
-                    (R * R));
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) +
+                                                                  (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) <
+                                                              r2());
 
                 const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
                 const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
 
-                const scalar_t rho = static_cast<scalar_t>(6) * rho_I / static_cast<scalar_t>(5);
+                const scalar_t rho = rho0<scalar_t>();
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
@@ -148,21 +144,13 @@ namespace LBM
                 return;
             }
 
-            // Periodic boundaries
-            case normalVector::WEST():
-            case normalVector::EAST():
-            case normalVector::SOUTH():
-            case normalVector::NORTH():
-            case normalVector::WEST_SOUTH():
-            case normalVector::WEST_NORTH():
-            case normalVector::EAST_SOUTH():
-            case normalVector::EAST_NORTH():
-            {
-                already_handled = true;
-                return;
-            }
+// Periodic
+// #include "include/periodic.cuh"
 
-// Outflow (zero-gradient) boundaries at front face
+// Dirichlet with prescribed z velocity tangential to the plane
+#include "include/tanDirichlet.cuh"
+
+// Outflow (zero-gradient) at front face
 #include "include/IRBCNeumann.cuh"
 
             // Call static boundaries for uncovered cases
@@ -182,6 +170,26 @@ namespace LBM
         }
 
     private:
+        __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
+        {
+            return static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2);
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
+        {
+            return static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2);
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t radius() noexcept
+        {
+            return static_cast<scalar_t>(0.5) * device::L_char;
+        }
+
+        __device__ [[nodiscard]] static inline scalar_t r2() noexcept
+        {
+            return static_cast<float>(radius()) * static_cast<float>(radius());
+        }
+
         template <typename T = uint8_t>
         __device__ static inline void printOnce(
             const T caseId,
@@ -191,13 +199,6 @@ namespace LBM
             {
                 printf("[fallback] %s applied\n", name);
             }
-        }
-
-        __device__ [[nodiscard]] static inline label_t wrap1(
-            label_t i,
-            label_t n) noexcept
-        {
-            return (i == 0) ? (n - 2) : ((i == n - 1) ? 1 : i);
         }
 
         __device__ [[nodiscard]] static inline constexpr int boundaryTarget(

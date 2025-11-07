@@ -64,7 +64,7 @@ namespace LBM
 
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
-    using Halo = device::halo<VelocitySet, true, true>;
+    using Halo = device::halo<VelocitySet, false, false>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())

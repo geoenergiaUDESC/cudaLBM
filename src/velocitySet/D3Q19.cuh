@@ -430,8 +430,8 @@ namespace LBM
         /*
         __device__ static inline void g_reconstruct(thread::array<scalar_t, 19> &pop, const thread:array<scalar_t, NUMBER_MOMENTS() &moments) noexcept
         {
-            
-        } 
+
+        }
         */
 
         /**
@@ -575,7 +575,7 @@ namespace LBM
             moments(label_constant<0>()) = pop(label_constant<0>()) + pop(label_constant<1>()) + pop(label_constant<2>()) + pop(label_constant<3>()) + pop(label_constant<4>()) + pop(label_constant<5>()) + pop(label_constant<6>()) + pop(label_constant<7>()) + pop(label_constant<8>()) + pop(label_constant<9>()) + pop(label_constant<10>()) + pop(label_constant<11>()) + pop(label_constant<12>()) + pop(label_constant<13>()) + pop(label_constant<14>()) + pop(label_constant<15>()) + pop(label_constant<16>()) + pop(label_constant<17>()) + pop(label_constant<18>());
             const scalar_t invRho = static_cast<scalar_t>(1) / moments(label_constant<0>());
 
-            // Equation 4 
+            // Equation 4
             moments(label_constant<1>()) = ((pop(label_constant<1>()) - pop(label_constant<2>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<13>()) - pop(label_constant<14>()) + pop(label_constant<15>()) - pop(label_constant<16>()))) * invRho;
             moments(label_constant<2>()) = ((pop(label_constant<3>()) - pop(label_constant<4>()) + pop(label_constant<7>()) - pop(label_constant<8>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<14>()) - pop(label_constant<13>()) + pop(label_constant<17>()) - pop(label_constant<18>()))) * invRho;
             moments(label_constant<3>()) = ((pop(label_constant<5>()) - pop(label_constant<6>()) + pop(label_constant<9>()) - pop(label_constant<10>()) + pop(label_constant<11>()) - pop(label_constant<12>()) + pop(label_constant<16>()) - pop(label_constant<15>()) + pop(label_constant<18>()) - pop(label_constant<17>()))) * invRho;

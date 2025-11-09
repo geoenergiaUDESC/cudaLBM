@@ -91,6 +91,8 @@ functionObjectList
 };
 ```
 
+will enable the calculation of the strain rate and kinetic energy, and additionally their time-averaged values.
+
 ## 📦 Post-Processing
 
 The project includes two key executables for post-processing: `fieldConvert` and `fieldCalculate`.

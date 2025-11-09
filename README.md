@@ -6,7 +6,7 @@
 
 * **Lattice Boltzmann Method:** Implements the LBM for fluid dynamics simulations.
 * **D3Q19 and D3Q27 Models:** Implements both **D3Q19** and **D3Q27** velocity sets for complex three-dimensional simulations.
-* **High-Order Collision Models:** Will implement high-order collision models for improved accuracy.
+* **High-Order Regularization Models:** Will implement high-order regularization models for improved accuracy.
 * **Example Cases:** Includes a lid-driven cavity case to demonstrate the solver's capabilities, with more cases to be added in the future.
 
 ## ⚡ Performance

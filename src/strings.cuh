@@ -89,7 +89,7 @@ namespace LBM
 
             for (std::size_t i = 0; i < S_new.size(); i++)
             {
-                S_new[i] = S_new[i] + s;
+                S_new[i] = S[i] + s;
             }
 
             return S_new;
@@ -418,7 +418,7 @@ namespace LBM
          * @return A std::vector of std::string_view objects contained within the caseInfo file
          * @note This function will cause the program to exit if caseInfo is not found in the launch directory
          **/
-        __host__ [[nodiscard]] const std::vector<std::string> readFile(const std::string_view &fileName)
+        __host__ [[nodiscard]] const std::vector<std::string> readFile(const std::string &fileName)
         {
             // Does the file even exist?
             if (!std::filesystem::exists(fileName))
@@ -558,13 +558,13 @@ namespace LBM
             return result;
         }
 
-        __host__ [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string_view &name)
+        __host__ [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string &name)
         {
             // Loop over S
             for (label_t i = 0; i < S.size(); i++)
             {
                 // Check if S[i] contains a substring of name
-                if (S[i].find(name) != std::string_view::npos)
+                if (S[i].find(name) != std::string::npos)
                 {
                     // Split by space and remove whitespace
                     const std::vector<std::string> s = split<" "[0]>(S[i], true);
@@ -594,7 +594,7 @@ namespace LBM
          * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
          **/
         template <typename T>
-        __host__ [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string_view &name)
+        __host__ [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string &name)
         {
             // First get the parameter line string
             const std::string toReturn = extractParameterLine(S, name);
@@ -670,7 +670,7 @@ namespace LBM
          * @param name The argument to be searched for
          * @return A std::string_view of the value argument corresponding to name
          **/
-        __host__ [[nodiscard]] std::string_view parseNameValuePair(const std::vector<std::string> &args, const std::string_view &name)
+        __host__ [[nodiscard]] const std::string parseNameValuePair(const std::vector<std::string> &args, const std::string &name)
         {
             // Loop over the input arguments and search for name
             for (label_t i = 0; i < args.size(); i++)
@@ -703,7 +703,7 @@ namespace LBM
          * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string_view &name)
+        __host__ [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string &name)
         {
             const std::vector<std::string> s_v = string::split<","[0]>(parseNameValuePair(args, name), true);
 

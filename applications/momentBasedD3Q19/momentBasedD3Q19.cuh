@@ -64,14 +64,16 @@ namespace LBM
 
     using VelocitySet = D3Q19;
     using Collision = secondOrder;
-    using Halo = device::halo<VelocitySet, false, false>;
+
+    // Templated booleans: periodicity in x and y respectively
+    using Halo = device::halo<VelocitySet, true, true>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of NUMBER_MOMENTS() pointers to device arrays on the GPU
+     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void momentBasedD3Q19(

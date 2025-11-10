@@ -118,9 +118,7 @@ namespace LBM
                 const label_t x = threadIdx.x + block::nx() * blockIdx.x;
                 const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
-                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) +
-                                                                  (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) <
-                                                              r2());
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
 
                 const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
                 const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
@@ -129,26 +127,26 @@ namespace LBM
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments(label_constant<0>()) = rho;
-                moments(label_constant<1>()) = static_cast<scalar_t>(0);
-                moments(label_constant<2>()) = static_cast<scalar_t>(0);
-                moments(label_constant<3>()) = is_jet * device::u_inf;
-                moments(label_constant<4>()) = static_cast<scalar_t>(0);
-                moments(label_constant<5>()) = static_cast<scalar_t>(0);
-                moments(label_constant<6>()) = mxz;
-                moments(label_constant<7>()) = static_cast<scalar_t>(0);
-                moments(label_constant<8>()) = myz;
-                moments(label_constant<9>()) = is_jet * ((static_cast<scalar_t>(6) * device::u_inf * device::u_inf * rho_I) / static_cast<scalar_t>(5));
+                moments(label_constant<0>()) = rho;                                            // rho
+                moments(label_constant<1>()) = static_cast<scalar_t>(0);                       // ux
+                moments(label_constant<2>()) = static_cast<scalar_t>(0);                       // uy
+                moments(label_constant<3>()) = is_jet * device::u_inf;                         // uz
+                moments(label_constant<4>()) = static_cast<scalar_t>(0);                       // mxx
+                moments(label_constant<5>()) = static_cast<scalar_t>(0);                       // mxy
+                moments(label_constant<6>()) = mxz;                                            // mxz
+                moments(label_constant<7>()) = static_cast<scalar_t>(0);                       // myy
+                moments(label_constant<8>()) = myz;                                            // myz
+                moments(label_constant<9>()) = is_jet * (rho * device::u_inf * device::u_inf); // mzz
 
                 already_handled = true;
                 return;
             }
 
 // Periodic
-// #include "include/periodic.cuh"
+#include "include/periodic.cuh"
 
 // Dirichlet with prescribed z velocity tangential to the plane
-#include "include/tanDirichlet.cuh"
+// #include "include/tanDirichlet.cuh"
 
 // Outflow (zero-gradient) at front face
 #include "include/IRBCNeumann.cuh"

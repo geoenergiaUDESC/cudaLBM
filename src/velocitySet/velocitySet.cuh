@@ -132,6 +132,7 @@ namespace LBM
             moments(label_constant<1>()) = scale_i<scalar_t>() * (moments(label_constant<1>()));
             moments(label_constant<2>()) = scale_i<scalar_t>() * (moments(label_constant<2>()));
             moments(label_constant<3>()) = scale_i<scalar_t>() * (moments(label_constant<3>()));
+
             moments(label_constant<4>()) = scale_ii<scalar_t>() * (moments(label_constant<4>()));
             moments(label_constant<5>()) = scale_ij<scalar_t>() * (moments(label_constant<5>()));
             moments(label_constant<6>()) = scale_ij<scalar_t>() * (moments(label_constant<6>()));

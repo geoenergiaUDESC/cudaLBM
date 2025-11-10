@@ -228,34 +228,6 @@ namespace LBM
             phase_pop(label_constant<4>()) = s_phase_pop[label_constant<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
             phase_pop(label_constant<5>()) = s_phase_pop[label_constant<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
             phase_pop(label_constant<6>()) = s_phase_pop[label_constant<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-
-            if constexpr (PhaseVelocitySet::Q() == 19)
-            {
-                phase_pop(label_constant<7>()) = s_phase_pop[label_constant<6 * block::stride()>() + device::idxBlock(xm1, ym1, threadIdx.z)];
-                phase_pop(label_constant<8>()) = s_phase_pop[label_constant<7 * block::stride()>() + device::idxBlock(xp1, yp1, threadIdx.z)];
-                phase_pop(label_constant<9>()) = s_phase_pop[label_constant<8 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zm1)];
-                phase_pop(label_constant<10>()) = s_phase_pop[label_constant<9 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zp1)];
-                phase_pop(label_constant<11>()) = s_phase_pop[label_constant<10 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zm1)];
-                phase_pop(label_constant<12>()) = s_phase_pop[label_constant<11 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zp1)];
-                phase_pop(label_constant<13>()) = s_phase_pop[label_constant<12 * block::stride()>() + device::idxBlock(xm1, yp1, threadIdx.z)];
-                phase_pop(label_constant<14>()) = s_phase_pop[label_constant<13 * block::stride()>() + device::idxBlock(xp1, ym1, threadIdx.z)];
-                phase_pop(label_constant<15>()) = s_phase_pop[label_constant<14 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zp1)];
-                phase_pop(label_constant<16>()) = s_phase_pop[label_constant<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
-                phase_pop(label_constant<17>()) = s_phase_pop[label_constant<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
-                phase_pop(label_constant<18>()) = s_phase_pop[label_constant<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
-
-                if constexpr (PhaseVelocitySet::Q() == 27)
-                {
-                    phase_pop(label_constant<19>()) = s_phase_pop[label_constant<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
-                    phase_pop(label_constant<20>()) = s_phase_pop[label_constant<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
-                    phase_pop(label_constant<21>()) = s_phase_pop[label_constant<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
-                    phase_pop(label_constant<22>()) = s_phase_pop[label_constant<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
-                    phase_pop(label_constant<23>()) = s_phase_pop[label_constant<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
-                    phase_pop(label_constant<24>()) = s_phase_pop[label_constant<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
-                    phase_pop(label_constant<25>()) = s_phase_pop[label_constant<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
-                    phase_pop(label_constant<26>()) = s_phase_pop[label_constant<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
-                }
-            }
         }
 
         template <class PhaseVelocitySet, const label_t N>
@@ -276,34 +248,6 @@ namespace LBM
             phase_pop(label_constant<4>()) = s_phase_pop[label_constant<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
             phase_pop(label_constant<5>()) = s_phase_pop[label_constant<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
             phase_pop(label_constant<6>()) = s_phase_pop[label_constant<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-
-            if constexpr (PhaseVelocitySet::Q() == 19)
-            {
-                phase_pop(label_constant<7>()) = s_phase_pop[label_constant<6 * block::stride()>() + device::idxBlock(xm1, ym1, threadIdx.z)];
-                phase_pop(label_constant<8>()) = s_phase_pop[label_constant<7 * block::stride()>() + device::idxBlock(xp1, yp1, threadIdx.z)];
-                phase_pop(label_constant<9>()) = s_phase_pop[label_constant<8 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zm1)];
-                phase_pop(label_constant<10>()) = s_phase_pop[label_constant<9 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zp1)];
-                phase_pop(label_constant<11>()) = s_phase_pop[label_constant<10 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zm1)];
-                phase_pop(label_constant<12>()) = s_phase_pop[label_constant<11 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zp1)];
-                phase_pop(label_constant<13>()) = s_phase_pop[label_constant<12 * block::stride()>() + device::idxBlock(xm1, yp1, threadIdx.z)];
-                phase_pop(label_constant<14>()) = s_phase_pop[label_constant<13 * block::stride()>() + device::idxBlock(xp1, ym1, threadIdx.z)];
-                phase_pop(label_constant<15>()) = s_phase_pop[label_constant<14 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zp1)];
-                phase_pop(label_constant<16>()) = s_phase_pop[label_constant<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
-                phase_pop(label_constant<17>()) = s_phase_pop[label_constant<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
-                phase_pop(label_constant<18>()) = s_phase_pop[label_constant<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
-
-                if constexpr (PhaseVelocitySet::Q() == 27)
-                {
-                    phase_pop(label_constant<19>()) = s_phase_pop[label_constant<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
-                    phase_pop(label_constant<20>()) = s_phase_pop[label_constant<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
-                    phase_pop(label_constant<21>()) = s_phase_pop[label_constant<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
-                    phase_pop(label_constant<22>()) = s_phase_pop[label_constant<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
-                    phase_pop(label_constant<23>()) = s_phase_pop[label_constant<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
-                    phase_pop(label_constant<24>()) = s_phase_pop[label_constant<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
-                    phase_pop(label_constant<25>()) = s_phase_pop[label_constant<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
-                    phase_pop(label_constant<26>()) = s_phase_pop[label_constant<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
-                }
-            }
         }
 
     private:

@@ -382,7 +382,7 @@ namespace LBM
          *   - y-stride: block::nx()
          *   - z-stride: block::nx() * block::ny()
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr label_t idxBlock(const label_t tx, const label_t ty, const label_t tz) noexcept
         {
             return tx + block::nx() * (ty + block::ny() * tz);
         }
@@ -391,7 +391,7 @@ namespace LBM
          * @overload
          * @param tx Thread coordinates (dim3)
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock(const dim3 &tx) noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr label_t idxBlock(const dim3 &tx) noexcept
         {
             return idxBlock(tx.x, tx.y, tx.z);
         }
@@ -399,7 +399,7 @@ namespace LBM
         /**
          * @overload
          **/
-        __device__ [[nodiscard]] inline label_t idxBlock() noexcept
+        __device__ __host__ [[nodiscard]] inline label_t idxBlock() noexcept
         {
             return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
         }

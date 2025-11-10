@@ -54,6 +54,7 @@ SourceFiles
 #include "../LBMTypedefs.cuh"
 #include "../strings.cuh"
 #include "functionObjects.cuh"
+#include "moments.cuh"
 #include "strainRateTensor.cuh"
 #include "kineticEnergy.cuh"
 
@@ -74,15 +75,16 @@ namespace LBM
          * @param[in] devPtrs Device pointer collection for memory management
          * @param[in] streamsLBM Stream handler for LBM operations
          **/
-        objectRegistry(
+        [[nodiscard]] objectRegistry(
             const host::latticeMesh &mesh,
             const device::ptrCollection<10, scalar_t> &devPtrs,
             const streamHandler<N> &streamsLBM)
             : mesh_(mesh),
+              M_(mesh, devPtrs, streamsLBM),
               S_(mesh, devPtrs, streamsLBM),
               k_(mesh, devPtrs, streamsLBM),
-              functionVector_(functionObjectCallInitialiser(S_, k_)),
-              saveVector_(functionObjectSaveInitialiser(S_, k_)) {};
+              functionVector_(functionObjectCallInitialiser(M_, S_, k_)),
+              saveVector_(functionObjectSaveInitialiser(M_, S_, k_)) {};
 
         /**
          * @brief Default destructor
@@ -121,6 +123,11 @@ namespace LBM
         const host::latticeMesh &mesh_;
 
         /**
+         * @brief Moments function object
+         **/
+        functionObjects::moments::collection<VelocitySet, N> M_;
+
+        /**
          * @brief Strain rate tensor function object
          **/
         functionObjects::strainRate::tensor<VelocitySet, N> S_;
@@ -141,11 +148,13 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectCallInitialiser(
+            functionObjects::moments::collection<VelocitySet, N> &moments,
             functionObjects::strainRate::tensor<VelocitySet, N> &S,
             functionObjects::kineticEnergy::scalar<VelocitySet, N> &k) const noexcept
         {
             std::vector<std::function<void(const label_t)>> calls;
 
+            addObjectCall(calls, moments);
             addObjectCall(calls, S);
             addObjectCall(calls, k);
 
@@ -156,24 +165,32 @@ namespace LBM
         __host__ void addObjectCall(std::vector<std::function<void(const label_t)>> &calls, C &object) const noexcept
         {
             // If both instantaneous and mean calculations are enabled, calculate both in one call
-            if ((object.calculate()) && (object.calculateMean()))
+            // Only do this for variables other than the 10 moments
+            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet, N>>)
             {
-                calls.push_back(
-                    [&object](const label_t label)
-                    { object.calculateInstantaneousAndMean(label); });
+                if ((object.calculate()) && (object.calculateMean()))
+                {
+                    calls.push_back(
+                        [&object](const label_t label)
+                        { object.calculateInstantaneousAndMean(label); });
+                }
             }
 
             // Must be only saving instantaneous, so just calculate instantaneous without saving mean
-            if (object.calculate() && !(object.calculateMean()))
+            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet, N>>)
             {
-                calls.push_back(
-                    [&object](const label_t label)
-                    { object.calculateInstantaneous(label); });
+                if (object.calculate() && !(object.calculateMean()))
+                {
+                    calls.push_back(
+                        [&object](const label_t label)
+                        { object.calculateInstantaneous(label); });
+                }
             }
 
             // Must be only saving the mean, so just calculate mean without saving instantaneous
             if (object.calculateMean() && !(object.calculate()))
             {
+                // std::cout << "Pushing back " << object.fieldName() << ".saveMean" << std::endl;
                 calls.push_back(
                     [&object](const label_t label)
                     { object.calculateMean(label); });
@@ -191,11 +208,13 @@ namespace LBM
          * @return Vector of function objects to be executed
          **/
         __host__ [[nodiscard]] const std::vector<std::function<void(const label_t)>> functionObjectSaveInitialiser(
+            functionObjects::moments::collection<VelocitySet, N> &moments,
             functionObjects::strainRate::tensor<VelocitySet, N> &S,
             functionObjects::kineticEnergy::scalar<VelocitySet, N> &k) const noexcept
         {
             std::vector<std::function<void(const label_t)>> calls;
 
+            addSaveCall(calls, moments);
             addSaveCall(calls, S);
             addSaveCall(calls, k);
 
@@ -205,16 +224,19 @@ namespace LBM
         template <class C>
         __host__ void addSaveCall(std::vector<std::function<void(const label_t)>> &calls, C &object) const noexcept
         {
-            if (object.calculate())
+            if constexpr (!std::is_same_v<C, functionObjects::moments::collection<VelocitySet, N>>)
             {
-                // std::cout << "Pushing back saveInstantaneous" << std::endl;
-                calls.push_back(
-                    [&object](const label_t label)
-                    { object.saveInstantaneous(label); });
+                if (object.calculate())
+                {
+                    // std::cout << "Pushing back saveInstantaneous" << std::endl;
+                    calls.push_back(
+                        [&object](const label_t label)
+                        { object.saveInstantaneous(label); });
+                }
             }
             if (object.calculateMean())
             {
-                // std::cout << "Pushing back saveMean" << std::endl;
+                // std::cout << "Pushing back " << object.fieldName() << ".calculateMean" << std::endl;
                 calls.push_back(
                     [&object](const label_t label)
                     { object.saveMean(label); });

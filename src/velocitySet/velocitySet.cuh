@@ -73,7 +73,7 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval velocitySet() noexcept {};
 
         /**
-         * @brief Get the a^2 constant (3.0)
+         * @brief Get the a^2 constant
          **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
@@ -82,7 +82,7 @@ namespace LBM
         }
 
         /**
-         * @brief Get the speed of sound squared (c^2 = 1 / 3)
+         * @brief Get the speed of sound squared
          **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept

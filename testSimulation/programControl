@@ -9,22 +9,22 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        turbulentJet;
+caseName        testSimulation;
 
 Re              3000;
 
 u_inf           0.016;
 
-L_char          16;
+L_char          8;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      1000001;
+nTimeSteps      10001;
 
-saveInterval    10000;
+saveInterval    1000;
 
-infoInterval    10000;
+infoInterval    1000;
 
 \*---------------------------------------------------------------------------*/

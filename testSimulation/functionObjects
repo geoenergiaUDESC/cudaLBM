@@ -9,22 +9,9 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        turbulentJet;
+functionObjectList
+{
 
-Re              3000;
-
-u_inf           0.016;
-
-L_char          16;
-
-startFrom       latestTime;
-
-startTime       0;
-
-nTimeSteps      1000001;
-
-saveInterval    10000;
-
-infoInterval    10000;
+};
 
 \*---------------------------------------------------------------------------*/

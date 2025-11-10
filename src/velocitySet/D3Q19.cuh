@@ -388,7 +388,7 @@ namespace LBM
         }
 
         /**
-         * @brief Reconstruct population distribution from moments (in-place) (second-order)
+         * @brief Reconstruct population distribution from moments (in-place)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/

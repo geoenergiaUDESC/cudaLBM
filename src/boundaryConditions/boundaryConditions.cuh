@@ -172,22 +172,22 @@ namespace LBM
     private:
         __device__ [[nodiscard]] static inline scalar_t center_x() noexcept
         {
-            return static_cast<scalar_t>(device::nx - 1) / static_cast<scalar_t>(2);
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::nx - 1);
         }
 
         __device__ [[nodiscard]] static inline scalar_t center_y() noexcept
         {
-            return static_cast<scalar_t>(device::ny - 1) / static_cast<scalar_t>(2);
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::ny - 1);
         }
 
         __device__ [[nodiscard]] static inline scalar_t radius() noexcept
         {
-            return static_cast<scalar_t>(0.5) * device::L_char;
+            return static_cast<scalar_t>(0.5) * static_cast<scalar_t>(device::L_char);
         }
 
         __device__ [[nodiscard]] static inline scalar_t r2() noexcept
         {
-            return static_cast<float>(radius()) * static_cast<float>(radius());
+            return radius() * radius();
         }
 
         template <typename T = uint8_t>

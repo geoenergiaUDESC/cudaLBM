@@ -47,10 +47,10 @@ turbulentJet/*.vts
 turbulentJet/*.LBMBin
 
 # Test directory ignores
-viniciusBcs/*.dat
-viniciusBcs/*.vtu
-viniciusBcs/*.vts
-viniciusBcs/*.LBMBin
+testSimulation/*.dat
+testSimulation/*.vtu
+testSimulation/*.vts
+testSimulation/*.LBMBin
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat

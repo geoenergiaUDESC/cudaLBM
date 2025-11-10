@@ -1,6 +1,6 @@
 make install
 
-cd testSimulation
+cd turbulentJet
 
 ./cleanCase.sh
 

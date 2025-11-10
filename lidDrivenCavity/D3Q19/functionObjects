@@ -18,7 +18,7 @@ functionObjectList
     // SMean;
     // k;
     // kMean;
->>>>>>> b576c70 (Add D3Q27 case to lidDrivenCavity)
+    // momentsMean;
 };
 
 \*---------------------------------------------------------------------------*/

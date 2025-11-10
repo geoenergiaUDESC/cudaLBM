@@ -63,6 +63,7 @@ namespace LBM
          * @brief Maps the name of function objects to lists of the names of their individual components
          **/
         const std::unordered_map<std::string, std::vector<std::string>> fieldComponentsMap = {
+            {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
             {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
             {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
             {"k", {"k"}},
@@ -79,6 +80,20 @@ namespace LBM
         __device__ [[nodiscard]] inline constexpr T timeAverage(const T fMean, const T f, const T invNewCount) noexcept
         {
             return fMean + (f - fMean) * invNewCount;
+        }
+
+        template <typename T, const label_t N>
+        __device__ [[nodiscard]] inline constexpr const thread::array<T, N> timeAverage(const thread::array<T, N> &fMean, const thread::array<T, N> &f, const T invNewCount) noexcept
+        {
+            thread::array<T, N> newMean;
+
+            device::constexpr_for<0, N>(
+                [&](const auto n)
+                {
+                    newMean[n] = timeAverage(fMean[n], f[n], invNewCount);
+                });
+
+            return newMean;
         }
 
         /**

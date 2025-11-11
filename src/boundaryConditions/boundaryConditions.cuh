@@ -60,6 +60,9 @@ SourceFiles
 #include "boundaryRegion.cuh"
 #include "boundaryFields.cuh"
 
+// Fallback print tracker for all 26 boundary cases
+__device__ int printedFallback[26] = {false};
+
 namespace LBM
 {
     /**
@@ -111,36 +114,36 @@ namespace LBM
 
             switch (boundaryNormal.nodeType())
             {
-                // Round inflow + no-slip
-                case normalVector::BACK():
-                {
-                    const label_t x = threadIdx.x + block::nx() * blockIdx.x;
-                    const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+            // Round inflow + no-slip
+            case normalVector::BACK():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t y = threadIdx.y + block::ny() * blockIdx.y;
 
                 const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
 
-                    const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
-                    const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
 
                 const scalar_t rho = rho0<scalar_t>();
                 const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
                 const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
 
-                moments(label_constant<0>()) = rho;                                            // rho
-                moments(label_constant<1>()) = static_cast<scalar_t>(0);                       // ux
-                moments(label_constant<2>()) = static_cast<scalar_t>(0);                       // uy
-                moments(label_constant<3>()) = is_jet * device::u_inf;                         // uz
-                moments(label_constant<4>()) = static_cast<scalar_t>(0);                       // mxx
-                moments(label_constant<5>()) = static_cast<scalar_t>(0);                       // mxy
-                moments(label_constant<6>()) = mxz;                                            // mxz
-                moments(label_constant<7>()) = static_cast<scalar_t>(0);                       // myy
-                moments(label_constant<8>()) = myz;                                            // myz
-                moments(label_constant<9>()) = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+                moments[m_i<0>()] = rho;                                            // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
+                moments[m_i<6>()] = mxz;                                            // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
+                moments[m_i<8>()] = myz;                                            // myz
+                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
 
-                    already_handled = true;
+                already_handled = true;
 
-                    return;
-                }
+                return;
+            }
 
 // Periodic
 #include "include/periodic.cuh"
@@ -151,19 +154,19 @@ namespace LBM
 // Outflow (zero-gradient) at front face
 #include "include/IRBCNeumann.cuh"
 
-                // Call static boundaries for uncovered cases
-                default:
+            // Call static boundaries for uncovered cases
+            default:
+            {
+                if (!already_handled)
                 {
-                    if (!already_handled)
+                    switch (boundaryNormal.nodeType())
                     {
-                        switch (boundaryNormal.nodeType())
-                        {
-                            #include "include/fallback.cuh"
-                        }
+#include "include/fallback.cuh"
                     }
-
-                    break;
                 }
+
+                break;
+            }
             }
         }
 

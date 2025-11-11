@@ -45,6 +45,10 @@ turbulentJet/*.dat
 turbulentJet/*.vtu
 turbulentJet/*.vts
 turbulentJet/*.LBMBin
+turbulentJet/*/*.dat
+turbulentJet/*/*.vtu
+turbulentJet/*/*.vts
+turbulentJet/*/*.LBMBin
 
 # Test directory ignores
 testSimulation/*.dat

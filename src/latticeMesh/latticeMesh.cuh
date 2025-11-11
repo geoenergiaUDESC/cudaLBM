@@ -314,15 +314,6 @@ namespace LBM
                 return static_cast<label_t>(nx_ > 1) + static_cast<label_t>(ny_ > 1) + static_cast<label_t>(nz_ > 1);
             }
 
-            /**
-             * @brief Get the number of physical dimensions of the mesh
-             * @return Const reference to pointVector containing domain size
-             **/
-            __host__ [[nodiscard]] inline constexpr label_t nDims() const noexcept
-            {
-                return static_cast<label_t>(nx_ > 1) + static_cast<label_t>(ny_ > 1) + static_cast<label_t>(nz_ > 1);
-            }
-
         private:
             /**
              * @brief The number of lattices in the x, y and z directions

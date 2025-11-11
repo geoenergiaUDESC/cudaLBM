@@ -146,10 +146,7 @@ namespace LBM
             fGhost.ptr<4>(),
             fGhost.ptr<5>());
 
-        /* =============================== BRENO: =============================== */
-        /* Reconstruct post-stream moments into shared buffer for boundary access */
-
-        // Compute post-stream moments from populations
+        // Compute post-stream moments
         VelocitySet::calculateMoments(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -162,8 +159,6 @@ namespace LBM
         }
 
         __syncthreads();
-
-        /* ====================================================================== */
 
         // Calculate the moments either at the boundary or interior
         {

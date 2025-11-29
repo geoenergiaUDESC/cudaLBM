@@ -280,8 +280,8 @@ namespace LBM
                                         const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
                                         // Contiguous moment access
-                                        const std::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
-                                            std::array<scalar_t, 10>{
+                                        const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
+                                            thread::array<scalar_t, 10>{
                                                 rho0<scalar_t>() + rho.arr()[base],
                                                 u.arr()[base],
                                                 v.arr()[base],
@@ -321,7 +321,7 @@ namespace LBM
             template <const label_t faceIndex, const label_t side>
             __host__ void static handleGhostCells(
                 std::vector<scalar_t> &face,
-                const std::array<scalar_t, VelocitySet::Q()> &pop,
+                const thread::array<scalar_t, VelocitySet::Q()> &pop,
                 const label_t tx, const label_t ty, const label_t tz,
                 const label_t bx, const label_t by, const label_t bz,
                 const host::latticeMesh &mesh) noexcept

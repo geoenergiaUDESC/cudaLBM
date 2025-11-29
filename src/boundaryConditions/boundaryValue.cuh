@@ -161,38 +161,56 @@ namespace LBM
                     const boundaryValue w("w", regionName);
 
                     // Construct the equilibrium distribution
-                    const std::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::F_eq(u.value, v.value, w.value);
+                    const thread::array<scalar_t, VelocitySet::Q()> pop = velocitySet::F_eq<VelocitySet>(u.value, v.value, w.value);
 
-                    // Store second-order moments (this can probably be improved)
+                    // Store second-order moments
                     if (fieldName == "m_xx")
                     {
-                        const scalar_t pixx = VelocitySet::template calculateMoment<index::xx()>(pop) - velocitySet::cs2<scalar_t>();
-                        return velocitySet::scale_ii<scalar_t>() * (pixx);
+                        const std::function<scalar_t()> moment_xx = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, X, X>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_xx() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
                     }
-                    if (fieldName == "m_xy")
+                    else if (fieldName == "m_xy")
                     {
-                        const scalar_t pixy = VelocitySet::template calculateMoment<index::xy()>(pop);
-                        return velocitySet::scale_ij<scalar_t>() * (pixy);
+                        const std::function<scalar_t()> moment_xy = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, X, Y>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_xy() / rho0<scalar_t>()));
                     }
-                    if (fieldName == "m_xz")
+                    else if (fieldName == "m_xz")
                     {
-                        const scalar_t pixz = VelocitySet::template calculateMoment<index::xz()>(pop);
-                        return velocitySet::scale_ij<scalar_t>() * (pixz);
+                        const std::function<scalar_t()> moment_xz = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, X, Z>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_xz() / rho0<scalar_t>()));
                     }
-                    if (fieldName == "m_yy")
+                    else if (fieldName == "m_yy")
                     {
-                        const scalar_t piyy = VelocitySet::template calculateMoment<index::yy()>(pop) - velocitySet::cs2<scalar_t>();
-                        return velocitySet::scale_ii<scalar_t>() * (piyy);
+                        const std::function<scalar_t()> moment_yy = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, Y, Y>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_yy() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
                     }
-                    if (fieldName == "m_yz")
+                    else if (fieldName == "m_yz")
                     {
-                        const scalar_t piyz = VelocitySet::template calculateMoment<index::yz()>(pop);
-                        return velocitySet::scale_ij<scalar_t>() * (piyz);
+                        const std::function<scalar_t()> moment_yz = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, Y, Z>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_yz() / rho0<scalar_t>()));
                     }
-                    if (fieldName == "m_zz")
+                    else if (fieldName == "m_zz")
                     {
-                        const scalar_t pizz = VelocitySet::template calculateMoment<index::zz()>(pop) - velocitySet::cs2<scalar_t>();
-                        return velocitySet::scale_ii<scalar_t>() * (pizz);
+                        const std::function<scalar_t()> moment_zz = [&pop]()
+                        {
+                            return velocitySet::calculate_moment<VelocitySet, Z, Z>(pop);
+                        };
+                        return velocitySet::scale_ii<scalar_t>() * ((moment_zz() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
                     }
                     return 0; // Should never get here
                 }

@@ -291,7 +291,7 @@ namespace LBM
          * @param[in] moments Moment array (10 components)
          * @return Population array with 27 components
          **/
-        __device__ static inline thread::array<scalar_t, 27> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, 27> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 

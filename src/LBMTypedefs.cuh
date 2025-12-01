@@ -71,8 +71,8 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        __device__ __host__ inline consteval operator value_type() const noexcept { return value; }
-        __device__ __host__ inline consteval value_type operator()() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval operator value_type() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval value_type operator()() const noexcept { return value; }
     };
 
     /**
@@ -190,16 +190,29 @@ namespace LBM
              * @note Compile-time enforced check ensures correct number of arguments
              **/
             template <typename... Args>
-            __device__ __host__ [[nodiscard]] constexpr array(const Args... args) : data_{args...}
+            __device__ __host__ [[nodiscard]] inline constexpr array(const Args... args) : data_{args...}
             {
                 static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
+            }
+
+            /**
+             * @brief Fill constructor
+             * @param value Initial value for all array elements
+             **/
+            template <std::enable_if_t<(N != 1), bool> = true>
+            __device__ __host__ [[nodiscard]] inline consteval array(const T value) noexcept
+            {
+                for (label_t i = 0; i < N; i++)
+                {
+                    data_[i] = value;
+                }
             }
 
             /**
              * @brief Default constructor (value-initializes all elements)
              * @note Elements will be default-initialized or zero-initialized
              **/
-            [[nodiscard]] constexpr array() = default;
+            [[nodiscard]] inline constexpr array() = default;
 
             /**
              * @brief Addition operator
@@ -262,9 +275,9 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ constexpr T &operator[](const label_constant<index_> index) __restrict__ noexcept
+            __device__ __host__ constexpr T &operator[](const label_constant<index_> &index) __restrict__ noexcept
             {
-                return data_[index()];
+                return data_[label_constant<index.value>()];
             }
 
             /**
@@ -276,9 +289,9 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ constexpr const T &operator[](const label_constant<index_> index) __restrict__ const noexcept
+            __device__ __host__ constexpr const T &operator[](const label_constant<index_> &index) __restrict__ const noexcept
             {
-                return data_[index()];
+                return data_[label_constant<index.value>()];
             }
 
             /**
@@ -364,7 +377,7 @@ namespace LBM
     }
 
     template <typename T, const label_t N>
-    __host__ __device__ [[nodiscard]] inline consteval label_t number_non_zero(const thread::array<T, N> &C)
+    __device__ __host__ [[nodiscard]] inline consteval label_t number_non_zero(const thread::array<T, N> &C)
     {
         label_t n = 0;
 

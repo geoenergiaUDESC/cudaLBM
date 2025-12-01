@@ -65,6 +65,17 @@ namespace LBM
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
 
+    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t)); }
+
+    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
+    {
+#ifdef OOB_CHECK
+        return true;
+#else
+        return false;
+#endif
+    }
+
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q27 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
@@ -79,13 +90,15 @@ namespace LBM
         const device::ptrCollection<6, scalar_t> gGhost)
     {
         // Always a multiple of 32, so no need to check this(I think)
-        // if (device::out_of_bounds())
-        // {
-        //     return;
-        // }
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
 
-        // const label_t idx = device::idx();
-        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+        const label_t idx = device::idx();
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -95,30 +108,26 @@ namespace LBM
             });
 
         // Declare shared memory (flattened)
-        // __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>()> shared_buffer;
         extern __shared__ scalar_t shared_buffer[];
 
         const label_t tid = device::idxBlock();
 
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS()> moments;
-        {
-            // Read into shared
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
-                [&](const auto moment)
+        device::constexpr_for<0, NUMBER_MOMENTS()>(
+            [&](const auto moment)
+            {
+                const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
+                shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
+                if constexpr (moment == index::rho())
                 {
-                    const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
-                    shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                    if constexpr (moment == index::rho())
-                    {
-                        moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
-                    }
-                    else
-                    {
-                        moments[moment] = shared_buffer[ID];
-                    }
-                });
-        }
+                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = shared_buffer[ID];
+                }
+            });
 
         __syncthreads();
 
@@ -137,14 +146,7 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(
-            pop,
-            fGhost.ptr<0>(),
-            fGhost.ptr<1>(),
-            fGhost.ptr<2>(),
-            fGhost.ptr<3>(),
-            fGhost.ptr<4>(),
-            fGhost.ptr<5>());
+        device::halo<VelocitySet>::load(pop, fGhost);
 
         // Calculate the moments either at the boundary or interior
         {
@@ -152,7 +154,7 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal);
+                boundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
             }
             else
             {
@@ -178,14 +180,7 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        device::halo<VelocitySet>::save(
-            pop,
-            gGhost.ptr<0>(),
-            gGhost.ptr<1>(),
-            gGhost.ptr<2>(),
-            gGhost.ptr<3>(),
-            gGhost.ptr<4>(),
-            gGhost.ptr<5>());
+        device::halo<VelocitySet>::save(pop, gGhost);
     }
 }
 

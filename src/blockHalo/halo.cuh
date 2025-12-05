@@ -293,17 +293,206 @@ namespace LBM
             }
 
             /**
-             * @brief Saves population data to halo regions for neighboring blocks
-             * @param[in] pop Array containing population values to save
-             * @param[out] gGhost.ptr<0>() Pointer to x-min face halo data
-             * @param[out] gGhost.ptr<1>() Pointer to x-max face halo data
-             * @param[out] gGhost.ptr<2>() Pointer to y-min face halo data
-             * @param[out] gGhost.ptr<3>() Pointer to y-max face halo data
-             * @param[out] gGhost.ptr<4>() Pointer to z-min face halo data
-             * @param[out] gGhost.ptr<5>() Pointer to z-max face halo data
+             * @brief Transposes the block halo into the shared memory
+             * @param[in] pop Array containing the populations for the particular thread
+             * @param[out] s_buffer Shared array containing the packed population halos
              *
              * This device function saves population values to halo regions for
-             * neighboring blocks to read. It handles all 18 directions of the D3Q19 lattice model.
+             * neighboring blocks to read.
+             **/
+            template <const label_t N>
+            __device__ static inline void transpose_to_shared(
+                const thread::array<scalar_t, VelocitySet::Q()> &pop,
+                thread::array<scalar_t, N> &s_buffer) noexcept
+            {
+                const label_t x = threadIdx.x + blockDim.x * blockIdx.x;
+                const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
+                const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
+
+                // Calculate base indices for each boundary type
+                constexpr label_t x_size = block::ny() * block::nz();
+                constexpr label_t y_size = block::nx() * block::nz();
+                constexpr label_t z_size = block::nx() * block::ny();
+
+                // West boundary (5 populations)
+                if (West(x))
+                {
+                    const label_t base_idx = threadIdx.y + threadIdx.z * block::ny();
+                    s_buffer[base_idx + 0 * x_size] = pop[q_i<2>()];
+                    s_buffer[base_idx + 1 * x_size] = pop[q_i<8>()];
+                    s_buffer[base_idx + 2 * x_size] = pop[q_i<10>()];
+                    s_buffer[base_idx + 3 * x_size] = pop[q_i<14>()];
+                    s_buffer[base_idx + 4 * x_size] = pop[q_i<16>()];
+                }
+
+                // East boundary (5 populations)
+                if (East(x))
+                {
+                    const label_t base_idx = threadIdx.y + threadIdx.z * block::ny();
+                    constexpr label_t east_offset = 5 * x_size;
+                    s_buffer[east_offset + base_idx + 0 * x_size] = pop[q_i<1>()];
+                    s_buffer[east_offset + base_idx + 1 * x_size] = pop[q_i<7>()];
+                    s_buffer[east_offset + base_idx + 2 * x_size] = pop[q_i<9>()];
+                    s_buffer[east_offset + base_idx + 3 * x_size] = pop[q_i<13>()];
+                    s_buffer[east_offset + base_idx + 4 * x_size] = pop[q_i<15>()];
+                }
+
+                // South boundary (5 populations)
+                if (South(y))
+                {
+                    const label_t base_idx = threadIdx.x + threadIdx.z * block::nx();
+                    constexpr label_t south_offset = 10 * x_size;
+                    s_buffer[south_offset + base_idx + 0 * y_size] = pop[q_i<4>()];
+                    s_buffer[south_offset + base_idx + 1 * y_size] = pop[q_i<8>()];
+                    s_buffer[south_offset + base_idx + 2 * y_size] = pop[q_i<12>()];
+                    s_buffer[south_offset + base_idx + 3 * y_size] = pop[q_i<13>()];
+                    s_buffer[south_offset + base_idx + 4 * y_size] = pop[q_i<18>()];
+                }
+
+                // North boundary (5 populations)
+                if (North(y))
+                {
+                    const label_t base_idx = threadIdx.x + threadIdx.z * block::nx();
+                    constexpr label_t north_offset = 10 * x_size + 5 * y_size;
+                    s_buffer[north_offset + base_idx + 0 * y_size] = pop[q_i<3>()];
+                    s_buffer[north_offset + base_idx + 1 * y_size] = pop[q_i<7>()];
+                    s_buffer[north_offset + base_idx + 2 * y_size] = pop[q_i<11>()];
+                    s_buffer[north_offset + base_idx + 3 * y_size] = pop[q_i<14>()];
+                    s_buffer[north_offset + base_idx + 4 * y_size] = pop[q_i<17>()];
+                }
+
+                // Back boundary (5 populations)
+                if (Back(z))
+                {
+                    const label_t base_idx = threadIdx.x + threadIdx.y * block::nx();
+                    constexpr label_t back_offset = 10 * x_size + 10 * y_size;
+                    s_buffer[back_offset + base_idx + 0 * z_size] = pop[q_i<6>()];
+                    s_buffer[back_offset + base_idx + 1 * z_size] = pop[q_i<10>()];
+                    s_buffer[back_offset + base_idx + 2 * z_size] = pop[q_i<12>()];
+                    s_buffer[back_offset + base_idx + 3 * z_size] = pop[q_i<15>()];
+                    s_buffer[back_offset + base_idx + 4 * z_size] = pop[q_i<17>()];
+                }
+
+                // Front boundary (5 populations)
+                if (Front(z))
+                {
+                    const label_t base_idx = threadIdx.x + threadIdx.y * block::nx();
+                    constexpr label_t front_offset = 10 * x_size + 10 * y_size + 5 * z_size;
+                    s_buffer[front_offset + base_idx + 0 * z_size] = pop[q_i<5>()];
+                    s_buffer[front_offset + base_idx + 1 * z_size] = pop[q_i<9>()];
+                    s_buffer[front_offset + base_idx + 2 * z_size] = pop[q_i<11>()];
+                    s_buffer[front_offset + base_idx + 3 * z_size] = pop[q_i<16>()];
+                    s_buffer[front_offset + base_idx + 4 * z_size] = pop[q_i<18>()];
+                }
+
+                __syncthreads();
+            }
+
+            /**
+             * @brief Saves population data to halo regions for neighboring blocks
+             * @param[in] s_buffer Shared array containing the packed population halos
+             * @param[out] gGhost Collection of pointers to the halo faces
+             *
+             * This device function saves population values to halo regions for
+             * neighboring blocks to read.
+             **/
+            template <const label_t N>
+            __device__ static inline void save_from_shared(
+                const thread::array<scalar_t, N> &s_buffer,
+                const device::ptrCollection<6, scalar_t> &gGhost) noexcept
+            {
+                const label_t warpId = warpID(threadIdx.x, threadIdx.y, threadIdx.z);
+                const label_t offset = block::warp_size() * (warpId % 2);
+                const label_t idx_in_warp = idxWarp(threadIdx.x, threadIdx.y, threadIdx.z);
+
+                // Equivalent of threadIdx.alpha, threadIdx.beta
+                const dim2 xy = ij<X, Y>(idx_in_warp + offset);
+                const dim2 xz = ij<X, Z>(idx_in_warp + offset);
+                const dim2 yz = ij<Y, Z>(idx_in_warp + offset);
+
+                const label_t ID = idx_block(threadIdx.x, threadIdx.y, threadIdx.z);
+                switch (warpId / 2)
+                {
+                case 0:
+                {
+                    gGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 1:
+                {
+                    gGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 2:
+                {
+                    gGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 3:
+                {
+                    gGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 4:
+                {
+                    gGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 5:
+                {
+                    gGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+                    gGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (3 * block::size())];
+
+                    break;
+                }
+                case 6:
+                {
+                    gGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+
+                    break;
+                }
+                case 7:
+                {
+                    gGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(yz.i, yz.j, blockIdx)] = s_buffer[ID];
+                    gGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(xz.i, xz.j, blockIdx)] = s_buffer[ID + (block::size())];
+                    gGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(xy.i, xy.j, blockIdx)] = s_buffer[ID + (2 * block::size())];
+
+                    break;
+                }
+                }
+            }
+
+            /**
+             * @brief Saves population data to halo regions for neighboring blocks
+             * @param[in] pop Array containing population values to save
+             * @param[out] gGhost Collection of pointers to the halo faces
+             *
+             * This device function saves population values to halo regions for
+             * neighboring blocks to read.
              **/
             __device__ static inline void save(
                 const thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -473,6 +662,74 @@ namespace LBM
             __device__ [[nodiscard]] static inline bool Front(const label_t z) noexcept
             {
                 return (threadIdx.z == (block::nz() - 1) && z != (device::nz - 1));
+            }
+
+            /**
+             * @brief Computes linear index for a thread within a block
+             * @param[in] tx Thread x-coordinate within block
+             * @param[in] ty Thread y-coordinate within block
+             * @param[in] tz Thread z-coordinate within block
+             * @return Linearized index in shared memory
+             *
+             * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
+             **/
+            __device__ __host__ [[nodiscard]] static inline label_t idx_block(const label_t tx, const label_t ty, const label_t tz) noexcept
+            {
+                return tx + block::nx() * (ty + block::ny() * tz);
+            }
+
+            /**
+             * @brief Computes the warp number of a particular thread within a block
+             * @param[in] tx Thread x-coordinate within block
+             * @param[in] ty Thread y-coordinate within block
+             * @param[in] tz Thread z-coordinate within block
+             * @return The unique ID of the warp corresponding to a particular thread
+             *
+             * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
+             **/
+            __device__ __host__ [[nodiscard]] static inline label_t warpID(const label_t tx, const label_t ty, const label_t tz) noexcept
+            {
+                return idx_block(tx, ty, tz) / block::warp_size();
+            }
+
+            /**
+             * @brief Computes the linear index of a thread within a warp
+             * @param[in] tx Thread x-coordinate within block
+             * @param[in] ty Thread y-coordinate within block
+             * @param[in] tz Thread z-coordinate within block
+             * @return The unique ID of a thread within a warp, in the range [0, warp_size]
+             *
+             * Memory layout: [tz][ty][tx] (tz slowest varying, tx fastest)
+             **/
+            __device__ __host__ [[nodiscard]] static inline label_t idxWarp(const label_t tx, const label_t ty, const label_t tz) noexcept
+            {
+                return idx_block(tx, ty, tz) % block::warp_size();
+            }
+
+            /**
+             * @brief Computes the two-dimensional coordinate of a thread lying on a face
+             * @tparam alpha The i-direction of the face
+             * @tparam beta The j-direction of the face
+             * @param[in] I The index of a thread within a warp
+             * @return Two-dimensional representation of I
+             **/
+            template <const axisDirection alpha, const axisDirection beta>
+            __device__ __host__ [[nodiscard]] static inline constexpr dim2 ij(const label_t I) noexcept
+            {
+                if constexpr ((alpha == X) && (beta == Y))
+                {
+                    return {I % (block::nx()), I / (block::nx())};
+                }
+
+                if constexpr ((alpha == X) && (beta == Z))
+                {
+                    return {I % (block::nx()), I / (block::nx())};
+                }
+
+                if constexpr ((alpha == Y) && (beta == Z))
+                {
+                    return {I % (block::ny()), I / (block::ny())};
+                }
             }
         };
     }

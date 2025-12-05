@@ -43,12 +43,12 @@ Namespace
     LBM
 
 SourceFiles
-    fieldCalculate.cuh
+    testExecutable.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_FIELDCALCULATE_CUH
-#define __MBLBM_FIELDCALCULATE_CUH
+#ifndef __MBLBM_TESTEXECUTABLE_CUH
+#define __MBLBM_TESTEXECUTABLE_CUH
 
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/LBMTypedefs.cuh"

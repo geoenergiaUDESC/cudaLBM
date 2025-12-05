@@ -173,6 +173,9 @@ namespace LBM
 
     namespace thread
     {
+        template <const label_t i, const label_t N>
+        concept in_bounds = (i < N);
+
         /**
          * @brief Fixed-size array container for single-threaded device code
          * @tparam T Type of elements stored in the array
@@ -218,7 +221,7 @@ namespace LBM
              * @brief Addition operator
              * @return The sum of two arrays of the same type and size
              **/
-            __device__ __host__ constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -231,7 +234,7 @@ namespace LBM
              * @brief Subtraction operator
              * @return The subtraction of two arrays of the same type and size
              **/
-            __device__ __host__ constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -244,7 +247,7 @@ namespace LBM
              * @brief Multiplication operator
              * @return The dot product of two arrays of the same type and size
              **/
-            __device__ __host__ constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -257,7 +260,7 @@ namespace LBM
              * @brief Division operator
              * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
              **/
-            __device__ __host__ constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -275,8 +278,9 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ constexpr T &operator[](const label_constant<index_> &index) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_constant<index_> &index) __restrict__ noexcept
             {
+                assert_legal_access<index_>();
                 return data_[label_constant<index.value>()];
             }
 
@@ -289,8 +293,9 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ constexpr const T &operator[](const label_constant<index_> &index) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_constant<index_> &index) __restrict__ const noexcept
             {
+                assert_legal_access<index_>();
                 return data_[label_constant<index.value>()];
             }
 
@@ -303,20 +308,10 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            template <typename Index>
-            __device__ __host__ constexpr T &operator[](const Index idx) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
             {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
+                // Runtime index
+                return data_[idx];
             }
 
             /**
@@ -328,21 +323,9 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            template <typename Index>
-            __device__ __host__ constexpr const T &operator[](const Index idx) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
             {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    static_assert(std::is_integral_v<Index>, "Index is not a compile-time constant");
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
+                return data_[idx];
             }
 
             /**
@@ -373,6 +356,12 @@ namespace LBM
              * @brief The underlying data
              **/
             T ptrRestrict data_[N];
+
+            template <const label_t i>
+            __device__ __host__ constexpr static inline void assert_legal_access() noexcept
+            {
+                static_assert(in_bounds<i, N>, "index is out of range: Must be < N.");
+            }
         };
     }
 
@@ -476,6 +465,12 @@ namespace LBM
         Z = 2,
         NO_DIRECTION = -1
     } axisDirection;
+
+    struct dim2
+    {
+        const label_t i;
+        const label_t j;
+    };
 
     namespace device
     {

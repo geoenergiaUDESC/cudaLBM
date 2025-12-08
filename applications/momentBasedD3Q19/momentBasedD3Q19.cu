@@ -49,8 +49,6 @@ SourceFiles
 
 #include "momentBasedD3Q19.cuh"
 
-// static constinit bool alreadyPrinted = false;
-
 using namespace LBM;
 
 __host__ [[nodiscard]] inline consteval label_t NStreams() noexcept { return 1; }
@@ -130,8 +128,6 @@ int main(const int argc, const char *const argv[])
             {
                 momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
-
-        // alreadyPrinted = true;
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);

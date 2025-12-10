@@ -130,6 +130,14 @@ namespace LBM
         }
 
         /**
+         * @brief Size of the warp (32)
+         **/
+        __device__ __host__ [[nodiscard]] inline consteval label_t warp_size() noexcept
+        {
+            return 32;
+        }
+
+        /**
          * @brief Launch bounds information
          * @note These variables are device specific - enable modification later
          **/

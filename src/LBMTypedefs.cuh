@@ -71,8 +71,8 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        __device__ __host__ inline consteval operator value_type() const noexcept { return value; }
-        __device__ __host__ inline consteval value_type operator()() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval operator value_type() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval value_type operator()() const noexcept { return value; }
     };
 
     /**
@@ -173,6 +173,9 @@ namespace LBM
 
     namespace thread
     {
+        template <const label_t i, const label_t N>
+        concept in_bounds = (i < N);
+
         /**
          * @brief Fixed-size array container for single-threaded device code
          * @tparam T Type of elements stored in the array
@@ -190,16 +193,81 @@ namespace LBM
              * @note Compile-time enforced check ensures correct number of arguments
              **/
             template <typename... Args>
-            __device__ constexpr array(const Args... args) : data_{args...}
+            __device__ __host__ [[nodiscard]] inline constexpr array(const Args... args) : data_{args...}
             {
                 static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
+            }
+
+            /**
+             * @brief Fill constructor
+             * @param value Initial value for all array elements
+             **/
+            template <std::enable_if_t<(N != 1), bool> = true>
+            __device__ __host__ [[nodiscard]] inline consteval array(const T value) noexcept
+            {
+                for (label_t i = 0; i < N; i++)
+                {
+                    data_[i] = value;
+                }
             }
 
             /**
              * @brief Default constructor (value-initializes all elements)
              * @note Elements will be default-initialized or zero-initialized
              **/
-            array() = default;
+            [[nodiscard]] inline constexpr array() = default;
+
+            /**
+             * @brief Addition operator
+             * @return The sum of two arrays of the same type and size
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
+            {
+                return [&]<const label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        ((*this)[label_constant<Is>{}] + A[label_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
+             * @brief Subtraction operator
+             * @return The subtraction of two arrays of the same type and size
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
+            {
+                return [&]<const label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        ((*this)[label_constant<Is>{}] - A[label_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
+             * @brief Multiplication operator
+             * @return The dot product of two arrays of the same type and size
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
+            {
+                return [&]<const label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        ((*this)[label_constant<Is>{}] * A[label_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
+
+            /**
+             * @brief Division operator
+             * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
+             **/
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
+            {
+                return [&]<const label_t... Is>(std::index_sequence<Is...>)
+                {
+                    return thread::array<T, N>{
+                        ((*this)[label_constant<Is>{}] / A[label_constant<Is>{}])...};
+                }(std::make_index_sequence<N>{});
+            }
 
             /**
              * @brief Compile-time mutable element access
@@ -210,9 +278,10 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ T &operator[](const label_constant<index_> index) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_constant<index_> &index) __restrict__ noexcept
             {
-                return data_[index()];
+                assert_legal_access<index_>();
+                return data_[label_constant<index.value>()];
             }
 
             /**
@@ -224,9 +293,10 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ const T &operator[](const label_constant<index_> index) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_constant<index_> &index) __restrict__ const noexcept
             {
-                return data_[index()];
+                assert_legal_access<index_>();
+                return data_[label_constant<index.value>()];
             }
 
             /**
@@ -238,20 +308,10 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            template <typename Index>
-            __device__ constexpr T &operator[](const Index idx) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
             {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
+                // Runtime index
+                return data_[idx];
             }
 
             /**
@@ -263,21 +323,9 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            template <typename Index>
-            __device__ constexpr const T &operator[](const Index idx) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
             {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    static_assert(std::is_integral_v<Index>, "Index is not a compile-time constant");
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
+                return data_[idx];
             }
 
             /**
@@ -285,7 +333,7 @@ namespace LBM
              * @return Compile-time constant number of elements (N)
              * @note Consteval function - evaluated at compile time
              **/
-            __device__ [[nodiscard]] inline consteval label_t size() const noexcept
+            __device__ __host__ [[nodiscard]] static inline consteval label_t size() noexcept
             {
                 return N;
             }
@@ -295,7 +343,7 @@ namespace LBM
              * @return Sum of all of the elements (N)
              * @note Constexpr function - potentially evaluated at compile time
              **/
-            __device__ [[nodiscard]] inline constexpr T sum() const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T sum() const noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -308,7 +356,61 @@ namespace LBM
              * @brief The underlying data
              **/
             T ptrRestrict data_[N];
+
+            template <const label_t i>
+            __device__ __host__ constexpr static inline void assert_legal_access() noexcept
+            {
+                static_assert(in_bounds<i, N>, "index is out of range: Must be < N.");
+            }
         };
+    }
+
+    template <typename T, const label_t N>
+    __device__ __host__ [[nodiscard]] inline consteval label_t number_non_zero(const thread::array<T, N> &C)
+    {
+        label_t n = 0;
+
+        for (label_t i = 0; i < N; i++)
+        {
+            if (!(C[i] == 0))
+            {
+                n++;
+            }
+        }
+
+        return n;
+    }
+
+    template <const label_t ReturnSize, typename T, const label_t N>
+    __device__ __host__ [[nodiscard]] static inline constexpr thread::array<int, ReturnSize> non_zero_values(const thread::array<T, N> &arr) noexcept
+    {
+        thread::array<int, ReturnSize> coefficients{};
+        label_t count = 0;
+        for (label_t i = 0; i < N; i++)
+        {
+            if (arr[i] != 0)
+            {
+                coefficients[count] = arr[i];
+                count++;
+            }
+        }
+        return coefficients;
+    }
+
+    template <const label_t ReturnSize, typename T, const label_t N>
+    __device__ __host__ [[nodiscard]] static inline constexpr thread::array<label_t, ReturnSize> non_zero_indices(const thread::array<T, N> &arr) noexcept
+    {
+        thread::array<label_t, ReturnSize> indices{};
+        label_t count = 0;
+        for (label_t i = 0; i < N; i++)
+        {
+            if (arr[i] != 0)
+            {
+                indices[count] = i;
+                count++;
+            }
+        }
+        return indices;
     }
 
     /**
@@ -355,6 +457,20 @@ namespace LBM
     }
     // template <const time::::type T>
     // using timeType = const std::integral_constant<time::::type, T>;
+
+    typedef enum axisDirectionEnum : int
+    {
+        X = 0,
+        Y = 1,
+        Z = 2,
+        NO_DIRECTION = -1
+    } axisDirection;
+
+    struct dim2
+    {
+        const label_t i;
+        const label_t j;
+    };
 
     namespace device
     {

@@ -11,7 +11,6 @@
 
 Copyright (C) 2023 UDESC Geoenergia Lab
 Authors: Nathan Duggins, Vinicius Czarnobay, Breno Gemelgo (Geoenergia Lab, UDESC)
-Authors: Nathan Duggins, Vinicius Czarnobay, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -38,7 +37,6 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A class applying boundary conditions to the turbulent jet case
     A class applying boundary conditions to the turbulent jet case
 
 Namespace
@@ -141,12 +139,11 @@ namespace LBM
                 moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
 
                 already_handled = true;
-
                 return;
             }
 
 // Periodic
-#include "include/periodic.cuh"
+// #include "include/periodic.cuh"
 
 // Dirichlet with prescribed z velocity tangential to the plane
 // #include "include/tanDirichlet.cuh"

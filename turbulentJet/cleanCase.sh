@@ -1,4 +1,2 @@
-rm -rf *.dat
-rm -rf *.vtu
-rm -rf *.vts
+rm -rf postProcess/*.vts
 rm -rf *.LBMBin

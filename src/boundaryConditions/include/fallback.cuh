@@ -1,7 +1,6 @@
 // Static corners
 case normalVector::WEST_SOUTH_BACK():
 {
-    printf("Executing fallback on nodeType SOUTH_WEST_BACK");
     if constexpr (VelocitySet::Q() == 19)
     {
         moments[m_i<0>()] = static_cast<scalar_t>(12) * rho_I / static_cast<scalar_t>(7);
@@ -358,8 +357,6 @@ case normalVector::SOUTH_BACK():
 }
 case normalVector::SOUTH_FRONT():
 {
-    printf("Executing fallback on nodeType SOUTH_FRONT");
-
     const scalar_t myz_I = SOUTH_FRONT_myz_I(pop, inv_rho_I);
 
     const scalar_t rho = -static_cast<scalar_t>(36) * (-rho_I - myz_I * rho_I + myz_I * rho_I * device::omega) / (static_cast<scalar_t>(24) + device::omega);

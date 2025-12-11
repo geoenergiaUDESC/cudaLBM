@@ -66,7 +66,7 @@ namespace LBM
     using Collision = secondOrder;
 
     // Templated booleans: periodicity in x and y respectively
-    using Halo = device::halo<VelocitySet, false, false>;
+    using Halo = device::halo<VelocitySet, true, true>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())

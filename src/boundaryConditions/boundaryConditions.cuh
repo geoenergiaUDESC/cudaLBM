@@ -143,7 +143,7 @@ namespace LBM
             }
 
 // Periodic
-// #include "include/periodic.cuh"
+#include "include/periodic.cuh"
 
 // Dirichlet with prescribed z velocity tangential to the plane
 // #include "include/tanDirichlet.cuh"

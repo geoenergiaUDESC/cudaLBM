@@ -13,7 +13,7 @@ caseName        turbulentJet;
 
 Re              3000;
 
-u_inf           0.03;
+u_inf           0.016;
 
 L_char          8;
 

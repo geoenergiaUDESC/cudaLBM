@@ -145,11 +145,8 @@ namespace LBM
 // Periodic
 #include "include/periodic.cuh"
 
-// Dirichlet with prescribed z velocity tangential to the plane
-// #include "include/tanDirichlet.cuh"
-
 // Outflow (zero-gradient) at front face
-#include "include/IRBCNeumann.cuh"
+#include "include/IRBCNeumannAll.cuh"
 
             // Call static boundaries for uncovered cases
             default:

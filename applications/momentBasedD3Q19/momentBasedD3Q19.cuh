@@ -172,7 +172,7 @@ namespace LBM
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        // device::halo<VelocitySet>::transpose_to_shared(pop, shared_buffer);
+        device::halo<VelocitySet>::transpose_to_shared(pop, shared_buffer);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -183,8 +183,8 @@ namespace LBM
             });
 
         // Save the populations to the block halo
-        // device::halo<VelocitySet>::save_from_shared(shared_buffer, gGhost);
-        device::halo<VelocitySet>::save(pop, gGhost);
+        device::halo<VelocitySet>::save_from_shared(shared_buffer, gGhost);
+        // device::halo<VelocitySet>::save(pop, gGhost);
     }
 }
 

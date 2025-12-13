@@ -61,6 +61,18 @@ namespace LBM
 #define ptrRestrict __restrict__
 
     /**
+     * @brief Switch for verbose logging
+     **/
+    __device__ __host__ [[nodiscard]] inline consteval bool verbose() noexcept
+    {
+#ifdef VERBOSE
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    /**
      * @brief CUDA implementation of a std::integral constant
      * @param T The type of integral value
      * @param v The value

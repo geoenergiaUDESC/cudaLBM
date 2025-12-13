@@ -58,6 +58,62 @@ namespace LBM
 {
     namespace host
     {
+        template <typename T>
+        __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
+        {
+            const cudaError_t err = cudaMallocHost(ptr, sizeof(T) * nPoints);
+
+            if (err != cudaSuccess)
+            {
+                throw std::runtime_error("cudaMallocHost failed: " + std::string(cudaGetErrorString(err)));
+            }
+        }
+
+        template <typename T>
+        __host__ [[nodiscard]] T *allocate(const std::size_t nPoints, const T val) noexcept
+        {
+            T *ptr;
+
+            allocateMemory(&ptr, nPoints);
+
+            if constexpr (verbose())
+            {
+                std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMallocHost to address " << ptr << std::endl;
+            }
+
+            std::uninitialized_fill_n(ptr, nPoints, val);
+
+            // if constexpr (sizeof(T) == 1)
+            // {
+            //     // Byte-sized types
+            //     memset(ptr_, *reinterpret_cast<const unsigned char *>(&value), size_);
+            // }
+            // else if (value == T{})
+            // {
+            //     // Zero initialization
+            //     memset(ptr_, 0, size_ * sizeof(T));
+            // }
+            // else if constexpr (std::is_integral_v<T> && std::is_signed_v<T>)
+            // {
+            //     // Check if it's -1 (all bits 1 in two's complement)
+            //     if (value == T(-1))
+            //     {
+            //         memset(ptr_, 0xFF, size_ * sizeof(T));
+            //     }
+            //     else
+            //     {
+            //         std::uninitialized_fill_n(ptr_, size_, value);
+            //     }
+            // }
+            // else
+            // {
+            //     // General case for trivial types
+            //     std::uninitialized_fill_n(ptr_, size_, value);
+            // }
+
+            return ptr;
+        }
+
         /**
          * @brief Copies data from device memory to host memory
          * @tparam T Data type of the elements
@@ -174,9 +230,10 @@ namespace LBM
 
             allocateMemory(&ptr, nPoints);
 
-#ifdef VERBOSE
-            std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
-#endif
+            if constexpr (verbose())
+            {
+                std::cout << "Allocated " << sizeof(T) * nPoints << " bytes of memory in cudaMalloc to address " << ptr << std::endl;
+            }
 
             return ptr;
         }

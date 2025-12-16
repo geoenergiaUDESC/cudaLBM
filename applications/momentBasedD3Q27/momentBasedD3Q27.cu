@@ -78,7 +78,7 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    const device::ptrCollection<10, scalar_t> devPtrs(
+    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> devPtrs(
         rho.ptr(),
         u.ptr(),
         v.ptr(),
@@ -97,7 +97,7 @@ int main(const int argc, const char *const argv[])
 
     device::halo<VelocitySet, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
 
-    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t));
+    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<false>()>(sizeof(scalar_t));
 
     checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q27, cudaFuncCachePreferShared));
     checkCudaErrors(cudaFuncSetAttribute(momentBasedD3Q27, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));

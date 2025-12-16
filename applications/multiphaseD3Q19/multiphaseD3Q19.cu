@@ -77,11 +77,22 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
 
-    // Phase field arrays
-    device::array<scalar_t, VelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
+    const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
+        rho.ptr(),
+        u.ptr(),
+        v.ptr(),
+        w.ptr(),
+        mxx.ptr(),
+        mxy.ptr(),
+        mxz.ptr(),
+        myy.ptr(),
+        myz.ptr(),
+        mzz.ptr(),
+        phi.ptr());
 
-    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs(
+    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> hydroPtrs(
         rho.ptr(),
         u.ptr(),
         v.ptr(),
@@ -96,12 +107,12 @@ int main(const int argc, const char *const argv[])
     // Setup Streams
     const streamHandler<NStreams()> streamsLBM;
 
-    objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
+    objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, hydroPtrs, streamsLBM);
 
-    device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
-    device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
+    device::halo<VelocitySet, true, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
+    device::halo<PhaseVelocitySet, true, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
-    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>(sizeof(scalar_t));
+    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<true>()>(sizeof(scalar_t));
 
     checkCudaErrors(cudaFuncSetCacheConfig(multiphaseD3Q19, cudaFuncCachePreferShared));
     checkCudaErrors(cudaFuncSetAttribute(multiphaseD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
@@ -138,7 +149,7 @@ int main(const int argc, const char *const argv[])
             [&](const auto stream)
             {
                 multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
-                    devPtrs, phi.ptr(), fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    devPtrs, fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });
 
         // Calculate S kernel

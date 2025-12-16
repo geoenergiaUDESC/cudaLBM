@@ -74,6 +74,8 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline consteval D3Q19(){};
 
+        static constexpr bool isPhaseField() noexcept { return false; }
+
         /**
          * @brief Get number of discrete velocity directions
          * @return 19 (number of directions in D3Q19 lattice)
@@ -392,7 +394,8 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 19> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        template <bool isMultiphase>
+        __device__ static inline void reconstruct(thread::array<scalar_t, 19> &pop, const thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 
@@ -427,7 +430,8 @@ namespace LBM
          * @param[in] moments Moment array (10 components)
          * @return Population array with 19 components
          **/
-        __device__ static inline thread::array<scalar_t, 19> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        template <bool isMultiphase>
+        __device__ static inline thread::array<scalar_t, 19> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 
@@ -462,7 +466,8 @@ namespace LBM
          * @param[in] moments Moment array (10 components)
          * @return Population array with 19 components
          **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
+        template <bool isMultiphase>
+        __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
             const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
 
@@ -557,7 +562,8 @@ namespace LBM
          * @param[in] pop Population array (19 components)
          * @param[out] moments Moment array to be filled (10 components)
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        template <bool isMultiphase>
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
             // Equation 3
             moments[m_i<0>()] = pop.sum();

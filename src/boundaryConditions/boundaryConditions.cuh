@@ -96,10 +96,10 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet>
+        template <class VelocitySet, bool isMultiphase>
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
-            thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
+            thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
@@ -137,6 +137,85 @@ namespace LBM
                 moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
                 moments[m_i<8>()] = myz;                                            // myz
                 moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+
+                if constexpr (isMultiphase)
+                {
+                    moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+                }
+
+                already_handled = true;
+                return;
+            }
+
+// Periodic
+#include "include/periodic.cuh"
+
+// Outflow (zero-gradient) at front face
+#include "include/IRBCNeumannAll.cuh"
+
+            // Call static boundaries for uncovered cases
+            default:
+            {
+                if (!already_handled)
+                {
+                    switch (boundaryNormal.nodeType())
+                    {
+#include "include/fallback.cuh"
+                    }
+                }
+
+                break;
+            }
+            }
+        }
+
+        template <class VelocitySet, class PhaseVelocitySet, bool isMultiphase>
+        __device__ static inline constexpr void calculateMoments(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            const thread::array<scalar_t, PhaseVelocitySet::Q()> &pop_g,
+            thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments,
+            const normalVector &boundaryNormal,
+            const scalar_t *const ptrRestrict shared_buffer) noexcept
+        {
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
+
+            const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+
+            bool already_handled = false;
+
+            switch (boundaryNormal.nodeType())
+            {
+            // Round inflow + no-slip
+            case normalVector::BACK():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
+
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = rho0<scalar_t>();
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[m_i<0>()] = rho;                                            // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
+                moments[m_i<6>()] = mxz;                                            // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
+                moments[m_i<8>()] = myz;                                            // myz
+                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+
+                if constexpr (isMultiphase)
+                {
+                    moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+                }
 
                 already_handled = true;
                 return;

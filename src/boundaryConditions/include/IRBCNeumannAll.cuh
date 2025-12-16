@@ -61,11 +61,11 @@ Notes
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                                                                                                                                                                                          // mxx
@@ -90,11 +90,11 @@ Notes
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                                                                                                                                                                                          // mxx
@@ -119,11 +119,11 @@ Notes
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = -((-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[m_i<1>()] * moments[m_i<1>()] * rho - static_cast<scalar_t>(3) * moments[m_i<3>()] * moments[m_i<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mxx
@@ -148,11 +148,11 @@ Notes
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = -((-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * mzz_I * rho_I - static_cast<scalar_t>(3) * moments[m_i<1>()] * moments[m_i<1>()] * rho - static_cast<scalar_t>(3) * moments[m_i<3>()] * moments[m_i<3>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mxx
@@ -176,11 +176,16 @@ case normalVector::FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = -((-static_cast<scalar_t>(4) * mxx_I * rho_I + static_cast<scalar_t>(4) * myy_I * rho_I - static_cast<scalar_t>(3) * moments[m_i<1>()] * moments[m_i<1>()] * rho - static_cast<scalar_t>(3) * moments[m_i<2>()] * moments[m_i<2>()] * rho) / (static_cast<scalar_t>(6) * rho)); // mxx
@@ -204,11 +209,11 @@ case normalVector::FRONT():
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -230,11 +235,11 @@ case normalVector::FRONT():
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -255,11 +260,16 @@ case normalVector::WEST_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -281,11 +291,11 @@ case normalVector::WEST_FRONT():
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -307,11 +317,11 @@ case normalVector::WEST_FRONT():
 //     const label_t tid = device::idxBlock(threadIdx.x + offset.x, threadIdx.y + offset.y, threadIdx.z + offset.z);
 
 //     // Classic Neumann
-//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+//     const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
 //     moments[m_i<0>()] = rho;
-//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+//     moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+//     moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+//     moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
 
 //     // IRBC-Neumann
 //     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -332,11 +342,16 @@ case normalVector::EAST_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -357,11 +372,16 @@ case normalVector::SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -382,11 +402,16 @@ case normalVector::NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
+    const scalar_t rho = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
     moments[m_i<0>()] = rho;
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()];                                                                   // mxx
@@ -406,10 +431,15 @@ case normalVector::WEST_SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -427,10 +457,15 @@ case normalVector::WEST_NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -448,10 +483,15 @@ case normalVector::EAST_SOUTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx
@@ -469,10 +509,15 @@ case normalVector::EAST_NORTH_FRONT():
     const label_t tid = device::idxBlock(threadIdx.x, threadIdx.y, threadIdx.z - 1);
 
     // Classic Neumann
-    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<0>()];
-    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<1>()];
-    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<2>()];
-    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS() + 1) + m_i<3>()];
+    moments[m_i<0>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<0>()];
+    moments[m_i<1>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<1>()];
+    moments[m_i<2>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<2>()];
+    moments[m_i<3>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<3>()];
+
+    if constexpr (isMultiphase)
+    {
+        moments[m_i<10>()] = shared_buffer[tid * (NUMBER_MOMENTS<isMultiphase>() + 1) + m_i<10>()];
+    }
 
     // IRBC-Neumann
     moments[m_i<4>()] = moments[m_i<1>()] * moments[m_i<1>()]; // mxx

@@ -230,7 +230,6 @@ namespace LBM
             phase_pop[q_i<6>()] = s_phase_pop[q_i<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
         }
 
-        template <const label_t N>
         __device__ static inline void phase_pull(
             thread::array<scalar_t, 7> &phase_pop,
             const scalar_t *const ptrRestrict s_phase_pop) noexcept

@@ -74,6 +74,8 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline consteval D3Q7(){};
 
+        static constexpr bool isPhaseField() noexcept { return true; }
+
         /**
          * @brief Get number of discrete velocity directions
          * @return 7 (number of directions in D3Q7 lattice)
@@ -341,12 +343,12 @@ namespace LBM
         /**
          * @brief Calculate equilibrium distribution function for a direction
          * @tparam T Data type for calculation
-         * @param[in] phiw Weighted phase field (w_q[q] * phi)
+         * @param[in] phiw Weighted density (w_q[q] * phi)
          * @param[in] uc4 4 * (u·c_q) = 4*(u*cx + v*cy + w*cz)
          * @return First-order equilibrium distribution value for the direction
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr T g_eq(const T phiw, const T uc4) noexcept
+        __host__ [[nodiscard]] static inline constexpr T f_eq(const T phiw, const T uc4) noexcept
         {
             return (phiw * (static_cast<scalar_t>(1) + uc4));
         }
@@ -360,14 +362,14 @@ namespace LBM
          * @return Array of 7 second-order equilibrium distribution values
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr const std::array<T, 7> G_eq(const T phi, const T u, const T v, const T w) noexcept
+        __host__ [[nodiscard]] static inline constexpr const std::array<T, 7> F_eq(const T u, const T v, const T w) noexcept
         {
             std::array<T, Q_> pop;
 
             for (label_t q = 0; q < Q_; q++)
             {
-                pop[q] = g_eq<T>(
-                    phi * host_w_q<T>()[q],
+                pop[q] = f_eq<T>(
+                    host_w_q<T>()[q],
                     static_cast<T>(4) * ((u * host_cx<T>()[q]) + (v * host_cy<T>()[q]) + (w * host_cz<T>()[q])));
             }
 
@@ -377,20 +379,22 @@ namespace LBM
         /**
          * @brief Reconstruct population distribution from moments (in-place)
          * @param[out] pop Population array to be filled
-         * @param[in] moments Moment array (10 components)
+         * @param[in] moments Moment array (11 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
+        template <bool isMultiphase>
+            requires(isMultiphase)
+        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
         {
-            const scalar_t phiw_0 = phi * w_0<scalar_t>();
+            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
             pop[q_i<0>()] = phiw_0;
 
-            const scalar_t phiw_1 = phi * w_1<scalar_t>();
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + ux);
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - ux);
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + uy);
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - uy);
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + uz);
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - uz);
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]);
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]);
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]);
         }
 
         /**
@@ -398,19 +402,21 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        __device__ static inline thread::array<scalar_t, 7> reconstruct(const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
+        template <bool isMultiphase>
+            requires(isMultiphase)
+        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
         {
-            const scalar_t phiw_0 = phi * w_0<scalar_t>();
-            const scalar_t phiw_1 = phi * w_1<scalar_t>();
+            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
 
             return {
                 phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + ux),
-                phiw_1 * (static_cast<scalar_t>(1) - ux),
-                phiw_1 * (static_cast<scalar_t>(1) + uy),
-                phiw_1 * (static_cast<scalar_t>(1) - uy),
-                phiw_1 * (static_cast<scalar_t>(1) + uz),
-                phiw_1 * (static_cast<scalar_t>(1) - uz)};
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]),
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]),
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()])};
         }
 
         /**
@@ -418,21 +424,23 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
+        template <bool isMultiphase>
+            requires(isMultiphase)
+        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
         {
-            const scalar_t phiw_0 = phi * w_0<scalar_t>();
+            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
 
             std::array<scalar_t, 7> pop;
 
             pop[q_i<0>()] = phiw_0;
 
-            const scalar_t phiw_1 = phi * w_1<scalar_t>();
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + ux);
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - ux);
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + uy);
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - uy);
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + uz);
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - uz);
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]);
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]);
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]);
 
             return pop;
         }
@@ -446,17 +454,25 @@ namespace LBM
         template <const label_t moment_>
         __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 7> &pop) noexcept
         {
-            return static_cast<scalar_t>(0);
+            if constexpr (moment_ == 10)
+            {
+                return pop[q_i<0>()] + pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<5>()] + pop[q_i<6>()];
+            }
+            else
+            {
+                return static_cast<scalar_t>(0);
+            }
         }
 
         /**
          * @brief Calculate moments from population distribution
          * @param[in] pop Population array (7 components)
-         * @param[out] phi Phase field
+         * @param[out] moments Moment array to be filled (11 components)
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 7> &pop, scalar_t &phi) noexcept
+        template <bool isMultiphase>
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
-            phi = pop.sum();
+            moments[m_i<10>()] = pop.sum();
         }
 
         /**

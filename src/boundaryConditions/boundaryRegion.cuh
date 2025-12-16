@@ -130,6 +130,11 @@ namespace LBM
             return values_[index::zz()]();
         }
 
+        __host__ [[nodiscard]] inline constexpr scalar_t phi() const noexcept
+        {
+            return values_[index::phi()]();
+        }
+
         /**
          * @brief Print all field values for this boundary region
          * @note Only active when VERBOSE macro is defined

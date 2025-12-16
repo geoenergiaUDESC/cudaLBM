@@ -110,7 +110,11 @@ namespace LBM
     /**
      * @brief Number of hydrodynamic moments
      **/
-    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
+    template <bool isMultiphase>
+    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS()
+    {
+        return isMultiphase ? 11 : 10;
+    }
 
     /**
      * @brief Host-side indexing operations
@@ -128,13 +132,13 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
-        template <const label_t mom>
+        template <const label_t mom, bool isMultiphase>
         __host__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
             const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
-            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
 
         /**
@@ -168,12 +172,13 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
+        template <bool isMultiphase>
         __host__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
             const label_t mom, const label_t nxBlocks, const label_t nyBlocks) noexcept
         {
-            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
+            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + nxBlocks * (by + nyBlocks * bz)))));
         }
 
         /**
@@ -319,10 +324,10 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
-        template <const label_t mom>
+        template <const label_t mom, bool isMultiphase>
         __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
-            return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
+            return mom + NUMBER_MOMENTS<isMultiphase>() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
         }
 
         /**
@@ -486,16 +491,17 @@ namespace LBM
      **/
     namespace index
     {
-        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } // < Density
-        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   // < X-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   // < Y-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   // < Z-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  // < XX-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  // < XY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  // < XZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  // < YY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  // < YZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  // < ZZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; }  // < Density
+        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }    // < X-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }    // < Y-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }    // < Z-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }   // < XX-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }   // < XY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }   // < XZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }   // < YY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }   // < YZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }   // < ZZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t phi() { return 10; } // < Phase field
     }
 
     /**

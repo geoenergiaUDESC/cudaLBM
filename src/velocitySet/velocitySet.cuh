@@ -126,7 +126,8 @@ namespace LBM
          * - Diagonal second-order moments: scaled by scale_ii()
          * - Off-diagonal second-order moments: scaled by scale_ij()
          **/
-        __device__ static inline void scale(thread::array<scalar_t, 10> &moments) noexcept
+        template <bool isMultiphase>
+        __device__ static inline void scale(thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
         {
             // Scale the moments correctly
             moments[m_i<1>()] = scale_i<scalar_t>() * (moments[m_i<1>()]);
@@ -197,6 +198,7 @@ namespace LBM
     };
 }
 
+#include "D3Q7.cuh"
 #include "D3Q19.cuh"
 #include "D3Q27.cuh"
 

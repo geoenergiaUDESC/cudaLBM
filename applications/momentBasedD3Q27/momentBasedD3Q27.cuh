@@ -71,7 +71,6 @@ namespace LBM
     using VelocitySet = D3Q27;
     using Collision = secondOrder;
 
-    // Templated booleans: periodicity in x and y respectively
     using Halo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
@@ -83,7 +82,7 @@ namespace LBM
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q27 __global__ void momentBasedD3Q27(
-        const device::ptrCollection<10, scalar_t> devPtrs,
+        const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {
@@ -97,26 +96,26 @@ namespace LBM
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
         // Prefetch devPtrs into L2
-        device::constexpr_for<0, NUMBER_MOMENTS()>(
+        device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
             [&](const auto moment)
             {
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
         // Declare shared memory (flattened)
-        // __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>()> shared_buffer;
+        // __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<false>()>()> shared_buffer;
         extern __shared__ scalar_t shared_buffer[];
 
         const label_t tid = device::idxBlock();
 
         // Coalesced read from global memory
-        thread::array<scalar_t, NUMBER_MOMENTS()> moments;
+        thread::array<scalar_t, NUMBER_MOMENTS<false>()> moments;
         {
             // Read into shared
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
+            device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
                 [&](const auto moment)
                 {
-                    const label_t ID = tid * m_i<NUMBER_MOMENTS() + 1>() + m_i<moment>();
+                    const label_t ID = tid * m_i<NUMBER_MOMENTS<false>() + 1>() + m_i<moment>();
                     shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
                     if constexpr (moment == index::rho())
                     {
@@ -132,7 +131,7 @@ namespace LBM
         __syncthreads();
 
         // Reconstruct the population from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct<false>(moments);
 
         // Save/pull from shared memory
         {
@@ -146,7 +145,7 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(
+        Halo::load(
             pop,
             fGhost.ptr<0>(),
             fGhost.ptr<1>(),
@@ -156,13 +155,13 @@ namespace LBM
             fGhost.ptr<5>());
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments);
+        VelocitySet::calculateMoments<false>(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
-            device::constexpr_for<0, NUMBER_MOMENTS()>(
+            device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
                 [&](const auto moment)
                 {
-                    const label_t ID = tid * label_constant<NUMBER_MOMENTS() + 1>() + label_constant<moment>();
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS<false>() + 1>() + label_constant<moment>();
                     shared_buffer[ID] = moments[moment];
                 });
         }
@@ -174,33 +173,33 @@ namespace LBM
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculateMoments<VelocitySet, false>(pop, moments, boundaryNormal, shared_buffer);
             }
             else
             {
-                VelocitySet::calculateMoments(pop, moments);
+                VelocitySet::calculateMoments<false>(pop, moments);
             }
         }
 
         // Scale the moments correctly
-        velocitySet::scale(moments);
+        velocitySet::scale<false>(moments);
 
         // Collide
-        Collision::collide(moments);
+        Collision::collide<false>(moments);
 
         // Calculate post collision populations
-        VelocitySet::reconstruct(pop, moments);
+        VelocitySet::reconstruct<false>(pop, moments);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
-        device::constexpr_for<0, NUMBER_MOMENTS()>(
+        device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
             [&](const auto moment)
             {
                 devPtrs.ptr<moment>()[idx] = moments[moment];
             });
 
         // Save the populations to the block halo
-        device::halo<VelocitySet>::save(
+        Halo::save(
             pop,
             gGhost.ptr<0>(),
             gGhost.ptr<1>(),

@@ -68,32 +68,32 @@ namespace LBM
                  * @param[in] invNewCount Reciprocal of (nTimeSteps + 1) for time averaging
                  **/
                 launchBounds __global__ void mean(
-                    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs,
-                    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devMeanPtrs,
+                    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> devPtrs,
+                    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> devMeanPtrs,
                     const scalar_t invNewCount)
                 {
                     // Calculate the index
                     const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
                     // Read from global memory
-                    thread::array<scalar_t, NUMBER_MOMENTS()> m;
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    thread::array<scalar_t, NUMBER_MOMENTS<false>()> m;
+                    device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
                         [&](const auto n)
                         {
                             m[n] = devPtrs.template ptr<n>()[idx];
                         });
 
                     // Read the mean values from global memory
-                    thread::array<scalar_t, NUMBER_MOMENTS()> mMean;
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    thread::array<scalar_t, NUMBER_MOMENTS<false>()> mMean;
+                    device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
                         [&](const auto n)
                         {
                             mMean[n] = devMeanPtrs.template ptr<n>()[idx];
                         });
 
                     // Update the mean value and write back to global
-                    const thread::array<scalar_t, NUMBER_MOMENTS()> meanNew = timeAverage(mMean, m, invNewCount);
-                    device::constexpr_for<0, NUMBER_MOMENTS()>(
+                    const thread::array<scalar_t, NUMBER_MOMENTS<false>()> meanNew = timeAverage(mMean, m, invNewCount);
+                    device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
                         [&](const auto n)
                         {
                             devMeanPtrs.template ptr<n>()[idx] = meanNew[n];
@@ -118,7 +118,7 @@ namespace LBM
                  **/
                 __host__ [[nodiscard]] collection(
                     const host::latticeMesh &mesh,
-                    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> &devPtrs,
+                    const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> &devPtrs,
                     const streamHandler<N> &streamsLBM) noexcept
                     : mesh_(mesh),
                       devPtrs_(devPtrs),
@@ -228,7 +228,7 @@ namespace LBM
                         mesh_,
                         componentNamesMean_,
                         host::toHost(
-                            device::ptrCollection<NUMBER_MOMENTS(), scalar_t>(
+                            device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t>(
                                 rhoMean_.ptr(),
                                 uMean_.ptr(),
                                 vMean_.ptr(),
@@ -308,7 +308,7 @@ namespace LBM
                 /**
                  * @brief Device pointer collection
                  **/
-                const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> &devPtrs_;
+                const device::ptrCollection<NUMBER_MOMENTS<false>(), scalar_t> &devPtrs_;
 
                 /**
                  * @brief Stream handler for CUDA operations

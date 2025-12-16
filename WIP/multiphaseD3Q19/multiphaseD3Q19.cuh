@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,18 +37,18 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Main kernel for the moment representation with the D3Q19 velocity set
+    Main kernel for the multiphase moment representation with the D3Q19 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q27.cuh
+    multiphaseD3Q19.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_MOMENTBASEDD3Q27_CUH
-#define __MBLBM_MOMENTBASEDD3Q27_CUH
+#ifndef __MBLBM_MULTIPHASED3Q19_CUH
+#define __MBLBM_MULTIPHASED3Q19_CUH
 
 #include "../../src/LBMIncludes.cuh"
 #include "../../src/LBMTypedefs.cuh"
@@ -68,24 +68,28 @@ namespace config
 namespace LBM
 {
 
-    using VelocitySet = D3Q27;
+    using VelocitySet = D3Q19;
+    using PhaseVelocitySet = D3Q7;
     using Collision = secondOrder;
 
-    // Templated booleans: periodicity in x and y respectively
-    using Halo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
+    using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
+    using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
-#define launchBoundsD3Q27 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
+#define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
      * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of 10 pointers to device arrays on the GPU
+     * @param devPtrs Collection of NUMBER_MOMENTS<false>() pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
-    launchBoundsD3Q27 __global__ void momentBasedD3Q27(
-        const device::ptrCollection<10, scalar_t> devPtrs,
-        const device::ptrCollection<6, const scalar_t> fGhost,
-        const device::ptrCollection<6, scalar_t> gGhost)
+    launchBoundsD3Q19 __global__ void multiphaseD3Q19(
+        const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs,
+        const scalar_t *__restrict__ phi;
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         // if (device::out_of_bounds())
@@ -103,9 +107,8 @@ namespace LBM
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
-        // Declare shared memory (flattened)
-        // __shared__ thread::array<scalar_t, block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>()> shared_buffer;
         extern __shared__ scalar_t shared_buffer[];
+        __shared__ scalar_t shared_buffer_g[(PhaseVelocitySet::Q() - 1) * block::stride()];
 
         const label_t tid = device::idxBlock();
 
@@ -128,35 +131,52 @@ namespace LBM
                     }
                 });
         }
+        const scalar_t phi_loc = phi[idx];
 
         __syncthreads();
 
-        // Reconstruct the population from the moments
+        // ======================================== LBM routines start below ======================================== //
+
+        // Reconstruct the populations from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(phi_loc, moments[m_i<1>()], moments[m_i<2>()], moments[m_i<3>()]);
 
         // Save/pull from shared memory
         {
             // Save populations in shared memory
             streaming::save<VelocitySet>(pop, shared_buffer, tid);
+            streaming::save<PhaseVelocitySet>(pop_g, shared_buffer_g, tid);
 
             __syncthreads();
 
             // Pull from shared memory
             streaming::pull<VelocitySet>(pop, shared_buffer);
+            streaming::phase_pull(pop_g, shared_buffer_g);
         }
 
-        // Load pop from global memory in cover nodes
-        device::halo<VelocitySet>::load(
+        // Load hydro pop from global memory in cover nodes
+        HydroHalo::load(
             pop,
-            fGhost.ptr<0>(),
-            fGhost.ptr<1>(),
-            fGhost.ptr<2>(),
-            fGhost.ptr<3>(),
-            fGhost.ptr<4>(),
-            fGhost.ptr<5>());
+            fGhostHydro.ptr<0>(),
+            fGhostHydro.ptr<1>(),
+            fGhostHydro.ptr<2>(),
+            fGhostHydro.ptr<3>(),
+            fGhostHydro.ptr<4>(),
+            fGhostHydro.ptr<5>());
+
+        // Load phase pop from global memory in cover nodes
+        PhaseHalo::load(
+            pop_g,
+            fGhostPhase.ptr<0>(),
+            fGhostPhase.ptr<1>(),
+            fGhostPhase.ptr<2>(),
+            fGhostPhase.ptr<3>(),
+            fGhostPhase.ptr<4>(),
+            fGhostPhase.ptr<5>());
 
         // Compute post-stream moments
         VelocitySet::calculateMoments(pop, moments);
+        PhaseVelocitySet::calculateMoments(pop_g, phi_loc);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS()>(
@@ -174,22 +194,28 @@ namespace LBM
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, pop_g, moments, boundaryNormal, shared_buffer);
             }
             else
             {
                 VelocitySet::calculateMoments(pop, moments);
+                PhaseVelocitySet::calculateMoments(pop_g, moments);
             }
         }
 
         // Scale the moments correctly
         velocitySet::scale(moments);
 
+        // ======================================================================================================================== //
+        // ======================================================================================================================== //
+        // ======================================================================================================================== //
+
         // Collide
         Collision::collide(moments);
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -199,15 +225,31 @@ namespace LBM
                 devPtrs.ptr<moment>()[idx] = moments[moment];
             });
 
-        // Save the populations to the block halo
-        device::halo<VelocitySet>::save(
+        // ======================================================================================================================== //
+        // ======================================================================================================================== //
+        // ======================================================================================================================== //
+
+        // Save the hydro populations to the block halo
+        HydroHalo::save(
             pop,
-            gGhost.ptr<0>(),
-            gGhost.ptr<1>(),
-            gGhost.ptr<2>(),
-            gGhost.ptr<3>(),
-            gGhost.ptr<4>(),
-            gGhost.ptr<5>());
+            gGhostHydro.ptr<0>(),
+            gGhostHydro.ptr<1>(),
+            gGhostHydro.ptr<2>(),
+            gGhostHydro.ptr<3>(),
+            gGhostHydro.ptr<4>(),
+            gGhostHydro.ptr<5>());
+
+        // Save the phase populations to the block halo
+        PhaseHalo::save(
+            pop_g,
+            gGhostPhase.ptr<0>(),
+            gGhostPhase.ptr<1>(),
+            gGhostPhase.ptr<2>(),
+            gGhostPhase.ptr<3>(),
+            gGhostPhase.ptr<4>(),
+            gGhostPhase.ptr<5>());
+
+        // ============================================ LBM routines end ============================================ //
     }
 }
 

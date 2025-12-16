@@ -9,13 +9,13 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        turbulentJet;
+caseName        monophaseJet;
 
 Re              3000;
 
 u_inf           0.016;
 
-L_char          16;
+L_char          8;
 
 startFrom       latestTime;
 
@@ -26,5 +26,7 @@ nTimeSteps      10001;
 saveInterval    1000;
 
 infoInterval    1000;
+
+multiphase      false;
 
 \*---------------------------------------------------------------------------*/

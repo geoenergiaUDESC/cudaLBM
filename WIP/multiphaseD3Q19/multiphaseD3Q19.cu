@@ -10,7 +10,7 @@
 /*---------------------------------------------------------------------------*\
 
 Copyright (C) 2023 UDESC Geoenergia Lab
-Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
 
 This implementation is derived from concepts and algorithms developed in:
   MR-LBM: Moment Representation Lattice Boltzmann Method
@@ -37,17 +37,17 @@ License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Implementation of the moment representation with the D3Q19 velocity set
+    Implementation of the multiphase moment representation with the D3Q19 velocity set
 
 Namespace
     LBM
 
 SourceFiles
-    momentBasedD3Q19.cu
+    multiphaseD3Q19.cu
 
 \*---------------------------------------------------------------------------*/
 
-#include "momentBasedD3Q19.cuh"
+#include "multiphaseD3Q19.cuh"
 
 using namespace LBM;
 
@@ -78,7 +78,10 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    const device::ptrCollection<10, scalar_t> devPtrs(
+    // Phase field arrays
+    device::array<scalar_t, VelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
+
+    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs(
         rho.ptr(),
         u.ptr(),
         v.ptr(),
@@ -95,17 +98,18 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
 
-    device::halo<VelocitySet, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
+    device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
+    device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
-    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t));
+    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS()>(sizeof(scalar_t));
 
-    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetAttribute(momentBasedD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
+    checkCudaErrors(cudaFuncSetCacheConfig(multiphaseD3Q19, cudaFuncCachePreferShared));
+    checkCudaErrors(cudaFuncSetAttribute(multiphaseD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
 
     const runTimeIO IO(mesh, programCtrl);
 
     std::cout << std::endl;
-    std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to momentBasedD3Q" << VelocitySet::Q() << " kernel" << std::endl;
+    std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to multiphaseD3Q" << VelocitySet::Q() << " kernel" << std::endl;
     std::cout << std::endl;
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
@@ -122,7 +126,7 @@ int main(const int argc, const char *const argv[])
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
-                functionObjects::solutionVariableNames(false),
+                functionObjects::solutionVariableNames(true),
                 host::toHost(devPtrs, mesh),
                 timeStep);
 
@@ -133,14 +137,16 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
+                    devPtrs, phi.ptr(), fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
 
         // Halo pointer swap
-        blockHalo.swap();
+        fBlockHalo.swap();
+        gBlockHalo.swap();
     }
 
     return 0;

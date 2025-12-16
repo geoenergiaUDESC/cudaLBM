@@ -75,7 +75,8 @@ namespace LBM
               nTimeSteps_(string::extractParameter<label_t>(string::readFile("programControl"), "nTimeSteps")),
               saveInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "saveInterval")),
               infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
-              latestTime_(fileIO::latestTime(caseName_))
+              latestTime_(fileIO::latestTime(caseName_)),
+              multiphase_(string::extractParameter<bool>(string::readFile("programControl"), "multiphase"))
         {
             static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
 
@@ -211,6 +212,15 @@ namespace LBM
         }
 
         /**
+         * @brief Returns multiphase or not
+         * @return Multiphase bool
+         **/
+        __device__ __host__ [[nodiscard]] inline constexpr bool multiphase() const noexcept
+        {
+            return multiphase_;
+        }
+
+        /**
          * @brief Provides read-only access to the input control
          * @return A const reference to an inputControl object
          **/
@@ -280,7 +290,7 @@ namespace LBM
         /**
          * @brief The characteristic length
          **/
-        const scalar_t L_char_; 
+        const scalar_t L_char_;
 
         /**
          * @brief Total number of simulation time steps, the save interval, info output interval and the latest time step at program start
@@ -289,6 +299,11 @@ namespace LBM
         const label_t saveInterval_;
         const label_t infoInterval_;
         const label_t latestTime_;
+
+        /**
+         * @brief Whether the simulation is multiphase
+         **/
+        const bool multiphase_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

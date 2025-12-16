@@ -59,6 +59,12 @@ SourceFiles
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
 
+namespace config
+{
+    constexpr bool periodicX = true;
+    constexpr bool periodicY = true;
+}
+
 namespace LBM
 {
 
@@ -66,7 +72,7 @@ namespace LBM
     using Collision = secondOrder;
 
     // Templated booleans: periodicity in x and y respectively
-    using Halo = device::halo<VelocitySet, true, true>;
+    using Halo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())

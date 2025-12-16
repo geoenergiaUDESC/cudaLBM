@@ -9,16 +9,24 @@
 
 /*---------------------------------------------------------------------------*\
 
-nx              64;
+caseName        multiphaseJet;
 
-ny              64;
+Re              3000;
 
-nz              256;
+u_inf           0.016;
 
-Lx              1.0;
+L_char          8;
 
-Ly              1.0;
+startFrom       latestTime;
 
-Lz              4.0;
+startTime       0;
+
+nTimeSteps      10001;
+
+saveInterval    1000;
+
+infoInterval    1000;
+
+multiphase      true;
 
 \*---------------------------------------------------------------------------*/

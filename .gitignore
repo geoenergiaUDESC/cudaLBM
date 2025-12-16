@@ -40,21 +40,25 @@ thirdParty/opt*
 thirdParty/openmpi-5.0.7.tar.gz
 build
 
-# Turbulent jet directory ignores
-turbulentJet/*.dat
-turbulentJet/*.vtu
-turbulentJet/*.vts
-turbulentJet/*.LBMBin
-turbulentJet/*/*.dat
-turbulentJet/*/*.vtu
-turbulentJet/*/*.vts
-turbulentJet/*/*.LBMBin
+# Monophase jet directory ignores
+monophaseJet/*.dat
+monophaseJet/*.vtu
+monophaseJet/*.vts
+monophaseJet/*.LBMBin
+monophaseJet/*/*.dat
+monophaseJet/*/*.vtu
+monophaseJet/*/*.vts
+monophaseJet/*/*.LBMBin
 
-# Test directory ignores
-testSimulation/*.dat
-testSimulation/*.vtu
-testSimulation/*.vts
-testSimulation/*.LBMBin
+# Monophase jet directory ignores
+multiphaseJet/*.dat
+multiphaseJet/*.vtu
+multiphaseJet/*.vts
+multiphaseJet/*.LBMBin
+multiphaseJet/*/*.dat
+multiphaseJet/*/*.vtu
+multiphaseJet/*/*.vts
+multiphaseJet/*/*.LBMBin
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat

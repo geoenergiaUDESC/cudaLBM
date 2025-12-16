@@ -124,31 +124,29 @@ namespace LBM
      * @brief Returns the field names based on the provided prefix and whether a custom field is specified
      * @param[in] fileNamePrefix The prefix for the field names
      * @param[in] doCustomField Boolean indicating if a custom field is specified
+     * @param[in] isMultiphase If the case is multiphase or not
      * @return A reference to a vector of field names
      * @throws std::runtime_error if an invalid field name is provided
      **/
     __host__ [[nodiscard]] const std::vector<std::string> &getFieldNames(
         const std::string &fileNamePrefix,
-        const bool doCustomField)
+        const bool doCustomField,
+        const bool isMultiphase)
     {
         if (!doCustomField)
         {
-            return functionObjects::solutionVariableNames;
+            return functionObjects::solutionVariableNames(isMultiphase);
         }
-        else
+
+        const auto &fieldMap = functionObjects::fieldComponentsMap(isMultiphase);
+
+        const auto it = fieldMap.find(fileNamePrefix);
+        if (it == fieldMap.end())
         {
-            const std::unordered_map<std::string, std::vector<std::string>>::const_iterator namesIterator = functionObjects::fieldComponentsMap.find(fileNamePrefix);
-            const bool foundField = namesIterator != functionObjects::fieldComponentsMap.end();
-            if (!foundField)
-            {
-                // Throw an exception: invalid field name
-                throw std::runtime_error("Invalid argument passed to -fieldName");
-            }
-            else
-            {
-                return namesIterator->second;
-            }
+            throw std::runtime_error("Invalid argument passed to -fieldName: " + fileNamePrefix);
         }
+
+        return it->second;
     }
 
     namespace direction

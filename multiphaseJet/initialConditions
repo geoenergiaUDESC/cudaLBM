@@ -56,7 +56,7 @@ field u
 
     North
     {
-        value   0.0256;
+        value   0;
     };
 
     South
@@ -170,7 +170,7 @@ field m_xx
 
     North
     {
-        value   equilibrium;
+        value   0;
     };
 
     South
@@ -352,6 +352,44 @@ field m_yz
 };
 
 field m_zz
+{
+    internalField
+    {
+        value   0;
+    };
+
+    North
+    {
+        value   0;
+    };
+
+    South
+    {
+        value   0;
+    };
+
+    East
+    {
+        value   0;
+    };
+
+    West
+    {
+        value   0;
+    };
+    
+    Front
+    {
+        value   0;
+    };
+
+    Back
+    {
+        value   0;
+    };
+};
+
+field phi
 {
     internalField
     {

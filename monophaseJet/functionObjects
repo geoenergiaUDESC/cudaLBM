@@ -9,20 +9,9 @@
 
 /*---------------------------------------------------------------------------*\
 
-caseName        lidDrivenCavity;
-
-Re              10000;
-
-u_inf           0.0256;
-
-startFrom       latestTime;
-
-startTime       0;
-
-nTimeSteps      200001;
-
-saveInterval    20000;
-
-infoInterval    2000;
+functionObjectList
+{
+    //momentsMean;
+};
 
 \*---------------------------------------------------------------------------*/

@@ -58,6 +58,9 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
+    // Check if is multiphase
+    const bool isMultiphase = programCtrl.multiphase();
+
     // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
     const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
     const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
@@ -69,7 +72,7 @@ int main(const int argc, const char *const argv[])
     const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
 
     // Now get the std::vector of std::strings corresponding to the prefix
-    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
+    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField, isMultiphase);
 
     // Get the time indices
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);

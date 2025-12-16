@@ -341,7 +341,7 @@ namespace LBM
         /**
          * @brief Calculate equilibrium distribution function for a direction
          * @tparam T Data type for calculation
-         * @param[in] phiw Weighted density (w_q[q] * phi)
+         * @param[in] phiw Weighted phase field (w_q[q] * phi)
          * @param[in] uc4 4 * (u·c_q) = 4*(u*cx + v*cy + w*cz)
          * @return First-order equilibrium distribution value for the direction
          **/
@@ -360,14 +360,14 @@ namespace LBM
          * @return Array of 7 second-order equilibrium distribution values
          **/
         template <typename T>
-        __host__ [[nodiscard]] static inline constexpr const std::array<T, 7> G_eq(const T u, const T v, const T w) noexcept
+        __host__ [[nodiscard]] static inline constexpr const std::array<T, 7> G_eq(const T phi, const T u, const T v, const T w) noexcept
         {
             std::array<T, Q_> pop;
 
             for (label_t q = 0; q < Q_; q++)
             {
                 pop[q] = g_eq<T>(
-                    host_w_q<T>()[q],
+                    phi * host_w_q<T>()[q],
                     static_cast<T>(4) * ((u * host_cx<T>()[q]) + (v * host_cy<T>()[q]) + (w * host_cz<T>()[q])));
             }
 
@@ -379,81 +379,60 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
         {
-            const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
+            const scalar_t phiw_0 = phi * w_0<scalar_t>();
+            pop[q_i<0>()] = phiw_0;
 
-            const scalar_t phiw_0 = moments[m_i<0>()] * w_0<scalar_t>();
-            pop[q_i<0>()] = phiw_0 * pics2;
-
-            const scalar_t phiw_1 = moments[m_i<0>()] * w_1<scalar_t>();
-            pop[q_i<1>()] = phiw_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]);
-            pop[q_i<2>()] = phiw_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]);
-            pop[q_i<3>()] = phiw_1 * (pics2 + moments[m_i<2>()] + moments[m_i<7>()]);
-            pop[q_i<4>()] = phiw_1 * (pics2 - moments[m_i<2>()] + moments[m_i<7>()]);
-            pop[q_i<5>()] = phiw_1 * (pics2 + moments[m_i<3>()] + moments[m_i<9>()]);
-            pop[q_i<6>()] = phiw_1 * (pics2 - moments[m_i<3>()] + moments[m_i<9>()]);
+            const scalar_t phiw_1 = phi * w_1<scalar_t>();
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + ux);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - ux);
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + uy);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - uy);
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + uz);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - uz);
         }
 
         /**
          * @brief Reconstruct population distribution from moments (return)
-         * @param[in] moments Moment array (10 components)
-         * @return Population array with 19 components
+         * @param[in] moments Moment array (11 components)
+         * @return Population array with 7 components
          **/
-        __device__ static inline thread::array<scalar_t, 19> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ static inline thread::array<scalar_t, 7> reconstruct(const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
         {
-            const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
-
-            const scalar_t rhow_0 = moments[m_i<0>()] * w_0<scalar_t>();
-            const scalar_t rhow_1 = moments[m_i<0>()] * w_1<scalar_t>();
-            const scalar_t rhow_2 = moments[m_i<0>()] * w_2<scalar_t>();
+            const scalar_t phiw_0 = phi * w_0<scalar_t>();
+            const scalar_t phiw_1 = phi * w_1<scalar_t>();
 
             return {
-                rhow_0 * pics2,
-                rhow_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]),
-                rhow_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]),
-                rhow_1 * (pics2 + moments[m_i<2>()] + moments[m_i<7>()]),
-                rhow_1 * (pics2 - moments[m_i<2>()] + moments[m_i<7>()]),
-                rhow_1 * (pics2 + moments[m_i<3>()] + moments[m_i<9>()]),
-                rhow_1 * (pics2 - moments[m_i<3>()] + moments[m_i<9>()])};
+                phiw_0,
+                phiw_1 * (static_cast<scalar_t>(1) + ux),
+                phiw_1 * (static_cast<scalar_t>(1) - ux),
+                phiw_1 * (static_cast<scalar_t>(1) + uy),
+                phiw_1 * (static_cast<scalar_t>(1) - uy),
+                phiw_1 * (static_cast<scalar_t>(1) + uz),
+                phiw_1 * (static_cast<scalar_t>(1) - uz)};
         }
 
         /**
          * @brief Reconstruct population distribution from moments (host version)
-         * @param[in] moments Moment array (10 components)
-         * @return Population array with 19 components
+         * @param[in] moments Moment array (11 components)
+         * @return Population array with 7 components
          **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 19> reconstruct(const std::array<scalar_t, 10> &moments) noexcept
+        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const scalar_t phi, const scalar_t ux, const scalar_t uy, const scalar_t uz) noexcept
         {
-            const scalar_t pics2 = static_cast<scalar_t>(1.0) - cs2<scalar_t>() * (moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<9>()]);
+            const scalar_t phiw_0 = phi * w_0<scalar_t>();
 
-            const scalar_t rhow_0 = moments[m_i<0>()] * w_0<scalar_t>();
+            std::array<scalar_t, 7> pop;
 
-            std::array<scalar_t, 19> pop;
+            pop[q_i<0>()] = phiw_0;
 
-            pop[q_i<0>()] = rhow_0 * pics2;
-
-            const scalar_t rhow_1 = moments[m_i<0>()] * w_1<scalar_t>();
-            pop[q_i<1>()] = rhow_1 * (pics2 + moments[m_i<1>()] + moments[m_i<4>()]);
-            pop[q_i<2>()] = rhow_1 * (pics2 - moments[m_i<1>()] + moments[m_i<4>()]);
-            pop[q_i<3>()] = rhow_1 * (pics2 + moments[m_i<2>()] + moments[m_i<7>()]);
-            pop[q_i<4>()] = rhow_1 * (pics2 - moments[m_i<2>()] + moments[m_i<7>()]);
-            pop[q_i<5>()] = rhow_1 * (pics2 + moments[m_i<3>()] + moments[m_i<9>()]);
-            pop[q_i<6>()] = rhow_1 * (pics2 - moments[m_i<3>()] + moments[m_i<9>()]);
-
-            const scalar_t rhow_2 = moments[m_i<0>()] * w_2<scalar_t>();
-            pop[q_i<7>()] = rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]);
-            pop[q_i<8>()] = rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] + moments[m_i<5>()]);
-            pop[q_i<9>()] = rhow_2 * (pics2 + moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]);
-            pop[q_i<10>()] = rhow_2 * (pics2 - moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] + moments[m_i<6>()]);
-            pop[q_i<11>()] = rhow_2 * (pics2 + moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]);
-            pop[q_i<12>()] = rhow_2 * (pics2 - moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] + moments[m_i<8>()]);
-            pop[q_i<13>()] = rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]);
-            pop[q_i<14>()] = rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<2>()] + moments[m_i<4>()] + moments[m_i<7>()] - moments[m_i<5>()]);
-            pop[q_i<15>()] = rhow_2 * (pics2 + moments[m_i<1>()] - moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]);
-            pop[q_i<16>()] = rhow_2 * (pics2 - moments[m_i<1>()] + moments[m_i<3>()] + moments[m_i<4>()] + moments[m_i<9>()] - moments[m_i<6>()]);
-            pop[q_i<17>()] = rhow_2 * (pics2 + moments[m_i<2>()] - moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]);
-            pop[q_i<18>()] = rhow_2 * (pics2 - moments[m_i<2>()] + moments[m_i<3>()] + moments[m_i<7>()] + moments[m_i<9>()] - moments[m_i<8>()]);
+            const scalar_t phiw_1 = phi * w_1<scalar_t>();
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + ux);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - ux);
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + uy);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - uy);
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + uz);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - uz);
 
             return pop;
         }
@@ -461,81 +440,23 @@ namespace LBM
         /**
          * @brief Calculate specific moment from population distribution (host version)
          * @tparam moment_ Moment index to calculate (0-9)
-         * @param[in] pop Population array (19 components)
+         * @param[in] pop Population array (7 components)
          * @return Calculated moment value
          **/
         template <const label_t moment_>
-        __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 19> &pop) noexcept
+        __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 7> &pop) noexcept
         {
-            if constexpr (moment_ == 0)
-            {
-                return pop[q_i<0>()] + pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<5>()] + pop[q_i<6>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<11>()] + pop[q_i<12>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<15>()] + pop[q_i<16>()] + pop[q_i<17>()] + pop[q_i<18>()];
-            }
-            else if constexpr (moment_ == 1)
-            {
-                return pop[q_i<1>()] - pop[q_i<2>()] + pop[q_i<7>()] - pop[q_i<8>()] + pop[q_i<9>()] - pop[q_i<10>()] + pop[q_i<13>()] - pop[q_i<14>()] + pop[q_i<15>()] - pop[q_i<16>()];
-            }
-            else if constexpr (moment_ == 2)
-            {
-                return pop[q_i<3>()] - pop[q_i<4>()] + pop[q_i<7>()] - pop[q_i<8>()] + pop[q_i<11>()] - pop[q_i<12>()] + pop[q_i<14>()] - pop[q_i<13>()] + pop[q_i<17>()] - pop[q_i<18>()];
-            }
-            else if constexpr (moment_ == 3)
-            {
-                return pop[q_i<5>()] - pop[q_i<6>()] + pop[q_i<9>()] - pop[q_i<10>()] + pop[q_i<11>()] - pop[q_i<12>()] + pop[q_i<16>()] - pop[q_i<15>()] + pop[q_i<18>()] - pop[q_i<17>()];
-            }
-            else if constexpr (moment_ == 4)
-            {
-                return pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<15>()] + pop[q_i<16>()];
-            }
-            else if constexpr (moment_ == 5)
-            {
-                return pop[q_i<7>()] - pop[q_i<13>()] + pop[q_i<8>()] - pop[q_i<14>()];
-            }
-            else if constexpr (moment_ == 6)
-            {
-                return pop[q_i<9>()] - pop[q_i<15>()] + pop[q_i<10>()] - pop[q_i<16>()];
-            }
-            else if constexpr (moment_ == 7)
-            {
-                return pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<12>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<17>()] + pop[q_i<18>()];
-            }
-            else if constexpr (moment_ == 8)
-            {
-                return pop[q_i<11>()] - pop[q_i<17>()] + pop[q_i<12>()] - pop[q_i<18>()];
-            }
-            else if constexpr (moment_ == 9)
-            {
-                return pop[q_i<5>()] + pop[q_i<6>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<11>()] + pop[q_i<12>()] + pop[q_i<15>()] + pop[q_i<16>()] + pop[q_i<17>()] + pop[q_i<18>()];
-            }
-            else
-            {
-                return static_cast<scalar_t>(0);
-            }
+            return static_cast<scalar_t>(0);
         }
 
         /**
          * @brief Calculate moments from population distribution
-         * @param[in] pop Population array (19 components)
-         * @param[out] moments Moment array to be filled (10 components)
+         * @param[in] pop Population array (7 components)
+         * @param[out] phi Phase field
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 19> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 7> &pop, scalar_t &phi) noexcept
         {
-            // Equation 3
-            moments[m_i<0>()] = pop.sum();
-            const scalar_t invRho = static_cast<scalar_t>(1) / moments[m_i<0>()];
-
-            // Equation 4 + force correction
-            moments[m_i<1>()] = ((pop[q_i<1>()] - pop[q_i<2>()] + pop[q_i<7>()] - pop[q_i<8>()] + pop[q_i<9>()] - pop[q_i<10>()] + pop[q_i<13>()] - pop[q_i<14>()] + pop[q_i<15>()] - pop[q_i<16>()])) * invRho;
-            moments[m_i<2>()] = ((pop[q_i<3>()] - pop[q_i<4>()] + pop[q_i<7>()] - pop[q_i<8>()] + pop[q_i<11>()] - pop[q_i<12>()] + pop[q_i<14>()] - pop[q_i<13>()] + pop[q_i<17>()] - pop[q_i<18>()])) * invRho;
-            moments[m_i<3>()] = ((pop[q_i<5>()] - pop[q_i<6>()] + pop[q_i<9>()] - pop[q_i<10>()] + pop[q_i<11>()] - pop[q_i<12>()] + pop[q_i<16>()] - pop[q_i<15>()] + pop[q_i<18>()] - pop[q_i<17>()])) * invRho;
-
-            // Equation 5
-            moments[m_i<4>()] = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<15>()] + pop[q_i<16>()]) * invRho - cs2<scalar_t>();
-            moments[m_i<5>()] = (pop[q_i<7>()] - pop[q_i<13>()] + pop[q_i<8>()] - pop[q_i<14>()]) * invRho;
-            moments[m_i<6>()] = (pop[q_i<9>()] - pop[q_i<15>()] + pop[q_i<10>()] - pop[q_i<16>()]) * invRho;
-            moments[m_i<7>()] = (pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<11>()] + pop[q_i<12>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<17>()] + pop[q_i<18>()]) * invRho - cs2<scalar_t>();
-            moments[m_i<8>()] = (pop[q_i<11>()] - pop[q_i<17>()] + pop[q_i<12>()] - pop[q_i<18>()]) * invRho;
-            moments[m_i<9>()] = (pop[q_i<5>()] + pop[q_i<6>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<11>()] + pop[q_i<12>()] + pop[q_i<15>()] + pop[q_i<16>()] + pop[q_i<17>()] + pop[q_i<18>()]) * invRho - cs2<scalar_t>();
+            phi = pop.sum();
         }
 
         /**
@@ -543,7 +464,7 @@ namespace LBM
          **/
         __host__ static void print() noexcept
         {
-            std::cout << "D3Q19 {w, cx, cy, cz}:" << std::endl;
+            std::cout << "D3Q7 {w, cx, cy, cz}:" << std::endl;
             std::cout << "{" << std::endl;
             printAll();
             std::cout << "};" << std::endl;
@@ -554,12 +475,12 @@ namespace LBM
         /**
          * @brief Number of velocity components in the lattice
          **/
-        static constexpr const label_t Q_ = 19;
+        static constexpr const label_t Q_ = 7;
 
         /**
          * @brief Number of velocity components on each lattice face
          **/
-        static constexpr const label_t QF_ = 5;
+        static constexpr const label_t QF_ = 1;
 
         /**
          * @brief Implementation of the print loop

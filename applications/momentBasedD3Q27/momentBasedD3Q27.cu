@@ -95,7 +95,7 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
 
-    device::halo<VelocitySet> blockHalo(mesh, programCtrl);
+    device::halo<VelocitySet, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
 
     constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, 10>(sizeof(scalar_t));
 
@@ -122,7 +122,7 @@ int main(const int argc, const char *const argv[])
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
-                functionObjects::solutionVariableNames,
+                functionObjects::solutionVariableNames(false),
                 host::toHost(devPtrs, mesh),
                 timeStep);
 

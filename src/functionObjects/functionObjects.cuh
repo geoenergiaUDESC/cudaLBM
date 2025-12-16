@@ -55,19 +55,37 @@ namespace LBM
     namespace functionObjects
     {
         /**
-         * @brief The names of the 10 solution variables of the moment representation
+         * @brief The names of the solution variables of the moment representation
          **/
-        const std::vector<std::string> solutionVariableNames{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+        const std::vector<std::string> &solutionVariableNames(bool isMultiphase)
+        {
+            static const std::vector<std::string> mono = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+            static const std::vector<std::string> multi = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz", "phi"};
+
+            return isMultiphase ? multi : mono;
+        }
 
         /**
          * @brief Maps the name of function objects to lists of the names of their individual components
          **/
-        const std::unordered_map<std::string, std::vector<std::string>> fieldComponentsMap = {
-            {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
-            {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
-            {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
-            {"k", {"k"}},
-            {"kMean", {"kMean"}}};
+        const std::unordered_map<std::string, std::vector<std::string>> &fieldComponentsMap(bool isMultiphase)
+        {
+            static const std::unordered_map<std::string, std::vector<std::string>> mono = {
+                {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean"}},
+                {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
+                {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
+                {"k", {"k"}},
+                {"kMean", {"kMean"}}};
+
+            static const std::unordered_map<std::string, std::vector<std::string>> multi = {
+                {"momentsMean", {"rhoMean", "uMean", "vMean", "wMean", "m_xxMean", "m_xyMean", "m_xzMean", "m_yyMean", "m_yzMean", "m_zzMean", "phiMean"}},
+                {"S", {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"}},
+                {"SMean", {"S_xxMean", "S_xyMean", "S_xzMean", "S_yyMean", "S_yzMean", "S_zzMean"}},
+                {"k", {"k"}},
+                {"kMean", {"kMean"}}};
+
+            return isMultiphase ? multi : mono;
+        }
 
         /**
          * @brief Calculates the time average of a variable

@@ -59,6 +59,15 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
+    // Check if multiphase
+    const bool isMultiphase = programCtrl.multiphase();
+
+    // Field list
+    const std::vector<std::string> fieldNames =
+        isMultiphase
+            ? std::vector<std::string>{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz", "phi"}
+            : std::vector<std::string>{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
+
     // Check if calculation type argument is present
     const bool calculationType = programCtrl.input().isArgPresent("-calculationType");
 
@@ -75,7 +84,7 @@ int main(const int argc, const char *const argv[])
             // We should check for field names here. Currently we are just doing the default fields
             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                 programCtrl,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                fieldNames,
                 timeStep);
 
             containsNaN(hostMoments, mesh, fileNameIndices[timeStep]);
@@ -95,7 +104,7 @@ int main(const int argc, const char *const argv[])
             // We should check for field names here. Currently we are just doing the default fields
             const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                 programCtrl,
-                {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                fieldNames,
                 timeStep);
 
             spatialMean(hostMoments, mesh, fileNameIndices[timeStep]);
@@ -125,7 +134,7 @@ int main(const int argc, const char *const argv[])
 
                 const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
-                    {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                    fieldNames,
                     timeStep);
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);
@@ -163,7 +172,7 @@ int main(const int argc, const char *const argv[])
 
                 const host::arrayCollection<scalar_t, ctorType::MUST_READ> hostMoments(
                     programCtrl,
-                    {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"},
+                    fieldNames,
                     timeStep);
 
                 const std::vector<std::vector<scalar_t>> fields = fileIO::deinterleaveAoS(hostMoments.arr(), mesh);

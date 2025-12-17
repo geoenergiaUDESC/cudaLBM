@@ -109,8 +109,8 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, hydroPtrs, streamsLBM);
 
-    device::halo<VelocitySet, true, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
-    device::halo<PhaseVelocitySet, true, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
+    device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
+    device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
     constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<true>()>(sizeof(scalar_t));
 

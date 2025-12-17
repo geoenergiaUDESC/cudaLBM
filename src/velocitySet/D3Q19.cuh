@@ -74,7 +74,10 @@ namespace LBM
          **/
         __device__ __host__ [[nodiscard]] inline consteval D3Q19(){};
 
-        static constexpr bool isPhaseField() noexcept { return false; }
+        __device__ __host__ [[nodiscard]] static inline consteval bool isPhaseField() noexcept
+        {
+            return false;
+        }
 
         /**
          * @brief Get number of discrete velocity directions

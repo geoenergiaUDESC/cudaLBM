@@ -59,7 +59,7 @@ int main(const int argc, const char *const argv[])
     const host::latticeMesh mesh(programCtrl);
 
     // Check if is multiphase
-    const bool isMultiphase = programCtrl.multiphase();
+    const bool isMultiphase = programCtrl.isMultiphase();
 
     // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
     const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");

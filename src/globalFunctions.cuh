@@ -502,6 +502,35 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }   // < YZ-stress component
         __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }   // < ZZ-stress component
         __device__ __host__ [[nodiscard]] inline consteval label_t phi() { return 10; } // < Phase field
+
+        __device__ __host__ inline constexpr const char *name(const size_t field) noexcept
+        {
+            switch (field)
+            {
+            case rho():
+                return "rho";
+            case u():
+                return "u";
+            case v():
+                return "v";
+            case w():
+                return "w";
+            case xx():
+                return "m_xx";
+            case xy():
+                return "m_xy";
+            case xz():
+                return "m_xz";
+            case yy():
+                return "m_yy";
+            case yz():
+                return "m_yz";
+            case zz():
+                return "m_zz";
+            default:
+                return "unknown";
+            }
+        }
     }
 
     /**

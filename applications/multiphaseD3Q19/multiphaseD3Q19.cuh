@@ -73,8 +73,8 @@ namespace LBM
     using Collision = secondOrder;
 
     // Templated bool: isMultiphase
-    using HydroHalo = device::halo<VelocitySet, true, config::periodicX, config::periodicY>;
-    using PhaseHalo = device::halo<PhaseVelocitySet, true, config::periodicX, config::periodicY>;
+    using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
+    using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
@@ -197,7 +197,7 @@ namespace LBM
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet, true>(pop, pop_g, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, pop_g, moments, boundaryNormal, shared_buffer);
             }
             else
             {

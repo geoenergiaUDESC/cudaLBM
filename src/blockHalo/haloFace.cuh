@@ -284,7 +284,7 @@ namespace LBM
                                         std::array<scalar_t, VelocitySet::Q()> pop;
 
                                         // Contiguous moment access
-                                        if constexpr (VelocitySet::isPhaseField())
+                                        if constexpr (VelocitySet::Q() == 7)
                                         {
                                             pop = VelocitySet::template reconstruct<true>(
                                                 std::array<scalar_t, NUMBER_MOMENTS<true>()>{

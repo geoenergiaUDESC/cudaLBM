@@ -96,10 +96,10 @@ namespace LBM
          * moments from available population information, ensuring mass conservation
          * and appropriate stress conditions at boundaries.
          **/
-        template <class VelocitySet, bool isMultiphase>
+        template <class VelocitySet>
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
-            thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments,
+            thread::array<scalar_t, NUMBER_MOMENTS<false>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
@@ -138,11 +138,6 @@ namespace LBM
                 moments[m_i<8>()] = myz;                                            // myz
                 moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
 
-                if constexpr (isMultiphase)
-                {
-                    moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
-                }
-
                 already_handled = true;
                 return;
             }
@@ -151,7 +146,7 @@ namespace LBM
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/IRBCNeumannAll.cuh"
+#include "include/IRBCN.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -169,15 +164,16 @@ namespace LBM
             }
         }
 
-        template <class VelocitySet, class PhaseVelocitySet, bool isMultiphase>
+        template <class VelocitySet, class PhaseVelocitySet>
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             const thread::array<scalar_t, PhaseVelocitySet::Q()> &pop_g,
-            thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments,
+            thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept
         {
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
+            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculateMoments only supports D3Q7 for phase field.");
 
             const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
@@ -211,11 +207,7 @@ namespace LBM
                 moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
                 moments[m_i<8>()] = myz;                                            // myz
                 moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
-
-                if constexpr (isMultiphase)
-                {
-                    moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
-                }
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
 
                 already_handled = true;
                 return;
@@ -225,7 +217,7 @@ namespace LBM
 #include "include/periodic.cuh"
 
 // Outflow (zero-gradient) at front face
-#include "include/IRBCNeumannAll.cuh"
+#include "include/multiphaseIRBCN.cuh"
 
             // Call static boundaries for uncovered cases
             default:
@@ -234,7 +226,7 @@ namespace LBM
                 {
                     switch (boundaryNormal.nodeType())
                     {
-#include "include/fallback.cuh"
+#include "include/multiphaseFallback.cuh"
                     }
                 }
 

@@ -60,7 +60,7 @@ int main(const int argc, const char *const argv[])
     const host::latticeMesh mesh(programCtrl);
 
     // Check if multiphase
-    const bool isMultiphase = programCtrl.multiphase();
+    const bool isMultiphase = programCtrl.isMultiphase();
 
     // Field list
     const std::vector<std::string> fieldNames =

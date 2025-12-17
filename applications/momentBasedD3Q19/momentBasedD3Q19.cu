@@ -95,7 +95,7 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, devPtrs, streamsLBM);
 
-    device::halo<VelocitySet, false, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
+    device::halo<VelocitySet, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
 
     constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<false>()>(sizeof(scalar_t));
 

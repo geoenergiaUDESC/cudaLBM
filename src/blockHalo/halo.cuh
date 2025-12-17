@@ -64,7 +64,7 @@ namespace LBM
          * CUDA blocks during LBM simulations. It maintains double-buffered halo regions
          * to support efficient ping-pong swapping between computation steps.
          **/
-        template <class VelocitySet, bool isMultiphase, bool periodicX = false, bool periodicY = false>
+        template <class VelocitySet, bool periodicX = false, bool periodicY = false>
         class halo
         {
         public:
@@ -79,7 +79,7 @@ namespace LBM
                 : fGhost_(
                       [](const host::latticeMesh &m, const programControl &p)
                       {
-                          if constexpr (isMultiphase)
+                          if constexpr (VelocitySet::Q() == 7)
                           {
                               return makePhaseHalo(m, p);
                           }
@@ -91,7 +91,7 @@ namespace LBM
                   gGhost_(
                       [](const host::latticeMesh &m, const programControl &p)
                       {
-                          if constexpr (isMultiphase)
+                          if constexpr (VelocitySet::Q() == 7)
                           {
                               return makePhaseHalo(m, p);
                           }
@@ -534,8 +534,7 @@ namespace LBM
                 auto m_yy = host::array<scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl);
                 auto m_yz = host::array<scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl);
                 auto m_zz = host::array<scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl);
-
-                auto phi = host::array<scalar_t, VelocitySet, time::instantaneous>("phi", mesh, programCtrl);
+                auto phi = host::array<scalar_t, D3Q7, time::instantaneous>("phi", mesh, programCtrl);
 
                 return haloFace<VelocitySet>(
                     rho,

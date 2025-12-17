@@ -215,7 +215,7 @@ namespace LBM
          * @brief Returns multiphase or not
          * @return Multiphase bool
          **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool multiphase() const noexcept
+        __device__ __host__ [[nodiscard]] inline constexpr bool isMultiphase() const noexcept
         {
             return multiphase_;
         }

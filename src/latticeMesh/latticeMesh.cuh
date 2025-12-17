@@ -154,7 +154,7 @@ namespace LBM
                     {
                         const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[0]);
                         const uint64_t totalMemTemp = static_cast<uint64_t>(props.totalGlobalMem);
-                        const uint64_t allocationSize = nPointsTemp * static_cast<uint64_t>(sizeof(scalar_t)) * static_cast<uint64_t>(programCtrl.multiphase() ? 11 : 10);
+                        const uint64_t allocationSize = nPointsTemp * static_cast<uint64_t>(sizeof(scalar_t)) * static_cast<uint64_t>(programCtrl.isMultiphase() ? 11 : 10);
 
                         if (allocationSize >= totalMemTemp)
                         {

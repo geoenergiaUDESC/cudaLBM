@@ -62,7 +62,7 @@ namespace LBM
      * handling both direct numerical values and equilibrium-based calculations.
      * It automatically applies appropriate scaling based on field type.
      **/
-    template <class VelocitySet, bool isMultiphase>
+    template <class VelocitySet>
     class boundaryValue
     {
     public:

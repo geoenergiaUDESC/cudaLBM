@@ -61,12 +61,10 @@ namespace LBM
      * This struct aggregates all field values (density, velocity components, and moments)
      * for a specific boundary region, providing convenient access to individual components.
      **/
-    template <class VelocitySet, bool isMultiphase>
+    template <class VelocitySet>
     class boundaryRegion
     {
     public:
-        static constexpr label_t N_FIELDS = NUMBER_MOMENTS<isMultiphase>();
-
         __host__ [[nodiscard]] boundaryRegion(const std::string &regionName)
             : values_{
                   boundaryValue("rho", regionName),
@@ -158,9 +156,14 @@ namespace LBM
         static constexpr bool isMultiphase = VelocitySet::isPhaseField();
 
         /**
+         * @brief Conditional number of fields
+         **/
+        static constexpr label_t N_FIELDS = NUMBER_MOMENTS<isMultiphase>();
+
+        /**
          * @brief Array of boundary values for all fields
          **/
-        const boundaryValue<VelocitySet, isMultiphase> values_[N_FIELDS];
+        const boundaryValue<VelocitySet> values_[N_FIELDS];
     };
 }
 

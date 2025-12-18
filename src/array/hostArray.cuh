@@ -150,7 +150,7 @@ namespace LBM
                 }
                 else
                 {
-                    return initialConditions(mesh, fieldName);
+                    return initialConditions(mesh, fieldName, programCtrl);
                 }
             }
 
@@ -180,10 +180,10 @@ namespace LBM
              * @param[in] fieldName Name of field for boundary condition lookup
              * @return Initialized data vector with boundary conditions applied
              **/
-            __host__ [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
+            __host__ [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
             {
                 const bool isMultiphase = programCtrl.isMultiphase();
-                const boundaryFields<VelocitySet, isMultiphase> bField(fieldName);
+                const boundaryFields<VelocitySet> bField(fieldName);
 
                 std::vector<T> field(mesh.nPoints(), 0);
 

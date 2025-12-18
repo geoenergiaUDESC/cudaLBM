@@ -119,7 +119,7 @@ namespace LBM
         }
 
         /**
-         * @brief Total size of the (non-partitioned) shared memory 
+         * @brief Total size of the shared memory
          **/
         template <class VelocitySet, const label_t nVars>
         __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSize(const label_t size = 1) noexcept
@@ -127,17 +127,6 @@ namespace LBM
             constexpr const label_t A = (VelocitySet::Q() - 1) * block::stride();
             constexpr const label_t B = block::size() * (nVars + 1);
             return (A > B ? A : B) * size;
-        }
-
-        /**
-         * @brief Total size of the (partitioned) shared memory
-         **/
-        template <class VelocitySet, const label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSizeDual(const label_t size = 1) noexcept
-        {
-            constexpr const label_t A = (VelocitySet::Q() - 1) * block::stride();
-            constexpr const label_t B = block::size() * (nVars + 1);
-            return (A + B) * size;
         }
 
         /**

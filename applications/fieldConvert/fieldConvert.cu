@@ -98,13 +98,16 @@ int main(const int argc, const char *const argv[])
 
             const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
 
+            // BRENO: infer correct output naming from what was actually read/produced
+            const std::vector<std::string> &fieldNamesOut = doCustomField ? fieldNames : functionObjects::solutionVariableNames(fields.size() == functionObjects::solutionVariableNames(true).size());
+
             const std::string fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
 
             writer(
                 fields,
                 fileName,
                 newMesh,
-                fieldNames);
+                fieldNamesOut);
         }
     }
     else

@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
     Implementation of the multiphase moment representation with the D3Q19 velocity set
@@ -77,7 +77,13 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myy("m_yy", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
+
+    // Phase field arrays
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),
@@ -148,6 +154,9 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
+                computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
+
                 multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
                     devPtrs, fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });

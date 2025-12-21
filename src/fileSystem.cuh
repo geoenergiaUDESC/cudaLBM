@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program.   If not, see <https://www.gnu.org/licenses/>.
 
 Description
     Functions employed throughout the source code to interact with the
@@ -257,7 +257,7 @@ namespace LBM
         }
 
         /**
-         * @brief Assert that sufficient disk space is available, throw error if not
+         * @brief Assert that sufficient disk space is available, throw error  If not
          * @tparam fileFormat The file format (ASCII or BINARY)
          * @tparam hasFields Whether field data is present
          * @tparam hasPoints Whether point data is present

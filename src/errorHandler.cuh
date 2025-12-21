@@ -34,7 +34,7 @@ License
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
     Functions used to handle errors
@@ -56,7 +56,7 @@ namespace LBM
      * @brief Checks for CUDA runtime errors and handles them by reporting and terminating
      *
      * @param err CUDA error code to check (cudaError_t enum value)
-     * @param loc Source location information (automatically captured at call site if not specified)
+     * @param loc Source location information (automatically captured at call site  If not specified)
      *
      * @note This function is noexcept and will terminate the program if an error is detected
      * @warning This function immediately terminates the program when a CUDA error is encountered
@@ -115,7 +115,7 @@ namespace LBM
      *
      * @param err Error code to report and use as exit status
      * @param errorString Descriptive message explaining the error
-     * @param loc Source location information (automatically captured at call site if not specified)
+     * @param loc Source location information (automatically captured at call site  If not specified)
      *
      * @note This function is noexcept and will always terminate the program
      * @warning This function immediately terminates the program after printing the error message

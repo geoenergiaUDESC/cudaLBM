@@ -72,7 +72,6 @@ namespace LBM
     using PhaseVelocitySet = D3Q7;
     using Collision = secondOrder;
 
-    // Templated bool: isMultiphase
     using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
     using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
@@ -80,8 +79,8 @@ namespace LBM
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
-     * @brief Implements solution of the lattice Boltzmann method using the moment representation and the D3Q19 velocity set
-     * @param devPtrs Collection of NUMBER_MOMENTS<false>() pointers to device arrays on the GPU
+     * @brief Implements solution of the lattice Boltzmann method using the multiphase moment representation and the D3Q19 velocity set
+     * @param devPtrs Collection of 11 pointers to device arrays on the GPU
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void multiphaseD3Q19(
@@ -134,15 +133,14 @@ namespace LBM
 
         __syncthreads();
 
-        // Phase-field snapshot at time level n stored in shared memory for stencil operations
-        // __shared__ scalar_t shared_phi[block::stride()];
-        // shared_phi[tid] = moments[m_i<10>()];
+        // ======================================== Phase field routines start below ======================================== //
+        // ============================================ Phase field routines end ============================================ //
 
         // ======================================== LBM routines start below ======================================== //
 
         // Reconstruct the populations from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct<true>(moments);
-        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct<true>(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
@@ -178,8 +176,8 @@ namespace LBM
             fGhostPhase.ptr<5>());
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments<true>(pop, moments);
-        PhaseVelocitySet::calculateMoments<true>(pop_g, moments);
+        VelocitySet::calculateMoments(pop, moments);
+        PhaseVelocitySet::calculateMoments(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -201,24 +199,20 @@ namespace LBM
             }
             else
             {
-                VelocitySet::calculateMoments<true>(pop, moments);
-                PhaseVelocitySet::calculateMoments<true>(pop_g, moments);
+                VelocitySet::calculateMoments(pop, moments);
+                PhaseVelocitySet::calculateMoments(pop_g, moments);
             }
         }
 
         // Scale the moments correctly
-        velocitySet::scale<true>(moments);
-
-        // ======================================================================================================================== //
-        // ======================================================================================================================== //
-        // ======================================================================================================================== //
+        velocitySet::scale(moments);
 
         // Collide
-        Collision::collide<true>(moments);
+        Collision::collide(moments);
 
         // Calculate post collision populations
-        VelocitySet::reconstruct<true>(pop, moments);
-        PhaseVelocitySet::reconstruct<true>(pop_g, moments);
+        VelocitySet::reconstruct(pop, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -227,10 +221,6 @@ namespace LBM
             {
                 devPtrs.ptr<moment>()[idx] = moments[moment];
             });
-
-        // ======================================================================================================================== //
-        // ======================================================================================================================== //
-        // ======================================================================================================================== //
 
         // Save the hydro populations to the block halo
         HydroHalo::save(

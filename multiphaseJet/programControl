@@ -13,6 +13,8 @@ caseName        multiphaseJet;
 
 Re              3000;
 
+We              500;
+
 u_inf           0.016;
 
 L_char          8;

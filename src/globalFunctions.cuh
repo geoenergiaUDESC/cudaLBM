@@ -108,7 +108,7 @@ namespace LBM
     }
 
     /**
-     * @brief Number of hydrodynamic moments
+     * @brief Number of moments
      **/
     template <bool isMultiphase>
     __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS()

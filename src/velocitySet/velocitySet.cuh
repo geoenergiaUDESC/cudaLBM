@@ -126,8 +126,32 @@ namespace LBM
          * - Diagonal second-order moments: scaled by scale_ii()
          * - Off-diagonal second-order moments: scaled by scale_ij()
          **/
-        template <bool isMultiphase>
-        __device__ static inline void scale(thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
+        __device__ static inline void scale(thread::array<scalar_t, 10> &moments) noexcept
+        {
+            // Scale the moments correctly
+            moments[m_i<1>()] = scale_i<scalar_t>() * (moments[m_i<1>()]);
+            moments[m_i<2>()] = scale_i<scalar_t>() * (moments[m_i<2>()]);
+            moments[m_i<3>()] = scale_i<scalar_t>() * (moments[m_i<3>()]);
+            moments[m_i<4>()] = scale_ii<scalar_t>() * (moments[m_i<4>()]);
+            moments[m_i<5>()] = scale_ij<scalar_t>() * (moments[m_i<5>()]);
+            moments[m_i<6>()] = scale_ij<scalar_t>() * (moments[m_i<6>()]);
+            moments[m_i<7>()] = scale_ii<scalar_t>() * (moments[m_i<7>()]);
+            moments[m_i<8>()] = scale_ij<scalar_t>() * (moments[m_i<8>()]);
+            moments[m_i<9>()] = scale_ii<scalar_t>() * (moments[m_i<9>()]);
+        }
+
+        /**
+         * @brief Apply velocity set scaling factors to moment array
+         * @param[in,out] moments Array of 11 moment variables to be scaled
+         *
+         * This method applies the appropriate scaling factors to each moment component:
+         * - First-order moments (velocity components): scaled by scale_i()
+         * - Diagonal second-order moments: scaled by scale_ii()
+         * - Off-diagonal second-order moments: scaled by scale_ij()
+         *
+         * @note The phase field phi (moment of index 10) is not scaled
+         **/
+        __device__ static inline void scale(thread::array<scalar_t, 11> &moments) noexcept
         {
             // Scale the moments correctly
             moments[m_i<1>()] = scale_i<scalar_t>() * (moments[m_i<1>()]);

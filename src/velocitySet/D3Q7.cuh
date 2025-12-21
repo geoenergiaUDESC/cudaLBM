@@ -384,9 +384,7 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (11 components)
          **/
-        template <bool isMultiphase>
-            requires(isMultiphase)
-        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
+        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, 11> &moments) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
             pop[q_i<0>()] = phiw_0;
@@ -405,9 +403,7 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        template <bool isMultiphase>
-            requires(isMultiphase)
-        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
+        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
             const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
@@ -427,9 +423,7 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        template <bool isMultiphase>
-            requires(isMultiphase)
-        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, NUMBER_MOMENTS<true>()> &moments) noexcept
+        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, 11> &moments) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
 
@@ -472,8 +466,7 @@ namespace LBM
          * @param[in] pop Population array (7 components)
          * @param[out] moments Moment array to be filled (11 components)
          **/
-        template <bool isMultiphase>
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, NUMBER_MOMENTS<isMultiphase>()> &moments) noexcept
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, 11> &moments) noexcept
         {
             moments[m_i<10>()] = pop.sum();
         }

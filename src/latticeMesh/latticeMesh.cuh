@@ -188,6 +188,15 @@ namespace LBM
                     copyToSymbol(device::omega, omegaTemp);
                     copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
                     copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
+
+                    if (programCtrl.isMultiphase())
+                    {
+                        const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
+
+                        copyToSymbol(device::We, programCtrl.We());
+                        copyToSymbol(device::sigma, sigmaTemp);
+                        copyToSymbol(device::gamma, static_cast<scalar_t>(1));
+                    }
                 }
 
                 // Allocate mesh symbols on the GPU

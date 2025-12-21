@@ -131,7 +131,7 @@ namespace LBM
         __syncthreads();
 
         // Reconstruct the population from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct<false>(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
@@ -155,7 +155,7 @@ namespace LBM
             fGhost.ptr<5>());
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments<false>(pop, moments);
+        VelocitySet::calculateMoments(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
@@ -177,18 +177,18 @@ namespace LBM
             }
             else
             {
-                VelocitySet::calculateMoments<false>(pop, moments);
+                VelocitySet::calculateMoments(pop, moments);
             }
         }
 
         // Scale the moments correctly
-        velocitySet::scale<false>(moments);
+        velocitySet::scale(moments);
 
         // Collide
-        Collision::collide<false>(moments);
+        Collision::collide(moments);
 
         // Calculate post collision populations
-        VelocitySet::reconstruct<false>(pop, moments);
+        VelocitySet::reconstruct(pop, moments);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();

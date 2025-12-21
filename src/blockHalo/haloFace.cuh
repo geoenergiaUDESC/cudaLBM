@@ -86,7 +86,7 @@ namespace LBM
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> *phi = nullptr) noexcept
+                const host::array<scalar_t, D3Q7, time::instantaneous> *phi = nullptr) noexcept
                 : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
                   x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
                   y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
@@ -254,7 +254,7 @@ namespace LBM
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> *phi,
+                const host::array<scalar_t, D3Q7, time::instantaneous> *phi,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
@@ -286,8 +286,9 @@ namespace LBM
                                         // Contiguous moment access
                                         if constexpr (VelocitySet::Q() == 7)
                                         {
-                                            pop = VelocitySet::template reconstruct<true>(
-                                                std::array<scalar_t, NUMBER_MOMENTS<true>()>{
+
+                                            pop = VelocitySet::reconstruct(
+                                                std::array<scalar_t, 11>{
                                                     rho0<scalar_t>() + rho.arr()[base],
                                                     u.arr()[base],
                                                     v.arr()[base],
@@ -304,8 +305,8 @@ namespace LBM
                                         {
                                             if (phi != nullptr)
                                             {
-                                                pop = VelocitySet::template reconstruct<true>(
-                                                    std::array<scalar_t, NUMBER_MOMENTS<true>()>{
+                                                pop = VelocitySet::reconstruct(
+                                                    std::array<scalar_t, 11>{
                                                         rho0<scalar_t>() + rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],
@@ -320,8 +321,8 @@ namespace LBM
                                             }
                                             else
                                             {
-                                                pop = VelocitySet::template reconstruct<false>(
-                                                    std::array<scalar_t, NUMBER_MOMENTS<false>()>{
+                                                pop = VelocitySet::reconstruct(
+                                                    std::array<scalar_t, 10>{
                                                         rho0<scalar_t>() + rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],

@@ -134,6 +134,65 @@ namespace LBM
         __syncthreads();
 
         // ======================================== Phase field routines start below ======================================== //
+
+        // Normals
+
+        scalar_t sgx = VelocitySet::w_1() * (phi[device::idxGlobal(x + 1, y, z)] - phi[device::idxGlobal(x - 1, y, z)]) +
+                       VelocitySet::w_2() * (phi[device::idxGlobal(x + 1, y + 1, z)] - phi[device::idxGlobal(x - 1, y - 1, z)] +
+                                             phi[device::idxGlobal(x + 1, y, z + 1)] - phi[device::idxGlobal(x - 1, y, z - 1)] +
+                                             phi[device::idxGlobal(x + 1, y - 1, z)] - phi[device::idxGlobal(x - 1, y + 1, z)] +
+                                             phi[device::idxGlobal(x + 1, y, z - 1)] - phi[device::idxGlobal(x - 1, y, z + 1)]);
+
+        scalar_t sgy = VelocitySet::w_1() * (phi[device::idxGlobal(x, y + 1, z)] - phi[device::idxGlobal(x, y - 1, z)]) +
+                       VelocitySet::w_2() * (phi[device::idxGlobal(x + 1, y + 1, z)] - phi[device::idxGlobal(x - 1, y - 1, z)] +
+                                             phi[device::idxGlobal(x, y + 1, z + 1)] - phi[device::idxGlobal(x, y - 1, z - 1)] +
+                                             phi[device::idxGlobal(x - 1, y + 1, z)] - phi[device::idxGlobal(x + 1, y - 1, z)] +
+                                             phi[device::idxGlobal(x, y + 1, z - 1)] - phi[device::idxGlobal(x, y - 1, z + 1)]);
+
+        scalar_t sgz = VelocitySet::w_1() * (phi[device::idxGlobal(x, y, z + 1)] - phi[device::idxGlobal(x, y, z - 1)]) +
+                       VelocitySet::w_2() * (phi[device::idxGlobal(x + 1, y, z + 1)] - phi[device::idxGlobal(x - 1, y, z - 1)] +
+                                             phi[device::idxGlobal(x, y + 1, z + 1)] - phi[device::idxGlobal(x, y - 1, z - 1)] +
+                                             phi[device::idxGlobal(x - 1, y, z + 1)] - phi[device::idxGlobal(x + 1, y, z - 1)] +
+                                             phi[device::idxGlobal(x, y - 1, z + 1)] - phi[device::idxGlobal(x, y + 1, z - 1)]);
+
+        const scalar_t gx = velocitySet::as2() * sgx;
+        const scalar_t gy = velocitySet::as2() * sgy;
+        const scalar_t gz = velocitySet::as2() * sgz;
+
+        const scalar_t ind = sqrtf(gx * gx + gy * gy + gz * gz);
+        const scalar_t invInd = static_cast<scalar_t>(1) / (ind + static_cast<scalar_t>(1e-9));
+
+        const scalar_t normx = gx * invInd;
+        const scalar_t normy = gy * invInd;
+        const scalar_t normz = gz * invInd;
+
+        // Curvature
+
+        scalar_t scx = LBM::VelocitySet::w_1() * (normx[device::idxGlobal(x + 1, y, z)] - normx[device::idxGlobal(x - 1, y, z)]) +
+                       LBM::VelocitySet::w_2() * (normx[device::idxGlobal(x + 1, y + 1, z)] - normx[device::idxGlobal(x - 1, y - 1, z)] +
+                                                  normx[device::idxGlobal(x + 1, y, z + 1)] - normx[device::idxGlobal(x - 1, y, z - 1)] +
+                                                  normx[device::idxGlobal(x + 1, y - 1, z)] - normx[device::idxGlobal(x - 1, y + 1, z)] +
+                                                  normx[device::idxGlobal(x + 1, y, z - 1)] - normx[device::idxGlobal(x - 1, y, z + 1)]);
+
+        scalar_t scy = LBM::VelocitySet::w_1() * (normy[device::idxGlobal(x, y + 1, z)] - normy[device::idxGlobal(x, y - 1, z)]) +
+                       LBM::VelocitySet::w_2() * (normy[device::idxGlobal(x + 1, y + 1, z)] - normy[device::idxGlobal(x - 1, y - 1, z)] +
+                                                  normy[device::idxGlobal(x, y + 1, z + 1)] - normy[device::idxGlobal(x, y - 1, z - 1)] +
+                                                  normy[device::idxGlobal(x - 1, y + 1, z)] - normy[device::idxGlobal(x + 1, y - 1, z)] +
+                                                  normy[device::idxGlobal(x, y + 1, z - 1)] - normy[device::idxGlobal(x, y - 1, z + 1)]);
+
+        scalar_t scz = LBM::VelocitySet::w_1() * (normz[device::idxGlobal(x, y, z + 1)] - normz[device::idxGlobal(x, y, z - 1)]) +
+                       LBM::VelocitySet::w_2() * (normz[device::idxGlobal(x + 1, y, z + 1)] - normz[device::idxGlobal(x - 1, y, z - 1)] +
+                                                  normz[device::idxGlobal(x, y + 1, z + 1)] - normz[device::idxGlobal(x, y - 1, z - 1)] +
+                                                  normz[device::idxGlobal(x - 1, y, z + 1)] - normz[device::idxGlobal(x + 1, y, z - 1)] +
+                                                  normz[device::idxGlobal(x, y - 1, z + 1)] - normz[device::idxGlobal(x, y + 1, z - 1)]);
+
+        const scalar_t curvature = VelocitySet::as2() * (scx + scy + scz);
+
+        const scalar_t stCurv = -device::sigma * curvature * ind;
+        const scalar_t ffx = stCurv * normx;
+        const scalar_t ffy = stCurv * normy;
+        const scalar_t ffz = stCurv * normz;
+
         // ============================================ Phase field routines end ============================================ //
 
         // ======================================== LBM routines start below ======================================== //
@@ -176,7 +235,7 @@ namespace LBM
             fGhostPhase.ptr<5>());
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments);
+        VelocitySet::calculateMoments(pop, moments, ffx, ffy, ffz);
         PhaseVelocitySet::calculateMoments(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -199,7 +258,7 @@ namespace LBM
             }
             else
             {
-                VelocitySet::calculateMoments(pop, moments);
+                VelocitySet::calculateMoments(pop, moments, ffx, ffy, ffz);
                 PhaseVelocitySet::calculateMoments(pop_g, moments);
             }
         }
@@ -208,7 +267,7 @@ namespace LBM
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide(moments);
+        Collision::collide(moments, ffx, ffy, ffz);
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);

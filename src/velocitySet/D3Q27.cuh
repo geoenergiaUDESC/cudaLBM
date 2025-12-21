@@ -449,7 +449,7 @@ namespace LBM
         }
 
         /**
-         * @overload Reconstruct population distribution from moments (in-place)
+         * @overload Reconstruct population distribution from moments (in-place) (multiphase version)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (11 components)
          **/
@@ -538,7 +538,7 @@ namespace LBM
         }
 
         /**
-         * @overload Reconstruct population distribution from moments (return)
+         * @overload Reconstruct population distribution from moments (return) (multiphase version)
          * @param[in] moments Moment array (11 components)
          * @return Population array with 27 components
          **/
@@ -582,7 +582,7 @@ namespace LBM
         }
 
         /**
-         * @brief Reconstruct population distribution from moments (host version)
+         * @brief Reconstruct population distribution from moments (host)
          * @param[in] moments Moment array (10 components)
          * @return Population array with 27 components
          **/
@@ -632,7 +632,7 @@ namespace LBM
         }
 
         /**
-         * @overload Reconstruct population distribution from moments (host version)
+         * @overload Reconstruct population distribution from moments (host) (multiphase version)
          * @param[in] moments Moment array (11 components)
          * @return Population array with 27 components
          **/
@@ -682,7 +682,7 @@ namespace LBM
         }
 
         /**
-         * @brief Calculate specific moment from population distribution (host version)
+         * @brief Calculate specific moment from population distribution (host)
          * @tparam moment_ Moment index to calculate (0-9)
          * @param[in] pop Population array (19 components)
          * @return Calculated moment value
@@ -762,11 +762,11 @@ namespace LBM
         }
 
         /**
-         * @overload Calculate moments from population distribution
+         * @overload Calculate moments from population distribution (multiphase version)
          * @param[in] pop Population array (27 components)
          * @param[out] moments Moment array to be filled (11 components)
          **/
-        __device__ inline static void calculateMoments(const thread::array<scalar_t, 27> &pop, thread::array<scalar_t, 11> &moments) noexcept
+        __device__ inline static void calculateMoments(const thread::array<scalar_t, 27> &pop, thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz) noexcept
         {
             // Density
             moments[m_i<0>()] = pop.sum();
@@ -776,6 +776,11 @@ namespace LBM
             moments[m_i<1>()] = ((pop[q_i<1>()] + pop[q_i<7>()] + pop[q_i<9>()] + pop[q_i<13>()] + pop[q_i<15>()] + pop[q_i<19>()] + pop[q_i<21>()] + pop[q_i<23>()] + pop[q_i<26>()]) - (pop[q_i<2>()] + pop[q_i<8>()] + pop[q_i<10>()] + pop[q_i<14>()] + pop[q_i<16>()] + pop[q_i<20>()] + pop[q_i<22>()] + pop[q_i<24>()] + pop[q_i<25>()])) * invRho;
             moments[m_i<2>()] = ((pop[q_i<3>()] + pop[q_i<7>()] + pop[q_i<11>()] + pop[q_i<14>()] + pop[q_i<17>()] + pop[q_i<19>()] + pop[q_i<21>()] + pop[q_i<24>()] + pop[q_i<25>()]) - (pop[q_i<4>()] + pop[q_i<8>()] + pop[q_i<12>()] + pop[q_i<13>()] + pop[q_i<18>()] + pop[q_i<20>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<26>()])) * invRho;
             moments[m_i<3>()] = ((pop[q_i<5>()] + pop[q_i<9>()] + pop[q_i<11>()] + pop[q_i<16>()] + pop[q_i<18>()] + pop[q_i<19>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<25>()]) - (pop[q_i<6>()] + pop[q_i<10>()] + pop[q_i<12>()] + pop[q_i<15>()] + pop[q_i<17>()] + pop[q_i<20>()] + pop[q_i<21>()] + pop[q_i<24>()] + pop[q_i<26>()])) * invRho;
+
+            // Forcing term inclusion
+            moments[m_i<1>()] += ffx * static_cast<scalar_t>(0.5) * invRho;
+            moments[m_i<2>()] += ffy * static_cast<scalar_t>(0.5) * invRho;
+            moments[m_i<3>()] += ffz * static_cast<scalar_t>(0.5) * invRho;
 
             // Higher order moments
             moments[m_i<4>()] = (pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<7>()] + pop[q_i<8>()] + pop[q_i<9>()] + pop[q_i<10>()] + pop[q_i<13>()] + pop[q_i<14>()] + pop[q_i<15>()] + pop[q_i<16>()] + pop[q_i<19>()] + pop[q_i<20>()] + pop[q_i<21>()] + pop[q_i<22>()] + pop[q_i<23>()] + pop[q_i<24>()] + pop[q_i<25>()] + pop[q_i<26>()]) * invRho - cs2<scalar_t>();

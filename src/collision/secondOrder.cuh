@@ -113,21 +113,25 @@ namespace LBM
          * - Off-diagonal moments (m_xy, m_xz, m_yz): Relaxed and updated with
          *   product of velocity components
          *
-         * @note This implementation assumes force terms, so velocity updates are not omitted CHECKPOINT
+         * @note This implementation assumes force terms, so velocity updates are not omitted
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 11> &moments) noexcept
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz) noexcept
         {
-            // Velocity updates are removed since force terms are zero
-            // Diagonal moment updates (remove force terms)
-            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * (moments[m_i<1>()]) * (moments[m_i<1>()]);
-            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * (moments[m_i<2>()]) * (moments[m_i<2>()]);
-            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * (moments[m_i<3>()]) * (moments[m_i<3>()]);
+            // Velocity updates
+            moments[m_i<1>()] = device::t_omegaVar * moments[m_i<1>()] + device::omega * moments[m_i<1>()] + (static_cast<scalar_t>(1) - device::omegaVar_d2) * ffx;
+            moments[m_i<2>()] = device::t_omegaVar * moments[m_i<2>()] + device::omega * moments[m_i<2>()] + (static_cast<scalar_t>(1) - device::omegaVar_d2) * ffy;
+            moments[m_i<3>()] = device::t_omegaVar * moments[m_i<3>()] + device::omega * moments[m_i<3>()] + (static_cast<scalar_t>(1) - device::omegaVar_d2) * ffz;
 
-            // Off-diagonal moment updates (remove force terms)
-            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<2>()]);
-            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<3>()]);
-            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]);
+            // Diagonal moment updates
+            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * (moments[m_i<1>()]) * (moments[m_i<1>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffx * moments[m_i<1>()] + ffx * moments[m_i<1>()]);
+            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * (moments[m_i<2>()]) * (moments[m_i<2>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffy * moments[m_i<2>()] + ffy * moments[m_i<2>()]);
+            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * (moments[m_i<3>()]) * (moments[m_i<3>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffz * moments[m_i<3>()] + ffz * moments[m_i<3>()]);
+
+            // Off-diagonal moment updates
+            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<2>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffx * moments[m_i<2>()] + ffy * moments[m_i<1>()]); // mxy
+            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * (moments[m_i<1>()]) * (moments[m_i<3>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffx * moments[m_i<3>()] + ffz * moments[m_i<1>()]); // mxz
+            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]) + (static_cast<scalar_t>(1) - device::omegaVar_d2) * (ffy * moments[m_i<3>()] + ffz * moments[m_i<2>()]); // myz
         }
 
     private:

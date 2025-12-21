@@ -316,6 +316,16 @@ namespace LBM
         }
 
         /**
+         * @brief Check whether the current thread exceeds internal domain bounds
+         * @note Uses device constants device::nx, device::ny, device::nz
+         * @return True if thread is outside intenal domain boundaries
+         **/
+        __device__ [[nodiscard]] inline bool out_of_inner_bounds() noexcept
+        {
+            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx - 1) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny - 1) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz - 1));
+        }
+
+        /**
          * @brief Moment memory index (device version)
          * @tparam mom Moment index [0, NUMBER_MOMENTS())
          * @param tx,ty,tz Thread-local coordinates

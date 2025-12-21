@@ -384,18 +384,24 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (11 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, 11> &moments) noexcept
+        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, 11> &moments, const scalar_t normx, const scalar_t normy, const scalar_t normz) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
+
             pop[q_i<0>()] = phiw_0;
 
-            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]);
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]);
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]);
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]);
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]);
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]);
+            scalar_t anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + anti_diff;
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - anti_diff;
+
+            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + anti_diff;
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - anti_diff;
+
+            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + anti_diff;
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - anti_diff;
         }
 
         /**
@@ -403,19 +409,19 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments) noexcept
+        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments, const scalar_t normx, const scalar_t normy, const scalar_t normz) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
             const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
 
             return {
                 phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]),
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]),
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()])};
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
         }
 
         /**

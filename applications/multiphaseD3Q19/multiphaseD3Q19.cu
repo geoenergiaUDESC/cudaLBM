@@ -78,12 +78,17 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    // Phase field arrays
+    // Phase field arrays (solution field)
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
-    device::array<scalar_t, VelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
+
+    // Phase geometry arrays (raw device allocations; NOT auto-registered)
+    scalar_t *d_normx = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_normy = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_normz = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_ind = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_ffx = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_ffy = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    scalar_t *d_ffz = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),
@@ -150,15 +155,19 @@ int main(const int argc, const char *const argv[])
             runTimeObjects.save(timeStep);
         }
 
-        // Main kernel
+        // Main kernels
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
-
                 multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
-                    devPtrs, fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    devPtrs, d_ffx, d_ffy, d_ffz, d_normx, d_normy, d_normz,
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
+
+                computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    phi.ptr(), d_normx, d_normy, d_normz, d_ind);
+
+                computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    d_normx, d_normy, d_normz, d_ind, d_ffx, d_ffy, d_ffz);
             });
 
         // Calculate S kernel
@@ -168,6 +177,13 @@ int main(const int argc, const char *const argv[])
         fBlockHalo.swap();
         gBlockHalo.swap();
     }
+
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    checkCudaErrors(cudaFree(d_normx));
+    checkCudaErrors(cudaFree(d_normy));
+    checkCudaErrors(cudaFree(d_normz));
+    checkCudaErrors(cudaFree(d_ind));
 
     return 0;
 }

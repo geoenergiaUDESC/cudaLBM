@@ -79,25 +79,6 @@ namespace LBM
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
     /**
-     * @brief
-     * @param
-     * @param
-     **/
-    launchBoundsD3Q19 __global__ void computeNormals(
-        const scalar_t *__restrict__ phi,
-        const scalar_t *__restrict__ normx,
-        const scalar_t *__restrict__ normy,
-        const scalar_t *__restrict__ normz,
-        const scalar_t *__restrict__ ind)
-    {
-        // Always a multiple of 32, so no need to check this(I think)
-        // if (device::out_of_bounds())
-        // {
-        //     return;
-        // }
-    }
-
-    /**
      * @brief Implements solution of the lattice Boltzmann method using the multiphase moment representation and the D3Q19 velocity set
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
      * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
@@ -105,6 +86,12 @@ namespace LBM
      **/
     launchBoundsD3Q19 __global__ void multiphaseD3Q19(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const scalar_t *__restrict__ ffx,
+        const scalar_t *__restrict__ ffy,
+        const scalar_t *__restrict__ ffz,
+        const scalar_t *__restrict__ normx,
+        const scalar_t *__restrict__ normy,
+        const scalar_t *__restrict__ normz,
         const device::ptrCollection<6, const scalar_t> fGhostHydro,
         const device::ptrCollection<6, scalar_t> gGhostHydro,
         const device::ptrCollection<6, const scalar_t> fGhostPhase,
@@ -118,6 +105,13 @@ namespace LBM
 
         // const label_t idx = device::idx();
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const scalar_t ffx_ = ffx[idx];
+        const scalar_t ffy_ = ffy[idx];
+        const scalar_t ffz_ = ffz[idx];
+        const scalar_t normx_ = normx[idx];
+        const scalar_t normy_ = normx[idx];
+        const scalar_t normz_ = normx[idx];
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -157,7 +151,7 @@ namespace LBM
 
         // Reconstruct the populations from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
-        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments, normx_, normy_, normz_);
 
         // Save/pull from shared memory
         {
@@ -193,7 +187,7 @@ namespace LBM
             fGhostPhase.ptr<5>());
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments, ffx, ffy, ffz);
+        VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
         PhaseVelocitySet::calculateMoments(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -216,7 +210,7 @@ namespace LBM
             }
             else
             {
-                VelocitySet::calculateMoments(pop, moments, ffx, ffy, ffz);
+                VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
                 PhaseVelocitySet::calculateMoments(pop_g, moments);
             }
         }
@@ -225,11 +219,11 @@ namespace LBM
         velocitySet::scale(moments);
 
         // Collide
-        Collision::collide(moments, ffx, ffy, ffz);
+        Collision::collide(moments, ffx_, ffy_, ffz_);
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        PhaseVelocitySet::reconstruct(pop_g, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments, normx_, normy_, normz_);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
@@ -260,6 +254,155 @@ namespace LBM
             gGhostPhase.ptr<5>());
 
         // ============================================ LBM routines end ============================================ //
+    }
+
+    /**
+     * @brief Compute phase field interface normals and indicator
+     * @param phi Pointer to phase field scalar
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param ind Pointer to interface indicator
+     **/
+    launchBoundsD3Q19 __global__ void computeNormals(
+        const scalar_t *__restrict__ phi,
+        scalar_t *__restrict__ normx,
+        scalar_t *__restrict__ normy,
+        scalar_t *__restrict__ normz,
+        scalar_t *__restrict__ ind)
+    {
+        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+        if (x == 0 || x == device::nx - 1 ||
+            y == 0 || y == device::ny - 1 ||
+            z == 0 || z == device::nz - 1)
+        {
+            return;
+        }
+
+        // const label_t idx = device::idx();
+        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const scalar_t phi_xp1_yp1_z = phi[device::idxGlobal(x + 1, y + 1, z)];
+        const scalar_t phi_xp1_y_zp1 = phi[device::idxGlobal(x + 1, y, z + 1)];
+        const scalar_t phi_xp1_ym1_z = phi[device::idxGlobal(x + 1, y - 1, z)];
+        const scalar_t phi_xp1_y_zm1 = phi[device::idxGlobal(x + 1, y, z - 1)];
+        const scalar_t phi_xm1_ym1_z = phi[device::idxGlobal(x - 1, y - 1, z)];
+        const scalar_t phi_xm1_y_zm1 = phi[device::idxGlobal(x - 1, y, z - 1)];
+        const scalar_t phi_xm1_yp1_z = phi[device::idxGlobal(x - 1, y + 1, z)];
+        const scalar_t phi_xm1_y_zp1 = phi[device::idxGlobal(x - 1, y, z + 1)];
+        const scalar_t phi_x_yp1_zp1 = phi[device::idxGlobal(x, y + 1, z + 1)];
+        const scalar_t phi_x_yp1_zm1 = phi[device::idxGlobal(x, y + 1, z - 1)];
+        const scalar_t phi_x_ym1_zm1 = phi[device::idxGlobal(x, y - 1, z - 1)];
+        const scalar_t phi_x_ym1_zp1 = phi[device::idxGlobal(x, y - 1, z + 1)];
+
+        const scalar_t sgx = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x + 1, y, z)] - phi[device::idxGlobal(x - 1, y, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                             phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                             phi_xp1_ym1_z - phi_xm1_yp1_z +
+                                                             phi_xp1_y_zm1 - phi_xm1_y_zp1);
+
+        const scalar_t sgy = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x, y + 1, z)] - phi[device::idxGlobal(x, y - 1, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                             phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                             phi_xm1_yp1_z - phi_xp1_ym1_z +
+                                                             phi_x_yp1_zm1 - phi_x_ym1_zp1);
+
+        const scalar_t sgz = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x, y, z + 1)] - phi[device::idxGlobal(x, y, z - 1)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                             phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                             phi_xm1_y_zp1 - phi_xp1_y_zm1 +
+                                                             phi_x_ym1_zp1 - phi_x_yp1_zm1);
+
+        const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
+        const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
+        const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
+
+        const scalar_t ind_ = sqrtf(gx * gx + gy * gy + gz * gz);
+        const scalar_t invInd = static_cast<scalar_t>(1) / (ind_ + static_cast<scalar_t>(1e-9));
+
+        const scalar_t normx_ = gx * invInd;
+        const scalar_t normy_ = gy * invInd;
+        const scalar_t normz_ = gz * invInd;
+
+        ind[idx] = ind_;
+        normx[idx] = normx_;
+        normy[idx] = normy_;
+        normz[idx] = normz_;
+    }
+
+    /**
+     * @brief Compute surface tension forces
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param ind Pointer to interface indicator
+     * @param ffx Pointer to x-component of the surface tension force
+     * @param ffy Pointer to y-component of the surface tension force
+     * @param ffz Pointer to z-component of the surface tension force
+     **/
+    launchBoundsD3Q19 __global__ void computeForces(
+        const scalar_t *__restrict__ normx,
+        const scalar_t *__restrict__ normy,
+        const scalar_t *__restrict__ normz,
+        const scalar_t *__restrict__ ind,
+        scalar_t *__restrict__ ffx,
+        scalar_t *__restrict__ ffy,
+        scalar_t *__restrict__ ffz)
+    {
+        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+        if (x == 0 || x == device::nx - 1 ||
+            y == 0 || y == device::ny - 1 ||
+            z == 0 || z == device::nz - 1)
+        {
+            return;
+        }
+
+        // const label_t idx = device::idx();
+        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const label_t xp1_yp1_z = device::idxGlobal(x + 1, y + 1, z);
+        const label_t xp1_y_zp1 = device::idxGlobal(x + 1, y, z + 1);
+        const label_t xp1_ym1_z = device::idxGlobal(x + 1, y - 1, z);
+        const label_t xp1_y_zm1 = device::idxGlobal(x + 1, y, z - 1);
+        const label_t xm1_ym1_z = device::idxGlobal(x - 1, y - 1, z);
+        const label_t xm1_y_zm1 = device::idxGlobal(x - 1, y, z - 1);
+        const label_t xm1_yp1_z = device::idxGlobal(x - 1, y + 1, z);
+        const label_t xm1_y_zp1 = device::idxGlobal(x - 1, y, z + 1);
+        const label_t x_yp1_zp1 = device::idxGlobal(x, y + 1, z + 1);
+        const label_t x_yp1_zm1 = device::idxGlobal(x, y + 1, z - 1);
+        const label_t x_ym1_zm1 = device::idxGlobal(x, y - 1, z - 1);
+        const label_t x_ym1_zp1 = device::idxGlobal(x, y - 1, z + 1);
+
+        const scalar_t scx = VelocitySet::w_1<scalar_t>() * (normx[device::idxGlobal(x + 1, y, z)] - normx[device::idxGlobal(x - 1, y, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (normx[xp1_yp1_z] - normx[xm1_ym1_z] +
+                                                             normx[xp1_y_zp1] - normx[xm1_y_zm1] +
+                                                             normx[xp1_ym1_z] - normx[xm1_yp1_z] +
+                                                             normx[xp1_y_zm1] - normx[xm1_y_zp1]);
+
+        const scalar_t scy = VelocitySet::w_1<scalar_t>() * (normy[device::idxGlobal(x, y + 1, z)] - normy[device::idxGlobal(x, y - 1, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (normy[xp1_yp1_z] - normy[xm1_ym1_z] +
+                                                             normy[x_yp1_zp1] - normy[x_ym1_zm1] +
+                                                             normy[xm1_yp1_z] - normy[xp1_ym1_z] +
+                                                             normy[x_yp1_zm1] - normy[x_ym1_zp1]);
+
+        const scalar_t scz = VelocitySet::w_1<scalar_t>() * (normz[device::idxGlobal(x, y, z + 1)] - normz[device::idxGlobal(x, y, z - 1)]) +
+                             VelocitySet::w_2<scalar_t>() * (normz[xp1_y_zp1] - normz[xm1_y_zm1] +
+                                                             normz[x_yp1_zp1] - normz[x_ym1_zm1] +
+                                                             normz[xm1_y_zp1] - normz[xp1_y_zm1] +
+                                                             normz[x_ym1_zp1] - normz[x_yp1_zm1]);
+
+        const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
+
+        const scalar_t stCurv = -device::sigma * curvature * ind[idx];
+        ffx[idx] = stCurv * normx[idx];
+        ffy[idx] = stCurv * normy[idx];
+        ffz[idx] = stCurv * normz[idx];
     }
 }
 

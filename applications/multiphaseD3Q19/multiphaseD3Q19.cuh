@@ -110,8 +110,8 @@ namespace LBM
         const scalar_t ffy_ = ffy[idx];
         const scalar_t ffz_ = ffz[idx];
         const scalar_t normx_ = normx[idx];
-        const scalar_t normy_ = normx[idx];
-        const scalar_t normz_ = normx[idx];
+        const scalar_t normy_ = normy[idx];
+        const scalar_t normz_ = normz[idx];
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(

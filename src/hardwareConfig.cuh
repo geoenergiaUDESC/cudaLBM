@@ -130,6 +130,15 @@ namespace LBM
         }
 
         /**
+         * @brief Total size of the shared memory for moments only
+         **/
+        template <const label_t nVars>
+        __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSizeMoments(const label_t size = 1) noexcept
+        {
+            return block::size() * (nVars + 1) * size;
+        }
+
+        /**
          * @brief Launch bounds information
          * @note These variables are device specific - enable modification later
          **/

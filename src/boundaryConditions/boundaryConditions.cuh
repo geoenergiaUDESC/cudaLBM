@@ -167,7 +167,6 @@ namespace LBM
         template <class VelocitySet, class PhaseVelocitySet>
         __device__ static inline constexpr void calculateMoments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
-            const thread::array<scalar_t, PhaseVelocitySet::Q()> &pop_g,
             thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
             const normalVector &boundaryNormal,
             const scalar_t *const ptrRestrict shared_buffer) noexcept

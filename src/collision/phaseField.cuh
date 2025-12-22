@@ -37,41 +37,51 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the collision class
+    Definition of first-order phase field collision
 
 Namespace
     LBM
 
 SourceFiles
-    collision.cuh
+    phaseField.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_COLLISION_CUH
-#define __MBLBM_COLLISION_CUH
-
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../velocitySet/velocitySet.cuh"
-#include "../globalFunctions.cuh"
+#ifndef __MBLBM_COLLISION_PHASE_FIELD_CUH
+#define __MBLBM_COLLISION_PHASE_FIELD_CUH
 
 namespace LBM
 {
-    class collision
+    /**
+     * @class phaseField
+     * @brief Implements first-order collision operator for phase field LBM simulations
+     * @extends collision
+     *
+     * This class provides a specialized collision operator that handles
+     * first-order phase field updates in the Lattice Boltzmann Method.
+     **/
+    class phaseField : private collision
     {
     public:
         /**
-         * @brief Constructor for the collision class
-         * @return A collision object
-         * @note This constructor is consteval
+         * @brief Default constructor (consteval)
+         * @return A phaseField collision operator instance
          **/
-        __device__ __host__ [[nodiscard]] inline consteval collision() noexcept {};
+        __device__ __host__ [[nodiscard]] inline consteval phaseField() noexcept {};
+
+        /**
+         * @brief First-order phase field collision operator (advection-diffusion + anti-diffusion)
+         * @param[in,out] moments Array of 11 solution moments
+         *
+         * @note This implementation assumes unit relaxation time
+         **/
+        __device__ static inline void collide(thread::array<scalar_t, 11> &moments) noexcept
+        {
+            // logic
+        }
 
     private:
     };
 }
-
-#include "phaseField.cuh"
-#include "secondOrder.cuh"
 
 #endif

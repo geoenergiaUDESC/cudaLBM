@@ -147,8 +147,6 @@ namespace LBM
 
         __syncthreads();
 
-        // ======================================== LBM routines start below ======================================== //
-
         // Reconstruct the populations from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments, normx_, normy_, normz_);
@@ -206,7 +204,7 @@ namespace LBM
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, pop_g, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
             else
             {
@@ -252,8 +250,6 @@ namespace LBM
             gGhostPhase.ptr<3>(),
             gGhostPhase.ptr<4>(),
             gGhostPhase.ptr<5>());
-
-        // ============================================ LBM routines end ============================================ //
     }
 
     /**

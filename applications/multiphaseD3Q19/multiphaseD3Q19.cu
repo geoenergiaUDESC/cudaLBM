@@ -134,6 +134,13 @@ int main(const int argc, const char *const argv[])
     std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to multiphaseD3Q" << VelocitySet::Q() << " kernel" << std::endl;
     std::cout << std::endl;
 
+    // Transient fix
+    computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
+        phi.ptr(), d_normx, d_normy, d_normz, d_ind);
+
+    computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
+        d_normx, d_normy, d_normz, d_ind, d_ffx, d_ffy, d_ffz);
+
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
         // Do the run-time IO

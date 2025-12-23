@@ -71,7 +71,6 @@ namespace LBM
     };
 }
 
-#include "phaseField.cuh"
 #include "secondOrder.cuh"
 
 #endif

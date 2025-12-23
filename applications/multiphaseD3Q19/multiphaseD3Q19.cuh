@@ -86,12 +86,12 @@ namespace LBM
      **/
     launchBoundsD3Q19 __global__ void multiphaseD3Q19(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const scalar_t *__restrict__ ffx,
-        const scalar_t *__restrict__ ffy,
-        const scalar_t *__restrict__ ffz,
-        const scalar_t *__restrict__ normx,
-        const scalar_t *__restrict__ normy,
-        const scalar_t *__restrict__ normz,
+        const scalar_t *const ptrRestrict ffx,
+        const scalar_t *const ptrRestrict ffy,
+        const scalar_t *const ptrRestrict ffz,
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
         const device::ptrCollection<6, const scalar_t> fGhostHydro,
         const device::ptrCollection<6, scalar_t> gGhostHydro,
         const device::ptrCollection<6, const scalar_t> fGhostPhase,
@@ -184,9 +184,11 @@ namespace LBM
             fGhostPhase.ptr<4>(),
             fGhostPhase.ptr<5>());
 
+        // =========================================== NEEDED FOR NEUMANN WITH SHARED MEMORY =========================================== //
+
         // Compute post-stream moments
         VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
-        PhaseVelocitySet::calculateMoments(pop_g, moments);
+        PhaseVelocitySet::calculatePhi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -199,6 +201,8 @@ namespace LBM
 
         __syncthreads();
 
+        // ============================================================================================================================= //
+
         // Calculate the moments either at the boundary or interior
         {
             const normalVector boundaryNormal;
@@ -209,7 +213,7 @@ namespace LBM
             else
             {
                 VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
-                PhaseVelocitySet::calculateMoments(pop_g, moments);
+                PhaseVelocitySet::calculatePhi(pop_g, moments);
             }
         }
 
@@ -261,11 +265,11 @@ namespace LBM
      * @param ind Pointer to interface indicator
      **/
     launchBoundsD3Q19 __global__ void computeNormals(
-        const scalar_t *__restrict__ phi,
-        scalar_t *__restrict__ normx,
-        scalar_t *__restrict__ normy,
-        scalar_t *__restrict__ normz,
-        scalar_t *__restrict__ ind)
+        const scalar_t *const ptrRestrict phi,
+        scalar_t *const ptrRestrict normx,
+        scalar_t *const ptrRestrict normy,
+        scalar_t *const ptrRestrict normz,
+        scalar_t *const ptrRestrict ind)
     {
         const label_t x = threadIdx.x + block::nx() * blockIdx.x;
         const label_t y = threadIdx.y + block::ny() * blockIdx.y;
@@ -340,13 +344,13 @@ namespace LBM
      * @param ffz Pointer to z-component of the surface tension force
      **/
     launchBoundsD3Q19 __global__ void computeForces(
-        const scalar_t *__restrict__ normx,
-        const scalar_t *__restrict__ normy,
-        const scalar_t *__restrict__ normz,
-        const scalar_t *__restrict__ ind,
-        scalar_t *__restrict__ ffx,
-        scalar_t *__restrict__ ffy,
-        scalar_t *__restrict__ ffz)
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
+        const scalar_t *const ptrRestrict ind,
+        scalar_t *const ptrRestrict ffx,
+        scalar_t *const ptrRestrict ffy,
+        scalar_t *const ptrRestrict ffz)
     {
         const label_t x = threadIdx.x + block::nx() * blockIdx.x;
         const label_t y = threadIdx.y + block::ny() * blockIdx.y;

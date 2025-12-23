@@ -66,6 +66,8 @@ int main(const int argc, const char *const argv[])
 
     VelocitySet::print();
 
+    // Remember to compile host code with -fsanitize=address to catch dangling reference; device::array has a possible candidate at const std::string &name_;
+
     // Allocate the arrays on the device
     device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
@@ -78,17 +80,15 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    // Phase field arrays (solution field)
+    // Phase field arrays
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
-
-    // Phase geometry arrays (raw device allocations; NOT auto-registered)
-    scalar_t *d_normx = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_normy = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_normz = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_ind = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_ffx = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_ffy = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
-    scalar_t *d_ffz = device::allocateArray<scalar_t>(mesh.nPoints(), static_cast<scalar_t>(0));
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffx("ffx", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffy("ffy", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffz("ffz", mesh, programCtrl);
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),
@@ -136,10 +136,10 @@ int main(const int argc, const char *const argv[])
 
     // Transient fix
     computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
-        phi.ptr(), d_normx, d_normy, d_normz, d_ind);
+        phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
 
     computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
-        d_normx, d_normy, d_normz, d_ind, d_ffx, d_ffy, d_ffz);
+        normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -167,14 +167,14 @@ int main(const int argc, const char *const argv[])
             [&](const auto stream)
             {
                 multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
-                    devPtrs, d_ffx, d_ffy, d_ffz, d_normx, d_normy, d_normz,
+                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
                     fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
 
                 computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    phi.ptr(), d_normx, d_normy, d_normz, d_ind);
+                    phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
 
                 computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    d_normx, d_normy, d_normz, d_ind, d_ffx, d_ffy, d_ffz);
+                    normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
             });
 
         // Calculate S kernel
@@ -184,13 +184,6 @@ int main(const int argc, const char *const argv[])
         fBlockHalo.swap();
         gBlockHalo.swap();
     }
-
-    checkCudaErrors(cudaDeviceSynchronize());
-
-    checkCudaErrors(cudaFree(d_normx));
-    checkCudaErrors(cudaFree(d_normy));
-    checkCudaErrors(cudaFree(d_normz));
-    checkCudaErrors(cudaFree(d_ind));
 
     return 0;
 }

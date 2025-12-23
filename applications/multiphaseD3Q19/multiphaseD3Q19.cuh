@@ -203,17 +203,12 @@ namespace LBM
 
         __syncthreads();
 
-        // Calculate the moments either at the boundary or interior
+        // Calculate the moments at the boundary
         {
             const normalVector boundaryNormal;
             if (boundaryNormal.isBoundary())
             {
                 boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
-            }
-            else
-            {
-                VelocitySet::calculateMoments(pop, moments);
-                PhaseVelocitySet::calculatePhi(pop_g, moments);
             }
         }
 

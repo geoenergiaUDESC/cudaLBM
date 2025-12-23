@@ -37,7 +37,7 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Main kernel for the multiphase moment representation with the D3Q19 velocity set
+    Main kernels for the multiphase moment representation with the D3Q19 velocity set
 
 Namespace
     LBM
@@ -81,6 +81,10 @@ namespace LBM
     /**
      * @brief Implements solution of the lattice Boltzmann method using the multiphase moment representation and the D3Q19 velocity set
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param ind Pointer to interface indicator
      * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
      * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
      **/
@@ -184,10 +188,8 @@ namespace LBM
             fGhostPhase.ptr<4>(),
             fGhostPhase.ptr<5>());
 
-        // =========================================== NEEDED FOR NEUMANN WITH SHARED MEMORY =========================================== //
-
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
+        VelocitySet::calculateMoments(pop, moments);
         PhaseVelocitySet::calculatePhi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -201,8 +203,6 @@ namespace LBM
 
         __syncthreads();
 
-        // ============================================================================================================================= //
-
         // Calculate the moments either at the boundary or interior
         {
             const normalVector boundaryNormal;
@@ -212,7 +212,7 @@ namespace LBM
             }
             else
             {
-                VelocitySet::calculateMoments(pop, moments, ffx_, ffy_, ffz_);
+                VelocitySet::calculateMoments(pop, moments);
                 PhaseVelocitySet::calculatePhi(pop_g, moments);
             }
         }

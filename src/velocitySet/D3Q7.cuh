@@ -391,17 +391,17 @@ namespace LBM
 
             pop[q_i<0>()] = phiw_0;
 
-            scalar_t anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + anti_diff;
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - anti_diff;
+            scalar_t anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) + anti_diff;
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) - anti_diff;
 
-            anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + anti_diff;
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - anti_diff;
+            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) + anti_diff;
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) - anti_diff;
 
-            anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + anti_diff;
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - anti_diff;
+            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) + anti_diff;
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) - anti_diff;
         }
 
         /**
@@ -416,12 +416,12 @@ namespace LBM
 
             return {
                 phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
         }
 
         /**
@@ -438,14 +438,14 @@ namespace LBM
 
             pop[q_i<0>()] = phiw_0;
 
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]);
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]);
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
 
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]);
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]);
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
 
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]);
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]);
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
 
             return pop;
         }

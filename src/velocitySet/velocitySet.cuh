@@ -118,6 +118,15 @@ namespace LBM
         }
 
         /**
+         * @brief Get unscaling factor for phase field reconstruction
+         **/
+        template <typename T>
+        __device__ __host__ [[nodiscard]] static inline consteval T unscale_i() noexcept
+        {
+            return static_cast<T>(static_cast<double>(4.0) / static_cast<double>(3.0));
+        }
+
+        /**
          * @brief Apply velocity set scaling factors to moment array
          * @param[in,out] moments Array of 10 moment variables to be scaled
          *

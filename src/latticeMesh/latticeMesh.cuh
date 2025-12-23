@@ -191,11 +191,33 @@ namespace LBM
 
                     if (programCtrl.isMultiphase())
                     {
+                        const scalar_t tt_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp * static_cast<scalar_t>(0.5);
+                        const scalar_t tt_omegaVar_t3Temp = tt_omegaVarTemp * static_cast<scalar_t>(3);
+                        // Weber defined at programControl
                         const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
+                        const scalar_t gammaTemp = static_cast<scalar_t>(1);
 
+                        copyToSymbol(device::tt_omegaVar, tt_omegaVarTemp);
+                        copyToSymbol(device::tt_omegaVar_t3, tt_omegaVar_t3Temp);
                         copyToSymbol(device::We, programCtrl.We());
                         copyToSymbol(device::sigma, sigmaTemp);
-                        copyToSymbol(device::gamma, static_cast<scalar_t>(1));
+                        copyToSymbol(device::gamma, gammaTemp);
+
+                        // Debug multiphase device constant vars
+                        // scalar_t h_We = -1;
+                        // scalar_t h_sigma = -1;
+                        // scalar_t h_gamma = -1;
+
+                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_We, device::We, sizeof(scalar_t)));
+                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_sigma, device::sigma, sizeof(scalar_t)));
+                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_gamma, device::gamma, sizeof(scalar_t)));
+
+                        // std::cout << "We (host)    = " << programCtrl.We() << '\n'
+                        //           << "sigma (host) = " << sigmaTemp << '\n'
+                        //           << "gamma (host) = " << gammaTemp << '\n'
+                        //           << "We (device)  = " << h_We << '\n'
+                        //           << "sigma (dev)  = " << h_sigma << '\n'
+                        //           << "gamma (dev)  = " << h_gamma << std::endl;
                     }
                 }
 

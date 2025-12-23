@@ -285,32 +285,32 @@ namespace LBM
         // const label_t idx = device::idx();
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-        const scalar_t phi_xp1_yp1_z = phi[device::idxGlobal(x + 1, y + 1, z)];
-        const scalar_t phi_xp1_y_zp1 = phi[device::idxGlobal(x + 1, y, z + 1)];
-        const scalar_t phi_xp1_ym1_z = phi[device::idxGlobal(x + 1, y - 1, z)];
-        const scalar_t phi_xp1_y_zm1 = phi[device::idxGlobal(x + 1, y, z - 1)];
-        const scalar_t phi_xm1_ym1_z = phi[device::idxGlobal(x - 1, y - 1, z)];
-        const scalar_t phi_xm1_y_zm1 = phi[device::idxGlobal(x - 1, y, z - 1)];
-        const scalar_t phi_xm1_yp1_z = phi[device::idxGlobal(x - 1, y + 1, z)];
-        const scalar_t phi_xm1_y_zp1 = phi[device::idxGlobal(x - 1, y, z + 1)];
-        const scalar_t phi_x_yp1_zp1 = phi[device::idxGlobal(x, y + 1, z + 1)];
-        const scalar_t phi_x_yp1_zm1 = phi[device::idxGlobal(x, y + 1, z - 1)];
-        const scalar_t phi_x_ym1_zm1 = phi[device::idxGlobal(x, y - 1, z - 1)];
-        const scalar_t phi_x_ym1_zp1 = phi[device::idxGlobal(x, y - 1, z + 1)];
+        const scalar_t phi_xp1_yp1_z = phi[device::idxGlobalFromIdx(x + 1, y + 1, z)];
+        const scalar_t phi_xp1_y_zp1 = phi[device::idxGlobalFromIdx(x + 1, y, z + 1)];
+        const scalar_t phi_xp1_ym1_z = phi[device::idxGlobalFromIdx(x + 1, y - 1, z)];
+        const scalar_t phi_xp1_y_zm1 = phi[device::idxGlobalFromIdx(x + 1, y, z - 1)];
+        const scalar_t phi_xm1_ym1_z = phi[device::idxGlobalFromIdx(x - 1, y - 1, z)];
+        const scalar_t phi_xm1_y_zm1 = phi[device::idxGlobalFromIdx(x - 1, y, z - 1)];
+        const scalar_t phi_xm1_yp1_z = phi[device::idxGlobalFromIdx(x - 1, y + 1, z)];
+        const scalar_t phi_xm1_y_zp1 = phi[device::idxGlobalFromIdx(x - 1, y, z + 1)];
+        const scalar_t phi_x_yp1_zp1 = phi[device::idxGlobalFromIdx(x, y + 1, z + 1)];
+        const scalar_t phi_x_yp1_zm1 = phi[device::idxGlobalFromIdx(x, y + 1, z - 1)];
+        const scalar_t phi_x_ym1_zm1 = phi[device::idxGlobalFromIdx(x, y - 1, z - 1)];
+        const scalar_t phi_x_ym1_zp1 = phi[device::idxGlobalFromIdx(x, y - 1, z + 1)];
 
-        const scalar_t sgx = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x + 1, y, z)] - phi[device::idxGlobal(x - 1, y, z)]) +
+        const scalar_t sgx = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x + 1, y, z)] - phi[device::idxGlobalFromIdx(x - 1, y, z)]) +
                              VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
                                                              phi_xp1_y_zp1 - phi_xm1_y_zm1 +
                                                              phi_xp1_ym1_z - phi_xm1_yp1_z +
                                                              phi_xp1_y_zm1 - phi_xm1_y_zp1);
 
-        const scalar_t sgy = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x, y + 1, z)] - phi[device::idxGlobal(x, y - 1, z)]) +
+        const scalar_t sgy = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y + 1, z)] - phi[device::idxGlobalFromIdx(x, y - 1, z)]) +
                              VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
                                                              phi_x_yp1_zp1 - phi_x_ym1_zm1 +
                                                              phi_xm1_yp1_z - phi_xp1_ym1_z +
                                                              phi_x_yp1_zm1 - phi_x_ym1_zp1);
 
-        const scalar_t sgz = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobal(x, y, z + 1)] - phi[device::idxGlobal(x, y, z - 1)]) +
+        const scalar_t sgz = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y, z + 1)] - phi[device::idxGlobalFromIdx(x, y, z - 1)]) +
                              VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
                                                              phi_x_yp1_zp1 - phi_x_ym1_zm1 +
                                                              phi_xm1_y_zp1 - phi_xp1_y_zm1 +
@@ -366,32 +366,32 @@ namespace LBM
         // const label_t idx = device::idx();
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-        const label_t xp1_yp1_z = device::idxGlobal(x + 1, y + 1, z);
-        const label_t xp1_y_zp1 = device::idxGlobal(x + 1, y, z + 1);
-        const label_t xp1_ym1_z = device::idxGlobal(x + 1, y - 1, z);
-        const label_t xp1_y_zm1 = device::idxGlobal(x + 1, y, z - 1);
-        const label_t xm1_ym1_z = device::idxGlobal(x - 1, y - 1, z);
-        const label_t xm1_y_zm1 = device::idxGlobal(x - 1, y, z - 1);
-        const label_t xm1_yp1_z = device::idxGlobal(x - 1, y + 1, z);
-        const label_t xm1_y_zp1 = device::idxGlobal(x - 1, y, z + 1);
-        const label_t x_yp1_zp1 = device::idxGlobal(x, y + 1, z + 1);
-        const label_t x_yp1_zm1 = device::idxGlobal(x, y + 1, z - 1);
-        const label_t x_ym1_zm1 = device::idxGlobal(x, y - 1, z - 1);
-        const label_t x_ym1_zp1 = device::idxGlobal(x, y - 1, z + 1);
+        const label_t xp1_yp1_z = device::idxGlobalFromIdx(x + 1, y + 1, z);
+        const label_t xp1_y_zp1 = device::idxGlobalFromIdx(x + 1, y, z + 1);
+        const label_t xp1_ym1_z = device::idxGlobalFromIdx(x + 1, y - 1, z);
+        const label_t xp1_y_zm1 = device::idxGlobalFromIdx(x + 1, y, z - 1);
+        const label_t xm1_ym1_z = device::idxGlobalFromIdx(x - 1, y - 1, z);
+        const label_t xm1_y_zm1 = device::idxGlobalFromIdx(x - 1, y, z - 1);
+        const label_t xm1_yp1_z = device::idxGlobalFromIdx(x - 1, y + 1, z);
+        const label_t xm1_y_zp1 = device::idxGlobalFromIdx(x - 1, y, z + 1);
+        const label_t x_yp1_zp1 = device::idxGlobalFromIdx(x, y + 1, z + 1);
+        const label_t x_yp1_zm1 = device::idxGlobalFromIdx(x, y + 1, z - 1);
+        const label_t x_ym1_zm1 = device::idxGlobalFromIdx(x, y - 1, z - 1);
+        const label_t x_ym1_zp1 = device::idxGlobalFromIdx(x, y - 1, z + 1);
 
-        const scalar_t scx = VelocitySet::w_1<scalar_t>() * (normx[device::idxGlobal(x + 1, y, z)] - normx[device::idxGlobal(x - 1, y, z)]) +
+        const scalar_t scx = VelocitySet::w_1<scalar_t>() * (normx[device::idxGlobalFromIdx(x + 1, y, z)] - normx[device::idxGlobalFromIdx(x - 1, y, z)]) +
                              VelocitySet::w_2<scalar_t>() * (normx[xp1_yp1_z] - normx[xm1_ym1_z] +
                                                              normx[xp1_y_zp1] - normx[xm1_y_zm1] +
                                                              normx[xp1_ym1_z] - normx[xm1_yp1_z] +
                                                              normx[xp1_y_zm1] - normx[xm1_y_zp1]);
 
-        const scalar_t scy = VelocitySet::w_1<scalar_t>() * (normy[device::idxGlobal(x, y + 1, z)] - normy[device::idxGlobal(x, y - 1, z)]) +
+        const scalar_t scy = VelocitySet::w_1<scalar_t>() * (normy[device::idxGlobalFromIdx(x, y + 1, z)] - normy[device::idxGlobalFromIdx(x, y - 1, z)]) +
                              VelocitySet::w_2<scalar_t>() * (normy[xp1_yp1_z] - normy[xm1_ym1_z] +
                                                              normy[x_yp1_zp1] - normy[x_ym1_zm1] +
                                                              normy[xm1_yp1_z] - normy[xp1_ym1_z] +
                                                              normy[x_yp1_zm1] - normy[x_ym1_zp1]);
 
-        const scalar_t scz = VelocitySet::w_1<scalar_t>() * (normz[device::idxGlobal(x, y, z + 1)] - normz[device::idxGlobal(x, y, z - 1)]) +
+        const scalar_t scz = VelocitySet::w_1<scalar_t>() * (normz[device::idxGlobalFromIdx(x, y, z + 1)] - normz[device::idxGlobalFromIdx(x, y, z - 1)]) +
                              VelocitySet::w_2<scalar_t>() * (normz[xp1_y_zp1] - normz[xm1_y_zm1] +
                                                              normz[x_yp1_zp1] - normz[x_ym1_zm1] +
                                                              normz[xm1_y_zp1] - normz[xp1_y_zm1] +

@@ -535,9 +535,6 @@ namespace LBM
                 auto m_yz = host::array<scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl);
                 auto m_zz = host::array<scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl);
                 auto phi = host::array<scalar_t, D3Q7, time::instantaneous>("phi", mesh, programCtrl);
-                auto normx = host::array<scalar_t, D3Q7, time::instantaneous>("normx", mesh, programCtrl);
-                auto normy = host::array<scalar_t, D3Q7, time::instantaneous>("normy", mesh, programCtrl);
-                auto normz = host::array<scalar_t, D3Q7, time::instantaneous>("normz", mesh, programCtrl);
 
                 return haloFace<VelocitySet>(
                     rho,
@@ -551,10 +548,7 @@ namespace LBM
                     m_yz,
                     m_zz,
                     mesh,
-                    &phi,
-                    &normx,
-                    &normy,
-                    &normz);
+                    &phi);
             }
 
             /**

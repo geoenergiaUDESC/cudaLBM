@@ -1,9 +1,9 @@
 make install
 
-cd turbulentJet
+cd multiphaseJet
 
-./cleanCase.sh
+source cleanCase.sh
 
-momentBasedD3Q19 -GPU 0
+multiphaseD3Q19 -GPU 0
 
 fieldConvert -fileType vts

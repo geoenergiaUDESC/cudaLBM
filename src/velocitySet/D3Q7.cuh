@@ -90,7 +90,7 @@ namespace LBM
 
         /**
          * @brief Get number of velocity components on a lattice face
-         * @return 5 (number of directions crossing each face in D3Q7)
+         * @return 1 (number of directions crossing each face in D3Q7)
          **/
         __device__ __host__ [[nodiscard]] static inline consteval label_t QF() noexcept
         {
@@ -391,15 +391,15 @@ namespace LBM
 
             pop[q_i<0>()] = phiw_0;
 
-            scalar_t anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
+            scalar_t anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
             pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + anti_diff;
             pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - anti_diff;
 
-            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
+            anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
             pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + anti_diff;
             pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - anti_diff;
 
-            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
+            anti_diff = w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
             pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + anti_diff;
             pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - anti_diff;
         }
@@ -416,12 +416,12 @@ namespace LBM
 
             return {
                 phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
-                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
+                phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
+                phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - w_1<scalar_t>() * static_cast<scalar_t>(1) * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
         }
 
         /**
@@ -429,7 +429,7 @@ namespace LBM
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components
          **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, 14> &moments) noexcept
+        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, 11> &moments) noexcept
         {
             std::array<scalar_t, 7> pop;
 
@@ -438,17 +438,14 @@ namespace LBM
 
             pop[q_i<0>()] = phiw_0;
 
-            scalar_t anti_diff = w_1<scalar_t>() * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * moments[m_i<11>()];
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]) + anti_diff;
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]) - anti_diff;
+            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<1>()]);
+            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<1>()]);
 
-            anti_diff = w_1<scalar_t>() * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * moments[m_i<12>()];
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]) + anti_diff;
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]) - anti_diff;
+            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<2>()]);
+            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<2>()]);
 
-            anti_diff = w_1<scalar_t>() * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * moments[m_i<13>()];
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]) + anti_diff;
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]) - anti_diff;
+            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + moments[m_i<3>()]);
+            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - moments[m_i<3>()]);
 
             return pop;
         }

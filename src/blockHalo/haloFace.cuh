@@ -86,16 +86,13 @@ namespace LBM
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *phi = nullptr,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normx = nullptr,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normy = nullptr,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normz = nullptr) noexcept
-                : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))),
-                  x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))),
-                  y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))),
-                  y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))),
-                  z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))),
-                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, normx, normy, normz, mesh))){};
+                const host::array<scalar_t, D3Q7, time::instantaneous> *phi = nullptr) noexcept
+                : x0_(device::allocateArray(initialise_pop<device::haloFaces::x(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
+                  x1_(device::allocateArray(initialise_pop<device::haloFaces::x(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
+                  y0_(device::allocateArray(initialise_pop<device::haloFaces::y(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
+                  y1_(device::allocateArray(initialise_pop<device::haloFaces::y(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
+                  z0_(device::allocateArray(initialise_pop<device::haloFaces::z(), 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
+                  z1_(device::allocateArray(initialise_pop<device::haloFaces::z(), 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))){};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -258,9 +255,6 @@ namespace LBM
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
                 const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::array<scalar_t, D3Q7, time::instantaneous> *phi,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normx,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normy,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *normz,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
@@ -294,7 +288,7 @@ namespace LBM
                                         {
 
                                             pop = VelocitySet::reconstruct(
-                                                std::array<scalar_t, 14>{
+                                                std::array<scalar_t, 11>{
                                                     rho0<scalar_t>() + rho.arr()[base],
                                                     u.arr()[base],
                                                     v.arr()[base],
@@ -305,10 +299,7 @@ namespace LBM
                                                     m_yy.arr()[base],
                                                     m_yz.arr()[base],
                                                     m_zz.arr()[base],
-                                                    phi->arr()[base],
-                                                    normx->arr()[base],
-                                                    normy->arr()[base],
-                                                    normz->arr()[base]});
+                                                    phi->arr()[base]});
                                         }
                                         else
                                         {

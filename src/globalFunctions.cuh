@@ -419,6 +419,19 @@ namespace LBM
             return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
         }
 
+        __device__ [[nodiscard]] inline label_t idxGlobalFromIdx(const label_t x, const label_t y, const label_t z) noexcept
+        {
+            const label_t bx = x / block::nx();
+            const label_t by = y / block::ny();
+            const label_t bz = z / block::nz();
+
+            const label_t tx = x - bx * block::nx();
+            const label_t ty = y - by * block::ny();
+            const label_t tz = z - bz * block::nz();
+
+            return device::idx(tx, ty, tz, bx, by, bz);
+        }
+
         __device__ [[nodiscard]] inline label_t idxGlobal(const label_t x, const label_t y, const label_t z) noexcept
         {
             return x + device::nx * (y + device::ny * z);

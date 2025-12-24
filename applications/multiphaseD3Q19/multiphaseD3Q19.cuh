@@ -78,6 +78,20 @@ namespace LBM
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
+    launchBoundsD3Q19 __global__ void makeDroplet(const scalar_t *const ptrRestrict phi)
+    {
+        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+        if (x == 0 || x == device::nx - 1 ||
+            y == 0 || y == device::ny - 1 ||
+            z == 0 || z == device::nz - 1)
+        {
+            return;
+        }
+    }
+
     /**
      * @brief Implements solution of the lattice Boltzmann method using the multiphase moment representation and the D3Q19 velocity set
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU

@@ -104,12 +104,6 @@ namespace LBM
      **/
     launchBoundsD3Q19 __global__ void multiphaseD3Q19(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const scalar_t *const ptrRestrict ffx,
-        const scalar_t *const ptrRestrict ffy,
-        const scalar_t *const ptrRestrict ffz,
-        const scalar_t *const ptrRestrict normx,
-        const scalar_t *const ptrRestrict normy,
-        const scalar_t *const ptrRestrict normz,
         const device::ptrCollection<6, const scalar_t> fGhostHydro,
         const device::ptrCollection<6, scalar_t> gGhostHydro,
         const device::ptrCollection<6, const scalar_t> fGhostPhase,
@@ -123,13 +117,6 @@ namespace LBM
 
         // const label_t idx = device::idx();
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
-
-        const scalar_t ffx_ = ffx[idx];
-        const scalar_t ffy_ = ffy[idx];
-        const scalar_t ffz_ = ffz[idx];
-        const scalar_t normx_ = normx[idx];
-        const scalar_t normy_ = normy[idx];
-        const scalar_t normz_ = normz[idx];
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(

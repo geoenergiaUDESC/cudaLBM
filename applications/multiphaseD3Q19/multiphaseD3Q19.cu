@@ -125,21 +125,14 @@ int main(const int argc, const char *const argv[])
 
     constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<true>()>(sizeof(scalar_t));
 
-    checkCudaErrors(cudaFuncSetCacheConfig(multiphaseD3Q19, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetAttribute(multiphaseD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
+    checkCudaErrors(cudaFuncSetCacheConfig(multiphaseStream, cudaFuncCachePreferShared));
+    checkCudaErrors(cudaFuncSetAttribute(multiphaseStream, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
 
     const runTimeIO IO(mesh, programCtrl);
 
     std::cout << std::endl;
     std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to multiphaseD3Q" << VelocitySet::Q() << " kernel" << std::endl;
     std::cout << std::endl;
-
-    // Transient fix
-    computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
-        phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
-
-    computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[0]>>>(
-        normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -166,23 +159,23 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
-                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
+                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
+                    fBlockHalo.gGhost(), gBlockHalo.gGhost());
 
                 computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
 
                 computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
+
+                multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
+                    fBlockHalo.gGhost(), gBlockHalo.gGhost());
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
-
-        // Halo pointer swap
-        fBlockHalo.swap();
-        gBlockHalo.swap();
     }
 
     return 0;

@@ -78,36 +78,23 @@ namespace LBM
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
-    launchBoundsD3Q19 __global__ void makeDroplet(const scalar_t *const ptrRestrict phi)
-    {
-        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
-        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
-        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
-
-        if (x == 0 || x == device::nx - 1 ||
-            y == 0 || y == device::ny - 1 ||
-            z == 0 || z == device::nz - 1)
-        {
-            return;
-        }
-    }
-
     /**
-     * @brief Implements solution of the lattice Boltzmann method using the multiphase moment representation and the D3Q19 velocity set
+     * @brief Performs the streaming step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
      * @param normx Pointer to x-component of the unit interface normal
      * @param normy Pointer to y-component of the unit interface normal
      * @param normz Pointer to z-component of the unit interface normal
-     * @param ind Pointer to interface indicator
      * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
      * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @note Currently only immutable halos are used due to kernel split
      **/
-    launchBoundsD3Q19 __global__ void multiphaseD3Q19(
+    launchBoundsD3Q19 __global__ void multiphaseStream(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const device::ptrCollection<6, const scalar_t> fGhostHydro,
-        const device::ptrCollection<6, scalar_t> gGhostHydro,
-        const device::ptrCollection<6, const scalar_t> fGhostPhase,
-        const device::ptrCollection<6, scalar_t> gGhostPhase)
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         // if (device::out_of_bounds())
@@ -117,6 +104,10 @@ namespace LBM
 
         // const label_t idx = device::idx();
         const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const scalar_t normx_ = normx[idx];
+        const scalar_t normy_ = normy[idx];
+        const scalar_t normz_ = normz[idx];
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -172,22 +163,22 @@ namespace LBM
         // Load hydro pop from global memory in cover nodes
         HydroHalo::load(
             pop,
-            fGhostHydro.ptr<0>(),
-            fGhostHydro.ptr<1>(),
-            fGhostHydro.ptr<2>(),
-            fGhostHydro.ptr<3>(),
-            fGhostHydro.ptr<4>(),
-            fGhostHydro.ptr<5>());
+            ghostHydro.ptr<0>(),
+            ghostHydro.ptr<1>(),
+            ghostHydro.ptr<2>(),
+            ghostHydro.ptr<3>(),
+            ghostHydro.ptr<4>(),
+            ghostHydro.ptr<5>());
 
         // Load phase pop from global memory in cover nodes
         PhaseHalo::load(
             pop_g,
-            fGhostPhase.ptr<0>(),
-            fGhostPhase.ptr<1>(),
-            fGhostPhase.ptr<2>(),
-            fGhostPhase.ptr<3>(),
-            fGhostPhase.ptr<4>(),
-            fGhostPhase.ptr<5>());
+            ghostPhase.ptr<0>(),
+            ghostPhase.ptr<1>(),
+            ghostPhase.ptr<2>(),
+            ghostPhase.ptr<3>(),
+            ghostPhase.ptr<4>(),
+            ghostPhase.ptr<5>());
 
         // Compute post-stream moments
         VelocitySet::calculateMoments(pop, moments);
@@ -213,16 +204,6 @@ namespace LBM
             }
         }
 
-        // Scale the moments correctly
-        velocitySet::scale(moments);
-
-        // Collide
-        Collision::collide(moments, ffx_, ffy_, ffz_);
-
-        // Calculate post collision populations
-        VelocitySet::reconstruct(pop, moments);
-        PhaseVelocitySet::reconstruct(pop_g, moments, normx_, normy_, normz_);
-
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -230,26 +211,6 @@ namespace LBM
             {
                 devPtrs.ptr<moment>()[idx] = moments[moment];
             });
-
-        // Save the hydro populations to the block halo
-        HydroHalo::save(
-            pop,
-            gGhostHydro.ptr<0>(),
-            gGhostHydro.ptr<1>(),
-            gGhostHydro.ptr<2>(),
-            gGhostHydro.ptr<3>(),
-            gGhostHydro.ptr<4>(),
-            gGhostHydro.ptr<5>());
-
-        // Save the phase populations to the block halo
-        PhaseHalo::save(
-            pop_g,
-            gGhostPhase.ptr<0>(),
-            gGhostPhase.ptr<1>(),
-            gGhostPhase.ptr<2>(),
-            gGhostPhase.ptr<3>(),
-            gGhostPhase.ptr<4>(),
-            gGhostPhase.ptr<5>());
     }
 
     /**
@@ -399,6 +360,112 @@ namespace LBM
         ffx[idx] = stCurv * normx[idx];
         ffy[idx] = stCurv * normy[idx];
         ffz[idx] = stCurv * normz[idx];
+    }
+
+    /**
+     * @brief Performs the collision step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
+     * @param devPtrs Collection of 11 pointers to device arrays on the GPU
+     * @param ffx Pointer to x-component of the surface tension force
+     * @param ffy Pointer to y-component of the surface tension force
+     * @param ffz Pointer to z-component of the surface tension force
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
+     * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @note Currently only immutable halos are used due to kernel split
+     **/
+    launchBoundsD3Q19 __global__ void multiphaseCollide(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const scalar_t *const ptrRestrict ffx,
+        const scalar_t *const ptrRestrict ffy,
+        const scalar_t *const ptrRestrict ffz,
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase)
+    {
+        // Always a multiple of 32, so no need to check this(I think)
+        // if (device::out_of_bounds())
+        // {
+        //     return;
+        // }
+
+        // const label_t idx = device::idx();
+        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const scalar_t ffx_ = ffx[idx];
+        const scalar_t ffy_ = ffy[idx];
+        const scalar_t ffz_ = ffz[idx];
+        const scalar_t normx_ = normx[idx];
+        const scalar_t normy_ = normy[idx];
+        const scalar_t normz_ = normz[idx];
+
+        // Prefetch devPtrs into L2
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
+        // Coalesced read from global memory
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        {
+            // Read into registers
+            device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+                [&](const auto moment)
+                {
+                    if constexpr (moment == index::rho())
+                    {
+                        moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
+                    }
+                    else
+                    {
+                        moments[moment] = devPtrs.ptr<moment>()[idx];
+                    }
+                });
+        }
+
+        // Scale the moments correctly
+        velocitySet::scale(moments);
+
+        // Collide
+        Collision::collide(moments, ffx_, ffy_, ffz_);
+
+        // Calculate post collision populations
+        thread::array<scalar_t, VelocitySet::Q()> pop;
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
+        VelocitySet::reconstruct(pop, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments, normx_, normy_, normz_);
+
+        // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments[moment];
+            });
+
+        // Save the hydro populations to the block halo
+        HydroHalo::save(
+            pop,
+            ghostHydro.ptr<0>(),
+            ghostHydro.ptr<1>(),
+            ghostHydro.ptr<2>(),
+            ghostHydro.ptr<3>(),
+            ghostHydro.ptr<4>(),
+            ghostHydro.ptr<5>());
+
+        // Save the phase populations to the block halo
+        PhaseHalo::save(
+            pop_g,
+            ghostPhase.ptr<0>(),
+            ghostPhase.ptr<1>(),
+            ghostPhase.ptr<2>(),
+            ghostPhase.ptr<3>(),
+            ghostPhase.ptr<4>(),
+            ghostPhase.ptr<5>());
     }
 }
 

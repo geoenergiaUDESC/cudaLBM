@@ -425,6 +425,26 @@ namespace LBM
         }
 
         /**
+         * @brief Reconstruct population distribution from moments (return)
+         * @param[in] moments Moment array (11 components)
+         * @return Population array with 7 components
+         **/
+        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments) noexcept
+        {
+            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
+
+            return {
+                phiw_0,
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]),
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]),
+                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]),
+                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()])};
+        }
+
+        /**
          * @brief Reconstruct population distribution from moments (host version)
          * @param[in] moments Moment array (11 components)
          * @return Population array with 7 components

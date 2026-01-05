@@ -50,122 +50,169 @@ SourceFiles
 #ifndef __MBLBM_VTS_CUH
 #define __MBLBM_VTS_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-
 namespace LBM
 {
     namespace postProcess
     {
-        /**
-         * @brief Auxiliary template function that performs the VTU file writing.
-         */
-        __host__ void VTSWriter(
-            const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &fileName,
-            const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames) noexcept
+        namespace VTS
         {
-            // For a structured grid, we need different calculations
-            // const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            // const label_t numCells = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
-            const std::size_t numVars = solutionVars.size();
+            __host__ [[nodiscard]] inline consteval bool hasFields() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasPoints() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasElements() { return false; }
+            __host__ [[nodiscard]] inline consteval bool hasOffsets() { return false; }
+            __host__ [[nodiscard]] inline consteval const char *fileExtension() { return ".vts"; }
 
-            // Get points in the correct order for structured grid (i fastest, then j, then k)
-            const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
-
-            std::ofstream outFile(fileName, std::ios::binary);
-            if (!outFile)
+            /**
+             * @brief Auxiliary template function that performs the VTU file writing.
+             */
+            __host__ void VTSWriter(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                std::ofstream &outFile,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames) noexcept
             {
-                std::cerr << "Error opening file " << fileName << "\n";
-                return;
-            }
+                // For a structured grid, we need different calculations
+                // const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
+                // const label_t numCells = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
+                const std::size_t numVars = solutionVars.size();
 
-            std::stringstream xml;
-            uint64_t currentOffset = 0;
+                // Get points in the correct order for structured grid (i fastest, then j, then k)
+                const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
 
-            // Calculate extents - note the -1 for the maximum indices
-            const label_t dimX = mesh.nx() - 1;
-            const label_t dimY = mesh.ny() - 1;
-            const label_t dimZ = mesh.nz() - 1;
+                std::stringstream xml;
+                uint64_t currentOffset = 0;
 
-            xml << "<?xml version=\"1.0\"?>\n";
-            xml << "<VTKFile type=\"StructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-            xml << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
-            xml << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+                // Calculate extents - note the -1 for the maximum indices
+                const label_t dimX = mesh.nx() - 1;
+                const label_t dimY = mesh.ny() - 1;
+                const label_t dimZ = mesh.nz() - 1;
 
-            // Point data (same as before)
-            xml << "      <PointData Scalars=\"" << (solutionVarNames.empty() ? "" : solutionVarNames[0]) << "\">\n";
-            for (std::size_t i = 0; i < numVars; ++i)
-            {
-                xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << solutionVarNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                currentOffset += sizeof(uint64_t) + solutionVars[i].size() * sizeof(scalar_t);
-            }
-            xml << "      </PointData>\n";
+                xml << "<?xml version=\"1.0\"?>\n";
+                xml << "<VTKFile type=\"StructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+                xml << "  <StructuredGrid WholeExtent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
+                xml << "    <Piece Extent=\"0 " << dimX << " 0 " << dimY << " 0 " << dimZ << "\">\n";
 
-            // Points section (same as before)
-            xml << "      <Points>\n";
-            xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            xml << "      </Points>\n";
-            currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
-
-            // NO Cells section for StructuredGrid - this is the key difference!
-
-            xml << "    </Piece>\n";
-            xml << "  </StructuredGrid>\n";
-            xml << "  <AppendedData encoding=\"raw\">_";
-
-            outFile << xml.str();
-
-            // Write point data arrays
-            for (const auto &varData : solutionVars)
-            {
-                writeBinaryBlock(varData, outFile);
-            }
-
-            // Write points
-            writeBinaryBlock(points, outFile);
-
-            outFile << "</AppendedData>\n";
-            outFile << "</VTKFile>\n";
-
-            outFile.close();
-            std::cout << "Successfully wrote structured VTU file: " << fileName << "\n";
-        }
-
-        /**
-         * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
-         * This function checks the mesh size and dispatches to the implementation with
-         * the appropriate index type (32-bit or 64-bit).
-         */
-        __host__ void writeVTS(
-            const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &fileName,
-            const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames) noexcept
-        {
-            const std::string fileExtension = ".vts";
-
-            std::cout << "Writing VTS structured grid to " << fileName << fileExtension << std::endl;
-
-            const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
-            const std::size_t numVars = solutionVars.size();
-
-            if (numVars != solutionVarNames.size())
-            {
-                std::cerr << "Error: The number of solution (" << numVars << ") does not match the count of variable names (" << solutionVarNames.size() << ")\n";
-                return;
-            }
-            for (std::size_t i = 0; i < numVars; i++)
-            {
-                if (solutionVars[i].size() != numNodes)
+                // Point data (same as before)
+                xml << "      <PointData Scalars=\"" << (solutionVarNames.empty() ? "" : solutionVarNames[0]) << "\">\n";
+                for (std::size_t i = 0; i < numVars; ++i)
                 {
-                    std::cerr << "Error: The solution variable " << i << " has " << solutionVars[i].size() << " elements, expected " << numNodes << "\n";
-                    return;
+                    xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << solutionVarNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    currentOffset += sizeof(uint64_t) + solutionVars[i].size() * sizeof(scalar_t);
                 }
+                xml << "      </PointData>\n";
+
+                // Points section (same as before)
+                xml << "      <Points>\n";
+                xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                xml << "      </Points>\n";
+                currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
+
+                // NO Cells section for StructuredGrid - this is the key difference!
+
+                xml << "    </Piece>\n";
+                xml << "  </StructuredGrid>\n";
+                xml << "  <AppendedData encoding=\"raw\">_";
+
+                outFile << xml.str();
+
+                // Write point data arrays
+                for (const auto &varData : solutionVars)
+                {
+                    writeBinaryBlock(varData, outFile);
+                }
+
+                // Write points
+                writeBinaryBlock(points, outFile);
+
+                outFile << "</AppendedData>\n";
+                outFile << "</VTKFile>\n";
+
+                outFile.close();
             }
 
-            VTSWriter(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+            /**
+             * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
+             * This function checks the mesh size and dispatches to the implementation with
+             * the appropriate index type (32-bit or 64-bit).
+             */
+            __host__ void write(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                const std::string &fileName,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames)
+            {
+                const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+                const std::size_t numVars = solutionVars.size();
+
+                if (numVars != solutionVarNames.size())
+                {
+                    errorHandler(-1, "Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
+                }
+
+                for (std::size_t i = 0; i < numVars; i++)
+                {
+                    if (solutionVars[i].size() != numNodes)
+                    {
+                        errorHandler(-1, "Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
+                    }
+                }
+
+                std::cout << "vtsWriter:" << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    fileName: " << directoryPrefix() << "/" << fileName << fileExtension() << ";" << std::endl;
+
+                if (!std::filesystem::is_directory(directoryPrefix()))
+                {
+                    if (!std::filesystem::create_directory(directoryPrefix()))
+                    {
+                        std::cout << "    directoryStatus: unable to create directory" << directoryPrefix() << ";" << std::endl;
+                        std::cout << "    writeStatus: fail (unable to create directory)" << ";" << std::endl;
+                        std::cout << "};" << std::endl;
+                        errorHandler(-1, "Error: unable to create directory" + std::string(directoryPrefix()));
+                    }
+                }
+                else
+                {
+                    std::cout << "    directoryStatus: OK;" << std::endl;
+                }
+
+                std::cout << "    fileSize: " << fileSystem::to_mebibytes<double>(fileSystem::expectedDiskUsage<fileSystem::BINARY, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+
+                // Check if there is enough disk space to store the file
+                if (!fileSystem::diskSpaceCheck<fileSystem::ASCII, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size()))
+                {
+                    std::cout << "    diskSpace: insufficient (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                    std::cout << "    writeStatus: fail (insufficient disk space)" << ";" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error: Insufficient disk space on drive " + fileSystem::diskName());
+                }
+                else
+                {
+                    std::cout << "    diskSpace: OK (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                }
+
+                // Check if there is enough disk space to store the file
+                fileSystem::diskSpaceAssertion<fileSystem::BINARY, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size(), fileName);
+
+                const std::string trueFileName(std::string(directoryPrefix()) + "/" + fileName + fileExtension());
+
+                std::ofstream outFile(trueFileName);
+                if (outFile)
+                {
+                    std::cout << "    ofstreamStatus: OK;" << std::endl;
+                }
+                else
+                {
+                    std::cout << "    ofstreamStatus: Fail" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error opening file: " + trueFileName);
+                }
+
+                VTSWriter(solutionVars, outFile, mesh, solutionVarNames);
+                std::cout << "    writeStatus: success" << ";" << std::endl;
+                std::cout << "};" << std::endl;
+                std::cout << std::endl;
+            }
         }
     }
 }

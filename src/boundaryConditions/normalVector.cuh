@@ -226,35 +226,35 @@ namespace LBM
          * @brief Check if the point lies on specific boundaries
          * @return True if the point lies on the specified boundary
          **/
-        __device__ [[nodiscard]] inline bool isWest() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isWest() const noexcept
         {
             return bitmask_ & WEST();
         }
-        __device__ [[nodiscard]] inline bool isEast() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isEast() const noexcept
         {
             return bitmask_ & EAST();
         }
-        __device__ [[nodiscard]] inline bool isSouth() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isSouth() const noexcept
         {
             return bitmask_ & SOUTH();
         }
-        __device__ [[nodiscard]] inline bool isNorth() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isNorth() const noexcept
         {
             return bitmask_ & NORTH();
         }
-        __device__ [[nodiscard]] inline bool isBack() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isBack() const noexcept
         {
             return bitmask_ & BACK();
         }
-        __device__ [[nodiscard]] inline bool isFront() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isFront() const noexcept
         {
             return bitmask_ & FRONT();
         }
-        __device__ [[nodiscard]] inline bool isBoundary() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isBoundary() const noexcept
         {
             return bitmask_ & 0x40;
         }
-        __device__ [[nodiscard]] inline bool isInterior() const noexcept
+        __device__ __host__ [[nodiscard]] inline bool isInterior() const noexcept
         {
             return !isBoundary();
         }

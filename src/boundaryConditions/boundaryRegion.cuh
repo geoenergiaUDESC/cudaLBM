@@ -79,9 +79,10 @@ namespace LBM
                   boundaryValue("m_yz", regionName),
                   boundaryValue("m_zz", regionName)}
         {
-#ifdef VERBOSE
-            print();
-#endif
+            if constexpr (verbose())
+            {
+                print();
+            }
         };
 
         /**

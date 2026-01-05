@@ -37,55 +37,87 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of header files necessary for compilation
+    Post-processing utility to calculate derived fields from saved moment fields
+    Supported calculations: velocity magnitude, velocity divergence, vorticity,
+    vorticity magnitude, integrated vorticity
 
 Namespace
     LBM
 
 SourceFiles
-    LBMIncludes.cuh
+    testExecutable.cu
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_INCLUDES_CUH
-#define __MBLBM_INCLUDES_CUH
+#include "testExecutable.cuh"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bit>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <memory>
-#include <nvrtc.h>
-// #include <mpi.h>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+using namespace LBM;
 
-#endif
+using VelocitySet = D3Q19;
+
+template <typename T, const label_t N>
+__host__ __device__ [[nodiscard]] inline consteval label_t number_indices_equal(const thread::array<T, N> &arr, const T val) noexcept
+{
+    label_t j = 0;
+
+    for (label_t i = 0; i < N; i++)
+    {
+        if (arr[i] == val)
+        {
+            j++;
+        }
+    }
+
+    return j;
+}
+
+template <const label_t NReturn, typename T, const label_t N>
+__host__ __device__ [[nodiscard]] inline consteval thread::array<label_t, NReturn> indices_equal(const thread::array<T, N> &arr, const T val) noexcept
+{
+    thread::array<label_t, NReturn> indices;
+
+    label_t j = 0;
+
+    for (label_t i = 0; i < N; i++)
+    {
+        if (arr[i] == val)
+        {
+            indices[j] = i;
+            j++;
+        }
+    }
+
+    return indices;
+}
+
+int main()
+{
+    static constexpr const label_t N = number_indices_equal(VelocitySet::cx<int>(), -1);
+
+    static_assert(N == VelocitySet::QF());
+
+    static constexpr const thread::array<label_t, N> indices = indices_equal<N>(VelocitySet::cx<int>(), -1);
+
+    // thread::array<label_t, VelocitySet::QF()> indices;
+
+    // constexpr const thread::array<int, VelocitySet::Q()> cx = VelocitySet::cx<int>();
+
+    // label_t j = 0;
+    // for (label_t i = 0; i < VelocitySet::Q(); i++)
+    // {
+    //     if (cx[i] == -1)
+    //     {
+    //         indices[j] = i;
+    //         j++;
+    //     }
+    // }
+
+    for (label_t i = 0; i < VelocitySet::QF(); i++)
+    {
+        std::cout << indices[i] << std::endl;
+    }
+
+    // std::cout << "This executable is used for testing purposes only" << std::endl;
+
+    return 0;
+}

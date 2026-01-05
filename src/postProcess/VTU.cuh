@@ -50,138 +50,185 @@ SourceFiles
 #ifndef __MBLBM_VTU_CUH
 #define __MBLBM_VTU_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-
 namespace LBM
 {
     namespace postProcess
     {
-        /**
-         * @brief Auxiliary template function that performs the VTU file writing.
-         * @tparam IndexType The data type for the mesh indices (uint32_t or uint64_t).
-         */
-        template <typename IndexType>
-        __host__ void VTUWriter(
-            const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &fileName,
-            const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames) noexcept
+        namespace VTU
         {
-            const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
-            const std::size_t numVars = solutionVars.size();
+            __host__ [[nodiscard]] inline consteval bool hasFields() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasPoints() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasElements() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasOffsets() { return true; }
+            __host__ [[nodiscard]] inline consteval const char *fileExtension() { return ".vtu"; }
 
-            const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
-            const std::vector<IndexType> connectivity = meshConnectivity<false, IndexType>(mesh);
-            const std::vector<IndexType> offsets = meshOffsets<IndexType>(mesh);
-
-            std::ofstream outFile(fileName, std::ios::binary);
-            if (!outFile)
+            /**
+             * @brief Auxiliary template function that performs the VTU file writing.
+             * @tparam indexType The data type for the mesh indices (uint32_t or uint64_t).
+             */
+            template <typename indexType>
+            __host__ void VTUWriter(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                std::ofstream &outFile,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames) noexcept
             {
-                std::cerr << "Error opening file " << fileName << "\n";
-                return;
-            }
+                const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
+                const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
+                const std::size_t numVars = solutionVars.size();
 
-            std::stringstream xml;
-            uint64_t currentOffset = 0;
+                const std::vector<scalar_t> points = meshCoordinates<scalar_t>(mesh);
+                const std::vector<indexType> connectivity = meshConnectivity<false, indexType>(mesh);
+                const std::vector<indexType> offsets = meshOffsets<indexType>(mesh);
 
-            xml << "<?xml version=\"1.0\"?>\n";
-            xml << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-            xml << "  <UnstructuredGrid>\n";
-            xml << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
+                std::stringstream xml;
+                uint64_t currentOffset = 0;
 
-            xml << "      <PointData Scalars=\"" << (solutionVarNames.empty() ? "" : solutionVarNames[0]) << "\">\n";
-            for (std::size_t i = 0; i < numVars; ++i)
-            {
-                xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << solutionVarNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-                currentOffset += sizeof(uint64_t) + solutionVars[i].size() * sizeof(scalar_t);
-            }
-            xml << "      </PointData>\n";
+                xml << "<?xml version=\"1.0\"?>\n";
+                xml << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+                xml << "  <UnstructuredGrid>\n";
+                xml << "    <Piece NumberOfPoints=\"" << numNodes << "\" NumberOfCells=\"" << numElements << "\">\n";
 
-            xml << "      <Points>\n";
-            xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            xml << "      </Points>\n";
-            currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
-
-            xml << "      <Cells>\n";
-            // Usa o IndexType para obter o nome do tipo VTK correto
-            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + connectivity.size() * sizeof(IndexType);
-
-            xml << "        <DataArray type=\"" << getVtkTypeName<IndexType>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            currentOffset += sizeof(uint64_t) + offsets.size() * sizeof(IndexType);
-
-            xml << "        <DataArray type=\"" << getVtkTypeName<uint8_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
-            xml << "      </Cells>\n";
-
-            xml << "    </Piece>\n";
-            xml << "  </UnstructuredGrid>\n";
-            xml << "  <AppendedData encoding=\"raw\">_";
-
-            outFile << xml.str();
-
-            for (const auto &varData : solutionVars)
-            {
-                writeBinaryBlock(varData, outFile);
-            }
-            writeBinaryBlock(points, outFile);
-            writeBinaryBlock(connectivity, outFile);
-            writeBinaryBlock(offsets, outFile);
-
-            const std::vector<uint8_t> types(numElements, 12); // 12 é o código VTK para hexaedro
-            writeBinaryBlock(types, outFile);
-
-            outFile << "</AppendedData>\n";
-            outFile << "</VTKFile>\n";
-
-            outFile.close();
-            std::cout << "Successfully wrote VTU file: " << fileName << "\n";
-        }
-
-        /**
-         * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
-         * This function checks the mesh size and dispatches to the implementation with
-         * the appropriate index type (32-bit or 64-bit).
-         */
-        __host__ void writeVTU(
-            const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &fileName,
-            const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames) noexcept
-        {
-            const std::string fileExtension = ".vtu";
-
-            std::cout << "Writing VTU unstructured grid to " << fileName << fileExtension << std::endl;
-
-            const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
-            const std::size_t numVars = solutionVars.size();
-
-            if (numVars != solutionVarNames.size())
-            {
-                std::cerr << "Error: The number of solution (" << numVars << ") does not match the count of variable names (" << solutionVarNames.size() << ")\n";
-                return;
-            }
-            for (std::size_t i = 0; i < numVars; i++)
-            {
-                if (solutionVars[i].size() != numNodes)
+                xml << "      <PointData Scalars=\"" << (solutionVarNames.empty() ? "" : solutionVarNames[0]) << "\">\n";
+                for (std::size_t i = 0; i < numVars; ++i)
                 {
-                    std::cerr << "Error: The solution variable " << i << " has " << solutionVars[i].size() << " elements, expected " << numNodes << "\n";
-                    return;
+                    xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"" << solutionVarNames[i] << "\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                    currentOffset += sizeof(uint64_t) + solutionVars[i].size() * sizeof(scalar_t);
                 }
+                xml << "      </PointData>\n";
+
+                xml << "      <Points>\n";
+                xml << "        <DataArray type=\"" << getVtkTypeName<scalar_t>() << "\" Name=\"Coordinates\" NumberOfComponents=\"3\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                xml << "      </Points>\n";
+                currentOffset += sizeof(uint64_t) + points.size() * sizeof(scalar_t);
+
+                xml << "      <Cells>\n";
+                // Usa o indexType para obter o nome do tipo VTK correto
+                xml << "        <DataArray type=\"" << getVtkTypeName<indexType>() << "\" Name=\"connectivity\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                currentOffset += sizeof(uint64_t) + connectivity.size() * sizeof(indexType);
+
+                xml << "        <DataArray type=\"" << getVtkTypeName<indexType>() << "\" Name=\"offsets\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                currentOffset += sizeof(uint64_t) + offsets.size() * sizeof(indexType);
+
+                xml << "        <DataArray type=\"" << getVtkTypeName<uint8_t>() << "\" Name=\"types\" format=\"appended\" offset=\"" << currentOffset << "\"/>\n";
+                xml << "      </Cells>\n";
+
+                xml << "    </Piece>\n";
+                xml << "  </UnstructuredGrid>\n";
+                xml << "  <AppendedData encoding=\"raw\">_";
+
+                outFile << xml.str();
+
+                for (const auto &varData : solutionVars)
+                {
+                    writeBinaryBlock(varData, outFile);
+                }
+                writeBinaryBlock(points, outFile);
+                writeBinaryBlock(connectivity, outFile);
+                writeBinaryBlock(offsets, outFile);
+
+                const std::vector<uint8_t> types(numElements, 12); // 12 é o código VTK para hexaedro
+                writeBinaryBlock(types, outFile);
+
+                outFile << "</AppendedData>\n";
+                outFile << "</VTKFile>\n";
+
+                outFile.close();
             }
 
-            constexpr const uint64_t limit32 = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
+            /**
+             * @brief Writes solution variables to an unstructured grid VTU file (.vtu)
+             * This function checks the mesh size and dispatches to the implementation with
+             * the appropriate index type (32-bit or 64-bit).
+             */
+            __host__ void write(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                const std::string &fileName,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames)
+            {
+                const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+                const std::size_t numVars = solutionVars.size();
 
-            if (numNodes >= limit32)
-            {
-                std::cout << "Info: Mesh is large. Using 64-bit indices for VTU file.\n";
-                VTUWriter<uint64_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
-            }
-            else
-            {
-                std::cout << "Info: Mesh is small. Using 32-bit indices for VTU file.\n";
-                VTUWriter<uint32_t>(solutionVars, fileName + fileExtension, mesh, solutionVarNames);
+                if (numVars != solutionVarNames.size())
+                {
+                    errorHandler(-1, "Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
+                }
+
+                for (std::size_t i = 0; i < numVars; i++)
+                {
+                    if (solutionVars[i].size() != numNodes)
+                    {
+                        errorHandler(-1, "Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
+                    }
+                }
+
+                std::cout << "vtuWriter:" << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    fileName: " << directoryPrefix() << "/" << fileName << fileExtension() << ";" << std::endl;
+
+                if (!std::filesystem::is_directory(directoryPrefix()))
+                {
+                    if (!std::filesystem::create_directory(directoryPrefix()))
+                    {
+                        std::cout << "    directoryStatus: Unable to create directory" << directoryPrefix() << ";" << std::endl;
+                        std::cout << "    writeStatus: Fail (unable to create directory)" << ";" << std::endl;
+                        std::cout << "};" << std::endl;
+                        errorHandler(-1, "Error: Unable to create directory" + std::string(directoryPrefix()));
+                    }
+                }
+                else
+                {
+                    std::cout << "    directoryStatus: OK;" << std::endl;
+                }
+
+                std::cout << "    fileSize: " << fileSystem::to_mebibytes<double>(fileSystem::expectedDiskUsage<fileSystem::BINARY, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+
+                // Check if there is enough disk space to store the file
+                if (!fileSystem::diskSpaceCheck<fileSystem::ASCII, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size()))
+                {
+                    std::cout << "    diskSpace: Insufficient (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                    std::cout << "    writeStatus: Fail (insufficient disk space)" << ";" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error: Insufficient disk space on drive " + fileSystem::diskName());
+                }
+                else
+                {
+                    std::cout << "    diskSpace: OK (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                }
+
+                // Check if there is enough disk space to store the file
+                fileSystem::diskSpaceAssertion<fileSystem::BINARY, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size(), fileName);
+
+                constexpr const uint64_t limit32 = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
+
+                std::cout << "    indexType: " << ((numNodes >= limit32) ? "uint64_t;" : "uint32_t;") << std::endl;
+
+                const std::string trueFileName(std::string(directoryPrefix()) + "/" + fileName + fileExtension());
+
+                std::ofstream outFile(trueFileName);
+                if (outFile)
+                {
+                    std::cout << "    ofstreamStatus: OK;" << std::endl;
+                }
+                else
+                {
+                    std::cout << "    ofstreamStatus: Fail" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error opening file: " + trueFileName);
+                }
+
+                if (numNodes >= limit32)
+                {
+                    VTUWriter<uint64_t>(solutionVars, outFile, mesh, solutionVarNames);
+                }
+                else
+                {
+                    VTUWriter<uint32_t>(solutionVars, outFile, mesh, solutionVarNames);
+                }
+                std::cout << "    writeStatus: success" << ";" << std::endl;
+                std::cout << "};" << std::endl;
+                std::cout << std::endl;
             }
         }
     }

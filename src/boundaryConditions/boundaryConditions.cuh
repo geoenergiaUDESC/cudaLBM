@@ -52,7 +52,7 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
-
+#include "../array/threadArray.cuh"
 #include "normalVector.cuh"
 #include "boundaryValue.cuh"
 #include "boundaryRegion.cuh"
@@ -95,15 +95,24 @@ namespace LBM
          * and appropriate stress conditions at boundaries.
          **/
         template <class VelocitySet>
-        __device__ static inline constexpr void calculateMoments(
+        __device__ static inline constexpr void calculate_moments(
             const thread::array<scalar_t, VelocitySet::Q()> &pop,
             thread::array<scalar_t, NUMBER_MOMENTS()> &moments,
             const normalVector &boundaryNormal) noexcept
         {
-            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculateMoments only supports D3Q19 and D3Q27.");
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
 
-            const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+            // const scalar_t rho_I = moments[m_i<0>()];
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+
+            // const scalar_t mxx_I = moments[m_i<4>()];
+            // const scalar_t mxy_I = moments[m_i<5>()];
+            // const scalar_t mxz_I = moments[m_i<6>()];
+            // const scalar_t myy_I = moments[m_i<7>()];
+            // const scalar_t myz_I = moments[m_i<8>()];
+            // const scalar_t mzz_I = moments[m_i<9>()];
 
             switch (boundaryNormal.nodeType())
             {
@@ -467,7 +476,7 @@ namespace LBM
                 return;
             }
 
-            // Lid boundaries
+                // Lid boundaries
             case normalVector::NORTH():
             {
                 const scalar_t mxy_I = NORTH_mxy_I(pop, inv_rho_I);

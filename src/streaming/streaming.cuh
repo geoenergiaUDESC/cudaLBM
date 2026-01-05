@@ -52,6 +52,7 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+#include "../globalFunctions.cuh"
 #include "../array/array.cuh"
 
 namespace LBM
@@ -127,43 +128,14 @@ namespace LBM
             thread::array<scalar_t, VelocitySet::Q()> &pop,
             const thread::array<scalar_t, N> &s_pop) noexcept
         {
-            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
-            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
-            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
-            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
-            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
-            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
-
-            pop[q_i<1>()] = s_pop[q_i<0 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, threadIdx.z)];
-            pop[q_i<2>()] = s_pop[q_i<1 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, threadIdx.z)];
-            pop[q_i<3>()] = s_pop[q_i<2 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, threadIdx.z)];
-            pop[q_i<4>()] = s_pop[q_i<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
-            pop[q_i<5>()] = s_pop[q_i<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
-            pop[q_i<6>()] = s_pop[q_i<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-            pop[q_i<7>()] = s_pop[q_i<6 * block::stride()>() + device::idxBlock(xm1, ym1, threadIdx.z)];
-            pop[q_i<8>()] = s_pop[q_i<7 * block::stride()>() + device::idxBlock(xp1, yp1, threadIdx.z)];
-            pop[q_i<9>()] = s_pop[q_i<8 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zm1)];
-            pop[q_i<10>()] = s_pop[q_i<9 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zp1)];
-            pop[q_i<11>()] = s_pop[q_i<10 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zm1)];
-            pop[q_i<12>()] = s_pop[q_i<11 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zp1)];
-            pop[q_i<13>()] = s_pop[q_i<12 * block::stride()>() + device::idxBlock(xm1, yp1, threadIdx.z)];
-            pop[q_i<14>()] = s_pop[q_i<13 * block::stride()>() + device::idxBlock(xp1, ym1, threadIdx.z)];
-            pop[q_i<15>()] = s_pop[q_i<14 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zp1)];
-            pop[q_i<16>()] = s_pop[q_i<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
-            pop[q_i<17>()] = s_pop[q_i<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
-            pop[q_i<18>()] = s_pop[q_i<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
-
-            if constexpr (VelocitySet::Q() == 27)
-            {
-                pop[q_i<19>()] = s_pop[q_i<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
-                pop[q_i<20>()] = s_pop[q_i<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
-                pop[q_i<21>()] = s_pop[q_i<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
-                pop[q_i<22>()] = s_pop[q_i<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
-                pop[q_i<23>()] = s_pop[q_i<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
-                pop[q_i<24>()] = s_pop[q_i<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
-                pop[q_i<25>()] = s_pop[q_i<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
-                pop[q_i<26>()] = s_pop[q_i<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
-            }
+            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
+                [&](const auto q_)
+                {
+                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<q_ + 1>()), block::nx()>(threadIdx.x);
+                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<q_ + 1>()), block::ny()>(threadIdx.y);
+                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<q_ + 1>()), block::nz()>(threadIdx.z);
+                    pop[q_i<q_ + 1>()] = s_pop[q_i<q_ * block::stride()>() + device::idxBlock(x, y, z)];
+                });
         }
 
         template <class VelocitySet>
@@ -171,43 +143,14 @@ namespace LBM
             thread::array<scalar_t, VelocitySet::Q()> &pop,
             const scalar_t *const ptrRestrict s_pop) noexcept
         {
-            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
-            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
-            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
-            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
-            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
-            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
-
-            pop[q_i<1>()] = s_pop[q_i<0 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, threadIdx.z)];
-            pop[q_i<2>()] = s_pop[q_i<1 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, threadIdx.z)];
-            pop[q_i<3>()] = s_pop[q_i<2 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, threadIdx.z)];
-            pop[q_i<4>()] = s_pop[q_i<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
-            pop[q_i<5>()] = s_pop[q_i<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
-            pop[q_i<6>()] = s_pop[q_i<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-            pop[q_i<7>()] = s_pop[q_i<6 * block::stride()>() + device::idxBlock(xm1, ym1, threadIdx.z)];
-            pop[q_i<8>()] = s_pop[q_i<7 * block::stride()>() + device::idxBlock(xp1, yp1, threadIdx.z)];
-            pop[q_i<9>()] = s_pop[q_i<8 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zm1)];
-            pop[q_i<10>()] = s_pop[q_i<9 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zp1)];
-            pop[q_i<11>()] = s_pop[q_i<10 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zm1)];
-            pop[q_i<12>()] = s_pop[q_i<11 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zp1)];
-            pop[q_i<13>()] = s_pop[q_i<12 * block::stride()>() + device::idxBlock(xm1, yp1, threadIdx.z)];
-            pop[q_i<14>()] = s_pop[q_i<13 * block::stride()>() + device::idxBlock(xp1, ym1, threadIdx.z)];
-            pop[q_i<15>()] = s_pop[q_i<14 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, zp1)];
-            pop[q_i<16>()] = s_pop[q_i<15 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, zm1)];
-            pop[q_i<17>()] = s_pop[q_i<16 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, zp1)];
-            pop[q_i<18>()] = s_pop[q_i<17 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, zm1)];
-
-            if constexpr (VelocitySet::Q() == 27)
-            {
-                pop[q_i<19>()] = s_pop[q_i<18 * block::stride()>() + device::idxBlock(xm1, ym1, zm1)];
-                pop[q_i<20>()] = s_pop[q_i<19 * block::stride()>() + device::idxBlock(xp1, yp1, zp1)];
-                pop[q_i<21>()] = s_pop[q_i<20 * block::stride()>() + device::idxBlock(xm1, ym1, zp1)];
-                pop[q_i<22>()] = s_pop[q_i<21 * block::stride()>() + device::idxBlock(xp1, yp1, zm1)];
-                pop[q_i<23>()] = s_pop[q_i<22 * block::stride()>() + device::idxBlock(xm1, yp1, zm1)];
-                pop[q_i<24>()] = s_pop[q_i<23 * block::stride()>() + device::idxBlock(xp1, ym1, zp1)];
-                pop[q_i<25>()] = s_pop[q_i<24 * block::stride()>() + device::idxBlock(xp1, ym1, zm1)];
-                pop[q_i<26>()] = s_pop[q_i<25 * block::stride()>() + device::idxBlock(xm1, yp1, zp1)];
-            }
+            device::constexpr_for<0, (VelocitySet::Q() - 1)>(
+                [&](const auto q_)
+                {
+                    const label_t x = periodic_index<-VelocitySet::template cx<int>(q_i<q_ + 1>()), block::nx()>(threadIdx.x);
+                    const label_t y = periodic_index<-VelocitySet::template cy<int>(q_i<q_ + 1>()), block::ny()>(threadIdx.y);
+                    const label_t z = periodic_index<-VelocitySet::template cz<int>(q_i<q_ + 1>()), block::nz()>(threadIdx.z);
+                    pop[q_i<q_ + 1>()] = s_pop[q_i<q_ * block::stride()>() + device::idxBlock(x, y, z)];
+                });
         }
 
     private:
@@ -252,7 +195,7 @@ namespace LBM
         template <const int Shift, const int Dim>
         __device__ [[nodiscard]] static inline label_t periodic_index(const label_t idx) noexcept
         {
-            static_assert((Shift == -1) || (Shift == 1), "Shift must be -1 or 1");
+            static_assert((Shift == -1) || (Shift == 1) || (Shift == 0), "Shift must be -1, 0, or 1");
 
             if constexpr (Dim > 0 && (Dim & (Dim - 1)) == 0)
             {
@@ -261,9 +204,13 @@ namespace LBM
                 {
                     return (idx - 1) & (Dim - 1);
                 }
-                else
+                else if constexpr (Shift == 1)
                 {
                     return (idx + 1) & (Dim - 1);
+                }
+                else
+                {
+                    return idx & (Dim - 1);
                 }
             }
             else
@@ -273,9 +220,13 @@ namespace LBM
                 {
                     return (idx - 1 + Dim) % Dim;
                 }
-                else
+                else if constexpr (Shift == 1)
                 {
                     return (idx + 1) % Dim;
+                }
+                else
+                {
+                    return idx % Dim;
                 }
             }
         }

@@ -264,20 +264,20 @@ namespace LBM
                     : mesh_(mesh),
                       devPtrs_(devPtrs),
                       streamsLBM_(streamsLBM),
-                      calculate_(initialiserSwitch("S")),
-                      calculateMean_(initialiserSwitch("SMean")),
-                      xx_(objectAllocator<VelocitySet, time::instantaneous>("S_xx", mesh, calculate_)),
-                      xy_(objectAllocator<VelocitySet, time::instantaneous>("S_xy", mesh, calculate_)),
-                      xz_(objectAllocator<VelocitySet, time::instantaneous>("S_xz", mesh, calculate_)),
-                      yy_(objectAllocator<VelocitySet, time::instantaneous>("S_yy", mesh, calculate_)),
-                      yz_(objectAllocator<VelocitySet, time::instantaneous>("S_yz", mesh, calculate_)),
-                      zz_(objectAllocator<VelocitySet, time::instantaneous>("S_zz", mesh, calculate_)),
-                      xxMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xxMean", mesh, calculateMean_)),
-                      xyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xyMean", mesh, calculateMean_)),
-                      xzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_xzMean", mesh, calculateMean_)),
-                      yyMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yyMean", mesh, calculateMean_)),
-                      yzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_yzMean", mesh, calculateMean_)),
-                      zzMean_(objectAllocator<VelocitySet, time::timeAverage>("S_zzMean", mesh, calculateMean_))
+                      calculate_(initialiserSwitch(fieldName_)),
+                      calculateMean_(initialiserSwitch(fieldNameMean_)),
+                      xx_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[0], mesh, calculate_)),
+                      xy_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[1], mesh, calculate_)),
+                      xz_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[2], mesh, calculate_)),
+                      yy_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[3], mesh, calculate_)),
+                      yz_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[4], mesh, calculate_)),
+                      zz_(objectAllocator<VelocitySet, time::instantaneous>(componentNames_[5], mesh, calculate_)),
+                      xxMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_)),
+                      xyMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_)),
+                      xzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_)),
+                      yyMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_)),
+                      yzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_)),
+                      zzMean_(objectAllocator<VelocitySet, time::timeAverage>(componentNamesMean_[0], mesh, calculateMean_))
                 {
                     // Set the cache config to prefer L1
                     checkCudaErrors(cudaFuncSetCacheConfig(kernel::instantaneous, cudaFuncCachePreferL1));
@@ -437,6 +437,26 @@ namespace LBM
 
             private:
                 /**
+                 * @brief Field name for instantaneous components
+                 **/
+                const std::string fieldName_ = "S";
+
+                /**
+                 * @brief Field name for mean components
+                 **/
+                const std::string fieldNameMean_ = fieldName_ + "Mean";
+
+                /**
+                 * @brief Instantaneous component names
+                 **/
+                const std::vector<std::string> componentNames_ = {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"};
+
+                /**
+                 * @brief Mean component names
+                 **/
+                const std::vector<std::string> componentNamesMean_ = string::catenate(componentNames_, "Mean");
+
+                /**
                  * @brief Reference to lattice mesh
                  **/
                 const host::latticeMesh &mesh_;
@@ -480,26 +500,6 @@ namespace LBM
                 device::array<scalar_t, VelocitySet, time::timeAverage> yyMean_;
                 device::array<scalar_t, VelocitySet, time::timeAverage> yzMean_;
                 device::array<scalar_t, VelocitySet, time::timeAverage> zzMean_;
-
-                /**
-                 * @brief Field name for instantaneous components
-                 **/
-                const std::string fieldName_ = "S";
-
-                /**
-                 * @brief Field name for mean components
-                 **/
-                const std::string fieldNameMean_ = fieldName_ + "Mean";
-
-                /**
-                 * @brief Instantaneous component names
-                 **/
-                const std::vector<std::string> componentNames_ = {"S_xx", "S_xy", "S_xz", "S_yy", "S_yz", "S_zz"};
-
-                /**
-                 * @brief Mean component names
-                 **/
-                const std::vector<std::string> componentNamesMean_ = string::catenate(componentNames_, "Mean");
             };
         }
     }

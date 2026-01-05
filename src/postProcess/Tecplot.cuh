@@ -50,134 +50,188 @@ SourceFiles
 #ifndef __MBLBM_TECPLOT_CUH
 #define __MBLBM_TECPLOT_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-
 namespace LBM
 {
     namespace postProcess
     {
-        /**
-         * @brief Writes solution data to a Tecplot ASCII file in unstructured grid format
-         * @param[in] solutionVars Vector of solution variable arrays (Structure of Arrays format)
-         * @param[in] fileName Output filename for Tecplot data
-         * @param[in] mesh Lattice mesh providing domain dimensions and structure
-         * @param[in] solutionVarNames Names of the solution variables for Tecplot header
-         * @param[in] title Title for the Tecplot file
-         * @return None
-         * @note Uses 1-based indexing for element connectivity (Tecplot convention)
-         * @note Output format: BLOCK data packing with FEBRICK (hexahedral) elements
-         * @note Uses high precision (50 digits) for numerical output
-         *
-         * This function writes simulation results to a Tecplot-compatible ASCII file
-         * with the following structure:
-         * 1. File header with title and variable declarations
-         * 2. Coordinate data in separate blocks (X, Y, Z)
-         * 3. Solution variables in separate blocks
-         * 4. Element connectivity with 1-based indexing
-         *
-         * The function performs comprehensive validation of input data including:
-         * - Variable count matching name count
-         * - Node count consistency across all arrays
-         * - File accessibility checks
-         **/
-        __host__ void writeTecplot(
-            const std::vector<std::vector<scalar_t>> &solutionVars,
-            const std::string &fileName,
-            const host::latticeMesh &mesh,
-            const std::vector<std::string> &solutionVarNames) noexcept
+        namespace Tecplot
         {
-            const std::string fileExtension = ".dat";
+            __host__ [[nodiscard]] inline consteval bool hasFields() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasPoints() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasElements() { return true; }
+            __host__ [[nodiscard]] inline consteval bool hasOffsets() { return true; }
+            __host__ [[nodiscard]] inline consteval const char *fileExtension() { return ".dat"; }
 
-            // Info on entering the function
-            std::cout << "Writing tecplot unstructured grid to file" << fileName + fileExtension << std::endl;
-
-            // Check input sizes
-            const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
-            const std::size_t numVars = solutionVars.size();
-
-            // Validate variable count matches names
-            if (numVars != solutionVarNames.size())
+            /**
+             * @brief Writes solution data to a Tecplot ASCII file in unstructured grid format
+             * @param[in] solutionVars Vector of solution variable arrays (Structure of Arrays format)
+             * @param[in] fileName Output filename for Tecplot data
+             * @param[in] mesh Lattice mesh providing domain dimensions and structure
+             * @param[in] solutionVarNames Names of the solution variables for Tecplot header
+             * @param[in] title Title for the Tecplot file
+             * @return None
+             * @note Uses 1-based indexing for element connectivity (Tecplot convention)
+             * @note Output format: BLOCK data packing with FEBRICK (hexahedral) elements
+             * @note Uses high precision (50 digits) for numerical output
+             *
+             * This function writes simulation results to a Tecplot-compatible ASCII file
+             * with the following structure:
+             * 1. File header with title and variable declarations
+             * 2. Coordinate data in separate blocks (X, Y, Z)
+             * 3. Solution variables in separate blocks
+             * 4. Element connectivity with 1-based indexing
+             *
+             * The function performs comprehensive validation of input data including:
+             * - Variable count matching name count
+             * - Node count consistency across all arrays
+             * - File accessibility checks
+             **/
+            __host__ void writeTecplot(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                std::ofstream &outFile,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames) noexcept
             {
-                std::cerr << "Error: Number of solution variables (" << numVars << ") doesn't match variable name count (" << solutionVarNames.size() << ")\n";
-                return;
-            }
+                // Check input sizes
+                const label_t numNodes = mesh.nx() * mesh.ny() * mesh.nz();
 
-            // Validate each variable has correct number of nodes
-            for (std::size_t i = 0; i < numVars; i++)
-            {
-                if (solutionVars[i].size() != numNodes)
+                // Set high precision output
+                outFile << std::setprecision(std::numeric_limits<scalar_t>::max_digits10);
+
+                // Write Tecplot header
+                // outFile << "TITLE = \"" << title << "\"\n";
+                outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
+                for (auto &name : solutionVarNames)
                 {
-                    std::cerr << "Error: Solution variable " << i << " has " << solutionVars[i].size() << " elements, expected " << numNodes << "\n";
-                    return;
+                    outFile << "\"" << name << "\" ";
                 }
-            }
+                outFile << "\n";
 
-            std::ofstream outFile(fileName + fileExtension);
-            if (!outFile)
-            {
-                std::cerr << "Error opening file: " << fileName + fileExtension << "\n";
-                return;
-            }
+                // UNSTRUCTURED GRID FORMAT
+                const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
+                outFile << "ZONE T=\"Hexahedral Zone\", NODES=" << numNodes << ", ELEMENTS=" << numElements << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK\n";
 
-            // Set high precision output
-            outFile << std::setprecision(50);
+                const std::vector<scalar_t> coords = meshCoordinates<scalar_t>(mesh);
 
-            // Write Tecplot header
-            // outFile << "TITLE = \"" << title << "\"\n";
-            outFile << "VARIABLES = \"X\" \"Y\" \"Z\" ";
-            for (auto &name : solutionVarNames)
-            {
-                outFile << "\"" << name << "\" ";
-            }
-            outFile << "\n";
-
-            // UNSTRUCTURED GRID FORMAT
-            const label_t numElements = (mesh.nx() - 1) * (mesh.ny() - 1) * (mesh.nz() - 1);
-            outFile << "ZONE T=\"Hexahedral Zone\", NODES=" << numNodes << ", ELEMENTS=" << numElements << ", DATAPACKING=BLOCK, ZONETYPE=FEBRICK\n";
-
-            const std::vector<scalar_t> coords = meshCoordinates<scalar_t>(mesh);
-
-            // Write node coordinates (X, Y, Z blocks)
-            // Write X
-            for (label_t n = 0; n < numNodes; ++n)
-            {
-                outFile << coords[3 * n + 0] << "\n";
-            }
-
-            // Write Y
-            for (label_t n = 0; n < numNodes; ++n)
-            {
-                outFile << coords[3 * n + 1] << "\n";
-            }
-
-            // Write Z
-            for (label_t n = 0; n < numNodes; ++n)
-            {
-                outFile << coords[3 * n + 2] << "\n";
-            }
-
-            // Write solution variables (each as a separate block)
-            for (const auto &varData : solutionVars)
-            {
-                for (const auto &value : varData)
+                // Write node coordinates (X, Y, Z blocks)
+                // Write X
+                for (label_t n = 0; n < numNodes; ++n)
                 {
-                    outFile << value << "\n";
+                    outFile << coords[3 * n + 0] << "\n";
                 }
-            }
 
-            const std::vector<label_t> connectivity = meshConnectivity<true, label_t>(mesh);
-            for (label_t e = 0; e < numElements; ++e)
-            {
-                for (label_t n = 0; n < 8; ++n)
+                // Write Y
+                for (label_t n = 0; n < numNodes; ++n)
                 {
-                    outFile << connectivity[e * 8 + n] << (n < 7 ? " " : "\n");
+                    outFile << coords[3 * n + 1] << "\n";
                 }
+
+                // Write Z
+                for (label_t n = 0; n < numNodes; ++n)
+                {
+                    outFile << coords[3 * n + 2] << "\n";
+                }
+
+                // Write solution variables (each as a separate block)
+                for (const auto &varData : solutionVars)
+                {
+                    for (const auto &value : varData)
+                    {
+                        outFile << value << "\n";
+                    }
+                }
+
+                const std::vector<label_t> connectivity = meshConnectivity<true, label_t>(mesh);
+                for (label_t e = 0; e < numElements; ++e)
+                {
+                    for (label_t n = 0; n < 8; ++n)
+                    {
+                        outFile << connectivity[e * 8 + n] << (n < 7 ? " " : "\n");
+                    }
+                }
+
+                outFile.close();
             }
 
-            outFile.close();
+            __host__ void write(
+                const std::vector<std::vector<scalar_t>> &solutionVars,
+                const std::string &fileName,
+                const host::latticeMesh &mesh,
+                const std::vector<std::string> &solutionVarNames)
+            {
+                const uint64_t numNodes = static_cast<uint64_t>(mesh.nx()) * static_cast<uint64_t>(mesh.ny()) * static_cast<uint64_t>(mesh.nz());
+                const std::size_t numVars = solutionVars.size();
 
-            std::cout << "Successfully wrote Tecplot file: " << fileName + fileExtension << "\n";
+                if (numVars != solutionVarNames.size())
+                {
+                    errorHandler(-1, "Error: The number of solution (" + std::to_string(numVars) + ") does not match the count of variable names (" + std::to_string(solutionVarNames.size()));
+                }
+
+                for (std::size_t i = 0; i < numVars; i++)
+                {
+                    if (solutionVars[i].size() != numNodes)
+                    {
+                        errorHandler(-1, "Error: The solution variable " + std::to_string(i) + " has " + std::to_string(solutionVars[i].size()) + " elements, expected " + std::to_string(numNodes));
+                    }
+                }
+
+                std::cout << "TecplotWriter:" << std::endl;
+                std::cout << "{" << std::endl;
+                std::cout << "    fileName: " << directoryPrefix() << "/" << fileName << fileExtension() << ";" << std::endl;
+
+                if (!std::filesystem::is_directory(directoryPrefix()))
+                {
+                    if (!std::filesystem::create_directory(directoryPrefix()))
+                    {
+                        std::cout << "    directoryStatus: unable to create directory" << directoryPrefix() << ";" << std::endl;
+                        std::cout << "    writeStatus: fail (unable to create directory)" << ";" << std::endl;
+                        std::cout << "};" << std::endl;
+                        errorHandler(-1, "Error: unable to create directory" + std::string(directoryPrefix()));
+                    }
+                }
+                else
+                {
+                    std::cout << "    directoryStatus: OK;" << std::endl;
+                }
+
+                std::cout << "    fileSize: " << fileSystem::to_mebibytes<double>(fileSystem::expectedDiskUsage<fileSystem::ASCII, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size())) << " MiB;" << std::endl;
+
+                // Check if there is enough disk space to store the file
+                if (!fileSystem::diskSpaceCheck<fileSystem::ASCII, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size()))
+                {
+                    std::cout << "    diskSpace: insufficient (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                    std::cout << "    writeStatus: fail (insufficient disk space)" << ";" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error: Insufficient disk space on drive " + fileSystem::diskName());
+                }
+                else
+                {
+                    std::cout << "    diskSpace: OK (" << fileSystem::to_mebibytes<double>(fileSystem::availableDiskSpace()) << " MiB);" << std::endl;
+                }
+
+                // Check if there is enough disk space to store the file
+                fileSystem::diskSpaceAssertion<fileSystem::ASCII, hasFields(), hasPoints(), hasElements(), hasOffsets()>(mesh, solutionVars.size(), fileName);
+
+                const std::string trueFileName(std::string(directoryPrefix()) + "/" + fileName + fileExtension());
+
+                std::ofstream outFile(trueFileName);
+                if (outFile)
+                {
+                    std::cout << "    ofstreamStatus: OK;" << std::endl;
+                }
+                else
+                {
+                    std::cout << "    ofstreamStatus: Fail" << std::endl;
+                    std::cout << "};" << std::endl;
+                    errorHandler(-1, "Error opening file: " + trueFileName);
+                }
+
+                writeTecplot(solutionVars, outFile, mesh, solutionVarNames);
+
+                std::cout << "    writeStatus: success" << ";" << std::endl;
+                std::cout << "};" << std::endl;
+                std::cout << std::endl;
+            }
         }
     }
 }

@@ -37,55 +37,33 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    A list of header files necessary for compilation
+    Function definitions and includes specific to the fieldCalculate executable
 
 Namespace
     LBM
 
 SourceFiles
-    LBMIncludes.cuh
+    testExecutable.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_INCLUDES_CUH
-#define __MBLBM_INCLUDES_CUH
+#ifndef __MBLBM_TESTEXECUTABLE_CUH
+#define __MBLBM_TESTEXECUTABLE_CUH
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bit>
-#include <cctype>
-#include <charconv>
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <locale>
-#include <memory>
-#include <nvrtc.h>
-// #include <mpi.h>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include "../../src/LBMIncludes.cuh"
+#include "../../src/LBMTypedefs.cuh"
+#include "../../src/array/array.cuh"
+#include "../../src/collision/collision.cuh"
+#include "../../src/blockHalo/blockHalo.cuh"
+#include "../../src/fileIO/fileIO.cuh"
+#include "../../src/runTimeIO/runTimeIO.cuh"
+#include "../../src/postProcess/postProcess.cuh"
+#include "../../src/inputControl.cuh"
+#include "../../src/numericalSchemes/numericalSchemes.cuh"
+
+namespace LBM
+{
+
+}
 
 #endif

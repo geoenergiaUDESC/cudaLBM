@@ -58,6 +58,7 @@ SourceFiles
 #include "../../src/fileIO/fileIO.cuh"
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
+#include "../../src/array/array.cuh"
 
 namespace LBM
 {

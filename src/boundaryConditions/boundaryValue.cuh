@@ -90,6 +90,47 @@ namespace LBM
          **/
         const scalar_t value;
 
+        /** *
+         * @brief Extracts a parameter from the configuration file
+         * @tparam T Type of the parameter to extract
+         * @param[in] fieldName Name of the field to extract
+         * @param[in] regionName Name of the boundary region
+         * @param[in] initialConditionsName Name of the configuration file (default: "initialConditions")
+         * @return The extracted parameter value
+         * @throws std::runtime_error if the parameter is not found or is invalid
+         * @note This function is used to extract values that MUST be numeric
+         */
+        template <const bool safety_check>
+        __host__ [[nodiscard]] static scalar_t extractParameter(const std::string &fieldName, const std::string &regionName, const std::string &initialConditionsName)
+        {
+            const std::vector<std::string> boundaryLines = string::readFile(initialConditionsName);
+
+            // Extracts the entire block of text corresponding to currentField
+            const std::vector<std::string> fieldBlock = string::extractBlock(boundaryLines, fieldName, "field");
+
+            // Extracts the block of text corresponding to internalField within the current field block
+            const std::vector<std::string> regionFieldBlock = string::extractBlock(fieldBlock, regionName);
+
+            const std::string valueString = string::extractParameterLine(regionFieldBlock, "value");
+
+            if constexpr (safety_check)
+            {
+                if (string::isNumber(valueString))
+                {
+                    return string::extractParameter<scalar_t>(regionFieldBlock, "value");
+                }
+                else
+                {
+                    throw std::runtime_error("Invalid boundary value " + valueString + ". Value must be a number.");
+                    return static_cast<scalar_t>(0);
+                }
+            }
+            else
+            {
+                return string::extractParameter<scalar_t>(regionFieldBlock, "value");
+            }
+        }
+
         /**
          * @brief Initializes the boundary value from configuration file
          * @param[in] fieldName Name of the field to initialize
@@ -103,7 +144,7 @@ namespace LBM
          * - Equilibrium-based calculations for moment fields
          * - Validation of field names and region names
          **/
-        __host__ [[nodiscard]] scalar_t initialiseValue(const std::string &fieldName, const std::string &regionName, const std::string &initialConditionsName = "initialConditions") const
+        __host__ [[nodiscard]] static scalar_t initialiseValue(const std::string &fieldName, const std::string &regionName, const std::string &initialConditionsName = "initialConditions")
         {
             const std::vector<std::string> boundaryLines = string::readFile(initialConditionsName);
 
@@ -111,10 +152,10 @@ namespace LBM
             const std::vector<std::string> fieldBlock = string::extractBlock(boundaryLines, fieldName, "field");
 
             // Extracts the block of text corresponding to internalField within the current field block
-            const std::vector<std::string> internalFieldBlock = string::extractBlock(fieldBlock, regionName);
+            const std::vector<std::string> regionFieldBlock = string::extractBlock(fieldBlock, regionName);
 
             // Now read the value line
-            const std::string value_ = string::extractParameterLine(internalFieldBlock, "value");
+            const std::string value_ = string::extractParameterLine(regionFieldBlock, "value");
 
             // Try fixing its value
             if (string::isNumber(value_))
@@ -127,19 +168,19 @@ namespace LBM
                 { // Check to see if it is a moment or a velocity and scale appropriately
                     if (fieldName == "rho")
                     {
-                        return string::extractParameter<scalar_t>(internalFieldBlock, "value");
+                        return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                     }
                     if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
                     {
-                        return string::extractParameter<scalar_t>(internalFieldBlock, "value") * velocitySet::scale_i<scalar_t>();
+                        return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_i<scalar_t>();
                     }
                     if ((fieldName == "m_xx") | (fieldName == "m_yy") | (fieldName == "m_zz"))
                     {
-                        return string::extractParameter<scalar_t>(internalFieldBlock, "value") * velocitySet::scale_ii<scalar_t>();
+                        return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ii<scalar_t>();
                     }
                     if ((fieldName == "m_xy") | (fieldName == "m_xz") | (fieldName == "m_yz"))
                     {
-                        return string::extractParameter<scalar_t>(internalFieldBlock, "value") * velocitySet::scale_ij<scalar_t>();
+                        return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ij<scalar_t>();
                     }
                 }
 
@@ -155,62 +196,39 @@ namespace LBM
                 // It is an equilibrium moment
                 if (isMember)
                 {
-                    // Construct the velocity values
-                    const boundaryValue u("u", regionName);
-                    const boundaryValue v("v", regionName);
-                    const boundaryValue w("w", regionName);
-
-                    // Construct the equilibrium distribution
-                    const thread::array<scalar_t, VelocitySet::Q()> pop = velocitySet::F_eq<VelocitySet>(u.value, v.value, w.value);
-
                     // Store second-order moments
                     if (fieldName == "m_xx")
                     {
-                        const std::function<scalar_t()> moment_xx = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, X, X>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_xx() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
+                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((u * u)) / rho0<scalar_t>();
                     }
                     else if (fieldName == "m_xy")
                     {
-                        const std::function<scalar_t()> moment_xy = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, X, Y>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_xy() / rho0<scalar_t>()));
+                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
+                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((u * v)) / rho0<scalar_t>();
                     }
                     else if (fieldName == "m_xz")
                     {
-                        const std::function<scalar_t()> moment_xz = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, X, Z>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_xz() / rho0<scalar_t>()));
+                        const scalar_t u = extractParameter<true>("u", regionName, initialConditionsName);
+                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((u * w)) / rho0<scalar_t>();
                     }
                     else if (fieldName == "m_yy")
                     {
-                        const std::function<scalar_t()> moment_yy = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, Y, Y>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_yy() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
+                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((v * v)) / rho0<scalar_t>();
                     }
                     else if (fieldName == "m_yz")
                     {
-                        const std::function<scalar_t()> moment_yz = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, Y, Z>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_yz() / rho0<scalar_t>()));
+                        const scalar_t v = extractParameter<true>("v", regionName, initialConditionsName);
+                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((v * w)) / rho0<scalar_t>();
                     }
                     else if (fieldName == "m_zz")
                     {
-                        const std::function<scalar_t()> moment_zz = [&pop]()
-                        {
-                            return velocitySet::calculate_moment<VelocitySet, Z, Z>(pop);
-                        };
-                        return velocitySet::scale_ii<scalar_t>() * ((moment_zz() / rho0<scalar_t>()) - velocitySet::cs2<scalar_t>());
+                        const scalar_t w = extractParameter<true>("w", regionName, initialConditionsName);
+                        return velocitySet::scale_ii<scalar_t>() * ((w * w)) / rho0<scalar_t>();
                     }
                     return 0; // Should never get here
                 }

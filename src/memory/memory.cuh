@@ -257,9 +257,10 @@ namespace LBM
             }
             else
             {
-#ifdef VERBOSE
-                std::cout << "Copied " << sizeof(T) * f.size() << " bytes of memory in cudaMemcpy to address " << ptr << std::endl;
-#endif
+                if constexpr (verbose())
+                {
+                    std::cout << "Copied " << sizeof(T) * f.size() << " bytes of memory in cudaMemcpy to address " << ptr << std::endl;
+                }
             }
         }
 

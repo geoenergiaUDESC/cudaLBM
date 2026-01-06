@@ -52,7 +52,7 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
-
+#include "../array/threadArray.cuh"
 #include "normalVector.cuh"
 #include "boundaryValue.cuh"
 #include "boundaryRegion.cuh"

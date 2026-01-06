@@ -53,6 +53,7 @@ SourceFiles
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
 #include "../globalFunctions.cuh"
+#include "../array/threadArray.cuh"
 
 namespace LBM
 {
@@ -78,7 +79,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T as2() noexcept
         {
-            return static_cast<T>(3.0);
+            return static_cast<T>(3);
         }
 
         /**
@@ -87,7 +88,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T cs2() noexcept
         {
-            return static_cast<T>(static_cast<double>(1.0) / static_cast<double>(3.0));
+            return static_cast<T>(static_cast<double>(1) / static_cast<double>(3));
         }
 
         /**
@@ -96,7 +97,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T scale_i() noexcept
         {
-            return static_cast<T>(3.0);
+            return static_cast<T>(3);
         }
 
         /**
@@ -114,7 +115,7 @@ namespace LBM
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T scale_ij() noexcept
         {
-            return static_cast<T>(9.0);
+            return static_cast<T>(9);
         }
 
         /**

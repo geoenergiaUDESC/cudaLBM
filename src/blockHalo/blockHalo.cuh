@@ -55,22 +55,11 @@ SourceFiles
 #include "../globalFunctions.cuh"
 #include "../velocitySet/velocitySet.cuh"
 #include "../latticeMesh/latticeMesh.cuh"
+#include "../array/array.cuh"
 
 namespace LBM
 {
-    namespace device
-    {
-        namespace haloFaces
-        {
-            /**
-             * @brief Consteval functions used to distinguish between halo face normal directions
-             * @return An unsigned integer corresponding to the correct direction
-             **/
-            __host__ [[nodiscard]] static inline consteval label_t x() noexcept { return 0; }
-            __host__ [[nodiscard]] static inline consteval label_t y() noexcept { return 1; }
-            __host__ [[nodiscard]] static inline consteval label_t z() noexcept { return 2; }
-        }
-    }
+
 }
 
 #include "haloFace.cuh"

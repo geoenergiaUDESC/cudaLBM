@@ -65,8 +65,9 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining array dimensions
              * @post Device memory is allocated and initialized with host data
              **/
-            __host__ [[nodiscard]] array(const host::array<false, T, VelocitySet, TimeType> &hostArray)
-                : ptr_(device::allocateArray<T>(hostArray.arr())),
+            template <const host::mallocType MallocType>
+            __host__ [[nodiscard]] array(const host::array<MallocType, T, VelocitySet, TimeType> &hostArray)
+                : ptr_(to_device(hostArray)),
                   name_(hostArray.name()),
                   mesh_(hostArray.mesh()){};
 
@@ -77,11 +78,12 @@ namespace LBM
              * @param[in] programCtrl Program control parameters
              * @post Array is initialized from latest time step or initial conditions
              **/
+            template <const host::mallocType MallocType = host::PAGED>
             __host__ [[nodiscard]] array(
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : ptr_(toDevice(host::array<false, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
+                : ptr_(to_device(host::array<MallocType, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
                   name_(name),
                   mesh_(mesh){};
 
@@ -96,7 +98,7 @@ namespace LBM
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const T value)
-                : ptr_(device::allocateArray<T>(mesh.nPoints(), value)),
+                : ptr_(device::allocate_array<T>(mesh.nPoints(), value)),
                   name_(name),
                   mesh_(mesh){};
 
@@ -132,7 +134,7 @@ namespace LBM
              * @brief Get read-only access to underlying data
              * @return Const pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline const T *ptr() const noexcept
+            __device__ __host__ [[nodiscard]] inline const T *ptr() const ptrRestrict noexcept
             {
                 return ptr_;
             }
@@ -141,7 +143,7 @@ namespace LBM
              * @brief Get mutable access to underlying data
              * @return Pointer to device memory
              **/
-            __device__ __host__ [[nodiscard]] inline T *ptr() noexcept
+            __device__ __host__ [[nodiscard]] inline T *ptr() ptrRestrict noexcept
             {
                 return ptr_;
             }
@@ -174,6 +176,10 @@ namespace LBM
                 return mesh_.nPoints();
             }
 
+            /**
+             * @brief Get the time type
+             * @return Time type: instantaneous or time-averaged
+             **/
             __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
             {
                 return TimeType;
@@ -200,9 +206,19 @@ namespace LBM
              * @param[in] hostArray The host::array to be copied to the device
              * @return A pointer to the copied data
              **/
-            __host__ [[nodiscard]] T *toDevice(const host::array<false, T, VelocitySet, TimeType> &hostArray)
+            __host__ [[nodiscard]] T *to_device(const host::array<host::PAGED, T, VelocitySet, TimeType> &hostArray)
             {
-                return device::allocateArray<T>(hostArray.arr());
+                return device::allocate_array<T>(hostArray.arr());
+            }
+
+            /**
+             * @brief Copies the underlying std::vector of a host::array type to the device
+             * @param[in] hostArray The host::array to be copied to the device
+             * @return A pointer to the copied data
+             **/
+            __host__ [[nodiscard]] T *to_device(const host::array<host::PINNED, T, VelocitySet, TimeType> &hostArray)
+            {
+                return device::allocate_array<T>(hostArray.ptr(), hostArray.size());
             }
         };
     }

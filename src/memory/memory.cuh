@@ -59,7 +59,7 @@ namespace LBM
     namespace host
     {
         template <typename T>
-        __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
+        __host__ void allocate_memory(T **ptr, const std::size_t nPoints)
         {
             const cudaError_t err = cudaMallocHost(ptr, sizeof(T) * nPoints);
 
@@ -74,7 +74,7 @@ namespace LBM
         {
             T *ptr;
 
-            allocateMemory(&ptr, nPoints);
+            allocate_memory(&ptr, nPoints);
 
             if constexpr (verbose())
             {
@@ -123,7 +123,7 @@ namespace LBM
          * @throws std::runtime_error if CUDA memory copy fails
          **/
         template <typename T>
-        __host__ [[nodiscard]] const std::vector<T> toHost(const T *const ptrRestrict devPtr, const std::size_t nPoints)
+        __host__ [[nodiscard]] const std::vector<T> to_host(const T *const ptrRestrict devPtr, const std::size_t nPoints)
         {
             std::vector<T> hostFields(nPoints, 0);
 
@@ -155,7 +155,7 @@ namespace LBM
          * interleaves them in AoSoA (Array of Structures of Array) format
          **/
         template <class M, typename T, const label_t nVars>
-        __host__ [[nodiscard]] const std::vector<T> toHost(
+        __host__ [[nodiscard]] const std::vector<T> to_host(
             const device::ptrCollection<nVars, T> &devPtrs,
             const M &mesh)
         {
@@ -168,7 +168,7 @@ namespace LBM
             // Now do the copy
             for (std::size_t var = 0; var < nVars; var++)
             {
-                const std::vector<T> f_temp = host::toHost(ptrs[var], mesh.nPoints());
+                const std::vector<T> f_temp = host::to_host(ptrs[var], mesh.nPoints());
 
                 for (label_t bz = 0; bz < mesh.nzBlocks(); bz++)
                 {
@@ -205,7 +205,7 @@ namespace LBM
          * @throws std::runtime_error if CUDA allocation fails
          **/
         template <typename T>
-        __host__ void allocateMemory(T **ptr, const std::size_t nPoints)
+        __host__ void allocate_memory(T **ptr, const std::size_t nPoints)
         {
             const cudaError_t err = cudaMalloc(ptr, sizeof(T) * nPoints);
 
@@ -228,7 +228,7 @@ namespace LBM
         {
             T *ptr;
 
-            allocateMemory(&ptr, nPoints);
+            allocate_memory(&ptr, nPoints);
 
             if constexpr (verbose())
             {
@@ -264,6 +264,24 @@ namespace LBM
             }
         }
 
+        template <typename T>
+        __host__ void copy(T *const ptr, const T *const ptrRestrict f, const label_t N)
+        {
+            const cudaError_t err = cudaMemcpy(ptr, f, N * sizeof(T), cudaMemcpyHostToDevice);
+
+            if (err != cudaSuccess)
+            {
+                throw std::runtime_error("cudaMemcpyHostToDevice failed: " + std::string(cudaGetErrorString(err)));
+            }
+            else
+            {
+                if constexpr (verbose())
+                {
+                    std::cout << "Copied " << sizeof(T) * N << " bytes of memory in cudaMemcpy to address " << ptr << std::endl;
+                }
+            }
+        }
+
         /**
          * @brief Allocates device memory and copies host data to it
          * @tparam T Data type of the elements
@@ -272,7 +290,7 @@ namespace LBM
          * @throws std::runtime_error if CUDA operations fail
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const std::vector<T> &f) noexcept
+        __host__ [[nodiscard]] T *allocate_array(const std::vector<T> &f) noexcept
         {
             T *ptr = allocate<T>(f.size());
 
@@ -290,11 +308,24 @@ namespace LBM
          * @throws std::runtime_error if CUDA operations fail
          **/
         template <typename T>
-        __host__ [[nodiscard]] T *allocateArray(const label_t nPoints, const T val) noexcept
+        __host__ [[nodiscard]] T *allocate_array(const label_t nPoints, const T val) noexcept
         {
             T *ptr = allocate<T>(nPoints);
 
             copy(ptr, std::vector<T>(nPoints, val));
+
+            return ptr;
+        }
+
+        /**
+         * @brief
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] T *allocate_array(const T *const ptrRestrict hostPtr, const label_t nPoints) noexcept
+        {
+            T *ptr = allocate<T>(nPoints);
+
+            copy(ptr, hostPtr, nPoints);
 
             return ptr;
         }

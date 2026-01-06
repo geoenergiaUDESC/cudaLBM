@@ -133,7 +133,7 @@ namespace LBM
              * @brief Addition operator
              * @return The sum of two arrays of the same type and size
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator+(const thread::array<T, N> &A) const ptrRestrict noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -146,7 +146,7 @@ namespace LBM
              * @brief Subtraction operator
              * @return The subtraction of two arrays of the same type and size
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator-(const thread::array<T, N> &A) const ptrRestrict noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -159,7 +159,7 @@ namespace LBM
              * @brief Multiplication operator
              * @return The dot product of two arrays of the same type and size
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator*(const thread::array<T, N> &A) const ptrRestrict noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -172,7 +172,7 @@ namespace LBM
              * @brief Division operator
              * @return The dot product of the first array and the inverse of the second, both of which are of the same type and size
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr thread::array<T, N> operator/(const thread::array<T, N> &A) const ptrRestrict noexcept
             {
                 return [&]<const label_t... Is>(std::index_sequence<Is...>)
                 {
@@ -190,7 +190,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_constant<index_> &index) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_constant<index_> &index) ptrRestrict noexcept
             {
                 assert_legal_access<index_>();
                 return data_[label_constant<index.value>()];
@@ -205,7 +205,7 @@ namespace LBM
              * @note No runtime bounds checking - compile-time safe
              **/
             template <const label_t index_>
-            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_constant<index_> &index) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_constant<index_> &index) ptrRestrict const noexcept
             {
                 assert_legal_access<index_>();
                 return data_[label_constant<index.value>()];
@@ -220,7 +220,7 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) ptrRestrict noexcept
             {
                 // Runtime index
                 return data_[idx];
@@ -235,7 +235,7 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
+            __device__ __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) ptrRestrict const noexcept
             {
                 return data_[idx];
             }

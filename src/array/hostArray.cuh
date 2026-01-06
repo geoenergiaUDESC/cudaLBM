@@ -54,6 +54,12 @@ namespace LBM
 {
     namespace host
     {
+        typedef enum hostMallocTypeTypeEnum : label_t
+        {
+            PINNED = 0, // Allocates pinned memory
+            PAGED = 1   // Memory allocated may potentially be paged
+        } mallocType;
+
         /**
          * @class array
          * @brief Templated RAII wrapper for host memory management with field initialization
@@ -63,7 +69,7 @@ namespace LBM
          * @tparam VelocitySet Velocity set configuration for LBM simulation
          * @tparam TimeType Instantaneous or time-averaged field
          **/
-        template <const bool pinned, typename T, class VelocitySet, const time::type TimeType>
+        template <const mallocType MallocType, typename T, class VelocitySet, const time::type TimeType>
         class array;
 
         /**
@@ -75,17 +81,31 @@ namespace LBM
          * @tparam TimeType Instantaneous or time-averaged field
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
-        class array<true, T, VelocitySet, TimeType>
+        class array<PINNED, T, VelocitySet, TimeType>
         {
         public:
+            /**
+             * @brief Constructs a host array with field initialization
+             * @param[in] nPoints Number of points in the array
+             */
             __host__ [[nodiscard]] array(const label_t nPoints)
                 : ptr_(host::allocate<T>(nPoints, 0)),
                   nPoints_(nPoints){};
 
+            /**
+             * @brief Constructs a host array with field initialization
+             * @param[in] nPoints Number of points in the array
+             * @param[in] val Value to initialize all elements to
+             */
             __host__ [[nodiscard]] array(const label_t nPoints, const T val)
                 : ptr_(host::allocate<T>(nPoints, val)),
                   nPoints_(nPoints){};
 
+            /**
+             * @brief Constructs a host array with field initialization
+             * @param[in] nPoints Number of points in the array
+             * @param[in] val Value to initialize all elements to
+             **/
             ~array()
             {
                 if constexpr (verbose())
@@ -99,7 +119,11 @@ namespace LBM
                 }
             }
 
-            __host__ [[nodiscard]] inline constexpr T *operator()() const noexcept
+            /**
+             * @brief Returns a pointer to the underlying data
+             * @return Pointer to the host memory
+             **/
+            __host__ [[nodiscard]] inline constexpr T *operator()() ptrRestrict const noexcept
             {
                 return ptr_;
             }
@@ -113,7 +137,7 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
+            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) ptrRestrict noexcept
             {
                 // Runtime index
                 return ptr_[idx];
@@ -128,19 +152,29 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
+            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) ptrRestrict const noexcept
             {
                 return ptr_[idx];
             }
 
+            /**
+             * @brief Returns the number of points in the array
+             * @return Number of points in the array
+             **/
             __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
             {
                 return nPoints_;
             }
 
         private:
+            /**
+             * @brief Pointer to the host memory
+             **/
             T *const ptrRestrict ptr_;
 
+            /**
+             * @brief Number of points in the array
+             **/
             const label_t nPoints_;
         };
 
@@ -153,7 +187,7 @@ namespace LBM
          * @tparam TimeType Instantaneous or time-averaged field
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
-        class array<false, T, VelocitySet, TimeType>
+        class array<PAGED, T, VelocitySet, TimeType>
         {
         public:
             /**
@@ -185,7 +219,7 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
+            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) ptrRestrict noexcept
             {
                 // Runtime index
                 return arr_[idx];
@@ -200,7 +234,7 @@ namespace LBM
              * @note Compile-time bounds checking for integral_constant types
              * @note Runtime access for integral types (no bounds checking)
              **/
-            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
+            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) ptrRestrict const noexcept
             {
                 return arr_[idx];
             }
@@ -212,6 +246,15 @@ namespace LBM
             __host__ [[nodiscard]] inline constexpr const std::vector<T> &arr() const noexcept
             {
                 return arr_;
+            }
+
+            /**
+             * @brief Get read-only access to underlying data
+             * @return Const reference to data vector
+             **/
+            __host__ [[nodiscard]] inline constexpr const T *ptr() const noexcept
+            {
+                return arr_.data();
             }
 
             /**
@@ -232,6 +275,10 @@ namespace LBM
                 return mesh_;
             }
 
+            /**
+             * @brief Get the time type
+             * @return Time type: instantaneous or time-averaged
+             **/
             __host__ [[nodiscard]] inline consteval time::type timeType() const noexcept
             {
                 return TimeType;
@@ -275,7 +322,14 @@ namespace LBM
                 }
             }
 
-            // Initialises the array from the caseName
+            /**
+             * @brief Initialises the array from the caseName
+             * @param[in] caseName Name of the case to read from
+             * @param[in] mesh Lattice mesh for dimensioning
+             * @param[in] time Time step to read from
+             * @return Initialised data vector
+             * @throws std::runtime_error if file operations fail
+             **/
             __host__ [[nodiscard]] const std::vector<T> initialise_array(
                 const std::string &caseName,
                 const host::latticeMesh &mesh,
@@ -471,6 +525,13 @@ namespace LBM
                 return fileIO::readFieldFile<T>(fileName);
             }
 
+            /**
+             * @brief Initialises the array from a file name prefix and time index
+             * @param[in] fileNamePrefix Prefix of the file to read from
+             * @param[in] timeIndex Time index to read from
+             * @return Initialised data vector
+             * @throws std::runtime_error if file operations fail
+             **/
             __host__ [[nodiscard]] const std::vector<T> initialiseVector(const std::string &fileNamePrefix, const label_t timeIndex) const
             {
                 static_assert(cType == ctorType::MUST_READ, "Invalid constructor type");

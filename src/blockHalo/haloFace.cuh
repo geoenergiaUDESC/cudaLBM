@@ -74,24 +74,25 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining simulation domain
              * @post All six halo faces are allocated and initialized with population data
              **/
+            template <const host::mallocType MallocType>
             __host__ [[nodiscard]] haloFace(
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
-                : x0_(device::allocateArray(initialise_pop<X, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  x1_(device::allocateArray(initialise_pop<X, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  y0_(device::allocateArray(initialise_pop<Y, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  y1_(device::allocateArray(initialise_pop<Y, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  z0_(device::allocateArray(initialise_pop<Z, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
-                  z1_(device::allocateArray(initialise_pop<Z, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))){};
+                : x0_(device::allocate_array(initialise_pop<X, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  x1_(device::allocate_array(initialise_pop<X, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  y0_(device::allocate_array(initialise_pop<Y, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  y1_(device::allocate_array(initialise_pop<Y, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  z0_(device::allocate_array(initialise_pop<Z, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
+                  z1_(device::allocate_array(initialise_pop<Z, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))){};
 
             /**
              * @brief Destructor - releases all allocated device memory
@@ -241,18 +242,18 @@ namespace LBM
              * @param[in] mesh Lattice mesh for dimensioning
              * @return Initialized population data for the specified halo face
              **/
-            template <const axisDirection faceIndex, const label_t side>
+            template <const axisDirection faceIndex, const label_t side, const host::mallocType MallocType>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);

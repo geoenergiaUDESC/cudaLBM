@@ -77,7 +77,7 @@ namespace LBM
      * @param T The type of integral value
      * @param v The value
      **/
-    template <typename T, T v>
+    template <typename T, const T v>
     struct integralConstant
     {
         static constexpr const T value = v;

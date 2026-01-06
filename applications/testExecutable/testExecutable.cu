@@ -57,7 +57,7 @@ using VelocitySet = D3Q19;
 
 int main()
 {
-    const host::array<true, label_t, VelocitySet, time::instantaneous> test(8, 99);
+    const host::array<host::PINNED, label_t, VelocitySet, time::instantaneous> test(8, 99);
 
     for (label_t i = 0; i < test.nPoints(); i++)
     {

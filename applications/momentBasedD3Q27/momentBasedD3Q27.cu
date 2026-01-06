@@ -116,7 +116,7 @@ int main(const int argc, const char *const argv[])
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
                 functionObjects::solutionVariableNames,
-                host::toHost(devPtrs, mesh),
+                host::to_host(devPtrs, mesh),
                 timeStep);
 
             runTimeObjects.save(timeStep);

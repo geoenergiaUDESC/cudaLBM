@@ -165,26 +165,29 @@ namespace LBM
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
                 if (isMember)
-                { // Check to see if it is a moment or a velocity and scale appropriately
+                {
+                    // Check to see if it is a moment or a velocity and scale appropriately
                     if (fieldName == "rho")
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                     }
-                    if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
+                    else if ((fieldName == "u") | (fieldName == "v") | (fieldName == "w"))
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_i<scalar_t>();
                     }
-                    if ((fieldName == "m_xx") | (fieldName == "m_yy") | (fieldName == "m_zz"))
+                    else if ((fieldName == "m_xx") | (fieldName == "m_yy") | (fieldName == "m_zz"))
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ii<scalar_t>();
                     }
-                    if ((fieldName == "m_xy") | (fieldName == "m_xz") | (fieldName == "m_yz"))
+                    else if ((fieldName == "m_xy") | (fieldName == "m_xz") | (fieldName == "m_yz"))
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ij<scalar_t>();
                     }
                 }
 
                 throw std::runtime_error("Invalid field name \" " + fieldName + "\" for equilibrium distribution");
+
+                return 0;
             }
             // Otherwise, test to see if it is an equilibrium moment
             else if (value_ == "equilibrium")

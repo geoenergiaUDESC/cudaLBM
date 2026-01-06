@@ -73,32 +73,33 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining simulation domain
              * @param[in] programCtrl Program control parameters
              **/
+            template <const host::mallocType MallocType = host::PAGED>
             __host__ [[nodiscard]] halo(
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
                 : fGhost_(haloFace<VelocitySet>(
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
                       mesh)),
                   gGhost_(haloFace<VelocitySet>(
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<MallocType, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
                       mesh)){};
 
             /**
@@ -106,17 +107,18 @@ namespace LBM
              * @param[in] rho,u,v,w,m_xx,m_xy,m_xz,m_yy,m_yz,m_zz Moment representation of distribution functions
              * @param[in] mesh Lattice mesh defining simulation domain
              **/
+            template <const host::mallocType MallocType>
             __host__ [[nodiscard]] halo(
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<MallocType, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
                 : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
                   gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};

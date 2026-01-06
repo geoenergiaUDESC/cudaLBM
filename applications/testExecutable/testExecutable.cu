@@ -55,67 +55,18 @@ using namespace LBM;
 
 using VelocitySet = D3Q19;
 
-template <typename T, const label_t N>
-__host__ __device__ [[nodiscard]] inline consteval label_t number_indices_equal(const thread::array<T, N> &arr, const T val) noexcept
-{
-    label_t j = 0;
-
-    for (label_t i = 0; i < N; i++)
-    {
-        if (arr[i] == val)
-        {
-            j++;
-        }
-    }
-
-    return j;
-}
-
-template <const label_t NReturn, typename T, const label_t N>
-__host__ __device__ [[nodiscard]] inline consteval thread::array<label_t, NReturn> indices_equal(const thread::array<T, N> &arr, const T val) noexcept
-{
-    thread::array<label_t, NReturn> indices;
-
-    label_t j = 0;
-
-    for (label_t i = 0; i < N; i++)
-    {
-        if (arr[i] == val)
-        {
-            indices[j] = i;
-            j++;
-        }
-    }
-
-    return indices;
-}
-
 int main()
 {
-    static constexpr const label_t N = number_indices_equal(VelocitySet::cx<int>(), -1);
+    const host::array<true, label_t, VelocitySet, time::instantaneous> test(8, 99);
 
-    static_assert(N == VelocitySet::QF());
-
-    static constexpr const thread::array<label_t, N> indices = indices_equal<N>(VelocitySet::cx<int>(), -1);
-
-    // thread::array<label_t, VelocitySet::QF()> indices;
-
-    // constexpr const thread::array<int, VelocitySet::Q()> cx = VelocitySet::cx<int>();
-
-    // label_t j = 0;
-    // for (label_t i = 0; i < VelocitySet::Q(); i++)
-    // {
-    //     if (cx[i] == -1)
-    //     {
-    //         indices[j] = i;
-    //         j++;
-    //     }
-    // }
-
-    for (label_t i = 0; i < VelocitySet::QF(); i++)
+    for (label_t i = 0; i < test.nPoints(); i++)
     {
-        std::cout << indices[i] << std::endl;
+        std::cout << test[i] << std::endl;
     }
+
+    // scalar_t *const test_ptr = allocateHost<scalar_t>(1024);
+
+    // cudaFreeHost(test_ptr);
 
     // std::cout << "This executable is used for testing purposes only" << std::endl;
 

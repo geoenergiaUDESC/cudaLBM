@@ -75,16 +75,16 @@ namespace LBM
              * @post All six halo faces are allocated and initialized with population data
              **/
             __host__ [[nodiscard]] haloFace(
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) noexcept
                 : x0_(device::allocateArray(initialise_pop<X, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
                   x1_(device::allocateArray(initialise_pop<X, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh))),
@@ -98,12 +98,12 @@ namespace LBM
              **/
             ~haloFace() noexcept
             {
-                cudaFree(x0_);
-                cudaFree(x1_);
-                cudaFree(y0_);
-                cudaFree(y1_);
-                cudaFree(z0_);
-                cudaFree(z1_);
+                checkCudaErrors(cudaFree(x0_));
+                checkCudaErrors(cudaFree(x1_));
+                checkCudaErrors(cudaFree(y0_));
+                checkCudaErrors(cudaFree(y1_));
+                checkCudaErrors(cudaFree(z0_));
+                checkCudaErrors(cudaFree(z1_));
             }
 
             /**
@@ -243,16 +243,16 @@ namespace LBM
              **/
             template <const axisDirection faceIndex, const label_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
@@ -282,16 +282,16 @@ namespace LBM
                                         // Contiguous moment access
                                         const thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(
                                             thread::array<scalar_t, 10>{
-                                                rho0<scalar_t>() + rho.arr()[base],
-                                                u.arr()[base],
-                                                v.arr()[base],
-                                                w.arr()[base],
-                                                m_xx.arr()[base],
-                                                m_xy.arr()[base],
-                                                m_xz.arr()[base],
-                                                m_yy.arr()[base],
-                                                m_yz.arr()[base],
-                                                m_zz.arr()[base]});
+                                                rho0<scalar_t>() + rho[base],
+                                                u[base],
+                                                v[base],
+                                                w[base],
+                                                m_xx[base],
+                                                m_xy[base],
+                                                m_xz[base],
+                                                m_yy[base],
+                                                m_yz[base],
+                                                m_zz[base]});
 
                                         // Handle ghost cells (equivalent to threadIdx.x/y/z checks)
                                         handleGhostCells<faceIndex, side>(face, pop, tx, ty, tz, bx, by, bz, mesh);

@@ -37,41 +37,38 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the post processing routines
+    Post-processing utility to calculate derived fields from saved moment fields
+    Supported calculations: velocity magnitude, velocity divergence, vorticity,
+    vorticity magnitude, integrated vorticity
 
 Namespace
-    LBM::postProcess
+    LBM
 
 SourceFiles
-    writeFunction.cuh
+    testExecutable.cu
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_WRITERFUNCTION_CUH
-#define __MBLBM_WRITERFUNCTION_CUH
+#include "testExecutable.cuh"
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../fileSystem.cuh"
+using namespace LBM;
 
-namespace LBM
+using VelocitySet = D3Q19;
+
+int main()
 {
-    namespace postProcess
+    const host::array<true, label_t, VelocitySet, time::instantaneous> test(8, 99);
+
+    for (label_t i = 0; i < test.nPoints(); i++)
     {
-        using writerFunction = void (*)(
-            const std::vector<std::vector<scalar_t>> &,
-            const std::string &,
-            const host::latticeMesh &,
-            const std::vector<std::string> &);
-
-        /**
-         * @brief Unordered map of the writer types to the appropriate functions
-         **/
-        const std::unordered_map<std::string, writerFunction> writers = {
-            {"vtu", VTU::write},
-            {"vts", VTS::write},
-            {"tecplot", Tecplot::write}};
+        std::cout << test[i] << std::endl;
     }
-}
 
-#endif
+    // scalar_t *const test_ptr = allocateHost<scalar_t>(1024);
+
+    // cudaFreeHost(test_ptr);
+
+    // std::cout << "This executable is used for testing purposes only" << std::endl;
+
+    return 0;
+}

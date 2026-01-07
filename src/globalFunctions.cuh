@@ -595,6 +595,31 @@ namespace LBM
         checkCudaErrors(cudaMemcpyToSymbol(symbol, &valueTemp, sizeof(T)));
         cudaDeviceSynchronize();
     }
+
+    /**
+     * @brief Allocates a symbol of type T to the device
+     * @param[in] func A pointer to the kernel to configure
+     * @param[in] functionName The name of the function
+     **/
+    template <const label_t smem_alloc_size, class T>
+    __host__ void kernelSetup(T *func, const std::string &functionName) noexcept
+    {
+        checkCudaErrors(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+        checkCudaErrors(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+        std::cout << "Allocating " << smem_alloc_size << " bytes of dynamic shared memory to " << functionName << " kernel" << std::endl;
+        std::cout << std::endl;
+    }
+
+    /**
+     * @brief Allocates a symbol of type T to the device
+     * @param[in] func A pointer to the kernel to configure
+     **/
+    template <const label_t smem_alloc_size, class T>
+    __host__ void kernelSetup(T *func) noexcept
+    {
+        checkCudaErrors(cudaFuncSetCacheConfig(func, cudaFuncCachePreferShared));
+        checkCudaErrors(cudaFuncSetAttribute(func, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_alloc_size));
+    }
 }
 
 #endif

@@ -37,41 +37,33 @@ License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Description
-    Top-level header file for the post processing routines
+    Function definitions and includes specific to the fieldCalculate executable
 
 Namespace
-    LBM::postProcess
+    LBM
 
 SourceFiles
-    writeFunction.cuh
+    testExecutable.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_WRITERFUNCTION_CUH
-#define __MBLBM_WRITERFUNCTION_CUH
+#ifndef __MBLBM_TESTEXECUTABLE_CUH
+#define __MBLBM_TESTEXECUTABLE_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../fileSystem.cuh"
+#include "../../src/LBMIncludes.cuh"
+#include "../../src/LBMTypedefs.cuh"
+#include "../../src/array/array.cuh"
+#include "../../src/collision/collision.cuh"
+#include "../../src/blockHalo/blockHalo.cuh"
+#include "../../src/fileIO/fileIO.cuh"
+#include "../../src/runTimeIO/runTimeIO.cuh"
+#include "../../src/postProcess/postProcess.cuh"
+#include "../../src/inputControl.cuh"
+#include "../../src/numericalSchemes/numericalSchemes.cuh"
 
 namespace LBM
 {
-    namespace postProcess
-    {
-        using writerFunction = void (*)(
-            const std::vector<std::vector<scalar_t>> &,
-            const std::string &,
-            const host::latticeMesh &,
-            const std::vector<std::string> &);
 
-        /**
-         * @brief Unordered map of the writer types to the appropriate functions
-         **/
-        const std::unordered_map<std::string, writerFunction> writers = {
-            {"vtu", VTU::write},
-            {"vts", VTS::write},
-            {"tecplot", Tecplot::write}};
-    }
 }
 
 #endif

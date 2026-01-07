@@ -9,17 +9,16 @@
 
 /*---------------------------------------------------------------------------*\
 
-functionObjectList
-{
-<<<<<<<< HEAD:multiphaseJet/functionObjects
-    //momentsMean;
-========
-    // S;
-    // SMean;
-    // k;
-    // kMean;
-    // momentsMean;
->>>>>>>> origin/develop:lidDrivenCavity/D3Q19/functionObjects
-};
+nx              64;
+
+ny              64;
+
+nz              256;
+
+Lx              1.0;
+
+Ly              1.0;
+
+Lz              4.0;
 
 \*---------------------------------------------------------------------------*/

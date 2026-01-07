@@ -52,6 +52,9 @@ SourceFiles
 
 #include "../LBMIncludes.cuh"
 #include "../LBMTypedefs.cuh"
+
+#include "threadArray.cuh"
+
 #include "../latticeMesh/latticeMesh.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../velocitySet/velocitySet.cuh"

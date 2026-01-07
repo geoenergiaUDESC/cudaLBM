@@ -50,6 +50,8 @@ SourceFiles
 #ifndef __MBLBM_COLLISION_SECOND_ORDER_CUH
 #define __MBLBM_COLLISION_SECOND_ORDER_CUH
 
+#include "../array/array.cuh"
+
 namespace LBM
 {
     /**

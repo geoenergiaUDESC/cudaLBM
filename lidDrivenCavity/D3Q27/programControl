@@ -9,17 +9,20 @@
 
 /*---------------------------------------------------------------------------*\
 
-functionObjectList
-{
-<<<<<<<< HEAD:multiphaseJet/functionObjects
-    //momentsMean;
-========
-    // S;
-    // SMean;
-    // k;
-    // kMean;
-    // momentsMean;
->>>>>>>> origin/develop:lidDrivenCavity/D3Q19/functionObjects
-};
+caseName        lidDrivenCavity;
+
+Re              10000;
+
+u_inf           0.0256;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      200001;
+
+saveInterval    20000;
+
+infoInterval    2000;
 
 \*---------------------------------------------------------------------------*/

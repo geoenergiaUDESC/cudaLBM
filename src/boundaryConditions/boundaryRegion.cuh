@@ -82,9 +82,10 @@ namespace LBM
 #endif
               }
         {
-#ifdef VERBOSE
-            print();
-#endif
+            if constexpr (verbose())
+            {
+                print();
+            }
         };
 
         /**

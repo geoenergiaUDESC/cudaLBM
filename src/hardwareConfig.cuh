@@ -130,12 +130,11 @@ namespace LBM
         }
 
         /**
-         * @brief Total size of the shared memory for moments only
+         * @brief Size of the warp (32)
          **/
-        template <const label_t nVars>
-        __device__ __host__ [[nodiscard]] inline consteval label_t sharedMemoryBufferSizeMoments(const label_t size = 1) noexcept
+        __device__ __host__ [[nodiscard]] inline consteval label_t warp_size() noexcept
         {
-            return block::size() * (nVars + 1) * size;
+            return 32;
         }
 
         /**

@@ -78,7 +78,6 @@ namespace LBM
               programCtrl_(programCtrl),
               start_(std::chrono::high_resolution_clock::now())
         {
-            std::cout << std::endl;
             std::cout << "Time loop start" << std::endl;
             std::cout << std::endl;
         };

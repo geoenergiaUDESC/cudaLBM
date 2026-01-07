@@ -60,6 +60,18 @@ namespace LBM
      **/
 #define ptrRestrict __restrict__
 
+    /** *
+     * @brief Verbose logging
+     */
+    __device__ __host__ [[nodiscard]] inline consteval bool verbose() noexcept
+    {
+#ifdef VERBOSE
+        return true;
+#else
+        return false;
+#endif
+    }
+
     /**
      * @brief CUDA implementation of a std::integral constant
      * @param T The type of integral value
@@ -71,8 +83,8 @@ namespace LBM
         static constexpr const T value = v;
         using value_type = T;
         using type = integralConstant;
-        __device__ __host__ inline consteval operator value_type() const noexcept { return value; }
-        __device__ __host__ inline consteval value_type operator()() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval operator value_type() const noexcept { return value; }
+        __device__ __host__ [[nodiscard]] inline consteval value_type operator()() const noexcept { return value; }
     };
 
     /**
@@ -171,146 +183,6 @@ namespace LBM
     template <const label_t label>
     using m_i = const integralConstant<label_t, label>;
 
-    namespace thread
-    {
-        /**
-         * @brief Fixed-size array container for single-threaded device code
-         * @tparam T Type of elements stored in the array
-         * @tparam N Number of elements in the array (compile-time constant)
-         **/
-        template <typename T, const label_t N>
-        class array
-        {
-        public:
-            /**
-             * @brief Constructs array with specified initial values
-             * @tparam Args Variadic template parameter pack for initial values
-             * @param args Initial values for array elements
-             * @pre Number of arguments must exactly match template parameter N
-             * @note Compile-time enforced check ensures correct number of arguments
-             **/
-            template <typename... Args>
-            __device__ constexpr array(const Args... args) : data_{args...}
-            {
-                static_assert(sizeof...(Args) == N, "Incorrect number of arguments");
-            }
-
-            /**
-             * @brief Default constructor (value-initializes all elements)
-             * @note Elements will be default-initialized or zero-initialized
-             **/
-            array() = default;
-
-            /**
-             * @brief Compile-time mutable element access
-             * @tparam index_ Compile-time index value
-             * @param index Index tag (label_constant wrapper)
-             * @return Reference to element at specified index
-             * @pre index_ must be in range [0, N-1]
-             * @note No runtime bounds checking - compile-time safe
-             **/
-            template <const label_t index_>
-            __device__ T &operator[](const label_constant<index_> index) __restrict__ noexcept
-            {
-                return data_[index()];
-            }
-
-            /**
-             * @brief Compile-time read-only element access
-             * @tparam index_ Compile-time index value
-             * @param index Index tag (label_constant wrapper)
-             * @return Const reference to element at specified index
-             * @pre index_ must be in range [0, N-1]
-             * @note No runtime bounds checking - compile-time safe
-             **/
-            template <const label_t index_>
-            __device__ const T &operator[](const label_constant<index_> index) __restrict__ const noexcept
-            {
-                return data_[index()];
-            }
-
-            /**
-             * @brief Unified element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
-             * @return Reference to element at specified index
-             * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
-             **/
-            template <typename Index>
-            __device__ constexpr T &operator[](const Index idx) __restrict__ noexcept
-            {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
-            }
-
-            /**
-             * @brief Unified read-only element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
-             * @return Const reference to element at specified index
-             * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
-             **/
-            template <typename Index>
-            __device__ constexpr const T &operator[](const Index idx) __restrict__ const noexcept
-            {
-                if constexpr (std::is_integral_v<Index>)
-                {
-                    // Runtime index
-                    static_assert(std::is_integral_v<Index>, "Index is not a compile-time constant");
-                    return data_[idx];
-                }
-                else
-                {
-                    // Compile-time index (assuming Index is std::integral_constant)
-                    static_assert(Index::value < N, "Index out of bounds");
-                    return data_[Index::value];
-                }
-            }
-
-            /**
-             * @brief Returns the number of elements in the array
-             * @return Compile-time constant number of elements (N)
-             * @note Consteval function - evaluated at compile time
-             **/
-            __device__ [[nodiscard]] inline consteval label_t size() const noexcept
-            {
-                return N;
-            }
-
-            /**
-             * @brief Returns the sum of the elements of the array
-             * @return Sum of all of the elements (N)
-             * @note Constexpr function - potentially evaluated at compile time
-             **/
-            __device__ [[nodiscard]] inline constexpr T sum() const noexcept
-            {
-                return [&]<const label_t... Is>(std::index_sequence<Is...>)
-                {
-                    return (data_[Is] + ...);
-                }(std::make_index_sequence<N>{});
-            }
-
-        private:
-            /**
-             * @brief The underlying data
-             **/
-            T ptrRestrict data_[N];
-        };
-    }
-
     /**
      * @brief Type used for lattice indices
      **/
@@ -355,6 +227,20 @@ namespace LBM
     }
     // template <const time::::type T>
     // using timeType = const std::integral_constant<time::::type, T>;
+
+    typedef enum axisDirectionEnum : int
+    {
+        X = 0,
+        Y = 1,
+        Z = 2,
+        NO_DIRECTION = -1
+    } axisDirection;
+
+    struct dim2
+    {
+        const label_t i;
+        const label_t j;
+    };
 
     namespace device
     {

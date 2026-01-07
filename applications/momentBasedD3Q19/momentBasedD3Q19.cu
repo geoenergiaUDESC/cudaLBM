@@ -97,16 +97,9 @@ int main(const int argc, const char *const argv[])
 
     device::halo<VelocitySet, config::periodicX, config::periodicY> blockHalo(mesh, programCtrl);
 
-    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<false>()>(sizeof(scalar_t));
-
-    checkCudaErrors(cudaFuncSetCacheConfig(momentBasedD3Q19, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetAttribute(momentBasedD3Q19, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
+    kernelSetup<smem_alloc_size()>(momentBasedD3Q19);
 
     const runTimeIO IO(mesh, programCtrl);
-
-    std::cout << std::endl;
-    std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to momentBasedD3Q" << VelocitySet::Q() << " kernel" << std::endl;
-    std::cout << std::endl;
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -133,7 +126,7 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
+                momentBasedD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(devPtrs, blockHalo.fGhost(), blockHalo.gGhost());
             });
 
         // Calculate S kernel

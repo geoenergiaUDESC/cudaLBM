@@ -60,6 +60,15 @@ multiphaseJet/*/*.vtu
 multiphaseJet/*/*.vts
 multiphaseJet/*/*.LBMBin
 
+# Lid driven cavity directory ignores
+lidDrivenCavity/*/*.dat
+lidDrivenCavity/*/*.vtu
+lidDrivenCavity/*/*.vts
+lidDrivenCavity/*/*.LBMBin
+lidDrivenCavity/*/*/*.dat
+lidDrivenCavity/*/*/*.vtu
+lidDrivenCavity/*/*/*.vts
+
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat
 unitTests/ComputeSanitizerTest/*.vtu

@@ -11,15 +11,11 @@
 
 functionObjectList
 {
-<<<<<<<< HEAD:multiphaseJet/functionObjects
-    //momentsMean;
-========
     // S;
     // SMean;
     // k;
     // kMean;
     // momentsMean;
->>>>>>>> origin/develop:lidDrivenCavity/D3Q19/functionObjects
 };
 
 \*---------------------------------------------------------------------------*/

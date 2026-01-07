@@ -9,17 +9,24 @@
 
 /*---------------------------------------------------------------------------*\
 
-functionObjectList
-{
-<<<<<<<< HEAD:multiphaseJet/functionObjects
-    //momentsMean;
-========
-    // S;
-    // SMean;
-    // k;
-    // kMean;
-    // momentsMean;
->>>>>>>> origin/develop:lidDrivenCavity/D3Q19/functionObjects
-};
+caseName        monophaseJet;
+
+Re              3000;
+
+u_inf           0.016;
+
+L_char          8;
+
+startFrom       latestTime;
+
+startTime       0;
+
+nTimeSteps      10001;
+
+saveInterval    1000;
+
+infoInterval    1000;
+
+multiphase      false;
 
 \*---------------------------------------------------------------------------*/

@@ -83,6 +83,10 @@ namespace LBM
 
             static_assert((std::is_same_v<label_t, uint32_t>) | (std::is_same_v<label_t, uint64_t>), "Invalid label size: must be either 32 bit unsigned or 64 bit unsigned");
 
+            auto pc = string::readFile("programControl");
+            for (auto &l : pc)
+                std::cerr << "[" << l << "]\n";
+
             // Get the launch time
             const time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 

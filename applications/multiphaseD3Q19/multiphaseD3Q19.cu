@@ -154,7 +154,8 @@ int main(const int argc, const char *const argv[])
             {
                 multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
-                    fBlockHalo.gGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
 
                 computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
@@ -164,7 +165,8 @@ int main(const int argc, const char *const argv[])
 
                 multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
-                    fBlockHalo.gGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });
 
         // Calculate S kernel

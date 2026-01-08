@@ -104,8 +104,10 @@ namespace LBM
         const scalar_t *const ptrRestrict normx,
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
-        const device::ptrCollection<6, scalar_t> ghostHydro,
-        const device::ptrCollection<6, scalar_t> ghostPhase)
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -129,7 +131,7 @@ namespace LBM
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
-        // Declare shared memory
+        // Declare shared memory (flattened)
         extern __shared__ scalar_t shared_buffer[];
         __shared__ scalar_t shared_buffer_g[(PhaseVelocitySet::Q() - 1) * block::stride()];
 
@@ -381,8 +383,10 @@ namespace LBM
         const scalar_t *const ptrRestrict normx,
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
-        const device::ptrCollection<6, scalar_t> ghostHydro,
-        const device::ptrCollection<6, scalar_t> ghostPhase)
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())

@@ -160,6 +160,12 @@ namespace LBM
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
 
+        // Gather current phase field state
+        const scalar_t phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
+
         // Save/pull from shared memory
         {
             // Save populations in shared memory
@@ -440,6 +446,12 @@ namespace LBM
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
         VelocitySet::reconstruct(pop, moments);
         PhaseVelocitySet::reconstruct(pop_g, moments);
+
+        // Gather current phase field state
+        const scalar_t phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();

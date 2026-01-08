@@ -123,7 +123,7 @@ int main(const int argc, const char *const argv[])
     device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
     device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
-    kernelSetup<smem_alloc_size()>(multiphaseD3Q19);
+    kernelSetup<smem_alloc_size()>(multiphaseStream);
 
     const runTimeIO IO(mesh, programCtrl);
 
@@ -152,14 +152,14 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                // multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
-                //     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
-                //     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                //     gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
+                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
 
-                multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
-                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                // multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
+                //     devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
+                //     fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
 
                 computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
@@ -167,10 +167,10 @@ int main(const int argc, const char *const argv[])
                 computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
 
-                // multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                //     devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
-                //     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                //     gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });
 
         checkCudaErrors(cudaGetLastError());

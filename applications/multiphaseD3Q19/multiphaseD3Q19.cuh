@@ -133,7 +133,7 @@ namespace LBM
         scalar_t normy_ = static_cast<scalar_t>(0);
         scalar_t normz_ = static_cast<scalar_t>(0);
 
-        const scalar_t *__restrict__ phi = devPtrs.ptr<10>();
+        const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
 
         if (isInterior)
         {
@@ -301,104 +301,21 @@ namespace LBM
         const label_t idx = device::idx();
         // const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-        // // --- Load center normal for sharpening (ALWAYS) ---
-        // const scalar_t normx_ = normx[idx];
-        // const scalar_t normy_ = normy[idx];
-        // const scalar_t normz_ = normz[idx];
-
-        // // --- Bulk-only surface tension force from curvature (global normals) ---
-        // scalar_t ffx_ = scalar_t(0);
-        // scalar_t ffy_ = scalar_t(0);
-        // scalar_t ffz_ = scalar_t(0);
-
-        // {
-        //     const int x = int(threadIdx.x) + int(blockIdx.x) * int(blockDim.x);
-        //     const int y = int(threadIdx.y) + int(blockIdx.y) * int(blockDim.y);
-        //     const int z = int(threadIdx.z) + int(blockIdx.z) * int(blockDim.z);
-
-        //     // Bulk-only (exclude boundary layer). If grid overruns domain, also keep force zero.
-        //     const bool bulkInterior =
-        //         (x > 0 && x < device::nx - 1) &&
-        //         (y > 0 && y < device::ny - 1) &&
-        //         (z > 0 && z < device::nz - 1);
-
-        //     if (bulkInterior)
-        //     {
-        //         // Neighbor indices (same stencil as computeForces)
-        //         const label_t xp = device::idxGlobalFromIdx(x + 1, y, z);
-        //         const label_t xm = device::idxGlobalFromIdx(x - 1, y, z);
-        //         const label_t yp = device::idxGlobalFromIdx(x, y + 1, z);
-        //         const label_t ym = device::idxGlobalFromIdx(x, y - 1, z);
-        //         const label_t zp = device::idxGlobalFromIdx(x, y, z + 1);
-        //         const label_t zm = device::idxGlobalFromIdx(x, y, z - 1);
-
-        //         const label_t xp1_yp1_z = device::idxGlobalFromIdx(x + 1, y + 1, z);
-        //         const label_t xp1_y_zp1 = device::idxGlobalFromIdx(x + 1, y, z + 1);
-        //         const label_t xp1_ym1_z = device::idxGlobalFromIdx(x + 1, y - 1, z);
-        //         const label_t xp1_y_zm1 = device::idxGlobalFromIdx(x + 1, y, z - 1);
-
-        //         const label_t xm1_ym1_z = device::idxGlobalFromIdx(x - 1, y - 1, z);
-        //         const label_t xm1_y_zm1 = device::idxGlobalFromIdx(x - 1, y, z - 1);
-        //         const label_t xm1_yp1_z = device::idxGlobalFromIdx(x - 1, y + 1, z);
-        //         const label_t xm1_y_zp1 = device::idxGlobalFromIdx(x - 1, y, z + 1);
-
-        //         const label_t x_yp1_zp1 = device::idxGlobalFromIdx(x, y + 1, z + 1);
-        //         const label_t x_yp1_zm1 = device::idxGlobalFromIdx(x, y + 1, z - 1);
-        //         const label_t x_ym1_zm1 = device::idxGlobalFromIdx(x, y - 1, z - 1);
-        //         const label_t x_ym1_zp1 = device::idxGlobalFromIdx(x, y - 1, z + 1);
-
-        //         const scalar_t w1 = VelocitySet::w_1<scalar_t>();
-        //         const scalar_t w2 = VelocitySet::w_2<scalar_t>();
-
-        //         // Divergence of normals (exactly your computeForces stencil)
-        //         const scalar_t scx =
-        //             w1 * (normx[xp] - normx[xm]) +
-        //             w2 * (normx[xp1_yp1_z] - normx[xm1_ym1_z] +
-        //                   normx[xp1_y_zp1] - normx[xm1_y_zm1] +
-        //                   normx[xp1_ym1_z] - normx[xm1_yp1_z] +
-        //                   normx[xp1_y_zm1] - normx[xm1_y_zp1]);
-
-        //         const scalar_t scy =
-        //             w1 * (normy[yp] - normy[ym]) +
-        //             w2 * (normy[xp1_yp1_z] - normy[xm1_ym1_z] +
-        //                   normy[x_yp1_zp1] - normy[x_ym1_zm1] +
-        //                   normy[xm1_yp1_z] - normy[xp1_ym1_z] +
-        //                   normy[x_yp1_zm1] - normy[x_ym1_zp1]);
-
-        //         const scalar_t scz =
-        //             w1 * (normz[zp] - normz[zm]) +
-        //             w2 * (normz[xp1_y_zp1] - normz[xm1_y_zm1] +
-        //                   normz[x_yp1_zp1] - normz[x_ym1_zm1] +
-        //                   normz[xm1_y_zp1] - normz[xp1_y_zm1] +
-        //                   normz[x_ym1_zp1] - normz[x_yp1_zm1]);
-
-        //         const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
-
-        //         // Your model uses ind at the center (must be precomputed globally)
-        //         const scalar_t ind_c = ind[idx];
-
-        //         const scalar_t stCurv = -device::sigma * curvature * ind_c;
-        //         ffx_ = stCurv * normx_;
-        //         ffy_ = stCurv * normy_;
-        //         ffz_ = stCurv * normz_;
-        //     }
-        // }
-
-        scalar_t ffx_ = scalar_t(0);
-        scalar_t ffy_ = scalar_t(0);
-        scalar_t ffz_ = scalar_t(0);
-        scalar_t normx_ = scalar_t(0);
-        scalar_t normy_ = scalar_t(0);
-        scalar_t normz_ = scalar_t(0);
+        scalar_t ffx_ = static_cast<scalar_t>(0);
+        scalar_t ffy_ = static_cast<scalar_t>(0);
+        scalar_t ffz_ = static_cast<scalar_t>(0);
+        scalar_t normx_ = static_cast<scalar_t>(0);
+        scalar_t normy_ = static_cast<scalar_t>(0);
+        scalar_t normz_ = static_cast<scalar_t>(0);
+        scalar_t ind_ = static_cast<scalar_t>(0);
 
         {
             constexpr int BX = 8, BY = 8, BZ = 8;
 
-            __shared__ scalar_t sh_phi[BZ + 4][BY + 4][BX + 4]; // halo-2
-            __shared__ scalar_t sh_nx[BZ + 2][BY + 2][BX + 2];  // halo-1
+            __shared__ scalar_t sh_phi[BZ + 4][BY + 4][BX + 4];
+            __shared__ scalar_t sh_nx[BZ + 2][BY + 2][BX + 2];
             __shared__ scalar_t sh_ny[BZ + 2][BY + 2][BX + 2];
             __shared__ scalar_t sh_nz[BZ + 2][BY + 2][BX + 2];
-            __shared__ scalar_t sh_ind[BZ + 2][BY + 2][BX + 2];
 
             const int tx = int(threadIdx.x);
             const int ty = int(threadIdx.y);
@@ -408,25 +325,15 @@ namespace LBM
             const int y = ty + int(blockIdx.y) * int(blockDim.y);
             const int z = tz + int(blockIdx.z) * int(blockDim.z);
 
-            const int NX = int(device::nx);
-            const int NY = int(device::ny);
-            const int NZ = int(device::nz);
-
-            // Enforce compile-time tile dims == launch dims (uniform across block => safe)
-            if ((int(blockDim.x) != BX) | (int(blockDim.y) != BY) | (int(blockDim.z) != BZ))
-            {
-                return; // safe because no __syncthreads() happened yet
-            }
-
             const int x0 = int(blockIdx.x) * BX;
             const int y0 = int(blockIdx.y) * BY;
             const int z0 = int(blockIdx.z) * BZ;
 
             auto in_domain = [&](int gx, int gy, int gz) -> bool
             {
-                return (unsigned)gx < (unsigned)NX &&
-                       (unsigned)gy < (unsigned)NY &&
-                       (unsigned)gz < (unsigned)NZ;
+                return (unsigned)gx < (unsigned)device::nx &&
+                       (unsigned)gy < (unsigned)device::ny &&
+                       (unsigned)gz < (unsigned)device::nz;
             };
 
             auto gidx = [&](int gx, int gy, int gz) -> label_t
@@ -434,9 +341,8 @@ namespace LBM
                 return device::idxGlobalFromIdx(label_t(gx), label_t(gy), label_t(gz));
             };
 
-            const scalar_t *__restrict__ phi = devPtrs.ptr<10>();
+            const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
 
-            // ---------------------- 1) Load phi tile with halo-2 (no OOB reads) ----------------------
             for (int pz = tz; pz < (BZ + 4); pz += BZ)
             {
                 const int gz = z0 + (pz - 2);
@@ -453,36 +359,47 @@ namespace LBM
 
             __syncthreads();
 
-            // Helpers: 2nd-order one-sided / centered derivatives from sh_phi
             auto ddx = [&](int gx, int pz, int py, int px) -> scalar_t
             {
                 if (gx == 0)
+                {
                     return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz][py][px + 1] - sh_phi[pz][py][px + 2]);
-                if (gx == NX - 1)
+                }
+                if (gx == device::nx - 1)
+                {
                     return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz][py][px - 1] + sh_phi[pz][py][px - 2]);
+                }
+
                 return scalar_t(0.5) * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]);
             };
+
             auto ddy = [&](int gy, int pz, int py, int px) -> scalar_t
             {
                 if (gy == 0)
+                {
                     return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz][py + 1][px] - sh_phi[pz][py + 2][px]);
-                if (gy == NY - 1)
+                }
+                if (gy == device::ny - 1)
+                {
                     return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz][py - 1][px] + sh_phi[pz][py - 2][px]);
+                }
+
                 return scalar_t(0.5) * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]);
             };
+
             auto ddz = [&](int gz, int pz, int py, int px) -> scalar_t
             {
                 if (gz == 0)
+                {
                     return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz + 1][py][px] - sh_phi[pz + 2][py][px]);
-                if (gz == NZ - 1)
+                }
+                if (gz == device::nz - 1)
+                {
                     return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz - 1][py][px] + sh_phi[pz - 2][py][px]);
+                }
+
                 return scalar_t(0.5) * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]);
             };
-
-            // ---------------------- 2) Compute normals on (BX+2)^3 tile ----------------------
-            const scalar_t w1 = VelocitySet::w_1<scalar_t>();
-            const scalar_t w2 = VelocitySet::w_2<scalar_t>();
-            constexpr scalar_t eps = scalar_t(1e-18);
 
             for (int iz = tz; iz < (BZ + 2); iz += BZ)
             {
@@ -499,10 +416,8 @@ namespace LBM
                         const int gx_n = x0 + (ix - 1);
                         const int px = ix + 1;
 
-                        // Outside domain => set halo normals to zero
                         if (!in_domain(gx_n, gy_n, gz_n))
                         {
-                            sh_ind[iz][iy][ix] = scalar_t(0);
                             sh_nx[iz][iy][ix] = scalar_t(0);
                             sh_ny[iz][iy][ix] = scalar_t(0);
                             sh_nz[iz][iy][ix] = scalar_t(0);
@@ -511,34 +426,33 @@ namespace LBM
 
                         scalar_t gxv, gyv, gzv;
 
-                        // Interior (distance >=1): use your isotropic LB gradient
                         const bool normalInterior1 =
-                            (gx_n >= 1 && gx_n <= NX - 2) &&
-                            (gy_n >= 1 && gy_n <= NY - 2) &&
-                            (gz_n >= 1 && gz_n <= NZ - 2);
+                            (gx_n >= 1 && gx_n <= device::nx - 2) &&
+                            (gy_n >= 1 && gy_n <= device::ny - 2) &&
+                            (gz_n >= 1 && gz_n <= device::nz - 2);
 
                         if (normalInterior1)
                         {
                             const scalar_t sgx =
-                                w1 * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]) +
-                                w2 * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
-                                      sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
-                                      sh_phi[pz][py - 1][px + 1] - sh_phi[pz][py + 1][px - 1] +
-                                      sh_phi[pz - 1][py][px + 1] - sh_phi[pz + 1][py][px - 1]);
+                                VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]) +
+                                VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                                sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                                sh_phi[pz][py - 1][px + 1] - sh_phi[pz][py + 1][px - 1] +
+                                                                sh_phi[pz - 1][py][px + 1] - sh_phi[pz + 1][py][px - 1]);
 
                             const scalar_t sgy =
-                                w1 * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]) +
-                                w2 * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
-                                      sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
-                                      sh_phi[pz][py + 1][px - 1] - sh_phi[pz][py - 1][px + 1] +
-                                      sh_phi[pz - 1][py + 1][px] - sh_phi[pz + 1][py - 1][px]);
+                                VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]) +
+                                VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                                sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                                sh_phi[pz][py + 1][px - 1] - sh_phi[pz][py - 1][px + 1] +
+                                                                sh_phi[pz - 1][py + 1][px] - sh_phi[pz + 1][py - 1][px]);
 
                             const scalar_t sgz =
-                                w1 * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]) +
-                                w2 * (sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
-                                      sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
-                                      sh_phi[pz + 1][py][px - 1] - sh_phi[pz - 1][py][px + 1] +
-                                      sh_phi[pz + 1][py - 1][px] - sh_phi[pz - 1][py + 1][px]);
+                                VelocitySet::w_1<scalar_t>() * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]) +
+                                VelocitySet::w_2<scalar_t>() * (sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                                sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                                sh_phi[pz + 1][py][px - 1] - sh_phi[pz - 1][py][px + 1] +
+                                                                sh_phi[pz + 1][py - 1][px] - sh_phi[pz - 1][py + 1][px]);
 
                             gxv = velocitySet::as2<scalar_t>() * sgx;
                             gyv = velocitySet::as2<scalar_t>() * sgy;
@@ -546,7 +460,6 @@ namespace LBM
                         }
                         else
                         {
-                            // Boundary normals (x==0/NX-1 etc.): one-sided/centered axis derivatives, in-domain only.
                             gxv = ddx(gx_n, pz, py, px);
                             gyv = ddy(gy_n, pz, py, px);
                             gzv = ddz(gz_n, pz, py, px);
@@ -554,24 +467,26 @@ namespace LBM
 
                         const scalar_t ind2 = gxv * gxv + gyv * gyv + gzv * gzv;
                         const scalar_t ind = ::sqrt(ind2);
-                        const scalar_t invInd = scalar_t(1) / (ind + eps);
+                        const scalar_t invInd = scalar_t(1) / (ind + static_cast<scalar_t>(1e-9));
 
-                        sh_ind[iz][iy][ix] = ind;
                         sh_nx[iz][iy][ix] = gxv * invInd;
                         sh_ny[iz][iy][ix] = gyv * invInd;
                         sh_nz[iz][iy][ix] = gzv * invInd;
+
+                        if (ix == tx + 1 && iy == ty + 1 && iz == tz + 1)
+                        {
+                            ind_ = ind;
+                        }
                     }
                 }
             }
 
             __syncthreads();
 
-            // ---------------------- 3) Curvature + forces (exclude ONLY true boundaries) ----------------------
-            // Now boundary normals exist, so curvature is valid for distance>=1.
             const bool curvInterior1 =
-                (x >= 1 && x <= NX - 2) &&
-                (y >= 1 && y <= NY - 2) &&
-                (z >= 1 && z <= NZ - 2);
+                (x >= 1 && x <= device::nx - 2) &&
+                (y >= 1 && y <= device::ny - 2) &&
+                (z >= 1 && z <= device::nz - 2);
 
             if (curvInterior1)
             {
@@ -579,36 +494,34 @@ namespace LBM
                 const int iy = ty + 1;
                 const int iz = tz + 1;
 
-                // Center normals for sharpening (FIXED indexing)
                 normx_ = sh_nx[iz][iy][ix];
                 normy_ = sh_ny[iz][iy][ix];
                 normz_ = sh_nz[iz][iy][ix];
 
                 const scalar_t scx =
-                    w1 * (sh_nx[iz][iy][ix + 1] - sh_nx[iz][iy][ix - 1]) +
-                    w2 * (sh_nx[iz][iy + 1][ix + 1] - sh_nx[iz][iy - 1][ix - 1] +
-                          sh_nx[iz + 1][iy][ix + 1] - sh_nx[iz - 1][iy][ix - 1] +
-                          sh_nx[iz][iy - 1][ix + 1] - sh_nx[iz][iy + 1][ix - 1] +
-                          sh_nx[iz - 1][iy][ix + 1] - sh_nx[iz + 1][iy][ix - 1]);
+                    VelocitySet::w_1<scalar_t>() * (sh_nx[iz][iy][ix + 1] - sh_nx[iz][iy][ix - 1]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_nx[iz][iy + 1][ix + 1] - sh_nx[iz][iy - 1][ix - 1] +
+                                                    sh_nx[iz + 1][iy][ix + 1] - sh_nx[iz - 1][iy][ix - 1] +
+                                                    sh_nx[iz][iy - 1][ix + 1] - sh_nx[iz][iy + 1][ix - 1] +
+                                                    sh_nx[iz - 1][iy][ix + 1] - sh_nx[iz + 1][iy][ix - 1]);
 
                 const scalar_t scy =
-                    w1 * (sh_ny[iz][iy + 1][ix] - sh_ny[iz][iy - 1][ix]) +
-                    w2 * (sh_ny[iz][iy + 1][ix + 1] - sh_ny[iz][iy - 1][ix - 1] +
-                          sh_ny[iz + 1][iy + 1][ix] - sh_ny[iz - 1][iy - 1][ix] +
-                          sh_ny[iz][iy + 1][ix - 1] - sh_ny[iz][iy - 1][ix + 1] +
-                          sh_ny[iz - 1][iy + 1][ix] - sh_ny[iz + 1][iy - 1][ix]);
+                    VelocitySet::w_1<scalar_t>() * (sh_ny[iz][iy + 1][ix] - sh_ny[iz][iy - 1][ix]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_ny[iz][iy + 1][ix + 1] - sh_ny[iz][iy - 1][ix - 1] +
+                                                    sh_ny[iz + 1][iy + 1][ix] - sh_ny[iz - 1][iy - 1][ix] +
+                                                    sh_ny[iz][iy + 1][ix - 1] - sh_ny[iz][iy - 1][ix + 1] +
+                                                    sh_ny[iz - 1][iy + 1][ix] - sh_ny[iz + 1][iy - 1][ix]);
 
                 const scalar_t scz =
-                    w1 * (sh_nz[iz + 1][iy][ix] - sh_nz[iz - 1][iy][ix]) +
-                    w2 * (sh_nz[iz + 1][iy][ix + 1] - sh_nz[iz - 1][iy][ix - 1] +
-                          sh_nz[iz + 1][iy + 1][ix] - sh_nz[iz - 1][iy - 1][ix] +
-                          sh_nz[iz + 1][iy][ix - 1] - sh_nz[iz - 1][iy][ix + 1] +
-                          sh_nz[iz + 1][iy - 1][ix] - sh_nz[iz - 1][iy + 1][ix]);
+                    VelocitySet::w_1<scalar_t>() * (sh_nz[iz + 1][iy][ix] - sh_nz[iz - 1][iy][ix]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_nz[iz + 1][iy][ix + 1] - sh_nz[iz - 1][iy][ix - 1] +
+                                                    sh_nz[iz + 1][iy + 1][ix] - sh_nz[iz - 1][iy - 1][ix] +
+                                                    sh_nz[iz + 1][iy][ix - 1] - sh_nz[iz - 1][iy][ix + 1] +
+                                                    sh_nz[iz + 1][iy - 1][ix] - sh_nz[iz - 1][iy + 1][ix]);
 
                 const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
 
-                const scalar_t ind_c = sh_ind[iz][iy][ix];
-                const scalar_t stCurv = -device::sigma * curvature * ind_c;
+                const scalar_t stCurv = -device::sigma * curvature * ind_;
 
                 ffx_ = stCurv * normx_;
                 ffy_ = stCurv * normy_;
@@ -616,9 +529,12 @@ namespace LBM
             }
             else
             {
-                // True boundary cells only
-                normx_ = normy_ = normz_ = scalar_t(0);
-                ffx_ = ffy_ = ffz_ = scalar_t(0);
+                ffx_ = static_cast<scalar_t>(0);
+                ffy_ = static_cast<scalar_t>(0);
+                ffz_ = static_cast<scalar_t>(0);
+                normx_ = static_cast<scalar_t>(0);
+                normy_ = static_cast<scalar_t>(0);
+                normz_ = static_cast<scalar_t>(0);
             }
         }
 

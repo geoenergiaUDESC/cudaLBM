@@ -155,12 +155,10 @@ namespace LBM
         }
 
         // Load pop from global memory in cover nodes
-        Halo::load(
-            pop,
-            fGhost);
+        Halo::load(pop, fGhost);
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments);
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<false>()>(
@@ -179,7 +177,7 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
         }
 
@@ -191,7 +189,7 @@ namespace LBM
 
         // Calculate post collision populations
         VelocitySet::reconstruct(pop, moments);
-        device::halo<VelocitySet>::transpose_to_shared(pop, shared_buffer);
+        Halo::transpose_to_shared(pop, shared_buffer);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();

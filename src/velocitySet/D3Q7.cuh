@@ -496,7 +496,7 @@ namespace LBM
          **/
         __device__ inline static void calculatePhi(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, 11> &moments) noexcept
         {
-            moments[m_i<10>()] = pop.sum();
+            moments[m_i<10>()] = pop[q_i<0>()] + pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<5>()] + pop[q_i<6>()];
         }
 
         /**
@@ -535,10 +535,10 @@ namespace LBM
                 {
                     std::cout
                         << "    [" << q_i<Q>() << "] = {"
-                        << host_w_q<double>()[q_i<Q>()] << ", "
-                        << host_cx<int>()[q_i<Q>()] << ", "
-                        << host_cy<int>()[q_i<Q>()] << ", "
-                        << host_cz<int>()[q_i<Q>()] << "};" << std::endl;
+                        << w_q<double>()[q_i<Q>()] << ", "
+                        << cx<int>()[q_i<Q>()] << ", "
+                        << cy<int>()[q_i<Q>()] << ", "
+                        << cz<int>()[q_i<Q>()] << "};" << std::endl;
                 });
         }
     };

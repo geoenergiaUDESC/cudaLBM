@@ -158,7 +158,7 @@ namespace LBM
         Halo::load(pop, fGhost);
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments);
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<false>()>(

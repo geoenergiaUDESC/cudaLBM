@@ -75,18 +75,18 @@ namespace LBM
              * @post All six halo faces are allocated and initialized with population data
              **/
             __host__ [[nodiscard]] haloFace(
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
                 const host::latticeMesh &mesh,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *phi = nullptr) noexcept
+                const host::array<false, scalar_t, D3Q7, time::instantaneous> *phi = nullptr) noexcept
                 : x0_(device::allocateArray(initialise_pop<X, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
                   x1_(device::allocateArray(initialise_pop<X, 1>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
                   y0_(device::allocateArray(initialise_pop<Y, 0>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, phi, mesh))),
@@ -244,17 +244,17 @@ namespace LBM
              **/
             template <const axisDirection faceIndex, const label_t side>
             __host__ [[nodiscard]] const std::vector<scalar_t> initialise_pop(
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &rho,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &u,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &v,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &w,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xx,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_xz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yy,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_yz,
-                const host::array<scalar_t, VelocitySet, time::instantaneous> &m_zz,
-                const host::array<scalar_t, D3Q7, time::instantaneous> *phi,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::array<false, scalar_t, D3Q7, time::instantaneous> *phi,
                 const host::latticeMesh &mesh) const noexcept
             {
                 std::vector<scalar_t> face(nFaces<faceIndex>(mesh), 0);
@@ -281,14 +281,14 @@ namespace LBM
 
                                         const label_t base = host::idx(tx, ty, tz, bx, by, bz, mesh);
 
-                                        std::array<scalar_t, VelocitySet::Q()> pop;
+                                        thread::array<scalar_t, VelocitySet::Q()> pop;
 
                                         // Contiguous moment access
                                         if constexpr (VelocitySet::Q() == 7)
                                         {
 
                                             pop = VelocitySet::reconstruct(
-                                                std::array<scalar_t, 11>{
+                                                thread::array<scalar_t, 11>{
                                                     rho0<scalar_t>() + rho.arr()[base],
                                                     u.arr()[base],
                                                     v.arr()[base],
@@ -306,7 +306,7 @@ namespace LBM
                                             if (phi != nullptr)
                                             {
                                                 pop = VelocitySet::reconstruct(
-                                                    std::array<scalar_t, 11>{
+                                                    thread::array<scalar_t, 11>{
                                                         rho0<scalar_t>() + rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],
@@ -322,7 +322,7 @@ namespace LBM
                                             else
                                             {
                                                 pop = VelocitySet::reconstruct(
-                                                    std::array<scalar_t, 10>{
+                                                    thread::array<scalar_t, 10>{
                                                         rho0<scalar_t>() + rho.arr()[base],
                                                         u.arr()[base],
                                                         v.arr()[base],
@@ -371,7 +371,7 @@ namespace LBM
             {
                 if constexpr (VelocitySet::Q() == 7)
                 {
-                    if constexpr (faceIndex == device::haloFaces::x())
+                    if constexpr (faceIndex == X)
                     {
                         if constexpr (side == 0)
                         {
@@ -388,7 +388,7 @@ namespace LBM
                             }
                         }
                     }
-                    if constexpr (faceIndex == device::haloFaces::y())
+                    if constexpr (faceIndex == Y)
                     {
                         if constexpr (side == 0)
                         {
@@ -405,7 +405,7 @@ namespace LBM
                             }
                         }
                     }
-                    if constexpr (faceIndex == device::haloFaces::z())
+                    if constexpr (faceIndex == Z)
                     {
                         if constexpr (side == 0)
                         {
@@ -425,7 +425,7 @@ namespace LBM
                 }
                 else
                 {
-                    if constexpr (faceIndex == device::haloFaces::x())
+                    if constexpr (faceIndex == X)
                     {
                         if constexpr (side == 0)
                         {
@@ -464,7 +464,7 @@ namespace LBM
                             }
                         }
                     }
-                    if constexpr (faceIndex == device::haloFaces::y())
+                    if constexpr (faceIndex == Y)
                     {
                         if constexpr (side == 0)
                         {
@@ -503,7 +503,7 @@ namespace LBM
                             }
                         }
                     }
-                    if constexpr (faceIndex == device::haloFaces::z())
+                    if constexpr (faceIndex == Z)
                     {
                         if constexpr (side == 0)
                         {

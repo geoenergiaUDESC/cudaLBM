@@ -105,7 +105,77 @@ namespace LBM
         {
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
 
-            const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+
+            bool already_handled = false;
+
+            switch (boundaryNormal.nodeType())
+            {
+            // Round inflow + no-slip
+            case normalVector::BACK():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
+
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = rho0<scalar_t>();
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[m_i<0>()] = rho;                                            // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
+                moments[m_i<6>()] = mxz;                                            // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
+                moments[m_i<8>()] = myz;                                            // myz
+                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+
+                already_handled = true;
+                return;
+            }
+
+// Periodic
+#include "include/periodic.cuh"
+
+// Outflow (zero-gradient) at front face
+#include "include/IRBCN.cuh"
+
+            // Call static boundaries for uncovered cases
+            default:
+            {
+                if (!already_handled)
+                {
+                    switch (boundaryNormal.nodeType())
+                    {
+#include "include/fallback.cuh"
+                    }
+                }
+
+                break;
+            }
+            }
+        }
+
+        template <class VelocitySet, const label_t N>
+        __device__ static inline constexpr void calculate_moments(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            thread::array<scalar_t, NUMBER_MOMENTS<false>()> &moments,
+            const normalVector &boundaryNormal,
+            const thread::array<scalar_t, N> &shared_buffer) noexcept
+        {
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+
+            // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
             bool already_handled = false;
@@ -174,7 +244,79 @@ namespace LBM
             static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
             static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments only supports D3Q7 for phase field.");
 
-            const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+            const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
+
+            bool already_handled = false;
+
+            switch (boundaryNormal.nodeType())
+            {
+            // Round inflow + no-slip
+            case normalVector::BACK():
+            {
+                const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+                const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+
+                const scalar_t is_jet = static_cast<scalar_t>((static_cast<scalar_t>(x) - center_x()) * (static_cast<scalar_t>(x) - center_x()) + (static_cast<scalar_t>(y) - center_y()) * (static_cast<scalar_t>(y) - center_y()) < r2());
+
+                const scalar_t mxz_I = BACK_mxz_I(pop, inv_rho_I);
+                const scalar_t myz_I = BACK_myz_I(pop, inv_rho_I);
+
+                const scalar_t rho = rho0<scalar_t>();
+                const scalar_t mxz = static_cast<scalar_t>(2) * mxz_I * rho_I / rho;
+                const scalar_t myz = static_cast<scalar_t>(2) * myz_I * rho_I / rho;
+
+                moments[m_i<0>()] = rho;                                            // rho
+                moments[m_i<1>()] = static_cast<scalar_t>(0);                       // ux
+                moments[m_i<2>()] = static_cast<scalar_t>(0);                       // uy
+                moments[m_i<3>()] = is_jet * device::u_inf;                         // uz
+                moments[m_i<4>()] = static_cast<scalar_t>(0);                       // mxx
+                moments[m_i<5>()] = static_cast<scalar_t>(0);                       // mxy
+                moments[m_i<6>()] = mxz;                                            // mxz
+                moments[m_i<7>()] = static_cast<scalar_t>(0);                       // myy
+                moments[m_i<8>()] = myz;                                            // myz
+                moments[m_i<9>()] = is_jet * (rho * device::u_inf * device::u_inf); // mzz
+                moments[m_i<10>()] = is_jet * static_cast<scalar_t>(1);
+
+                already_handled = true;
+                return;
+            }
+
+// Periodic
+#include "include/periodic.cuh"
+
+// Outflow (zero-gradient) at front face
+#include "include/multiphaseIRBCN.cuh"
+
+            // Call static boundaries for uncovered cases
+            default:
+            {
+                if (!already_handled)
+                {
+                    switch (boundaryNormal.nodeType())
+                    {
+#include "include/multiphaseFallback.cuh"
+                    }
+                }
+
+                break;
+            }
+            }
+        }
+
+        template <class VelocitySet, class PhaseVelocitySet, const label_t N>
+        __device__ static inline constexpr void calculate_moments(
+            const thread::array<scalar_t, VelocitySet::Q()> &pop,
+            thread::array<scalar_t, NUMBER_MOMENTS<true>()> &moments,
+            const normalVector &boundaryNormal,
+            const thread::array<scalar_t, N> &shared_buffer) noexcept
+        {
+            static_assert((VelocitySet::Q() == 19) || (VelocitySet::Q() == 27), "Error: boundaryConditions::calculate_moments only supports D3Q19 and D3Q27.");
+            static_assert((PhaseVelocitySet::Q() == 7), "Error: boundaryConditions::calculate_moments only supports D3Q7 for phase field.");
+
+            // const scalar_t rho_I = velocitySet::rho_I<VelocitySet>(pop, boundaryNormal);
+            const scalar_t rho_I = velocitySet::calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
             const scalar_t inv_rho_I = static_cast<scalar_t>(1) / rho_I;
 
             bool already_handled = false;

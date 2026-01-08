@@ -102,7 +102,7 @@ namespace LBM
          * @return true if target is found in vec, false otherwise.
          * @note Uses std::find for efficient searching.
          **/
-        __host__ [[nodiscard]] inline constexpr bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
+        __host__ [[nodiscard]] inline bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
         {
             return std::find(vec.begin(), vec.end(), target) != vec.end(); // was constexpr
         }
@@ -116,17 +116,6 @@ namespace LBM
         __host__ [[nodiscard]] inline std::size_t findCharPosition(const std::string &str, const char (&c)[2])
         {
             return str.find(c[0]); // was constexpr
-        }
-
-        /**
-         * @brief Finds the position of a char within a string
-         * @param[in] str The string to search
-         * @param[in] c The character to search for
-         * @return The position of c within str
-         **/
-        __host__ [[nodiscard]] inline constexpr std::size_t findCharPosition(const std::string &str, const char (&c)[2])
-        {
-            return str.find(c[0]);
         }
 
         /**
@@ -576,12 +565,6 @@ namespace LBM
                 // Trim leading whitespace
                 const auto first = line.find_first_not_of(" \t");
                 if (first == std::string::npos)
-                {
-                    continue;
-                }
-
-                // Check if S[i] contains a substring of name
-                if (S[i].find(name) != std::string::npos)
                 {
                     continue;
                 }

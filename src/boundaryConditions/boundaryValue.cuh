@@ -95,7 +95,7 @@ namespace LBM
          **/
         const scalar_t value;
 
-        /** *
+        /**
          * @brief Extracts a parameter from the configuration file
          * @tparam T Type of the parameter to extract
          * @param[in] fieldName Name of the field to extract
@@ -201,7 +201,7 @@ namespace LBM
                     {
                         if (fieldName == "phi")
                         {
-                            return string::extractParameter<scalar_t>(internalFieldBlock, "value");
+                            return string::extractParameter<scalar_t>(regionFieldBlock, "value");
                         }
                     }
                 }

@@ -75,6 +75,17 @@ namespace LBM
     using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
     using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
+    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t)); }
+
+    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
+    {
+#ifdef OOB_CHECK
+        return true;
+#else
+        return false;
+#endif
+    }
+
     __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
 #define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
 
@@ -97,13 +108,15 @@ namespace LBM
         const device::ptrCollection<6, scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
-        // if (device::out_of_bounds())
-        // {
-        //     return;
-        // }
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
 
-        // const label_t idx = device::idx();
-        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+        const label_t idx = device::idx();
 
         const scalar_t normx_ = normx[idx];
         const scalar_t normy_ = normy[idx];
@@ -116,6 +129,7 @@ namespace LBM
                 cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
             });
 
+        // Declare shared memory
         extern __shared__ scalar_t shared_buffer[];
         __shared__ scalar_t shared_buffer_g[(PhaseVelocitySet::Q() - 1) * block::stride()];
 
@@ -123,23 +137,20 @@ namespace LBM
 
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
-        {
-            // Read into shared
-            device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
-                [&](const auto moment)
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
+                shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
+                if constexpr (moment == index::rho())
                 {
-                    const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
-                    shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                    if constexpr (moment == index::rho())
-                    {
-                        moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
-                    }
-                    else
-                    {
-                        moments[moment] = shared_buffer[ID];
-                    }
-                });
-        }
+                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = shared_buffer[ID];
+                }
+            });
 
         __syncthreads();
 
@@ -161,27 +172,13 @@ namespace LBM
         }
 
         // Load hydro pop from global memory in cover nodes
-        HydroHalo::load(
-            pop,
-            ghostHydro.ptr<0>(),
-            ghostHydro.ptr<1>(),
-            ghostHydro.ptr<2>(),
-            ghostHydro.ptr<3>(),
-            ghostHydro.ptr<4>(),
-            ghostHydro.ptr<5>());
+        HydroHalo::load(pop, fGhostHydro);
 
         // Load phase pop from global memory in cover nodes
-        PhaseHalo::load(
-            pop_g,
-            ghostPhase.ptr<0>(),
-            ghostPhase.ptr<1>(),
-            ghostPhase.ptr<2>(),
-            ghostPhase.ptr<3>(),
-            ghostPhase.ptr<4>(),
-            ghostPhase.ptr<5>());
+        PhaseHalo::load(pop_g, fGhostPhase);
 
         // Compute post-stream moments
-        VelocitySet::calculateMoments(pop, moments);
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
         PhaseVelocitySet::calculatePhi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -198,9 +195,10 @@ namespace LBM
         // Calculate the moments at the boundary
         {
             const normalVector boundaryNormal;
+
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculateMoments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
         }
 
@@ -387,13 +385,16 @@ namespace LBM
         const device::ptrCollection<6, scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
-        // if (device::out_of_bounds())
-        // {
-        //     return;
-        // }
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
 
-        // const label_t idx = device::idx();
-        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+        const label_t idx = device::idx();
+        // const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
         const scalar_t ffx_ = ffx[idx];
         const scalar_t ffy_ = ffy[idx];
@@ -411,21 +412,18 @@ namespace LBM
 
         // Coalesced read from global memory
         thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
-        {
-            // Read into registers
-            device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
-                [&](const auto moment)
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                if constexpr (moment == index::rho())
                 {
-                    if constexpr (moment == index::rho())
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
-                    }
-                    else
-                    {
-                        moments[moment] = devPtrs.ptr<moment>()[idx];
-                    }
-                });
-        }
+                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx];
+                }
+            });
 
         // Scale the moments correctly
         velocitySet::scale(moments);
@@ -448,24 +446,10 @@ namespace LBM
             });
 
         // Save the hydro populations to the block halo
-        HydroHalo::save(
-            pop,
-            ghostHydro.ptr<0>(),
-            ghostHydro.ptr<1>(),
-            ghostHydro.ptr<2>(),
-            ghostHydro.ptr<3>(),
-            ghostHydro.ptr<4>(),
-            ghostHydro.ptr<5>());
+        HydroHalo::save(pop, gGhostHydro);
 
         // Save the phase populations to the block halo
-        PhaseHalo::save(
-            pop_g,
-            ghostPhase.ptr<0>(),
-            ghostPhase.ptr<1>(),
-            ghostPhase.ptr<2>(),
-            ghostPhase.ptr<3>(),
-            ghostPhase.ptr<4>(),
-            ghostPhase.ptr<5>());
+        PhaseHalo::save(pop_g, gGhostPhase);
     }
 }
 

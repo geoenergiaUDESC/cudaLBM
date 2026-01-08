@@ -123,16 +123,9 @@ int main(const int argc, const char *const argv[])
     device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
     device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
-    constexpr const label_t sharedMemoryAllocationSize = block::sharedMemoryBufferSize<VelocitySet, NUMBER_MOMENTS<true>()>(sizeof(scalar_t));
-
-    checkCudaErrors(cudaFuncSetCacheConfig(multiphaseStream, cudaFuncCachePreferShared));
-    checkCudaErrors(cudaFuncSetAttribute(multiphaseStream, cudaFuncAttributeMaxDynamicSharedMemorySize, sharedMemoryAllocationSize));
+    kernelSetup<smem_alloc_size()>(multiphaseStream);
 
     const runTimeIO IO(mesh, programCtrl);
-
-    std::cout << std::endl;
-    std::cout << "Allocating " << sharedMemoryAllocationSize << " bytes of shared memory to multiphaseD3Q" << VelocitySet::Q() << " kernel" << std::endl;
-    std::cout << std::endl;
 
     for (label_t timeStep = programCtrl.latestTime(); timeStep < programCtrl.nt(); timeStep++)
     {
@@ -159,7 +152,7 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
-                multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), sharedMemoryAllocationSize, streamsLBM.streams()[stream]>>>(
+                multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
                     fBlockHalo.gGhost(), gBlockHalo.gGhost());
 

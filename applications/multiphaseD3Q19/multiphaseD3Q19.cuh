@@ -158,7 +158,7 @@ namespace LBM
 
         // Reconstruct the populations from the moments
         thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
-        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments, normx_, normy_, normz_);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
 
         // Save/pull from shared memory
         {
@@ -181,7 +181,7 @@ namespace LBM
 
         // Compute post-stream moments
         velocitySet::calculate_moments<VelocitySet>(pop, moments);
-        PhaseVelocitySet::calculatePhi(pop_g, moments);
+        PhaseVelocitySet::calculate_phi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
             device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -439,7 +439,154 @@ namespace LBM
         thread::array<scalar_t, VelocitySet::Q()> pop;
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
         VelocitySet::reconstruct(pop, moments);
-        PhaseVelocitySet::reconstruct(pop_g, moments, normx_, normy_, normz_);
+        PhaseVelocitySet::reconstruct(pop_g, moments);
+
+        // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments[moment];
+            });
+
+        // Save the hydro populations to the block halo
+        HydroHalo::save(pop, gGhostHydro);
+
+        // Save the phase populations to the block halo
+        PhaseHalo::save(pop_g, gGhostPhase);
+    }
+
+    launchBoundsD3Q19 __global__ void multiphaseD3Q19(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const scalar_t *const ptrRestrict ffx,
+        const scalar_t *const ptrRestrict ffy,
+        const scalar_t *const ptrRestrict ffz,
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
+    {
+        // Always a multiple of 32, so no need to check this(I think)
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
+
+        const label_t idx = device::idx();
+
+        const scalar_t ffx_ = ffx[idx];
+        const scalar_t ffy_ = ffy[idx];
+        const scalar_t ffz_ = ffz[idx];
+        const scalar_t normx_ = normx[idx];
+        const scalar_t normy_ = normy[idx];
+        const scalar_t normz_ = normz[idx];
+
+        // Prefetch devPtrs into L2
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
+        extern __shared__ scalar_t shared_buffer[];
+        __shared__ scalar_t shared_buffer_g[(PhaseVelocitySet::Q() - 1) * block::stride()];
+
+        const label_t tid = device::idxBlock();
+
+        // Coalesced read from global memory
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
+                shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
+                if constexpr (moment == index::rho())
+                {
+                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = shared_buffer[ID];
+                }
+            });
+
+        __syncthreads();
+
+        // Reconstruct the populations from the moments
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
+
+        // Gather current phase field state
+        scalar_t phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
+
+        // Save/pull from shared memory
+        {
+            // Save populations in shared memory
+            streaming::save<VelocitySet>(pop, shared_buffer, tid);
+            streaming::save<PhaseVelocitySet>(pop_g, shared_buffer_g, tid);
+
+            __syncthreads();
+
+            // Pull from shared memory
+            streaming::pull<VelocitySet>(pop, shared_buffer);
+            streaming::phase_pull(pop_g, shared_buffer_g);
+        }
+
+        // Load hydro pop from global memory in cover nodes
+        HydroHalo::load(pop, fGhostHydro);
+
+        // Load phase pop from global memory in cover nodes
+        PhaseHalo::load(pop_g, fGhostPhase);
+
+        // Compute post-stream moments
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
+        PhaseVelocitySet::calculate_phi(pop_g, moments);
+        {
+            // Update the shared buffer with the refreshed moments
+            device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+                [&](const auto moment)
+                {
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS<true>() + 1>() + label_constant<moment>();
+                    shared_buffer[ID] = moments[moment];
+                });
+        }
+
+        __syncthreads();
+
+        // Calculate the moments at the boundary
+        {
+            const normalVector boundaryNormal;
+
+            if (boundaryNormal.isBoundary())
+            {
+                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+            }
+        }
+
+        // Scale the moments correctly
+        velocitySet::scale(moments);
+
+        // Collide
+        Collision::collide(moments, ffx_, ffy_, ffz_);
+
+        // Calculate post collision populations
+        VelocitySet::reconstruct(pop, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments);
+
+        // Gather current phase field state
+        phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory
         moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();

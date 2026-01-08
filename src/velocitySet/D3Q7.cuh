@@ -384,90 +384,61 @@ namespace LBM
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (11 components)
          **/
-        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, 11> &moments, const scalar_t normx, const scalar_t normy, const scalar_t normz) noexcept
+        __device__ static inline void reconstruct(thread::array<scalar_t, 7> &pop, const thread::array<scalar_t, 11> &moments) noexcept
         {
             const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
             const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
 
             pop[q_i<0>()] = phiw_0;
-
-            scalar_t anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx;
-            pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) + anti_diff;
-            pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) - anti_diff;
-
-            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy;
-            pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) + anti_diff;
-            pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) - anti_diff;
-
-            anti_diff = w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz;
-            pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) + anti_diff;
-            pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) - anti_diff;
-        }
-
-        /**
-         * @brief Reconstruct population distribution from moments (return)
-         * @param[in] moments Moment array (11 components)
-         * @return Population array with 7 components
-         **/
-        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments, const scalar_t normx, const scalar_t normy, const scalar_t normz) noexcept
-        {
-            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
-            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
-
-            return {
-                phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normx,
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normy,
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) + w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz,
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]) - w_1<scalar_t>() * device::gamma * moments[m_i<10>()] * (static_cast<scalar_t>(1) - moments[m_i<10>()]) * normz};
-        }
-
-        /**
-         * @brief Reconstruct population distribution from moments (return)
-         * @param[in] moments Moment array (11 components)
-         * @return Population array with 7 components
-         **/
-        __device__ static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments) noexcept
-        {
-            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
-            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
-
-            return {
-                phiw_0,
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]),
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]),
-                phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]),
-                phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()])};
-        }
-
-        /**
-         * @brief Reconstruct population distribution from moments (host version)
-         * @param[in] moments Moment array (11 components)
-         * @return Population array with 7 components
-         **/
-        __host__ [[nodiscard]] static const std::array<scalar_t, 7> reconstruct(const std::array<scalar_t, 11> &moments) noexcept
-        {
-            std::array<scalar_t, 7> pop;
-
-            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
-            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
-
-            pop[q_i<0>()] = phiw_0;
-
             pop[q_i<1>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
             pop[q_i<2>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
-
             pop[q_i<3>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
             pop[q_i<4>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
-
             pop[q_i<5>()] = phiw_1 * (static_cast<scalar_t>(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
             pop[q_i<6>()] = phiw_1 * (static_cast<scalar_t>(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
+        }
+
+        /**
+         * @brief Reconstruct population distribution from moments (return)
+         * @param[in] moments Moment array (11 components)
+         * @return Population array with 7 components
+         **/
+        __device__ __host__ [[nodiscard]] static inline thread::array<scalar_t, 7> reconstruct(const thread::array<scalar_t, 11> &moments) noexcept
+        {
+            thread::array<scalar_t, 7> pop;
+
+            const scalar_t phiw_0 = moments[m_i<10>()] * w_0<scalar_t>();
+            const scalar_t phiw_1 = moments[m_i<10>()] * w_1<scalar_t>();
+
+            pop[q_i<0>()] = phiw_0;
+            pop[q_i<1>()] = phiw_1 * (scalar_t(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
+            pop[q_i<2>()] = phiw_1 * (scalar_t(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<1>()]);
+            pop[q_i<3>()] = phiw_1 * (scalar_t(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
+            pop[q_i<4>()] = phiw_1 * (scalar_t(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<2>()]);
+            pop[q_i<5>()] = phiw_1 * (scalar_t(1) + velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
+            pop[q_i<6>()] = phiw_1 * (scalar_t(1) - velocitySet::unscale_i<scalar_t>() * moments[m_i<3>()]);
 
             return pop;
+        }
+
+        /**
+         * @brief Sharpen interface with a compressive term (in-place)
+         * @param[out] pop Population array to be sharpened
+         * @param[in] phi Phase field
+         * @param[in] normx X-component of the unit interface normal
+         * @param[in] normy Y-component of the unit interface normal
+         * @param[in] normz Z-component of the unit interface normal
+         **/
+        __device__ static inline void sharpen(thread::array<scalar_t, 7> &pop, const scalar_t phi, const scalar_t normx, const scalar_t normy, const scalar_t normz) noexcept
+        {
+            const scalar_t sharp = w_1<scalar_t>() * device::gamma * phi * (scalar_t(1) - phi);
+
+            pop[q_i<1>()] += sharp * normx;
+            pop[q_i<2>()] -= sharp * normx;
+            pop[q_i<3>()] += sharp * normy;
+            pop[q_i<4>()] -= sharp * normy;
+            pop[q_i<5>()] += sharp * normz;
+            pop[q_i<6>()] -= sharp * normz;
         }
 
         /**
@@ -477,7 +448,7 @@ namespace LBM
          * @return Calculated moment value
          **/
         template <const label_t moment_>
-        __host__ [[nodiscard]] inline static constexpr scalar_t calculateMoment(const std::array<scalar_t, 7> &pop) noexcept
+        __host__ [[nodiscard]] inline static constexpr scalar_t calculate_moment(const std::array<scalar_t, 7> &pop) noexcept
         {
             if constexpr (moment_ == 10)
             {
@@ -494,7 +465,7 @@ namespace LBM
          * @param[in] pop Population array (7 components)
          * @param[out] moments Moment array to be filled (11 components)
          **/
-        __device__ inline static void calculatePhi(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, 11> &moments) noexcept
+        __device__ inline static void calculate_phi(const thread::array<scalar_t, 7> &pop, thread::array<scalar_t, 11> &moments) noexcept
         {
             moments[m_i<10>()] = pop[q_i<0>()] + pop[q_i<1>()] + pop[q_i<2>()] + pop[q_i<3>()] + pop[q_i<4>()] + pop[q_i<5>()] + pop[q_i<6>()];
         }

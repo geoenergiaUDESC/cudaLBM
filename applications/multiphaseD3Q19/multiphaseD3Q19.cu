@@ -80,15 +80,8 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    // Phase field arrays
+    // Phase field array
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffx("ffx", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffy("ffy", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ffz("ffz", mesh, programCtrl);
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),
@@ -153,28 +146,15 @@ int main(const int argc, const char *const argv[])
             [&](const auto stream)
             {
                 multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
-                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
+                    devPtrs,
                     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
                     gBlockHalo.fGhost(), gBlockHalo.gGhost());
 
-                // multiphaseD3Q19<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
-                //     devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
-                //     fBlockHalo.fGhost(), fBlockHalo.gGhost(), gBlockHalo.fGhost(), gBlockHalo.gGhost());
-
-                computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
-
-                computeForces<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(), ffx.ptr(), ffy.ptr(), ffz.ptr());
-
                 multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
-                    devPtrs, ffx.ptr(), ffy.ptr(), ffz.ptr(), normx.ptr(), normy.ptr(), normz.ptr(),
+                    devPtrs,
                     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
                     gBlockHalo.fGhost(), gBlockHalo.gGhost());
             });
-
-        checkCudaErrors(cudaGetLastError());
-        checkCudaErrors(cudaDeviceSynchronize());
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);

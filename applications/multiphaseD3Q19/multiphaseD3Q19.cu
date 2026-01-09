@@ -80,8 +80,12 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    // Phase field array
+    // Phase field arrays
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normx", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normy", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normz", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("ind", mesh, programCtrl);
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),

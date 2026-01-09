@@ -59,9 +59,6 @@ SourceFiles
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
 
-#include <cooperative_groups.h>
-namespace cg = cooperative_groups;
-
 namespace config
 {
     constexpr bool periodicX = true;
@@ -95,15 +92,18 @@ namespace LBM
     /**
      * @brief Performs the streaming step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
-     * @param normx Pointer to x-component of the unit interface normal
-     * @param normy Pointer to y-component of the unit interface normal
-     * @param normz Pointer to z-component of the unit interface normal
+     * @param normx Pointer to x-comp1nt of the unit interface normal
+     * @param normy Pointer to y-comp1nt of the unit interface normal
+     * @param normz Pointer to z-comp1nt of the unit interface normal
      * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
      * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
      * @note Currently only immutable halos are used due to kernel split
      **/
     launchBoundsD3Q19 __global__ void multiphaseStream(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
         const device::ptrCollection<6, const scalar_t> fGhostHydro,
         const device::ptrCollection<6, scalar_t> gGhostHydro,
         const device::ptrCollection<6, const scalar_t> fGhostPhase,
@@ -118,67 +118,11 @@ namespace LBM
             }
         }
 
-        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
-        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
-        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
-
-        const bool isInterior =
-            (x > 0) & (x < device::nx - 1) &
-            (y > 0) & (y < device::ny - 1) &
-            (z > 0) & (z < device::nz - 1);
-
         const label_t idx = device::idx();
 
-        scalar_t normx_ = static_cast<scalar_t>(0);
-        scalar_t normy_ = static_cast<scalar_t>(0);
-        scalar_t normz_ = static_cast<scalar_t>(0);
-
-        const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
-
-        if (isInterior)
-        {
-            const scalar_t phi_xp1_yp1_z = phi[device::idxGlobalFromIdx(x + 1, y + 1, z)];
-            const scalar_t phi_xp1_y_zp1 = phi[device::idxGlobalFromIdx(x + 1, y, z + 1)];
-            const scalar_t phi_xp1_ym1_z = phi[device::idxGlobalFromIdx(x + 1, y - 1, z)];
-            const scalar_t phi_xp1_y_zm1 = phi[device::idxGlobalFromIdx(x + 1, y, z - 1)];
-            const scalar_t phi_xm1_ym1_z = phi[device::idxGlobalFromIdx(x - 1, y - 1, z)];
-            const scalar_t phi_xm1_y_zm1 = phi[device::idxGlobalFromIdx(x - 1, y, z - 1)];
-            const scalar_t phi_xm1_yp1_z = phi[device::idxGlobalFromIdx(x - 1, y + 1, z)];
-            const scalar_t phi_xm1_y_zp1 = phi[device::idxGlobalFromIdx(x - 1, y, z + 1)];
-            const scalar_t phi_x_yp1_zp1 = phi[device::idxGlobalFromIdx(x, y + 1, z + 1)];
-            const scalar_t phi_x_yp1_zm1 = phi[device::idxGlobalFromIdx(x, y + 1, z - 1)];
-            const scalar_t phi_x_ym1_zm1 = phi[device::idxGlobalFromIdx(x, y - 1, z - 1)];
-            const scalar_t phi_x_ym1_zp1 = phi[device::idxGlobalFromIdx(x, y - 1, z + 1)];
-
-            const scalar_t sgx = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x + 1, y, z)] - phi[device::idxGlobalFromIdx(x - 1, y, z)]) +
-                                 VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
-                                                                 phi_xp1_y_zp1 - phi_xm1_y_zm1 +
-                                                                 phi_xp1_ym1_z - phi_xm1_yp1_z +
-                                                                 phi_xp1_y_zm1 - phi_xm1_y_zp1);
-
-            const scalar_t sgy = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y + 1, z)] - phi[device::idxGlobalFromIdx(x, y - 1, z)]) +
-                                 VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
-                                                                 phi_x_yp1_zp1 - phi_x_ym1_zm1 +
-                                                                 phi_xm1_yp1_z - phi_xp1_ym1_z +
-                                                                 phi_x_yp1_zm1 - phi_x_ym1_zp1);
-
-            const scalar_t sgz = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y, z + 1)] - phi[device::idxGlobalFromIdx(x, y, z - 1)]) +
-                                 VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
-                                                                 phi_x_yp1_zp1 - phi_x_ym1_zm1 +
-                                                                 phi_xm1_y_zp1 - phi_xp1_y_zm1 +
-                                                                 phi_x_ym1_zp1 - phi_x_yp1_zm1);
-
-            const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
-            const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
-            const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
-
-            const scalar_t ind_ = sqrtf(gx * gx + gy * gy + gz * gz);
-            const scalar_t invInd = static_cast<scalar_t>(1) / (ind_ + static_cast<scalar_t>(1e-9));
-
-            normx_ = gx * invInd;
-            normy_ = gy * invInd;
-            normz_ = gz * invInd;
-        }
+        const scalar_t normx_ = normx[idx];
+        const scalar_t normy_ = normy[idx];
+        const scalar_t normz_ = normz[idx];
 
         // Prefetch devPtrs into L2
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
@@ -219,7 +163,7 @@ namespace LBM
         // Gather current phase field state
         const scalar_t phi_ = moments[m_i<10>()];
 
-        // Add sharpening (compressive term) on g-populations
+        // Add sharpening (compressive term)
         PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Save/pull from shared memory
@@ -276,6 +220,83 @@ namespace LBM
     }
 
     /**
+     * @brief Compute phase field interface normals and indicator
+     * @param phi Pointer to phase field scalar
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param ind Pointer to interface indicator
+     **/
+    launchBoundsD3Q19 __global__ void computeNormals(
+        const scalar_t *const ptrRestrict phi,
+        scalar_t *const ptrRestrict normx,
+        scalar_t *const ptrRestrict normy,
+        scalar_t *const ptrRestrict normz,
+        scalar_t *const ptrRestrict ind)
+    {
+        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+        if (x == 0 || x == device::nx - 1 ||
+            y == 0 || y == device::ny - 1 ||
+            z == 0 || z == device::nz - 1)
+        {
+            return;
+        }
+
+        // const label_t idx = device::idx();
+        const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
+        const scalar_t phi_xp1_yp1_z = phi[device::idxGlobalFromIdx(x + 1, y + 1, z)];
+        const scalar_t phi_xp1_y_zp1 = phi[device::idxGlobalFromIdx(x + 1, y, z + 1)];
+        const scalar_t phi_xp1_ym1_z = phi[device::idxGlobalFromIdx(x + 1, y - 1, z)];
+        const scalar_t phi_xp1_y_zm1 = phi[device::idxGlobalFromIdx(x + 1, y, z - 1)];
+        const scalar_t phi_xm1_ym1_z = phi[device::idxGlobalFromIdx(x - 1, y - 1, z)];
+        const scalar_t phi_xm1_y_zm1 = phi[device::idxGlobalFromIdx(x - 1, y, z - 1)];
+        const scalar_t phi_xm1_yp1_z = phi[device::idxGlobalFromIdx(x - 1, y + 1, z)];
+        const scalar_t phi_xm1_y_zp1 = phi[device::idxGlobalFromIdx(x - 1, y, z + 1)];
+        const scalar_t phi_x_yp1_zp1 = phi[device::idxGlobalFromIdx(x, y + 1, z + 1)];
+        const scalar_t phi_x_yp1_zm1 = phi[device::idxGlobalFromIdx(x, y + 1, z - 1)];
+        const scalar_t phi_x_ym1_zm1 = phi[device::idxGlobalFromIdx(x, y - 1, z - 1)];
+        const scalar_t phi_x_ym1_zp1 = phi[device::idxGlobalFromIdx(x, y - 1, z + 1)];
+
+        const scalar_t sgx = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x + 1, y, z)] - phi[device::idxGlobalFromIdx(x - 1, y, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                             phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                             phi_xp1_ym1_z - phi_xm1_yp1_z +
+                                                             phi_xp1_y_zm1 - phi_xm1_y_zp1);
+
+        const scalar_t sgy = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y + 1, z)] - phi[device::idxGlobalFromIdx(x, y - 1, z)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                             phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                             phi_xm1_yp1_z - phi_xp1_ym1_z +
+                                                             phi_x_yp1_zm1 - phi_x_ym1_zp1);
+
+        const scalar_t sgz = VelocitySet::w_1<scalar_t>() * (phi[device::idxGlobalFromIdx(x, y, z + 1)] - phi[device::idxGlobalFromIdx(x, y, z - 1)]) +
+                             VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                             phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                             phi_xm1_y_zp1 - phi_xp1_y_zm1 +
+                                                             phi_x_ym1_zp1 - phi_x_yp1_zm1);
+
+        const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
+        const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
+        const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
+
+        const scalar_t ind_ = sqrtf(gx * gx + gy * gy + gz * gz);
+        const scalar_t invInd = static_cast<scalar_t>(1) / (ind_ + static_cast<scalar_t>(1e-9));
+
+        const scalar_t normx_ = gx * invInd;
+        const scalar_t normy_ = gy * invInd;
+        const scalar_t normz_ = gz * invInd;
+
+        ind[idx] = ind_;
+        normx[idx] = normx_;
+        normy[idx] = normy_;
+        normz[idx] = normz_;
+    }
+
+    /**
      * @brief Performs the collision step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
      * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
@@ -284,6 +305,12 @@ namespace LBM
      **/
     launchBoundsD3Q19 __global__ void multiphaseCollide(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const scalar_t *const ptrRestrict ffx,
+        const scalar_t *const ptrRestrict ffy,
+        const scalar_t *const ptrRestrict ffz,
+        const scalar_t *const ptrRestrict normx,
+        const scalar_t *const ptrRestrict normy,
+        const scalar_t *const ptrRestrict normz,
         const device::ptrCollection<6, const scalar_t> fGhostHydro,
         const device::ptrCollection<6, scalar_t> gGhostHydro,
         const device::ptrCollection<6, const scalar_t> fGhostPhase,
@@ -299,7 +326,6 @@ namespace LBM
         }
 
         const label_t idx = device::idx();
-        // const label_t idx = device::idx(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
 
         scalar_t ffx_ = static_cast<scalar_t>(0);
         scalar_t ffy_ = static_cast<scalar_t>(0);
@@ -310,129 +336,74 @@ namespace LBM
         scalar_t ind_ = static_cast<scalar_t>(0);
 
         {
-            constexpr int BX = 8, BY = 8, BZ = 8;
+            __shared__ scalar_t sh_phi[block::nz() + 4][block::ny() + 4][block::nx() + 4];
+            __shared__ scalar_t shared_normx[block::nz() + 2][block::ny() + 2][block::nx() + 2];
+            __shared__ scalar_t shared_normy[block::nz() + 2][block::ny() + 2][block::nx() + 2];
+            __shared__ scalar_t shared_normz[block::nz() + 2][block::ny() + 2][block::nx() + 2];
 
-            __shared__ scalar_t sh_phi[BZ + 4][BY + 4][BX + 4];
-            __shared__ scalar_t sh_nx[BZ + 2][BY + 2][BX + 2];
-            __shared__ scalar_t sh_ny[BZ + 2][BY + 2][BX + 2];
-            __shared__ scalar_t sh_nz[BZ + 2][BY + 2][BX + 2];
-
-            const int tx = int(threadIdx.x);
-            const int ty = int(threadIdx.y);
-            const int tz = int(threadIdx.z);
-
-            const int x = tx + int(blockIdx.x) * int(blockDim.x);
-            const int y = ty + int(blockIdx.y) * int(blockDim.y);
-            const int z = tz + int(blockIdx.z) * int(blockDim.z);
-
-            const int x0 = int(blockIdx.x) * BX;
-            const int y0 = int(blockIdx.y) * BY;
-            const int z0 = int(blockIdx.z) * BZ;
-
-            auto in_domain = [&](int gx, int gy, int gz) -> bool
-            {
-                return (unsigned)gx < (unsigned)device::nx &&
-                       (unsigned)gy < (unsigned)device::ny &&
-                       (unsigned)gz < (unsigned)device::nz;
-            };
-
-            auto gidx = [&](int gx, int gy, int gz) -> label_t
-            {
-                return device::idxGlobalFromIdx(label_t(gx), label_t(gy), label_t(gz));
-            };
+            const label_t x0 = blockIdx.x * block::nx();
+            const label_t y0 = blockIdx.y * block::ny();
+            const label_t z0 = blockIdx.z * block::nz();
 
             const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
 
-            for (int pz = tz; pz < (BZ + 4); pz += BZ)
+            // Strict bulk-only: we require the full phi tile [x0-2 .. x0+nx()+1] etc to be inside domain.
+            const bool stBlock =
+                (x0 > 1) && (y0 > 1) && (z0 > 1) &&
+                (x0 + block::nx() < device::nx - 1) &&
+                (y0 + block::ny() < device::ny - 1) &&
+                (z0 + block::nz() < device::nz - 1);
+
+            if (!stBlock)
             {
-                const int gz = z0 + (pz - 2);
-                for (int py = ty; py < (BY + 4); py += BY)
+                ffx_ = static_cast<scalar_t>(0);
+                ffy_ = static_cast<scalar_t>(0);
+                ffz_ = static_cast<scalar_t>(0);
+                normx_ = static_cast<scalar_t>(0);
+                normy_ = static_cast<scalar_t>(0);
+                normz_ = static_cast<scalar_t>(0);
+                ind_ = static_cast<scalar_t>(0);
+            }
+            else
+            {
+                // ------------------------------------------------------------
+                // Load phi into shared: sh_phi[pz][py][px] corresponds to (x0+px-2, y0+py-2, z0+pz-2)
+                // ------------------------------------------------------------
+                for (label_t pz = threadIdx.z; pz < block::nz() + 4; pz += block::nz())
                 {
-                    const int gy = y0 + (py - 2);
-                    for (int px = tx; px < (BX + 4); px += BX)
+                    const label_t gz = z0 + pz - 2;
+
+                    for (label_t py = threadIdx.y; py < block::ny() + 4; py += block::ny())
                     {
-                        const int gx = x0 + (px - 2);
-                        sh_phi[pz][py][px] = in_domain(gx, gy, gz) ? phi[gidx(gx, gy, gz)] : scalar_t(0);
+                        const label_t gy = y0 + py - 2;
+
+                        for (label_t px = threadIdx.x; px < block::nx() + 4; px += block::nx())
+                        {
+                            const label_t gx = x0 + px - 2;
+
+                            sh_phi[pz][py][px] = phi[device::idxGlobalFromIdx(gx, gy, gz)];
+                        }
                     }
                 }
-            }
 
-            __syncthreads();
+                __syncthreads();
 
-            auto ddx = [&](int gx, int pz, int py, int px) -> scalar_t
-            {
-                if (gx == 0)
+                // ------------------------------------------------------------
+                // Compute normals (with halos) from shared phi using the isotropic stencil only.
+                // No boundary handling (guaranteed safe by stBlock).
+                // ------------------------------------------------------------
+                for (label_t iz = threadIdx.z; iz < block::nz() + 2; iz += block::nz())
                 {
-                    return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz][py][px + 1] - sh_phi[pz][py][px + 2]);
-                }
-                if (gx == device::nx - 1)
-                {
-                    return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz][py][px - 1] + sh_phi[pz][py][px - 2]);
-                }
+                    const label_t pz = iz + 1;
 
-                return scalar_t(0.5) * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]);
-            };
-
-            auto ddy = [&](int gy, int pz, int py, int px) -> scalar_t
-            {
-                if (gy == 0)
-                {
-                    return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz][py + 1][px] - sh_phi[pz][py + 2][px]);
-                }
-                if (gy == device::ny - 1)
-                {
-                    return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz][py - 1][px] + sh_phi[pz][py - 2][px]);
-                }
-
-                return scalar_t(0.5) * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]);
-            };
-
-            auto ddz = [&](int gz, int pz, int py, int px) -> scalar_t
-            {
-                if (gz == 0)
-                {
-                    return scalar_t(0.5) * (-3 * sh_phi[pz][py][px] + 4 * sh_phi[pz + 1][py][px] - sh_phi[pz + 2][py][px]);
-                }
-                if (gz == device::nz - 1)
-                {
-                    return scalar_t(0.5) * (3 * sh_phi[pz][py][px] - 4 * sh_phi[pz - 1][py][px] + sh_phi[pz - 2][py][px]);
-                }
-
-                return scalar_t(0.5) * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]);
-            };
-
-            for (int iz = tz; iz < (BZ + 2); iz += BZ)
-            {
-                const int gz_n = z0 + (iz - 1);
-                const int pz = iz + 1;
-
-                for (int iy = ty; iy < (BY + 2); iy += BY)
-                {
-                    const int gy_n = y0 + (iy - 1);
-                    const int py = iy + 1;
-
-                    for (int ix = tx; ix < (BX + 2); ix += BX)
+                    for (label_t iy = threadIdx.y; iy < block::ny() + 2; iy += block::ny())
                     {
-                        const int gx_n = x0 + (ix - 1);
-                        const int px = ix + 1;
+                        const label_t py = iy + 1;
 
-                        if (!in_domain(gx_n, gy_n, gz_n))
+                        for (label_t ix = threadIdx.x; ix < block::nx() + 2; ix += block::nx())
                         {
-                            sh_nx[iz][iy][ix] = scalar_t(0);
-                            sh_ny[iz][iy][ix] = scalar_t(0);
-                            sh_nz[iz][iy][ix] = scalar_t(0);
-                            continue;
-                        }
+                            const label_t px = ix + 1;
 
-                        scalar_t gxv, gyv, gzv;
-
-                        const bool normalInterior1 =
-                            (gx_n >= 1 && gx_n <= device::nx - 2) &&
-                            (gy_n >= 1 && gy_n <= device::ny - 2) &&
-                            (gz_n >= 1 && gz_n <= device::nz - 2);
-
-                        if (normalInterior1)
-                        {
                             const scalar_t sgx =
                                 VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]) +
                                 VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
@@ -454,87 +425,98 @@ namespace LBM
                                                                 sh_phi[pz + 1][py][px - 1] - sh_phi[pz - 1][py][px + 1] +
                                                                 sh_phi[pz + 1][py - 1][px] - sh_phi[pz - 1][py + 1][px]);
 
-                            gxv = velocitySet::as2<scalar_t>() * sgx;
-                            gyv = velocitySet::as2<scalar_t>() * sgy;
-                            gzv = velocitySet::as2<scalar_t>() * sgz;
-                        }
-                        else
-                        {
-                            gxv = ddx(gx_n, pz, py, px);
-                            gyv = ddy(gy_n, pz, py, px);
-                            gzv = ddz(gz_n, pz, py, px);
-                        }
+                            const scalar_t gxv = velocitySet::as2<scalar_t>() * sgx;
+                            const scalar_t gyv = velocitySet::as2<scalar_t>() * sgy;
+                            const scalar_t gzv = velocitySet::as2<scalar_t>() * sgz;
 
-                        const scalar_t ind2 = gxv * gxv + gyv * gyv + gzv * gzv;
-                        const scalar_t ind = ::sqrt(ind2);
-                        const scalar_t invInd = scalar_t(1) / (ind + static_cast<scalar_t>(1e-9));
+                            const scalar_t ind2 = gxv * gxv + gyv * gyv + gzv * gzv;
+                            const scalar_t invInd = static_cast<scalar_t>(1) / (sqrtf(ind2) + static_cast<scalar_t>(1e-9));
 
-                        sh_nx[iz][iy][ix] = gxv * invInd;
-                        sh_ny[iz][iy][ix] = gyv * invInd;
-                        sh_nz[iz][iy][ix] = gzv * invInd;
-
-                        if (ix == tx + 1 && iy == ty + 1 && iz == tz + 1)
-                        {
-                            ind_ = ind;
+                            shared_normx[iz][iy][ix] = gxv * invInd;
+                            shared_normy[iz][iy][ix] = gyv * invInd;
+                            shared_normz[iz][iy][ix] = gzv * invInd;
                         }
                     }
                 }
-            }
 
-            __syncthreads();
+                __syncthreads();
 
-            const bool curvInterior1 =
-                (x >= 1 && x <= device::nx - 2) &&
-                (y >= 1 && y <= device::ny - 2) &&
-                (z >= 1 && z <= device::nz - 2);
+                // ------------------------------------------------------------
+                // Curvature + force for this thread (all threads in this block are bulk by construction).
+                // ind_ is scalar (not shared).
+                // ------------------------------------------------------------
+                {
+                    const label_t ix = threadIdx.x + 1;
+                    const label_t iy = threadIdx.y + 1;
+                    const label_t iz = threadIdx.z + 1;
 
-            if (curvInterior1)
-            {
-                const int ix = tx + 1;
-                const int iy = ty + 1;
-                const int iz = tz + 1;
+                    normx_ = shared_normx[iz][iy][ix];
+                    normy_ = shared_normy[iz][iy][ix];
+                    normz_ = shared_normz[iz][iy][ix];
 
-                normx_ = sh_nx[iz][iy][ix];
-                normy_ = sh_ny[iz][iy][ix];
-                normz_ = sh_nz[iz][iy][ix];
+                    const scalar_t scx =
+                        VelocitySet::w_1<scalar_t>() * (shared_normx[iz][iy][ix + 1] - shared_normx[iz][iy][ix - 1]) +
+                        VelocitySet::w_2<scalar_t>() * (shared_normx[iz][iy + 1][ix + 1] - shared_normx[iz][iy - 1][ix - 1] +
+                                                        shared_normx[iz + 1][iy][ix + 1] - shared_normx[iz - 1][iy][ix - 1] +
+                                                        shared_normx[iz][iy - 1][ix + 1] - shared_normx[iz][iy + 1][ix - 1] +
+                                                        shared_normx[iz - 1][iy][ix + 1] - shared_normx[iz + 1][iy][ix - 1]);
 
-                const scalar_t scx =
-                    VelocitySet::w_1<scalar_t>() * (sh_nx[iz][iy][ix + 1] - sh_nx[iz][iy][ix - 1]) +
-                    VelocitySet::w_2<scalar_t>() * (sh_nx[iz][iy + 1][ix + 1] - sh_nx[iz][iy - 1][ix - 1] +
-                                                    sh_nx[iz + 1][iy][ix + 1] - sh_nx[iz - 1][iy][ix - 1] +
-                                                    sh_nx[iz][iy - 1][ix + 1] - sh_nx[iz][iy + 1][ix - 1] +
-                                                    sh_nx[iz - 1][iy][ix + 1] - sh_nx[iz + 1][iy][ix - 1]);
+                    const scalar_t scy =
+                        VelocitySet::w_1<scalar_t>() * (shared_normy[iz][iy + 1][ix] - shared_normy[iz][iy - 1][ix]) +
+                        VelocitySet::w_2<scalar_t>() * (shared_normy[iz][iy + 1][ix + 1] - shared_normy[iz][iy - 1][ix - 1] +
+                                                        shared_normy[iz + 1][iy + 1][ix] - shared_normy[iz - 1][iy - 1][ix] +
+                                                        shared_normy[iz][iy + 1][ix - 1] - shared_normy[iz][iy - 1][ix + 1] +
+                                                        shared_normy[iz - 1][iy + 1][ix] - shared_normy[iz + 1][iy - 1][ix]);
 
-                const scalar_t scy =
-                    VelocitySet::w_1<scalar_t>() * (sh_ny[iz][iy + 1][ix] - sh_ny[iz][iy - 1][ix]) +
-                    VelocitySet::w_2<scalar_t>() * (sh_ny[iz][iy + 1][ix + 1] - sh_ny[iz][iy - 1][ix - 1] +
-                                                    sh_ny[iz + 1][iy + 1][ix] - sh_ny[iz - 1][iy - 1][ix] +
-                                                    sh_ny[iz][iy + 1][ix - 1] - sh_ny[iz][iy - 1][ix + 1] +
-                                                    sh_ny[iz - 1][iy + 1][ix] - sh_ny[iz + 1][iy - 1][ix]);
+                    const scalar_t scz =
+                        VelocitySet::w_1<scalar_t>() * (shared_normz[iz + 1][iy][ix] - shared_normz[iz - 1][iy][ix]) +
+                        VelocitySet::w_2<scalar_t>() * (shared_normz[iz + 1][iy][ix + 1] - shared_normz[iz - 1][iy][ix - 1] +
+                                                        shared_normz[iz + 1][iy + 1][ix] - shared_normz[iz - 1][iy - 1][ix] +
+                                                        shared_normz[iz + 1][iy][ix - 1] - shared_normz[iz - 1][iy][ix + 1] +
+                                                        shared_normz[iz + 1][iy - 1][ix] - shared_normz[iz - 1][iy + 1][ix]);
 
-                const scalar_t scz =
-                    VelocitySet::w_1<scalar_t>() * (sh_nz[iz + 1][iy][ix] - sh_nz[iz - 1][iy][ix]) +
-                    VelocitySet::w_2<scalar_t>() * (sh_nz[iz + 1][iy][ix + 1] - sh_nz[iz - 1][iy][ix - 1] +
-                                                    sh_nz[iz + 1][iy + 1][ix] - sh_nz[iz - 1][iy - 1][ix] +
-                                                    sh_nz[iz + 1][iy][ix - 1] - sh_nz[iz - 1][iy][ix + 1] +
-                                                    sh_nz[iz + 1][iy - 1][ix] - sh_nz[iz - 1][iy + 1][ix]);
+                    const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
 
-                const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
+                    // ind_ as scalar: compute |grad(phi)| at cell center from shared phi.
+                    {
+                        const label_t cx = threadIdx.x + 2;
+                        const label_t cy = threadIdx.y + 2;
+                        const label_t cz = threadIdx.z + 2;
 
-                const scalar_t stCurv = -device::sigma * curvature * ind_;
+                        const scalar_t sgx =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[cz][cy][cx + 1] - sh_phi[cz][cy][cx - 1]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[cz][cy + 1][cx + 1] - sh_phi[cz][cy - 1][cx - 1] +
+                                                            sh_phi[cz + 1][cy][cx + 1] - sh_phi[cz - 1][cy][cx - 1] +
+                                                            sh_phi[cz][cy - 1][cx + 1] - sh_phi[cz][cy + 1][cx - 1] +
+                                                            sh_phi[cz - 1][cy][cx + 1] - sh_phi[cz + 1][cy][cx - 1]);
 
-                ffx_ = stCurv * normx_;
-                ffy_ = stCurv * normy_;
-                ffz_ = stCurv * normz_;
-            }
-            else
-            {
-                ffx_ = static_cast<scalar_t>(0);
-                ffy_ = static_cast<scalar_t>(0);
-                ffz_ = static_cast<scalar_t>(0);
-                normx_ = static_cast<scalar_t>(0);
-                normy_ = static_cast<scalar_t>(0);
-                normz_ = static_cast<scalar_t>(0);
+                        const scalar_t sgy =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[cz][cy + 1][cx] - sh_phi[cz][cy - 1][cx]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[cz][cy + 1][cx + 1] - sh_phi[cz][cy - 1][cx - 1] +
+                                                            sh_phi[cz + 1][cy + 1][cx] - sh_phi[cz - 1][cy - 1][cx] +
+                                                            sh_phi[cz][cy + 1][cx - 1] - sh_phi[cz][cy - 1][cx + 1] +
+                                                            sh_phi[cz - 1][cy + 1][cx] - sh_phi[cz + 1][cy - 1][cx]);
+
+                        const scalar_t sgz =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[cz + 1][cy][cx] - sh_phi[cz - 1][cy][cx]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[cz + 1][cy][cx + 1] - sh_phi[cz - 1][cy][cx - 1] +
+                                                            sh_phi[cz + 1][cy + 1][cx] - sh_phi[cz - 1][cy - 1][cx] +
+                                                            sh_phi[cz + 1][cy][cx - 1] - sh_phi[cz - 1][cy][cx + 1] +
+                                                            sh_phi[cz + 1][cy - 1][cx] - sh_phi[cz - 1][cy + 1][cx]);
+
+                        const scalar_t gxv = velocitySet::as2<scalar_t>() * sgx;
+                        const scalar_t gyv = velocitySet::as2<scalar_t>() * sgy;
+                        const scalar_t gzv = velocitySet::as2<scalar_t>() * sgz;
+
+                        ind_ = sqrtf(gxv * gxv + gyv * gyv + gzv * gzv);
+                    }
+
+                    const scalar_t stCurv = -device::sigma * curvature * ind_;
+
+                    ffx_ = stCurv * normx_;
+                    ffy_ = stCurv * normy_;
+                    ffz_ = stCurv * normz_;
+                }
             }
         }
 
@@ -575,7 +557,7 @@ namespace LBM
         // Gather current phase field state
         const scalar_t phi_ = moments[m_i<10>()];
 
-        // Add sharpening (compressive term) on g-populations
+        // Add sharpening (compressive term)
         PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory

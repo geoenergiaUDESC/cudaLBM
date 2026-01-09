@@ -17,13 +17,13 @@ We              500;
 
 u_inf           0.016;
 
-L_char          20;
+L_char          10;
 
 startFrom       latestTime;
 
 startTime       0;
 
-nTimeSteps      300001;
+nTimeSteps      10001;
 
 saveInterval    1000;
 

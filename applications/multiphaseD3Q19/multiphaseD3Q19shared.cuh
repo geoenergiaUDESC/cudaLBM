@@ -75,6 +75,7 @@ namespace LBM
     using PhaseVelocitySet = D3Q7;
     using Collision = secondOrder;
 
+    // Aliases use the standard halo methods
     using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
     using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
@@ -98,16 +99,14 @@ namespace LBM
      * @param normx Pointer to x-component of the unit interface normal
      * @param normy Pointer to y-component of the unit interface normal
      * @param normz Pointer to z-component of the unit interface normal
-     * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
-     * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @param fBlockHalo Object containing pointers to the individual block halo faces used to exchange the hydrodynamic population densities
+     * @param gBlockHalo Object containing pointers to the individual block halo faces used to exchange the phase population densities
      * @note Currently only immutable halos are used due to kernel split
      **/
     launchBoundsD3Q19 __global__ void multiphaseStream(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const device::ptrCollection<6, const scalar_t> fGhostHydro,
-        const device::ptrCollection<6, scalar_t> gGhostHydro,
-        const device::ptrCollection<6, const scalar_t> fGhostPhase,
-        const device::ptrCollection<6, scalar_t> gGhostPhase)
+        const device::ptrCollection<6, const scalar_t> ghostHydro,
+        const device::ptrCollection<6, const scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -267,10 +266,10 @@ namespace LBM
         }
 
         // Load hydro pop from global memory in cover nodes
-        HydroHalo::load(pop, fGhostHydro);
+        HydroHalo::load(pop, ghostHydro);
 
         // Load phase pop from global memory in cover nodes
-        PhaseHalo::load(pop_g, fGhostPhase);
+        PhaseHalo::load(pop_g, ghostPhase);
 
         // Compute post-stream moments
         velocitySet::calculate_moments<VelocitySet>(pop, moments);
@@ -309,16 +308,14 @@ namespace LBM
     /**
      * @brief Performs the collision step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
-     * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
-     * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @param fBlockHalo Object containing pointers to the individual block halo faces used to exchange the hydrodynamic population densities
+     * @param gBlockHalo Object containing pointers to the individual block halo faces used to exchange the phase population densities
      * @note Currently only immutable halos are used due to kernel split
      **/
     launchBoundsD3Q19 __global__ void multiphaseCollide(
         const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
-        const device::ptrCollection<6, const scalar_t> fGhostHydro,
-        const device::ptrCollection<6, scalar_t> gGhostHydro,
-        const device::ptrCollection<6, const scalar_t> fGhostPhase,
-        const device::ptrCollection<6, scalar_t> gGhostPhase)
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -597,10 +594,10 @@ namespace LBM
             });
 
         // Save the hydro populations to the block halo
-        HydroHalo::save(pop, gGhostHydro);
+        HydroHalo::save(pop, ghostHydro);
 
         // Save the phase populations to the block halo
-        PhaseHalo::save(pop_g, gGhostPhase);
+        PhaseHalo::save(pop_g, ghostPhase);
     }
 }
 

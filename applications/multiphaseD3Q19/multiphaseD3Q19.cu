@@ -47,7 +47,7 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#define MULTIPHASE_GLOBAL
+// #define MULTIPHASE_GLOBAL
 
 #if defined(MULTIPHASE_GLOBAL)
 #include "multiphaseD3Q19global.cuh" // Uses four extra global pointers
@@ -125,8 +125,8 @@ int main(const int argc, const char *const argv[])
 
     objectRegistry<VelocitySet, NStreams()> runTimeObjects(mesh, hydroPtrs, streamsLBM);
 
-    device::halo<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
-    device::halo<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
+    device::haloSingle<VelocitySet, config::periodicX, config::periodicY> fBlockHalo(mesh, programCtrl);      // Hydrodynamic halo
+    device::haloSingle<PhaseVelocitySet, config::periodicX, config::periodicY> gBlockHalo(mesh, programCtrl); // Phase field halo
 
     kernelSetup<smem_alloc_size()>(multiphaseStream);
 
@@ -160,35 +160,31 @@ int main(const int argc, const char *const argv[])
 #if defined(MULTIPHASE_GLOBAL)
                 multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.ghostConst(),
+                    gBlockHalo.ghostConst());
 
                 computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
 
                 multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     devPtrs, normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(),
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.ghost(),
+                    gBlockHalo.ghost());
 #else
                 multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.ghostConst(),
+                    gBlockHalo.ghostConst());
 
                 multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
                     devPtrs,
-                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
-                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+                    fBlockHalo.ghost(),
+                    gBlockHalo.ghost());
 #endif
             });
 
         // Calculate S kernel
         runTimeObjects.calculate(timeStep);
-
-        // Halo pointer swap
-        fBlockHalo.swap();
-        gBlockHalo.swap();
     }
 
     return 0;

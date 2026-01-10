@@ -188,12 +188,12 @@ namespace LBM
             /**
              * @brief Names of the solution variables
              **/
-            const std::string &name_;
+            std::string name_;
 
             /**
              * @brief Reference to the mesh
              **/
-            const host::latticeMesh &mesh_;
+            host::latticeMesh mesh_;
 
             /**
              * @brief Copies the underlying std::vector of a host::array type to the device

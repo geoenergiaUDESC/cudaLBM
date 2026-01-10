@@ -74,6 +74,7 @@ namespace LBM
     using PhaseVelocitySet = D3Q7;
     using Collision = secondOrder;
 
+    // Aliases use the standard halo methods
     using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
     using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
 
@@ -106,10 +107,8 @@ namespace LBM
         const scalar_t *const ptrRestrict normx,
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
-        const device::ptrCollection<6, const scalar_t> fGhostHydro,
-        const device::ptrCollection<6, scalar_t> gGhostHydro,
-        const device::ptrCollection<6, const scalar_t> fGhostPhase,
-        const device::ptrCollection<6, scalar_t> gGhostPhase)
+        const device::ptrCollection<6, const scalar_t> ghostHydro,
+        const device::ptrCollection<6, const scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -182,10 +181,10 @@ namespace LBM
         }
 
         // Load hydro pop from global memory in cover nodes
-        HydroHalo::load(pop, fGhostHydro);
+        HydroHalo::load(pop, ghostHydro);
 
         // Load phase pop from global memory in cover nodes
-        PhaseHalo::load(pop_g, fGhostPhase);
+        PhaseHalo::load(pop_g, ghostPhase);
 
         // Compute post-stream moments
         velocitySet::calculate_moments<VelocitySet>(pop, moments);
@@ -341,10 +340,8 @@ namespace LBM
         const scalar_t *const ptrRestrict normy,
         const scalar_t *const ptrRestrict normz,
         const scalar_t *const ptrRestrict ind,
-        const device::ptrCollection<6, const scalar_t> fGhostHydro,
-        const device::ptrCollection<6, scalar_t> gGhostHydro,
-        const device::ptrCollection<6, const scalar_t> fGhostPhase,
-        const device::ptrCollection<6, scalar_t> gGhostPhase)
+        const device::ptrCollection<6, scalar_t> ghostHydro,
+        const device::ptrCollection<6, scalar_t> ghostPhase)
     {
         // Always a multiple of 32, so no need to check this(I think)
         if constexpr (out_of_bounds_check())
@@ -490,10 +487,10 @@ namespace LBM
             });
 
         // Save the hydro populations to the block halo
-        HydroHalo::save(pop, gGhostHydro);
+        HydroHalo::save(pop, ghostHydro);
 
         // Save the phase populations to the block halo
-        PhaseHalo::save(pop_g, gGhostPhase);
+        PhaseHalo::save(pop_g, ghostPhase);
     }
 }
 

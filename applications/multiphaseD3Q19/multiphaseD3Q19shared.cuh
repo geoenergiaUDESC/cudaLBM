@@ -137,32 +137,26 @@ namespace LBM
 
         if (isInterior)
         {
-            // In-block strides
-            const label_t stride_x = static_cast<label_t>(1);
-            const label_t stride_y = block::nx();
-            const label_t stride_z = block::nx() * block::ny();
-
             // Block volume and block-to-block strides
-            const label_t stride_bx = block::size();
             const label_t stride_by = block::size() * gridDim.x;
             const label_t stride_bz = block::size() * gridDim.x * gridDim.y;
 
             // Wraps for when crossing a block face
-            const label_t wrap_x = stride_bx - (block::nx() - static_cast<label_t>(1)) * stride_x;
-            const label_t wrap_y = stride_by - (block::ny() - static_cast<label_t>(1)) * stride_y;
-            const label_t wrap_z = stride_bz - (block::nz() - static_cast<label_t>(1)) * stride_z;
+            const label_t wrap_x = block::size() - (block::nx() - static_cast<label_t>(1)) * static_cast<label_t>(1);
+            const label_t wrap_y = stride_by - (block::ny() - static_cast<label_t>(1)) * block::nx();
+            const label_t wrap_z = stride_bz - (block::nz() - static_cast<label_t>(1)) * block::stride_z();
 
             // +/-1 deltas in each direction, corrected when crossing block boundaries
-            const label_t dxp = (threadIdx.x == (block::nx() - static_cast<label_t>(1))) ? wrap_x : stride_x;
-            const label_t dxm = (threadIdx.x == static_cast<label_t>(0)) ? wrap_x : stride_x;
+            const label_t dxp = (threadIdx.x == (block::nx() - static_cast<label_t>(1))) ? wrap_x : static_cast<label_t>(1);
+            const label_t dxm = (threadIdx.x == static_cast<label_t>(0)) ? wrap_x : static_cast<label_t>(1);
 
-            const label_t dyp = (threadIdx.y == (block::ny() - static_cast<label_t>(1))) ? wrap_y : stride_y;
-            const label_t dym = (threadIdx.y == static_cast<label_t>(0)) ? wrap_y : stride_y;
+            const label_t dyp = (threadIdx.y == (block::ny() - static_cast<label_t>(1))) ? wrap_y : block::nx();
+            const label_t dym = (threadIdx.y == static_cast<label_t>(0)) ? wrap_y : block::nx();
 
-            const label_t dzp = (threadIdx.z == (block::nz() - static_cast<label_t>(1))) ? wrap_z : stride_z;
-            const label_t dzm = (threadIdx.z == static_cast<label_t>(0)) ? wrap_z : stride_z;
+            const label_t dzp = (threadIdx.z == (block::nz() - static_cast<label_t>(1))) ? wrap_z : block::stride_z();
+            const label_t dzm = (threadIdx.z == static_cast<label_t>(0)) ? wrap_z : block::stride_z();
 
-            // Axis neighbors
+            // Axis neighbors (diagonals can be constructed from them)
             const label_t i_xp = idx + dxp;
             const label_t i_xm = idx - dxm;
             const label_t i_yp = idx + dyp;
@@ -170,37 +164,19 @@ namespace LBM
             const label_t i_zp = idx + dzp;
             const label_t i_zm = idx - dzm;
 
-            // Diagonal neighbors
-            const label_t i_xp_yp = i_xp + dyp; // (x+1,y+1,z)
-            const label_t i_xp_ym = i_xp - dym; // (x+1,y-1,z)
-            const label_t i_xm_yp = i_xm + dyp; // (x-1,y+1,z)
-            const label_t i_xm_ym = i_xm - dym; // (x-1,y-1,z)
-
-            const label_t i_xp_zp = i_xp + dzp; // (x+1,y,z+1)
-            const label_t i_xp_zm = i_xp - dzm; // (x+1,y,z-1)
-            const label_t i_xm_zp = i_xm + dzp; // (x-1,y,z+1)
-            const label_t i_xm_zm = i_xm - dzm; // (x-1,y,z-1)
-
-            const label_t i_yp_zp = i_yp + dzp; // (x,y+1,z+1)
-            const label_t i_yp_zm = i_yp - dzm; // (x,y+1,z-1)
-            const label_t i_ym_zp = i_ym + dzp; // (x,y-1,z+1)
-            const label_t i_ym_zm = i_ym - dzm; // (x,y-1,z-1)
-
             // Load the neighbor phi values
-            const scalar_t phi_xp1_yp1_z = phi[i_xp_yp];
-            const scalar_t phi_xp1_ym1_z = phi[i_xp_ym];
-            const scalar_t phi_xm1_yp1_z = phi[i_xm_yp];
-            const scalar_t phi_xm1_ym1_z = phi[i_xm_ym];
-
-            const scalar_t phi_xp1_y_zp1 = phi[i_xp_zp];
-            const scalar_t phi_xp1_y_zm1 = phi[i_xp_zm];
-            const scalar_t phi_xm1_y_zp1 = phi[i_xm_zp];
-            const scalar_t phi_xm1_y_zm1 = phi[i_xm_zm];
-
-            const scalar_t phi_x_yp1_zp1 = phi[i_yp_zp];
-            const scalar_t phi_x_yp1_zm1 = phi[i_yp_zm];
-            const scalar_t phi_x_ym1_zp1 = phi[i_ym_zp];
-            const scalar_t phi_x_ym1_zm1 = phi[i_ym_zm];
+            const scalar_t phi_xp1_yp1_z = phi[i_xp + dyp];
+            const scalar_t phi_xp1_ym1_z = phi[i_xp - dym];
+            const scalar_t phi_xm1_yp1_z = phi[i_xm + dyp];
+            const scalar_t phi_xm1_ym1_z = phi[i_xm - dym];
+            const scalar_t phi_xp1_y_zp1 = phi[i_xp + dzp];
+            const scalar_t phi_xp1_y_zm1 = phi[i_xp - dzm];
+            const scalar_t phi_xm1_y_zp1 = phi[i_xm + dzp];
+            const scalar_t phi_xm1_y_zm1 = phi[i_xm - dzm];
+            const scalar_t phi_x_yp1_zp1 = phi[i_yp + dzp];
+            const scalar_t phi_x_yp1_zm1 = phi[i_yp - dzm];
+            const scalar_t phi_x_ym1_zp1 = phi[i_ym + dzp];
+            const scalar_t phi_x_ym1_zm1 = phi[i_ym - dzm];
 
             const scalar_t sgx =
                 VelocitySet::w_1<scalar_t>() * (phi[i_xp] - phi[i_xm]) +

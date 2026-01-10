@@ -1,0 +1,631 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins, Breno Gemelgo (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Main kernels for the multiphase moment representation with the D3Q19 velocity set
+
+Namespace
+    LBM
+
+SourceFiles
+    multiphaseD3Q19shared.cuh
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef __MBLBM_MULTIPHASED3Q19_CUH
+#define __MBLBM_MULTIPHASED3Q19_CUH
+
+#include "../../src/LBMIncludes.cuh"
+#include "../../src/LBMTypedefs.cuh"
+#include "../../src/streaming/streaming.cuh"
+#include "../../src/collision/collision.cuh"
+#include "../../src/blockHalo/blockHalo.cuh"
+#include "../../src/fileIO/fileIO.cuh"
+#include "../../src/runTimeIO/runTimeIO.cuh"
+#include "../../src/functionObjects/objectRegistry.cuh"
+
+#include <cooperative_groups.h>
+namespace cg = cooperative_groups;
+
+namespace config
+{
+    constexpr bool periodicX = true;
+    constexpr bool periodicY = true;
+}
+
+namespace LBM
+{
+
+    using VelocitySet = D3Q19;
+    using PhaseVelocitySet = D3Q7;
+    using Collision = secondOrder;
+
+    using HydroHalo = device::halo<VelocitySet, config::periodicX, config::periodicY>;
+    using PhaseHalo = device::halo<PhaseVelocitySet, config::periodicX, config::periodicY>;
+
+    __device__ __host__ [[nodiscard]] inline consteval label_t smem_alloc_size() noexcept { return block::sharedMemoryBufferSize<VelocitySet, 11>(sizeof(scalar_t)); }
+
+    __device__ __host__ [[nodiscard]] inline consteval bool out_of_bounds_check() noexcept
+    {
+#ifdef OOB_CHECK
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    __host__ [[nodiscard]] inline consteval label_t MIN_BLOCKS_PER_MP() noexcept { return 2; }
+#define launchBoundsD3Q19 __launch_bounds__(block::maxThreads(), MIN_BLOCKS_PER_MP())
+
+    /**
+     * @brief Performs the streaming step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
+     * @param devPtrs Collection of 11 pointers to device arrays on the GPU
+     * @param normx Pointer to x-component of the unit interface normal
+     * @param normy Pointer to y-component of the unit interface normal
+     * @param normz Pointer to z-component of the unit interface normal
+     * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
+     * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @note Currently only immutable halos are used due to kernel split
+     **/
+    launchBoundsD3Q19 __global__ void multiphaseStream(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
+    {
+        // Always a multiple of 32, so no need to check this(I think)
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
+
+        const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+        const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+        const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+        const bool isInterior =
+            (x > 0) & (x < device::nx - 1) &
+            (y > 0) & (y < device::ny - 1) &
+            (z > 0) & (z < device::nz - 1);
+
+        const label_t idx = device::idx();
+
+        scalar_t normx_ = static_cast<scalar_t>(0);
+        scalar_t normy_ = static_cast<scalar_t>(0);
+        scalar_t normz_ = static_cast<scalar_t>(0);
+
+        const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
+
+        if (isInterior)
+        {
+            // In-block strides
+            const label_t stride_x = static_cast<label_t>(1);
+            const label_t stride_y = block::nx();
+            const label_t stride_z = block::nx() * block::ny();
+
+            // Block volume and block-to-block strides
+            const label_t stride_bx = block::size();
+            const label_t stride_by = block::size() * gridDim.x;
+            const label_t stride_bz = block::size() * gridDim.x * gridDim.y;
+
+            // Wraps for when crossing a block face
+            const label_t wrap_x = stride_bx - (block::nx() - static_cast<label_t>(1)) * stride_x;
+            const label_t wrap_y = stride_by - (block::ny() - static_cast<label_t>(1)) * stride_y;
+            const label_t wrap_z = stride_bz - (block::nz() - static_cast<label_t>(1)) * stride_z;
+
+            // +/-1 deltas in each direction, corrected when crossing block boundaries
+            const label_t dxp = (threadIdx.x == (block::nx() - static_cast<label_t>(1))) ? wrap_x : stride_x;
+            const label_t dxm = (threadIdx.x == static_cast<label_t>(0)) ? wrap_x : stride_x;
+
+            const label_t dyp = (threadIdx.y == (block::ny() - static_cast<label_t>(1))) ? wrap_y : stride_y;
+            const label_t dym = (threadIdx.y == static_cast<label_t>(0)) ? wrap_y : stride_y;
+
+            const label_t dzp = (threadIdx.z == (block::nz() - static_cast<label_t>(1))) ? wrap_z : stride_z;
+            const label_t dzm = (threadIdx.z == static_cast<label_t>(0)) ? wrap_z : stride_z;
+
+            // Axis neighbors
+            const label_t i_xp = idx + dxp;
+            const label_t i_xm = idx - dxm;
+            const label_t i_yp = idx + dyp;
+            const label_t i_ym = idx - dym;
+            const label_t i_zp = idx + dzp;
+            const label_t i_zm = idx - dzm;
+
+            // Diagonal neighbors
+            const label_t i_xp_yp = i_xp + dyp; // (x+1,y+1,z)
+            const label_t i_xp_ym = i_xp - dym; // (x+1,y-1,z)
+            const label_t i_xm_yp = i_xm + dyp; // (x-1,y+1,z)
+            const label_t i_xm_ym = i_xm - dym; // (x-1,y-1,z)
+
+            const label_t i_xp_zp = i_xp + dzp; // (x+1,y,z+1)
+            const label_t i_xp_zm = i_xp - dzm; // (x+1,y,z-1)
+            const label_t i_xm_zp = i_xm + dzp; // (x-1,y,z+1)
+            const label_t i_xm_zm = i_xm - dzm; // (x-1,y,z-1)
+
+            const label_t i_yp_zp = i_yp + dzp; // (x,y+1,z+1)
+            const label_t i_yp_zm = i_yp - dzm; // (x,y+1,z-1)
+            const label_t i_ym_zp = i_ym + dzp; // (x,y-1,z+1)
+            const label_t i_ym_zm = i_ym - dzm; // (x,y-1,z-1)
+
+            // Load the neighbor phi values
+            const scalar_t phi_xp1_yp1_z = phi[i_xp_yp];
+            const scalar_t phi_xp1_ym1_z = phi[i_xp_ym];
+            const scalar_t phi_xm1_yp1_z = phi[i_xm_yp];
+            const scalar_t phi_xm1_ym1_z = phi[i_xm_ym];
+
+            const scalar_t phi_xp1_y_zp1 = phi[i_xp_zp];
+            const scalar_t phi_xp1_y_zm1 = phi[i_xp_zm];
+            const scalar_t phi_xm1_y_zp1 = phi[i_xm_zp];
+            const scalar_t phi_xm1_y_zm1 = phi[i_xm_zm];
+
+            const scalar_t phi_x_yp1_zp1 = phi[i_yp_zp];
+            const scalar_t phi_x_yp1_zm1 = phi[i_yp_zm];
+            const scalar_t phi_x_ym1_zp1 = phi[i_ym_zp];
+            const scalar_t phi_x_ym1_zm1 = phi[i_ym_zm];
+
+            const scalar_t sgx =
+                VelocitySet::w_1<scalar_t>() * (phi[i_xp] - phi[i_xm]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                phi_xp1_ym1_z - phi_xm1_yp1_z +
+                                                phi_xp1_y_zm1 - phi_xm1_y_zp1);
+
+            const scalar_t sgy =
+                VelocitySet::w_1<scalar_t>() * (phi[i_yp] - phi[i_ym]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_yp1_z - phi_xm1_ym1_z +
+                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                phi_xm1_yp1_z - phi_xp1_ym1_z +
+                                                phi_x_yp1_zm1 - phi_x_ym1_zp1);
+
+            const scalar_t sgz =
+                VelocitySet::w_1<scalar_t>() * (phi[i_zp] - phi[i_zm]) +
+                VelocitySet::w_2<scalar_t>() * (phi_xp1_y_zp1 - phi_xm1_y_zm1 +
+                                                phi_x_yp1_zp1 - phi_x_ym1_zm1 +
+                                                phi_xm1_y_zp1 - phi_xp1_y_zm1 +
+                                                phi_x_ym1_zp1 - phi_x_yp1_zm1);
+
+            const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
+            const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
+            const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
+
+            const scalar_t ind_ = sqrtf(gx * gx + gy * gy + gz * gz);
+            const scalar_t invInd = static_cast<scalar_t>(1) / (ind_ + static_cast<scalar_t>(1e-9));
+
+            normx_ = gx * invInd;
+            normy_ = gy * invInd;
+            normz_ = gz * invInd;
+        }
+
+        // Prefetch devPtrs into L2
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
+        // Declare shared memory
+        extern __shared__ scalar_t shared_buffer[];
+        __shared__ scalar_t shared_buffer_g[(PhaseVelocitySet::Q() - 1) * block::stride()];
+
+        const label_t tid = device::idxBlock();
+
+        // Coalesced read from global memory
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
+                shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
+                if constexpr (moment == index::rho())
+                {
+                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = shared_buffer[ID];
+                }
+            });
+
+        __syncthreads();
+
+        // Reconstruct the populations from the moments
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
+
+        // Gather current phase field state
+        const scalar_t phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
+
+        // Save/pull from shared memory
+        {
+            // Save populations in shared memory
+            streaming::save<VelocitySet>(pop, shared_buffer, tid);
+            streaming::save<PhaseVelocitySet>(pop_g, shared_buffer_g, tid);
+
+            __syncthreads();
+
+            // Pull from shared memory
+            streaming::pull<VelocitySet>(pop, shared_buffer);
+            streaming::phase_pull(pop_g, shared_buffer_g);
+        }
+
+        // Load hydro pop from global memory in cover nodes
+        HydroHalo::load(pop, fGhostHydro);
+
+        // Load phase pop from global memory in cover nodes
+        PhaseHalo::load(pop_g, fGhostPhase);
+
+        // Compute post-stream moments
+        velocitySet::calculate_moments<VelocitySet>(pop, moments);
+        PhaseVelocitySet::calculate_phi(pop_g, moments);
+        {
+            // Update the shared buffer with the refreshed moments
+            device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+                [&](const auto moment)
+                {
+                    const label_t ID = tid * label_constant<NUMBER_MOMENTS<true>() + 1>() + label_constant<moment>();
+                    shared_buffer[ID] = moments[moment];
+                });
+        }
+
+        __syncthreads();
+
+        // Calculate the moments at the boundary
+        {
+            const normalVector boundaryNormal;
+
+            if (boundaryNormal.isBoundary())
+            {
+                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+            }
+        }
+
+        // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments[moment];
+            });
+    }
+
+    /**
+     * @brief Performs the collision step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
+     * @param devPtrs Collection of 11 pointers to device arrays on the GPU
+     * @param fBlockHalo Object containing pointers to the block halo faces used to exchange the hydrodynamic population densities
+     * @param gBlockHalo Object containing pointers to the block halo faces used to exchange the phase population densities
+     * @note Currently only immutable halos are used due to kernel split
+     **/
+    launchBoundsD3Q19 __global__ void multiphaseCollide(
+        const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs,
+        const device::ptrCollection<6, const scalar_t> fGhostHydro,
+        const device::ptrCollection<6, scalar_t> gGhostHydro,
+        const device::ptrCollection<6, const scalar_t> fGhostPhase,
+        const device::ptrCollection<6, scalar_t> gGhostPhase)
+    {
+        // Always a multiple of 32, so no need to check this(I think)
+        if constexpr (out_of_bounds_check())
+        {
+            if (device::out_of_bounds())
+            {
+                return;
+            }
+        }
+
+        const label_t idx = device::idx();
+
+        scalar_t ffx_ = static_cast<scalar_t>(0);
+        scalar_t ffy_ = static_cast<scalar_t>(0);
+        scalar_t ffz_ = static_cast<scalar_t>(0);
+        scalar_t normx_ = static_cast<scalar_t>(0);
+        scalar_t normy_ = static_cast<scalar_t>(0);
+        scalar_t normz_ = static_cast<scalar_t>(0);
+        scalar_t ind_ = static_cast<scalar_t>(0);
+        {
+            __shared__ scalar_t sh_phi[block::nz() + 4][block::ny() + 4][block::nx() + 4];
+            __shared__ scalar_t sh_nx[block::nz() + 2][block::ny() + 2][block::nx() + 2];
+            __shared__ scalar_t sh_ny[block::nz() + 2][block::ny() + 2][block::nx() + 2];
+            __shared__ scalar_t sh_nz[block::nz() + 2][block::ny() + 2][block::nx() + 2];
+
+            const label_t x = threadIdx.x + block::nx() * blockIdx.x;
+            const label_t y = threadIdx.y + block::ny() * blockIdx.y;
+            const label_t z = threadIdx.z + block::nz() * blockIdx.z;
+
+            const label_t x0 = blockIdx.x * block::nx();
+            const label_t y0 = blockIdx.y * block::ny();
+            const label_t z0 = blockIdx.z * block::nz();
+
+            auto in_domain = [&](label_t global_x, label_t global_y, label_t global_z) -> bool
+            {
+                return global_x < device::nx &&
+                       global_y < device::ny &&
+                       global_z < device::nz;
+            };
+
+            auto gidx = [&](label_t global_x, label_t global_y, label_t global_z) -> label_t
+            {
+                return device::idxGlobalFromIdx(global_x, global_y, global_z);
+            };
+
+            const scalar_t *const ptrRestrict phi = devPtrs.ptr<10>();
+
+            for (label_t pz = threadIdx.z; pz < block::nz() + 4; pz += block::nz())
+            {
+                const label_t global_z = z0 + pz - 2;
+
+                for (label_t py = threadIdx.y; py < block::ny() + 4; py += block::ny())
+                {
+                    const label_t global_y = y0 + py - 2;
+
+                    for (label_t px = threadIdx.x; px < block::nx() + 4; px += block::nx())
+                    {
+                        const label_t global_x = x0 + px - 2;
+
+                        sh_phi[pz][py][px] = in_domain(global_x, global_y, global_z) ? phi[gidx(global_x, global_y, global_z)] : static_cast<scalar_t>(0);
+                    }
+                }
+            }
+
+            __syncthreads();
+
+            for (label_t iz = threadIdx.z; iz < block::nz() + 2; iz += block::nz())
+            {
+                const label_t global_z = z0 + iz - 1;
+                const label_t pz = iz + 1;
+
+                for (label_t iy = threadIdx.y; iy < block::ny() + 2; iy += block::ny())
+                {
+                    const label_t global_y = y0 + iy - 1;
+                    const label_t py = iy + 1;
+
+                    for (label_t ix = threadIdx.x; ix < block::nx() + 2; ix += block::nx())
+                    {
+                        const label_t global_x = x0 + ix - 1;
+                        const label_t px = ix + 1;
+
+                        if (!in_domain(global_x, global_y, global_z))
+                        {
+                            sh_nx[iz][iy][ix] = static_cast<scalar_t>(0);
+                            sh_ny[iz][iy][ix] = static_cast<scalar_t>(0);
+                            sh_nz[iz][iy][ix] = static_cast<scalar_t>(0);
+
+                            continue;
+                        }
+
+                        const bool isBoundary =
+                            (global_x == 0) || (global_x == device::nx - 1) ||
+                            (global_y == 0) || (global_y == device::ny - 1) ||
+                            (global_z == 0) || (global_z == device::nz - 1);
+
+                        if (isBoundary)
+                        {
+                            sh_nx[iz][iy][ix] = static_cast<scalar_t>(0);
+                            sh_ny[iz][iy][ix] = static_cast<scalar_t>(0);
+                            sh_nz[iz][iy][ix] = static_cast<scalar_t>(0);
+
+                            continue;
+                        }
+
+                        const scalar_t sgx =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                            sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                            sh_phi[pz][py - 1][px + 1] - sh_phi[pz][py + 1][px - 1] +
+                                                            sh_phi[pz - 1][py][px + 1] - sh_phi[pz + 1][py][px - 1]);
+
+                        const scalar_t sgy =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                            sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                            sh_phi[pz][py + 1][px - 1] - sh_phi[pz][py - 1][px + 1] +
+                                                            sh_phi[pz - 1][py + 1][px] - sh_phi[pz + 1][py - 1][px]);
+
+                        const scalar_t sgz =
+                            VelocitySet::w_1<scalar_t>() * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]) +
+                            VelocitySet::w_2<scalar_t>() * (sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                            sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                            sh_phi[pz + 1][py][px - 1] - sh_phi[pz - 1][py][px + 1] +
+                                                            sh_phi[pz + 1][py - 1][px] - sh_phi[pz - 1][py + 1][px]);
+
+                        const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
+                        const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
+                        const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
+
+                        const scalar_t ind2 = gx * gx + gy * gy + gz * gz;
+                        const scalar_t ind = sqrtf(ind2);
+                        const scalar_t invInd = static_cast<scalar_t>(1) / (ind + static_cast<scalar_t>(1e-9));
+
+                        sh_nx[iz][iy][ix] = gx * invInd;
+                        sh_ny[iz][iy][ix] = gy * invInd;
+                        sh_nz[iz][iy][ix] = gz * invInd;
+                    }
+                }
+            }
+
+            __syncthreads();
+
+            const bool curvInterior =
+                (x >= 1 && x <= device::nx - 2) &&
+                (y >= 1 && y <= device::ny - 2) &&
+                (z >= 1 && z <= device::nz - 2);
+
+            if (curvInterior)
+            {
+                const label_t ix = threadIdx.x + 1;
+                const label_t iy = threadIdx.y + 1;
+                const label_t iz = threadIdx.z + 1;
+
+                normx_ = sh_nx[iz][iy][ix];
+                normy_ = sh_ny[iz][iy][ix];
+                normz_ = sh_nz[iz][iy][ix];
+
+                const label_t px = threadIdx.x + 2;
+                const label_t py = threadIdx.y + 2;
+                const label_t pz = threadIdx.z + 2;
+
+                const scalar_t sgx =
+                    VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py][px + 1] - sh_phi[pz][py][px - 1]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                    sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                    sh_phi[pz][py - 1][px + 1] - sh_phi[pz][py + 1][px - 1] +
+                                                    sh_phi[pz - 1][py][px + 1] - sh_phi[pz + 1][py][px - 1]);
+
+                const scalar_t sgy =
+                    VelocitySet::w_1<scalar_t>() * (sh_phi[pz][py + 1][px] - sh_phi[pz][py - 1][px]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_phi[pz][py + 1][px + 1] - sh_phi[pz][py - 1][px - 1] +
+                                                    sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                    sh_phi[pz][py + 1][px - 1] - sh_phi[pz][py - 1][px + 1] +
+                                                    sh_phi[pz - 1][py + 1][px] - sh_phi[pz + 1][py - 1][px]);
+
+                const scalar_t sgz =
+                    VelocitySet::w_1<scalar_t>() * (sh_phi[pz + 1][py][px] - sh_phi[pz - 1][py][px]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_phi[pz + 1][py][px + 1] - sh_phi[pz - 1][py][px - 1] +
+                                                    sh_phi[pz + 1][py + 1][px] - sh_phi[pz - 1][py - 1][px] +
+                                                    sh_phi[pz + 1][py][px - 1] - sh_phi[pz - 1][py][px + 1] +
+                                                    sh_phi[pz + 1][py - 1][px] - sh_phi[pz - 1][py + 1][px]);
+
+                const scalar_t gx = velocitySet::as2<scalar_t>() * sgx;
+                const scalar_t gy = velocitySet::as2<scalar_t>() * sgy;
+                const scalar_t gz = velocitySet::as2<scalar_t>() * sgz;
+
+                ind_ = sqrtf(gx * gx + gy * gy + gz * gz);
+
+                const scalar_t scx =
+                    VelocitySet::w_1<scalar_t>() * (sh_nx[iz][iy][ix + 1] - sh_nx[iz][iy][ix - 1]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_nx[iz][iy + 1][ix + 1] - sh_nx[iz][iy - 1][ix - 1] +
+                                                    sh_nx[iz + 1][iy][ix + 1] - sh_nx[iz - 1][iy][ix - 1] +
+                                                    sh_nx[iz][iy - 1][ix + 1] - sh_nx[iz][iy + 1][ix - 1] +
+                                                    sh_nx[iz - 1][iy][ix + 1] - sh_nx[iz + 1][iy][ix - 1]);
+
+                const scalar_t scy =
+                    VelocitySet::w_1<scalar_t>() * (sh_ny[iz][iy + 1][ix] - sh_ny[iz][iy - 1][ix]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_ny[iz][iy + 1][ix + 1] - sh_ny[iz][iy - 1][ix - 1] +
+                                                    sh_ny[iz + 1][iy + 1][ix] - sh_ny[iz - 1][iy - 1][ix] +
+                                                    sh_ny[iz][iy + 1][ix - 1] - sh_ny[iz][iy - 1][ix + 1] +
+                                                    sh_ny[iz - 1][iy + 1][ix] - sh_ny[iz + 1][iy - 1][ix]);
+
+                const scalar_t scz =
+                    VelocitySet::w_1<scalar_t>() * (sh_nz[iz + 1][iy][ix] - sh_nz[iz - 1][iy][ix]) +
+                    VelocitySet::w_2<scalar_t>() * (sh_nz[iz + 1][iy][ix + 1] - sh_nz[iz - 1][iy][ix - 1] +
+                                                    sh_nz[iz + 1][iy + 1][ix] - sh_nz[iz - 1][iy - 1][ix] +
+                                                    sh_nz[iz + 1][iy][ix - 1] - sh_nz[iz - 1][iy][ix + 1] +
+                                                    sh_nz[iz + 1][iy - 1][ix] - sh_nz[iz - 1][iy + 1][ix]);
+
+                const scalar_t curvature = velocitySet::as2<scalar_t>() * (scx + scy + scz);
+
+                const scalar_t stCurv = -device::sigma * curvature * ind_;
+
+                ffx_ = stCurv * normx_;
+                ffy_ = stCurv * normy_;
+                ffz_ = stCurv * normz_;
+            }
+            else
+            {
+                ffx_ = static_cast<scalar_t>(0);
+                ffy_ = static_cast<scalar_t>(0);
+                ffz_ = static_cast<scalar_t>(0);
+                normx_ = static_cast<scalar_t>(0);
+                normy_ = static_cast<scalar_t>(0);
+                normz_ = static_cast<scalar_t>(0);
+                ind_ = static_cast<scalar_t>(0);
+            }
+        }
+
+        // Prefetch devPtrs into L2
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                cache::prefetch<cache::Level::L2, cache::Policy::evict_last>(&(devPtrs.ptr<moment>()[idx]));
+            });
+
+        // Coalesced read from global memory
+        thread::array<scalar_t, NUMBER_MOMENTS<true>()> moments;
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                if constexpr (moment == index::rho())
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
+                }
+                else
+                {
+                    moments[moment] = devPtrs.ptr<moment>()[idx];
+                }
+            });
+
+        // Scale the moments correctly
+        velocitySet::scale(moments);
+
+        // Collide
+        Collision::collide(moments, ffx_, ffy_, ffz_);
+
+        // Calculate post collision populations
+        thread::array<scalar_t, VelocitySet::Q()> pop;
+        thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
+        VelocitySet::reconstruct(pop, moments);
+        PhaseVelocitySet::reconstruct(pop_g, moments);
+
+        // Gather current phase field state
+        const scalar_t phi_ = moments[m_i<10>()];
+
+        // Add sharpening (compressive term) on g-populations
+        PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
+
+        // Coalesced write to global memory
+        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
+        device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
+            [&](const auto moment)
+            {
+                devPtrs.ptr<moment>()[idx] = moments[moment];
+            });
+
+        // Save the hydro populations to the block halo
+        HydroHalo::save(pop, gGhostHydro);
+
+        // Save the phase populations to the block halo
+        PhaseHalo::save(pop_g, gGhostPhase);
+    }
+}
+
+#endif

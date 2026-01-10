@@ -47,7 +47,13 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#include "multiphaseD3Q19.cuh"
+#define MULTIPHASE_GLOBAL
+
+#if defined(MULTIPHASE_GLOBAL)
+#include "multiphaseD3Q19global.cuh" // Uses four extra global pointers
+#else
+#include "multiphaseD3Q19shared.cuh" // Reduced global memory footprint
+#endif
 
 using namespace LBM;
 
@@ -82,10 +88,12 @@ int main(const int argc, const char *const argv[])
 
     // Phase field arrays
     device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("phi", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normx", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normy", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("normz", mesh, programCtrl);
-    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> phi("ind", mesh, programCtrl);
+#if defined(MULTIPHASE_GLOBAL)
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normx("normx", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normy("normy", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> normz("normz", mesh, programCtrl);
+    device::array<scalar_t, PhaseVelocitySet, time::instantaneous> ind("ind", mesh, programCtrl);
+#endif
 
     const device::ptrCollection<NUMBER_MOMENTS<true>(), scalar_t> devPtrs(
         rho.ptr(),
@@ -149,6 +157,20 @@ int main(const int argc, const char *const argv[])
         host::constexpr_for<0, NStreams()>(
             [&](const auto stream)
             {
+#if defined(MULTIPHASE_GLOBAL)
+                multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
+                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(),
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+
+                computeNormals<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    phi.ptr(), normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr());
+
+                multiphaseCollide<<<mesh.gridBlock(), mesh.threadBlock(), 0, streamsLBM.streams()[stream]>>>(
+                    devPtrs, normx.ptr(), normy.ptr(), normz.ptr(), ind.ptr(),
+                    fBlockHalo.fGhost(), fBlockHalo.gGhost(),
+                    gBlockHalo.fGhost(), gBlockHalo.gGhost());
+#else
                 multiphaseStream<<<mesh.gridBlock(), mesh.threadBlock(), smem_alloc_size(), streamsLBM.streams()[stream]>>>(
                     devPtrs,
                     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
@@ -158,6 +180,7 @@ int main(const int argc, const char *const argv[])
                     devPtrs,
                     fBlockHalo.fGhost(), fBlockHalo.gGhost(),
                     gBlockHalo.fGhost(), gBlockHalo.gGhost());
+#endif
             });
 
         // Calculate S kernel

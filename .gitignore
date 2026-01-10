@@ -48,30 +48,36 @@ monophaseJet/*.LBMBin
 monophaseJet/*/*.dat
 monophaseJet/*/*.vtu
 monophaseJet/*/*.vts
+monophaseJet/*/*.vti
 monophaseJet/*/*.LBMBin
 
-# Monophase jet directory ignores
+# Multiphase jet directory ignores
 multiphaseJet/*.dat
 multiphaseJet/*.vtu
 multiphaseJet/*.vts
+multiphaseJet/*.vti
 multiphaseJet/*.LBMBin
 multiphaseJet/*/*.dat
 multiphaseJet/*/*.vtu
 multiphaseJet/*/*.vts
+multiphaseJet/*/*.vti
 multiphaseJet/*/*.LBMBin
 
 # Lid driven cavity directory ignores
 lidDrivenCavity/*/*.dat
 lidDrivenCavity/*/*.vtu
 lidDrivenCavity/*/*.vts
+lidDrivenCavity/*/*.vti
 lidDrivenCavity/*/*.LBMBin
 lidDrivenCavity/*/*/*.dat
 lidDrivenCavity/*/*/*.vtu
 lidDrivenCavity/*/*/*.vts
+lidDrivenCavity/*/*/*.vti
 
 # Unit test directory ignores
 unitTests/ComputeSanitizerTest/*.dat
 unitTests/ComputeSanitizerTest/*.vtu
 unitTests/ComputeSanitizerTest/*.vts
+unitTests/ComputeSanitizerTest/*.vti
 unitTests/ComputeSanitizerTest/*.LBMBin
 unitTests/ComputeSanitizerTest/logs

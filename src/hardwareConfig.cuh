@@ -119,6 +119,14 @@ namespace LBM
         }
 
         /**
+         * @brief Linear stride in the z-direction for global x-major memory layout
+         **/
+        __device__ __host__ [[nodiscard]] inline consteval label_t stride_z() noexcept
+        {
+            return nx() * ny();
+        }
+
+        /**
          * @brief Total size of the shared memory
          **/
         template <class VelocitySet, const label_t nVars>

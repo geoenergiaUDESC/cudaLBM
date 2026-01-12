@@ -47,7 +47,7 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-// #define MULTIPHASE_GLOBAL
+#define MULTIPHASE_GLOBAL
 
 #if defined(MULTIPHASE_GLOBAL)
 #include "multiphaseD3Q19global.cuh" // Uses four extra global pointers

@@ -129,28 +129,21 @@ namespace LBM
             }
 
             /**
-             * @brief Unified element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
+             * @brief Mutable runtime access
+             * @param idx Index value
              * @return Reference to element at specified index
              * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
              **/
             __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) ptrRestrict noexcept
             {
-                // Runtime index
                 return ptr_[idx];
             }
 
             /**
-             * @brief Unified read-only element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
-             * @return Const reference to element at specified index
+             * @brief Const-qualified runtime access
+             * @param idx Index value
+             * @return Reference to element at specified index
              * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
              **/
             __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) ptrRestrict const noexcept
             {
@@ -211,13 +204,10 @@ namespace LBM
             ~array() {};
 
             /**
-             * @brief Unified element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
+             * @brief Mutable runtime access
+             * @param idx Index value
              * @return Reference to element at specified index
              * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
              **/
             __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) ptrRestrict noexcept
             {
@@ -226,13 +216,10 @@ namespace LBM
             }
 
             /**
-             * @brief Unified read-only element access (compile-time or runtime)
-             * @tparam Index Type of index (integral type or std::integral_constant)
-             * @param idx Index value or compile-time index tag
-             * @return Const reference to element at specified index
+             * @brief Const-qualified runtime access
+             * @param idx Index value
+             * @return Reference to element at specified index
              * @pre Index must be in range [0, N-1]
-             * @note Compile-time bounds checking for integral_constant types
-             * @note Runtime access for integral types (no bounds checking)
              **/
             __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) ptrRestrict const noexcept
             {

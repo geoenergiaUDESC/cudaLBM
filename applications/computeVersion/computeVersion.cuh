@@ -43,7 +43,7 @@ Namespace
     LBM
 
 SourceFiles
-    computeVersion.cu
+    computeVersion.cuh
 
 \*---------------------------------------------------------------------------*/
 

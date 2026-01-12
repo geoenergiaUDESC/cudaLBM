@@ -43,7 +43,7 @@ Namespace
     LBM
 
 SourceFiles
-    D3Q19.cuh
+    velocitySet.cuh
 
 \*---------------------------------------------------------------------------*/
 
@@ -141,46 +141,36 @@ namespace LBM
             moments[m_i<9>()] = scale_ii<scalar_t>() * (moments[m_i<9>()]);
         }
 
+        /**
+         * @brief Check if a velocity direction is negative in a specific axis
+         * @tparam VelocitySet The velocity set class
+         * @tparam dir The axis direction (X, Y, or Z)
+         * @tparam q_ The velocity index
+         * @param[in] q The velocity index
+         * @return True if the velocity component in the specified direction is negative
+         **/
         template <class VelocitySet, const axisDirection dir, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval bool is_negative(const q_i<q_> q) noexcept
         {
             static_assert(((dir == X) || (dir == Y) || (dir == Z)));
 
-            if constexpr (dir == X)
-            {
-                return (VelocitySet::template cx<int>(q) < 0);
-            }
-
-            if constexpr (dir == Y)
-            {
-                return (VelocitySet::template cy<int>(q) < 0);
-            }
-
-            if constexpr (dir == Z)
-            {
-                return (VelocitySet::template cz<int>(q) < 0);
-            }
+            return (VelocitySet::template C<int, dir>(q_i<q_>()) < 0);
         }
 
+        /**
+         * @brief Check if a velocity direction is positive in a specific axis
+         * @tparam VelocitySet The velocity set class
+         * @tparam dir The axis direction (X, Y, or Z)
+         * @tparam q_ The velocity index
+         * @param[in] q The velocity index
+         * @return True if the velocity component in the specified direction is positive
+         **/
         template <class VelocitySet, const axisDirection dir, const label_t q_>
         __device__ __host__ [[nodiscard]] static inline consteval bool is_positive(const q_i<q_> q) noexcept
         {
             static_assert(((dir == X) || (dir == Y) || (dir == Z)));
 
-            if constexpr (dir == X)
-            {
-                return (VelocitySet::template cx<int>(q) > 0);
-            }
-
-            if constexpr (dir == Y)
-            {
-                return (VelocitySet::template cy<int>(q) > 0);
-            }
-
-            if constexpr (dir == Z)
-            {
-                return (VelocitySet::template cz<int>(q) > 0);
-            }
+            return (VelocitySet::template C<int, dir>(q_i<q_>()) > 0);
         }
 
         /**
@@ -257,101 +247,26 @@ namespace LBM
             return pop;
         }
 
+        /**
+         * @brief Calculate the product of components in two directions
+         * @tparam VelocitySet The velocity set class
+         * @tparam alpha First axis direction (X, Y, Z)
+         * @tparam beta Second axis direction (X, Y, Z)
+         * @return Array of products of components in the specified directions
+         **/
         template <class VelocitySet, const axisDirection alpha, const axisDirection beta>
         __device__ __host__ [[nodiscard]] static inline consteval const thread::array<int, VelocitySet::Q()> c_AlphaBeta() noexcept
         {
-            static_assert(((alpha == X) || (alpha == Y) || (alpha == Z) || (alpha == NO_DIRECTION)));
-            static_assert(((beta == X) || (beta == Y) || (beta == Z) || (beta == NO_DIRECTION)));
-
-            if constexpr ((alpha == NO_DIRECTION) && (beta == NO_DIRECTION))
-            {
-                thread::array<int, VelocitySet::Q()> toReturn;
-                for (std::size_t i = 0; i < toReturn.size(); i++)
-                {
-                    toReturn[i] = 1;
-                }
-                return toReturn;
-            }
-
-            if constexpr ((alpha == X))
-            {
-                if constexpr ((beta == X))
-                {
-                    return (VelocitySet::template cx<int>() * VelocitySet::template cx<int>());
-                }
-                if constexpr ((beta == Y))
-                {
-                    return (VelocitySet::template cx<int>() * VelocitySet::template cy<int>());
-                }
-                if constexpr ((beta == Z))
-                {
-                    return (VelocitySet::template cx<int>() * VelocitySet::template cz<int>());
-                }
-                if constexpr ((beta == NO_DIRECTION))
-                {
-                    return VelocitySet::template cx<int>();
-                }
-            }
-
-            if constexpr ((alpha == Y))
-            {
-                if constexpr ((beta == X))
-                {
-                    return (VelocitySet::template cy<int>() * VelocitySet::template cx<int>());
-                }
-                if constexpr ((beta == Y))
-                {
-                    return (VelocitySet::template cy<int>() * VelocitySet::template cy<int>());
-                }
-                if constexpr ((beta == Z))
-                {
-                    return (VelocitySet::template cy<int>() * VelocitySet::template cz<int>());
-                }
-                if constexpr ((beta == NO_DIRECTION))
-                {
-                    return VelocitySet::template cy<int>();
-                }
-            }
-
-            if constexpr ((alpha == Z))
-            {
-                if constexpr ((beta == X))
-                {
-                    return (VelocitySet::template cz<int>() * VelocitySet::template cx<int>());
-                }
-                if constexpr ((beta == Y))
-                {
-                    return (VelocitySet::template cz<int>() * VelocitySet::template cy<int>());
-                }
-                if constexpr ((beta == Z))
-                {
-                    return (VelocitySet::template cz<int>() * VelocitySet::template cz<int>());
-                }
-                if constexpr ((beta == NO_DIRECTION))
-                {
-                    return VelocitySet::template cz<int>();
-                }
-            }
+            return VelocitySet::template C<int, alpha>() * VelocitySet::template C<int, beta>();
         }
 
-        template <const int coeff, class VelocitySet, const label_t I, class BoundaryNormal>
-        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(
-            const scalar_t pop_value,
-            const BoundaryNormal &boundaryNormal) noexcept
-        {
-            static_assert(((coeff == -1) || (coeff == 1)), "Invalid coefficient");
-
-            if constexpr (coeff == 1)
-            {
-                return incomingSwitch<scalar_t, VelocitySet>(q_i<I>(), boundaryNormal) * pop_value;
-            }
-            else if constexpr (coeff == -1)
-            {
-                return -incomingSwitch<scalar_t, VelocitySet>(q_i<I>(), boundaryNormal) * pop_value;
-            }
-        }
-
-        template <const int coeff, class VelocitySet>
+        /**
+         * @brief Process a momentum element with a coefficient
+         * @tparam coeff The coefficient to apply (1 or -1)
+         * @param[in] pop_value The population value to process
+         * @return The processed momentum element
+         **/
+        template <const int coeff>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(
             const scalar_t pop_value) noexcept
         {
@@ -367,13 +282,36 @@ namespace LBM
             }
         }
 
+        /**
+         * @brief Process a momentum element with a coefficient and a boundary normal
+         * @tparam coeff The coefficient to apply (1 or -1)
+         * @param[in] pop_value The population value to process
+         * @param[in] boundaryNormal The boundary normal vector
+         * @return The processed momentum element
+         **/
+        template <const int coeff, class VelocitySet, const label_t I, class BoundaryNormal>
+        __device__ __host__ [[nodiscard]] static inline constexpr scalar_t process_momentum_element(
+            const scalar_t pop_value,
+            const BoundaryNormal &boundaryNormal) noexcept
+        {
+            return incomingSwitch<scalar_t, VelocitySet>(q_i<I>(), boundaryNormal) * process_momentum_element<coeff>(pop_value);
+        }
+
+        /**
+         * @brief Calculate a moment of a given order
+         * @tparam VelocitySet The velocity set class
+         * @tparam alpha First axis direction (X, Y, Z)
+         * @tparam beta Second axis direction (X, Y, Z)
+         * @param[in] pop The population array
+         * @param[in] boundaryNormal The boundary normal vector
+         * @return The calculated moment
+         **/
         template <class VelocitySet, const axisDirection alpha, const axisDirection beta, class BoundaryNormal>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop, const BoundaryNormal &boundaryNormal) noexcept
         {
-            constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<label_t, N> indices = non_zero_indices<N>(c_AB);
+            constexpr const label_t N = number_non_zero(c_AlphaBeta<VelocitySet, alpha, beta>());
+            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AlphaBeta<VelocitySet, alpha, beta>());
+            constexpr const thread::array<label_t, N> indices = non_zero_indices<N>(c_AlphaBeta<VelocitySet, alpha, beta>());
 
             return [&]<const label_t... Is>(std::index_sequence<Is...>)
             {
@@ -381,20 +319,33 @@ namespace LBM
             }(std::make_index_sequence<N>{});
         }
 
+        /**
+         * @brief Calculate a moment of a given order
+         * @tparam VelocitySet The velocity set class
+         * @tparam alpha First axis direction (X, Y, Z)
+         * @tparam beta Second axis direction (X, Y, Z)
+         * @param[in] pop The population array
+         * @return The calculated moment
+         **/
         template <class VelocitySet, const axisDirection alpha, const axisDirection beta>
         __device__ __host__ [[nodiscard]] static inline constexpr scalar_t calculate_moment(const thread::array<scalar_t, VelocitySet::Q()> &pop) noexcept
         {
-            constexpr const thread::array<int, VelocitySet::Q()> c_AB = c_AlphaBeta<VelocitySet, alpha, beta>();
-            constexpr const label_t N = number_non_zero(c_AB);
-            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AB);
-            constexpr const thread::array<label_t, N> indices = non_zero_indices<N>(c_AB);
+            constexpr const label_t N = number_non_zero(c_AlphaBeta<VelocitySet, alpha, beta>());
+            constexpr const thread::array<int, N> C = non_zero_values<N>(c_AlphaBeta<VelocitySet, alpha, beta>());
+            constexpr const thread::array<label_t, N> indices = non_zero_indices<N>(c_AlphaBeta<VelocitySet, alpha, beta>());
 
             return [&]<const label_t... Is>(std::index_sequence<Is...>)
             {
-                return (process_momentum_element<C[Is], VelocitySet>(pop[indices[Is]]) + ...);
+                return (process_momentum_element<C[Is]>(pop[indices[Is]]) + ...);
             }(std::make_index_sequence<N>{});
         }
 
+        /**
+         * @brief Calculate all moments up to second order
+         * @tparam VelocitySet The velocity set class
+         * @param[in] pop The population array
+         * @param[out] mom The array to store the calculated moments
+         **/
         template <class VelocitySet>
         __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &mom) noexcept
         {
@@ -416,6 +367,14 @@ namespace LBM
             mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop) * inv_rho) - cs2<scalar_t>();
         }
 
+        /**
+         * @brief Calculate all moments up to second order
+         * @tparam VelocitySet The velocity set class
+         * @tparam BoundaryNormal The boundary normal vector type
+         * @param[in] pop The population array
+         * @param[out] mom The array to store the calculated moments
+         * @param[in] boundaryNormal The boundary normal vector
+         **/
         template <class VelocitySet, class BoundaryNormal>
         __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, NUMBER_MOMENTS()> &mom, const BoundaryNormal &boundaryNormal) noexcept
         {

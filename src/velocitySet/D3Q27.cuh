@@ -241,6 +241,58 @@ namespace LBM
         }
 
         /**
+         * @brief Get any component for all directions
+         * @return Thread array of 27 x, y, or z-velocity components
+         **/
+        template <typename T, const axisDirection alpha>
+        __device__ __host__ [[nodiscard]] static inline consteval const thread::array<T, 27> C() noexcept
+        {
+            static_assert((alpha == X) || (alpha == Y) || (alpha == Z) || (alpha == NO_DIRECTION));
+
+            // Return the array
+            if constexpr (alpha == X)
+            {
+                return cx<T>();
+            }
+
+            if constexpr (alpha == Y)
+            {
+                return cy<T>();
+            }
+
+            if constexpr (alpha == Z)
+            {
+                return cz<T>();
+            }
+
+            if constexpr (alpha == NO_DIRECTION)
+            {
+                thread::array<int, 27> toReturn;
+                for (std::size_t i = 0; i < toReturn.size(); i++)
+                {
+                    toReturn[i] = 1;
+                }
+                return toReturn;
+            }
+        }
+
+        /**
+         * @brief Get any component for specific direction
+         * @tparam q_ Direction index (0-26)
+         * @param[in] q Direction index as compile-time constant
+         * @return x, y or z-component for specified direction
+         **/
+        template <typename T, const axisDirection alpha, const label_t q_>
+        __device__ __host__ [[nodiscard]] static inline consteval T C(const q_i<q_> q) noexcept
+        {
+            // Check that we are accessing a valid member
+            static_assert(q() < Q_, "Invalid velocity set index in member function cz(q)");
+
+            // Return the component
+            return C<T, alpha>()[q()];
+        }
+
+        /**
          * @brief Reconstruct population distribution from moments (in-place)
          * @param[out] pop Population array to be filled
          * @param[in] moments Moment array (10 components)

@@ -59,6 +59,7 @@ SourceFiles
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
 #include "../../src/array/array.cuh"
+#include "../../src/boundaryConditions/boundaryConditions.cuh"
 
 namespace LBM
 {

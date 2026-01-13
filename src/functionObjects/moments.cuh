@@ -80,7 +80,7 @@ namespace LBM
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
-                            m[n] = devPtrs.template ptr<n>()[idx];
+                            m[n] = devPtrs.ptr<n>()[idx];
                         });
 
                     // Read the mean values from global memory
@@ -88,7 +88,7 @@ namespace LBM
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
-                            mMean[n] = devMeanPtrs.template ptr<n>()[idx];
+                            mMean[n] = devMeanPtrs.ptr<n>()[idx];
                         });
 
                     // Update the mean value and write back to global
@@ -96,7 +96,7 @@ namespace LBM
                     device::constexpr_for<0, NUMBER_MOMENTS()>(
                         [&](const auto n)
                         {
-                            devMeanPtrs.template ptr<n>()[idx] = meanNew[n];
+                            devMeanPtrs.ptr<n>()[idx] = meanNew[n];
                         });
                 }
             }
@@ -118,7 +118,7 @@ namespace LBM
                  **/
                 __host__ [[nodiscard]] collection(
                     const host::latticeMesh &mesh,
-                    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> &devPtrs,
+                    const device::ptrCollection<10, scalar_t> &devPtrs,
                     const streamHandler<N> &streamsLBM) noexcept
                     : mesh_(mesh),
                       devPtrs_(devPtrs),
@@ -228,7 +228,7 @@ namespace LBM
                         mesh_,
                         componentNamesMean_,
                         host::toHost(
-                            device::ptrCollection<NUMBER_MOMENTS(), scalar_t>(
+                            device::ptrCollection<10, scalar_t>(
                                 rhoMean_.ptr(),
                                 uMean_.ptr(),
                                 vMean_.ptr(),
@@ -293,7 +293,7 @@ namespace LBM
                 /**
                  * @brief Instantaneous scalar name
                  **/
-                const std::vector<std::string> componentNames_ = solutionVariableNames(false);
+                const std::vector<std::string> componentNames_ = solutionVariableNames;
 
                 /**
                  * @brief Mean scalar name
@@ -308,7 +308,7 @@ namespace LBM
                 /**
                  * @brief Device pointer collection
                  **/
-                const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> &devPtrs_;
+                const device::ptrCollection<10, scalar_t> &devPtrs_;
 
                 /**
                  * @brief Stream handler for CUDA operations

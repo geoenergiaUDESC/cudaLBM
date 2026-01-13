@@ -130,11 +130,6 @@ namespace LBM
 
     private:
         /**
-         * @brief Compile-time multiphase trait
-         **/
-        static constexpr bool isMultiphase = VelocitySet::isPhaseField();
-
-        /**
          * @brief Field values for all regions
          **/
         const boundaryValue<VelocitySet> values_[7];

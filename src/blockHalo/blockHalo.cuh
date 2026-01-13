@@ -64,6 +64,5 @@ namespace LBM
 
 #include "haloFace.cuh"
 #include "halo.cuh"
-#include "haloSingle.cuh"
 
 #endif

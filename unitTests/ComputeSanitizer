@@ -14,7 +14,7 @@ unset DEVICES_OUTPUT CLEAN_DEVICES GPUS COMMON_FLAGS TOOLS TIMESTAMP LOG_DIR
 unset RESULTS FAILED_TESTS SKIPPED_TESTS GPU TOOL TEST_NAME LOG_FILE EXIT_CODE
 unset TOTAL_TESTS FAILED_COUNT SKIPPED_COUNT PASSED_COUNT EXIT_STATUS
 
-# Check if computeVersion exists - exit  If not found
+# Check if computeVersion exists - exit if not found
 if ! command -v computeVersion >/dev/null 2>&1; then
     printf "CUDALBM_CUDA_DIR is not set. Please run \"source bashrc\" in the project directory first\n" >&2
     # Clean up all variables at the end

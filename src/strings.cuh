@@ -102,9 +102,9 @@ namespace LBM
          * @return true if target is found in vec, false otherwise.
          * @note Uses std::find for efficient searching.
          **/
-        __host__ [[nodiscard]] inline bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
+        __host__ [[nodiscard]] inline constexpr bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
         {
-            return std::find(vec.begin(), vec.end(), target) != vec.end(); // was constexpr
+            return std::find(vec.begin(), vec.end(), target) != vec.end();
         }
 
         /**
@@ -113,9 +113,9 @@ namespace LBM
          * @param[in] c The character to search for
          * @return The position of c within str
          **/
-        __host__ [[nodiscard]] inline std::size_t findCharPosition(const std::string &str, const char (&c)[2])
+        __host__ [[nodiscard]] inline constexpr std::size_t findCharPosition(const std::string &str, const char (&c)[2])
         {
-            return str.find(c[0]); // was constexpr
+            return str.find(c[0]);
         }
 
         /**
@@ -560,48 +560,28 @@ namespace LBM
 
         __host__ [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string &name)
         {
-            for (const auto &line : S)
+            // Loop over S
+            for (label_t i = 0; i < S.size(); i++)
             {
-                // Trim leading whitespace
-                const auto first = line.find_first_not_of(" \t");
-                if (first == std::string::npos)
+                // Check if S[i] contains a substring of name
+                if (S[i].find(name) != std::string::npos)
                 {
-                    continue;
+                    // Split by space and remove whitespace
+                    const std::vector<std::string> s = split<" "[0]>(S[i], true);
+
+                    // Check that the last char is ;
+                    // Perform the exit here if the above string is not equal to ;
+
+                    return std::string(s[1].begin(), s[1].end() - 1);
                 }
-
-                // Key must match at start of line
-                if (line.compare(first, name.size(), name) != 0)
-                {
-                    continue;
-                }
-
-                // Ensure key boundary
-                const auto afterKey = first + name.size();
-                if (afterKey < line.size() && !std::isspace(line[afterKey]))
-                {
-                    continue;
-                }
-
-                // Extract remainder
-                std::string value = line.substr(afterKey);
-
-                // Trim whitespace
-                value.erase(0, value.find_first_not_of(" \t"));
-                value.erase(value.find_last_not_of(" \t") + 1);
-
-                // Strip trailing semicolon
-                if (!value.empty() && value.back() == ';')
-                    value.pop_back();
-
-                if (value.empty())
-                {
-                    throw std::runtime_error("Parameter '" + name + "' has no value");
-                }
-
-                return value;
             }
 
-            throw std::runtime_error("Parameter '" + name + "' not found");
+            // Otherwise return 0
+            // Should theoretically never get to this point because we have checked already that the string exists
+
+            throw std::runtime_error("Parameter " + std::string(name) + " not found");
+
+            return "";
         }
 
         /**
@@ -619,89 +599,21 @@ namespace LBM
             // First get the parameter line string
             const std::string toReturn = extractParameterLine(S, name);
 
-            // Is it supposed a boolean?
-            if constexpr (std::is_same_v<T, bool>)
-            {
-                if (toReturn == "true" || toReturn == "1")
-                {
-                    return true;
-                }
-                if (toReturn == "false" || toReturn == "0")
-                {
-                    return false;
-                }
-
-                throw std::runtime_error("Invalid boolean value for parameter '" + name + "': '" + toReturn + "'");
-            }
             // Is it supposed an integral value?
-            else if constexpr (std::is_integral_v<T>)
+            if constexpr (std::is_integral_v<T>)
             {
-                if (!isNumber(toReturn))
+                if (isNumber(toReturn))
                 {
-                    throw std::runtime_error("Invalid integer value for parameter '" + name + "': '" + toReturn + "'");
-                }
-
-                // Check if T is an unsigned integral type
-                if constexpr (std::is_unsigned_v<T>)
-                {
-                    return static_cast<T>(std::stoul(toReturn));
-                }
-                // T must be a signed integral type
-                else
-                {
-                    return static_cast<T>(std::stol(toReturn));
-                }
-            }
-            // Is it supposed a floating point value?
-            else if constexpr (std::is_floating_point_v<T>)
-            {
-                return static_cast<T>(std::stold(toReturn));
-            }
-            // Is it supposed a string?
-            else if constexpr (std::is_same_v<T, std::string>)
-            {
-                return toReturn;
-            }
-            else
-            {
-                static_assert(!sizeof(T), "Unsupported type in extractParameter(const std::vector<std::string> &S, const std::string &name)");
-            }
-        }
-
-        template <typename T>
-        __host__ [[nodiscard]] T extractParameter(const std::string &toReturn)
-        {
-            // Is it supposed a boolean?
-            if constexpr (std::is_same_v<T, bool>)
-            {
-                if (toReturn == "true" || toReturn == "1")
-                {
-                    return true;
-                }
-                if (toReturn == "false" || toReturn == "0")
-                {
-                    return false;
-                }
-
-                throw std::runtime_error("Invalid boolean value: '" + toReturn + "'");
-            }
-            // Is it supposed an integral value?
-            else if constexpr (std::is_integral_v<T>)
-            {
-                if (!isNumber(toReturn))
-                {
-                    throw std::runtime_error("Invalid integer value: '" + toReturn + "'");
-                }
-
-                // Check if T is an unsigned integral type
-                if constexpr (std::is_unsigned_v<T>)
-                {
-                    return static_cast<T>(std::stoul(toReturn));
-                }
-                // T must be a signed integral type
-                else
-                {
-                    return static_cast<T>(std::stol(toReturn));
+                    // Check if T is an unsigned integral type
+                    if constexpr (std::is_unsigned_v<T>)
+                    {
+                        return static_cast<T>(std::stoul(toReturn));
+                    }
+                    // T must be a signed integral type
+                    else
+                    {
+                        return static_cast<T>(std::stol(toReturn));
+                    }
                 }
             }
             // Is it supposed a floating ponit value?
@@ -714,10 +626,42 @@ namespace LBM
             {
                 return toReturn;
             }
-            else
+
+            return 0;
+        }
+
+        template <typename T>
+        __host__ [[nodiscard]] T extractParameter(const std::string &toReturn)
+        {
+            // Is it supposed an integral value?
+            if constexpr (std::is_integral_v<T>)
             {
-                static_assert(!sizeof(T), "Unsupported type in extractParameter(const std::string &toReturn)");
+                if (isNumber(toReturn))
+                {
+                    // Check if T is an unsigned integral type
+                    if constexpr (std::is_unsigned_v<T>)
+                    {
+                        return static_cast<T>(std::stoul(toReturn));
+                    }
+                    // T must be a signed integral type
+                    else
+                    {
+                        return static_cast<T>(std::stol(toReturn));
+                    }
+                }
             }
+            // Is it supposed a floating ponit value?
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                return static_cast<T>(std::stold(toReturn));
+            }
+            // Is it supposed a string?
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return toReturn;
+            }
+
+            return 0;
         }
 
         /**

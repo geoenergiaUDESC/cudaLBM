@@ -51,18 +51,6 @@ monophaseJet/*/*.vts
 monophaseJet/*/*.vti
 monophaseJet/*/*.LBMBin
 
-# Multiphase jet directory ignores
-multiphaseJet/*.dat
-multiphaseJet/*.vtu
-multiphaseJet/*.vts
-multiphaseJet/*.vti
-multiphaseJet/*.LBMBin
-multiphaseJet/*/*.dat
-multiphaseJet/*/*.vtu
-multiphaseJet/*/*.vts
-multiphaseJet/*/*.vti
-multiphaseJet/*/*.LBMBin
-
 # Lid driven cavity directory ignores
 lidDrivenCavity/*/*.dat
 lidDrivenCavity/*/*.vtu

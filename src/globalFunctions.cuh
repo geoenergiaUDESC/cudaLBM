@@ -108,12 +108,9 @@ namespace LBM
     }
 
     /**
-     * @brief Number of moments
+     * @brief Number of hydrodynamic moments
      **/
-    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS()
-    {
-        return 10;
-    }
+    __device__ __host__ [[nodiscard]] inline consteval label_t NUMBER_MOMENTS() { return 10; }
 
     /**
      * @brief Host-side indexing operations
@@ -131,7 +128,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
-        template <const label_t mom, bool isMultiphase>
+        template <const label_t mom>
         __host__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
@@ -171,7 +168,6 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
-        template <bool isMultiphase>
         __host__ [[nodiscard]] inline label_t idxMom(
             const label_t tx, const label_t ty, const label_t tz,
             const label_t bx, const label_t by, const label_t bz,
@@ -315,16 +311,6 @@ namespace LBM
         }
 
         /**
-         * @brief Check whether the current thread exceeds internal domain bounds
-         * @note Uses device constants device::nx, device::ny, device::nz
-         * @return True if thread is outside intenal domain boundaries
-         **/
-        __device__ [[nodiscard]] inline bool out_of_inner_bounds() noexcept
-        {
-            return ((threadIdx.x + blockDim.x * blockIdx.x >= device::nx - 1) || (threadIdx.y + blockDim.y * blockIdx.y >= device::ny - 1) || (threadIdx.z + blockDim.z * blockIdx.z >= device::nz - 1));
-        }
-
-        /**
          * @brief Moment memory index (device version)
          * @tparam mom Moment index [0, NUMBER_MOMENTS())
          * @param tx,ty,tz Thread-local coordinates
@@ -333,7 +319,7 @@ namespace LBM
          *
          * Layout: [bx][by][bz][tz][ty][tx][mom] (mom fastest varying)
          **/
-        template <const label_t mom, bool isMultiphase>
+        template <const label_t mom>
         __device__ [[nodiscard]] inline label_t idxMom(const label_t tx, const label_t ty, const label_t tz, const label_t bx, const label_t by, const label_t bz) noexcept
         {
             return mom + NUMBER_MOMENTS() * (tx + block::nx() * (ty + block::ny() * (tz + block::nz() * (bx + device::NUM_BLOCK_X * (by + device::NUM_BLOCK_Y * bz)))));
@@ -418,24 +404,6 @@ namespace LBM
             return idxBlock(threadIdx.x, threadIdx.y, threadIdx.z);
         }
 
-        __device__ [[nodiscard]] inline label_t idxGlobalFromIdx(const label_t x, const label_t y, const label_t z) noexcept
-        {
-            const label_t bx = x / block::nx();
-            const label_t by = y / block::ny();
-            const label_t bz = z / block::nz();
-
-            const label_t tx = x - bx * block::nx();
-            const label_t ty = y - by * block::ny();
-            const label_t tz = z - bz * block::nz();
-
-            return device::idx(tx, ty, tz, bx, by, bz);
-        }
-
-        __device__ [[nodiscard]] inline label_t idxGlobal(const label_t x, const label_t y, const label_t z) noexcept
-        {
-            return x + device::nx * (y + device::ny * z);
-        }
-
         /**
          * @brief Population index for X-aligned arrays (device version)
          * @tparam pop Population index
@@ -513,46 +481,16 @@ namespace LBM
      **/
     namespace index
     {
-        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; }  // < Density
-        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }    // < X-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }    // < Y-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }    // < Z-velocity
-        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }   // < XX-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }   // < XY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }   // < XZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }   // < YY-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }   // < YZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }   // < ZZ-stress component
-        __device__ __host__ [[nodiscard]] inline consteval label_t phi() { return 10; } // < Phase field
-
-        __device__ __host__ inline constexpr const char *name(const size_t field) noexcept
-        {
-            switch (field)
-            {
-            case rho():
-                return "rho";
-            case u():
-                return "u";
-            case v():
-                return "v";
-            case w():
-                return "w";
-            case xx():
-                return "m_xx";
-            case xy():
-                return "m_xy";
-            case xz():
-                return "m_xz";
-            case yy():
-                return "m_yy";
-            case yz():
-                return "m_yz";
-            case zz():
-                return "m_zz";
-            default:
-                return "unknown";
-            }
-        }
+        __device__ __host__ [[nodiscard]] inline consteval label_t rho() { return 0; } // < Density
+        __device__ __host__ [[nodiscard]] inline consteval label_t u() { return 1; }   // < X-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t v() { return 2; }   // < Y-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t w() { return 3; }   // < Z-velocity
+        __device__ __host__ [[nodiscard]] inline consteval label_t xx() { return 4; }  // < XX-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xy() { return 5; }  // < XY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t xz() { return 6; }  // < XZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yy() { return 7; }  // < YY-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t yz() { return 8; }  // < YZ-stress component
+        __device__ __host__ [[nodiscard]] inline consteval label_t zz() { return 9; }  // < ZZ-stress component
     }
 
     /**

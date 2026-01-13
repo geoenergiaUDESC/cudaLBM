@@ -58,9 +58,6 @@ int main(const int argc, const char *const argv[])
 
     const host::latticeMesh mesh(programCtrl);
 
-    // Check if is multiphase
-    const bool isMultiphase = programCtrl.isMultiphase();
-
     // If we have supplied a -fieldName argument, replace programCtrl.caseName() with the fieldName
     const bool doCustomField = programCtrl.input().isArgPresent("-fieldName");
     const std::string fileNamePrefix = doCustomField ? programCtrl.getArgument("-fieldName") : programCtrl.caseName();
@@ -72,7 +69,7 @@ int main(const int argc, const char *const argv[])
     const host::latticeMesh newMesh = processMesh(mesh, programCtrl, doCutPlane);
 
     // Now get the std::vector of std::strings corresponding to the prefix
-    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField, isMultiphase);
+    const std::vector<std::string> &fieldNames = getFieldNames(fileNamePrefix, doCustomField);
 
     // Get the time indices
     const std::vector<label_t> fileNameIndices = fileIO::timeIndices(fileNamePrefix);
@@ -98,16 +95,13 @@ int main(const int argc, const char *const argv[])
 
             const std::vector<std::vector<scalar_t>> fields = processFields(hostMoments, mesh, programCtrl, doCutPlane);
 
-            // BRENO: infer correct output naming from what was actually read/produced
-            const std::vector<std::string> &fieldNamesOut = doCustomField ? fieldNames : functionObjects::solutionVariableNames(fields.size() == functionObjects::solutionVariableNames(true).size());
-
             const std::string fileName = processName(programCtrl, fileNamePrefix, fileNameIndices[timeStep], doCutPlane);
 
             writer(
                 fields,
                 fileName,
                 newMesh,
-                fieldNamesOut);
+                fieldNames);
         }
     }
     else

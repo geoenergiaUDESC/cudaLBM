@@ -76,30 +76,50 @@ namespace LBM
             __host__ [[nodiscard]] halo(
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl) noexcept
-                : fGhost_(
-                      [](const host::latticeMesh &m, const programControl &p)
-                      {
-                          if constexpr (VelocitySet::Q() == 7)
-                          {
-                              return makePhaseHalo(m, p);
-                          }
-                          else
-                          {
-                              return makeHydroHalo(m, p);
-                          }
-                      }(mesh, programCtrl)),
-                  gGhost_(
-                      [](const host::latticeMesh &m, const programControl &p)
-                      {
-                          if constexpr (VelocitySet::Q() == 7)
-                          {
-                              return makePhaseHalo(m, p);
-                          }
-                          else
-                          {
-                              return makeHydroHalo(m, p);
-                          }
-                      }(mesh, programCtrl)) {}
+                : fGhost_(haloFace<VelocitySet>(
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      mesh)),
+                  gGhost_(haloFace<VelocitySet>(
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
+                      host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
+                      mesh)){};
+
+            /**
+             * @brief Constructs halo regions from moment data and mesh
+             * @param[in] rho,u,v,w,m_xx,m_xy,m_xz,m_yy,m_yz,m_zz Moment representation of distribution functions
+             * @param[in] mesh Lattice mesh defining simulation domain
+             **/
+            __host__ [[nodiscard]] halo(
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &rho,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &u,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &v,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &w,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xx,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_xz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yy,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_yz,
+                const host::array<false, scalar_t, VelocitySet, time::instantaneous> &m_zz,
+                const host::latticeMesh &mesh) noexcept
+                : fGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)),
+                  gGhost_(haloFace<VelocitySet>(rho, u, v, w, m_xx, m_xy, m_xz, m_yy, m_yz, m_zz, mesh)){};
 
             /**
              * @brief Default destructor
@@ -146,7 +166,7 @@ namespace LBM
              *
              * This device function loads population values from neighboring blocks'
              * halo regions based on the current thread's position within its block.
-             * It handles D3Q7, D3Q19 and D3Q27 velocity sets.
+             * It handles all 18 directions of the D3Q19 lattice model.
              **/
             __device__ static inline void load(
                 thread::array<scalar_t, VelocitySet::Q()> &pop,
@@ -178,126 +198,96 @@ namespace LBM
                 const label_t bzm1 = (bz - 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
                 const label_t bzp1 = (bz + 1 + device::NUM_BLOCK_Z) % device::NUM_BLOCK_Z;
 
-                if constexpr (VelocitySet::Q() == 7)
-                {
-                    if (tx == 0)
-                    { // w
-                        pop[q_i<1>()] = __ldg(&fGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
-                    }
-                    else if (tx == (block::nx() - 1))
-                    { // e
-                        pop[q_i<2>()] = __ldg(&fGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxp1, by, bz)]);
-                    }
-                    if (ty == 0)
-                    { // s
-                        pop[q_i<3>()] = __ldg(&fGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, bym1, bz)]);
-                    }
-                    else if (ty == (block::ny() - 1))
-                    { // n
-                        pop[q_i<4>()] = __ldg(&fGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, byp1, bz)]);
-                    }
-                    if (tz == 0)
-                    { // b
-                        pop[q_i<5>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzm1)]);
-                    }
-                    else if (tz == (block::nz() - 1))
-                    { // f
-                        pop[q_i<6>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzp1)]);
+                if (tx == 0)
+                { // w
+                    pop[q_i<1>()] = __ldg(&fGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
+                    pop[q_i<7>()] = __ldg(&fGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop[q_i<9>()] = __ldg(&fGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
+                    pop[q_i<13>()] = __ldg(&fGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop[q_i<15>()] = __ldg(&fGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<19>()] = __ldg(&fGhost.ptr<1>()[idxPopX<5, VelocitySet::QF()>(tym1, tzm1, bxm1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<21>()] = __ldg(&fGhost.ptr<1>()[idxPopX<6, VelocitySet::QF()>(tym1, tzp1, bxm1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<23>()] = __ldg(&fGhost.ptr<1>()[idxPopX<7, VelocitySet::QF()>(typ1, tzm1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<26>()] = __ldg(&fGhost.ptr<1>()[idxPopX<8, VelocitySet::QF()>(typ1, tzp1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     }
                 }
-                else
-                {
-                    if (tx == 0)
-                    { // w
-                        pop[q_i<1>()] = __ldg(&fGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxm1, by, bz)]);
-                        pop[q_i<7>()] = __ldg(&fGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(tym1, tz, bxm1, ((ty == 0) ? bym1 : by), bz)]);
-                        pop[q_i<9>()] = __ldg(&fGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(ty, tzm1, bxm1, by, ((tz == 0) ? bzm1 : bz))]);
-                        pop[q_i<13>()] = __ldg(&fGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(typ1, tz, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-                        pop[q_i<15>()] = __ldg(&fGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(ty, tzp1, bxm1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<19>()] = __ldg(&fGhost.ptr<1>()[idxPopX<5, VelocitySet::QF()>(tym1, tzm1, bxm1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<21>()] = __ldg(&fGhost.ptr<1>()[idxPopX<6, VelocitySet::QF()>(tym1, tzp1, bxm1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<23>()] = __ldg(&fGhost.ptr<1>()[idxPopX<7, VelocitySet::QF()>(typ1, tzm1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<26>()] = __ldg(&fGhost.ptr<1>()[idxPopX<8, VelocitySet::QF()>(typ1, tzp1, bxm1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        }
+                else if (tx == (block::nx() - 1))
+                { // e
+                    pop[q_i<2>()] = __ldg(&fGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxp1, by, bz)]);
+                    pop[q_i<8>()] = __ldg(&fGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
+                    pop[q_i<10>()] = __ldg(&fGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop[q_i<14>()] = __ldg(&fGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
+                    pop[q_i<16>()] = __ldg(&fGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<20>()] = __ldg(&fGhost.ptr<0>()[idxPopX<5, VelocitySet::QF()>(typ1, tzp1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<22>()] = __ldg(&fGhost.ptr<0>()[idxPopX<6, VelocitySet::QF()>(typ1, tzm1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<24>()] = __ldg(&fGhost.ptr<0>()[idxPopX<7, VelocitySet::QF()>(tym1, tzp1, bxp1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<25>()] = __ldg(&fGhost.ptr<0>()[idxPopX<8, VelocitySet::QF()>(tym1, tzm1, bxp1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
                     }
-                    else if (tx == (block::nx() - 1))
-                    { // e
-                        pop[q_i<2>()] = __ldg(&fGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(ty, tz, bxp1, by, bz)]);
-                        pop[q_i<8>()] = __ldg(&fGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(typ1, tz, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), bz)]);
-                        pop[q_i<10>()] = __ldg(&fGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(ty, tzp1, bxp1, by, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop[q_i<14>()] = __ldg(&fGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(tym1, tz, bxp1, ((ty == 0) ? bym1 : by), bz)]);
-                        pop[q_i<16>()] = __ldg(&fGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(ty, tzm1, bxp1, by, ((tz == 0) ? bzm1 : bz))]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<20>()] = __ldg(&fGhost.ptr<0>()[idxPopX<5, VelocitySet::QF()>(typ1, tzp1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<22>()] = __ldg(&fGhost.ptr<0>()[idxPopX<6, VelocitySet::QF()>(typ1, tzm1, bxp1, ((ty == (block::ny() - 1)) ? byp1 : by), ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<24>()] = __ldg(&fGhost.ptr<0>()[idxPopX<7, VelocitySet::QF()>(tym1, tzp1, bxp1, ((ty == 0) ? bym1 : by), ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<25>()] = __ldg(&fGhost.ptr<0>()[idxPopX<8, VelocitySet::QF()>(tym1, tzm1, bxp1, ((ty == 0) ? bym1 : by), ((tz == 0) ? bzm1 : bz))]);
-                        }
-                    }
+                }
 
-                    if (ty == 0)
-                    { // s
-                        pop[q_i<3>()] = __ldg(&fGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, bym1, bz)]);
-                        pop[q_i<7>()] = __ldg(&fGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
-                        pop[q_i<11>()] = __ldg(&fGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
-                        pop[q_i<14>()] = __ldg(&fGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
-                        pop[q_i<17>()] = __ldg(&fGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<19>()] = __ldg(&fGhost.ptr<3>()[idxPopY<5, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<21>()] = __ldg(&fGhost.ptr<3>()[idxPopY<6, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<24>()] = __ldg(&fGhost.ptr<3>()[idxPopY<7, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<25>()] = __ldg(&fGhost.ptr<3>()[idxPopY<8, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
-                        }
+                if (ty == 0)
+                { // s
+                    pop[q_i<3>()] = __ldg(&fGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, bym1, bz)]);
+                    pop[q_i<7>()] = __ldg(&fGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), bym1, bz)]);
+                    pop[q_i<11>()] = __ldg(&fGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(tx, tzm1, bx, bym1, ((tz == 0) ? bzm1 : bz))]);
+                    pop[q_i<14>()] = __ldg(&fGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, bz)]);
+                    pop[q_i<17>()] = __ldg(&fGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(tx, tzp1, bx, bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<19>()] = __ldg(&fGhost.ptr<3>()[idxPopY<5, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<21>()] = __ldg(&fGhost.ptr<3>()[idxPopY<6, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<24>()] = __ldg(&fGhost.ptr<3>()[idxPopY<7, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<25>()] = __ldg(&fGhost.ptr<3>()[idxPopY<8, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), bym1, ((tz == 0) ? bzm1 : bz))]);
                     }
-                    else if (ty == (block::ny() - 1))
-                    { // n
-                        pop[q_i<4>()] = __ldg(&fGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, byp1, bz)]);
-                        pop[q_i<8>()] = __ldg(&fGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
-                        pop[q_i<12>()] = __ldg(&fGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        pop[q_i<13>()] = __ldg(&fGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
-                        pop[q_i<18>()] = __ldg(&fGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<20>()] = __ldg(&fGhost.ptr<2>()[idxPopY<5, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                            pop[q_i<22>()] = __ldg(&fGhost.ptr<2>()[idxPopY<6, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<23>()] = __ldg(&fGhost.ptr<2>()[idxPopY<7, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
-                            pop[q_i<26>()] = __ldg(&fGhost.ptr<2>()[idxPopY<8, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
-                        }
+                }
+                else if (ty == (block::ny() - 1))
+                { // n
+                    pop[q_i<4>()] = __ldg(&fGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(tx, tz, bx, byp1, bz)]);
+                    pop[q_i<8>()] = __ldg(&fGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(txp1, tz, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, bz)]);
+                    pop[q_i<12>()] = __ldg(&fGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(tx, tzp1, bx, byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                    pop[q_i<13>()] = __ldg(&fGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(txm1, tz, ((tx == 0) ? bxm1 : bx), byp1, bz)]);
+                    pop[q_i<18>()] = __ldg(&fGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(tx, tzm1, bx, byp1, ((tz == 0) ? bzm1 : bz))]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<20>()] = __ldg(&fGhost.ptr<2>()[idxPopY<5, VelocitySet::QF()>(txp1, tzp1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
+                        pop[q_i<22>()] = __ldg(&fGhost.ptr<2>()[idxPopY<6, VelocitySet::QF()>(txp1, tzm1, ((tx == (block::nx() - 1)) ? bxp1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<23>()] = __ldg(&fGhost.ptr<2>()[idxPopY<7, VelocitySet::QF()>(txm1, tzm1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == 0) ? bzm1 : bz))]);
+                        pop[q_i<26>()] = __ldg(&fGhost.ptr<2>()[idxPopY<8, VelocitySet::QF()>(txm1, tzp1, ((tx == 0) ? bxm1 : bx), byp1, ((tz == (block::nz() - 1)) ? bzp1 : bz))]);
                     }
+                }
 
-                    if (tz == 0)
-                    { // b
-                        pop[q_i<5>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzm1)]);
-                        pop[q_i<9>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
-                        pop[q_i<11>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
-                        pop[q_i<16>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
-                        pop[q_i<18>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<19>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<5, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
-                            pop[q_i<22>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<6, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-                            pop[q_i<23>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<7, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
-                            pop[q_i<25>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<8, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
-                        }
+                if (tz == 0)
+                { // b
+                    pop[q_i<5>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzm1)]);
+                    pop[q_i<9>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzm1)]);
+                    pop[q_i<11>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzm1)]);
+                    pop[q_i<16>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzm1)]);
+                    pop[q_i<18>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<19>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<5, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
+                        pop[q_i<22>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<6, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                        pop[q_i<23>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<7, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzm1)]);
+                        pop[q_i<25>()] = __ldg(&fGhost.ptr<5>()[idxPopZ<8, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzm1)]);
                     }
-                    else if (tz == (block::nz() - 1))
-                    { // f
-                        pop[q_i<6>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzp1)]);
-                        pop[q_i<10>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
-                        pop[q_i<12>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-                        pop[q_i<15>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
-                        pop[q_i<17>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            pop[q_i<20>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<5, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-                            pop[q_i<21>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<6, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
-                            pop[q_i<24>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<7, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
-                            pop[q_i<26>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<8, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
-                        }
+                }
+                else if (tz == (block::nz() - 1))
+                { // f
+                    pop[q_i<6>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(tx, ty, bx, by, bzp1)]);
+                    pop[q_i<10>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(txp1, ty, ((tx == (block::nx() - 1)) ? bxp1 : bx), by, bzp1)]);
+                    pop[q_i<12>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(tx, typ1, bx, ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                    pop[q_i<15>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(txm1, ty, ((tx == 0) ? bxm1 : bx), by, bzp1)]);
+                    pop[q_i<17>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(tx, tym1, bx, ((ty == 0) ? bym1 : by), bzp1)]);
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        pop[q_i<20>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<5, VelocitySet::QF()>(txp1, typ1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
+                        pop[q_i<21>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<6, VelocitySet::QF()>(txm1, tym1, ((tx == 0) ? bxm1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
+                        pop[q_i<24>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<7, VelocitySet::QF()>(txp1, tym1, ((tx == (block::nx() - 1)) ? bxp1 : bx), ((ty == 0) ? bym1 : by), bzp1)]);
+                        pop[q_i<26>()] = __ldg(&fGhost.ptr<4>()[idxPopZ<8, VelocitySet::QF()>(txm1, typ1, ((tx == 0) ? bxm1 : bx), ((ty == (block::ny() - 1)) ? byp1 : by), bzp1)]);
                     }
                 }
             }
@@ -819,127 +809,97 @@ namespace LBM
                 const label_t y = threadIdx.y + blockDim.y * blockIdx.y;
                 const label_t z = threadIdx.z + blockDim.z * blockIdx.z;
 
-                /* Write to global pop **/
-                if constexpr (VelocitySet::Q() == 7)
-                {
-                    if (West(x))
-                    { // w
-                        gGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<2>()];
-                    }
-                    if (East(x))
-                    { // e
-                        gGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<1>()];
-                    }
-                    if (South(y))
-                    { // s
-                        gGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<4>()];
-                    }
-                    if (North(y))
-                    { // n
-                        gGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<3>()];
-                    }
-                    if (Back(z))
-                    { // b
-                        gGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<6>()];
-                    }
-                    if (Front(z))
-                    { // f
-                        gGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<5>()];
+                /* write to global pop **/
+                if (West(x))
+                { // w
+                    gGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<2>()];
+                    gGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<8>()];
+                    gGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<10>()];
+                    gGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<14>()];
+                    gGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<16>()];
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        gGhost.ptr<0>()[idxPopX<5, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<20>()];
+                        gGhost.ptr<0>()[idxPopX<6, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<22>()];
+                        gGhost.ptr<0>()[idxPopX<7, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<24>()];
+                        gGhost.ptr<0>()[idxPopX<8, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<25>()];
                     }
                 }
-                else
-                {
-                    if (West(x))
-                    { // w
-                        gGhost.ptr<0>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<2>()];
-                        gGhost.ptr<0>()[idxPopX<1, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<8>()];
-                        gGhost.ptr<0>()[idxPopX<2, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<10>()];
-                        gGhost.ptr<0>()[idxPopX<3, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<14>()];
-                        gGhost.ptr<0>()[idxPopX<4, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<16>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<0>()[idxPopX<5, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<20>()];
-                            gGhost.ptr<0>()[idxPopX<6, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<22>()];
-                            gGhost.ptr<0>()[idxPopX<7, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<24>()];
-                            gGhost.ptr<0>()[idxPopX<8, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<25>()];
-                        }
-                    }
-                    if (East(x))
-                    { // e
-                        gGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<1>()];
-                        gGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<7>()];
-                        gGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<9>()];
-                        gGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<13>()];
-                        gGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<15>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<1>()[idxPopX<5, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<19>()];
-                            gGhost.ptr<1>()[idxPopX<6, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<21>()];
-                            gGhost.ptr<1>()[idxPopX<7, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<23>()];
-                            gGhost.ptr<1>()[idxPopX<8, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<26>()];
-                        }
-                    }
-
-                    if (South(y))
-                    { // s
-                        gGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<4>()];
-                        gGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<8>()];
-                        gGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<12>()];
-                        gGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<13>()];
-                        gGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<18>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<2>()[idxPopY<5, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<20>()];
-                            gGhost.ptr<2>()[idxPopY<6, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<22>()];
-                            gGhost.ptr<2>()[idxPopY<7, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<23>()];
-                            gGhost.ptr<2>()[idxPopY<8, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<26>()];
-                        }
-                    }
-                    if (North(y))
-                    { // n
-                        gGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<3>()];
-                        gGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<7>()];
-                        gGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<11>()];
-                        gGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<14>()];
-                        gGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<17>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<3>()[idxPopY<5, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<19>()];
-                            gGhost.ptr<3>()[idxPopY<6, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<21>()];
-                            gGhost.ptr<3>()[idxPopY<7, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<24>()];
-                            gGhost.ptr<3>()[idxPopY<8, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<25>()];
-                        }
-                    }
-
-                    if (Back(z))
-                    { // b
-                        gGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<6>()];
-                        gGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<10>()];
-                        gGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<12>()];
-                        gGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<15>()];
-                        gGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<17>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<4>()[idxPopZ<5, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<20>()];
-                            gGhost.ptr<4>()[idxPopZ<6, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<21>()];
-                            gGhost.ptr<4>()[idxPopZ<7, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<24>()];
-                            gGhost.ptr<4>()[idxPopZ<8, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<26>()];
-                        }
-                    }
-                    if (Front(z))
+                if (East(x))
+                { // e
+                    gGhost.ptr<1>()[idxPopX<0, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<1>()];
+                    gGhost.ptr<1>()[idxPopX<1, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<7>()];
+                    gGhost.ptr<1>()[idxPopX<2, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<9>()];
+                    gGhost.ptr<1>()[idxPopX<3, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<13>()];
+                    gGhost.ptr<1>()[idxPopX<4, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<15>()];
+                    if constexpr (VelocitySet::Q() == 27)
                     {
-                        gGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<5>()];
-                        gGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<9>()];
-                        gGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<11>()];
-                        gGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<16>()];
-                        gGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<18>()];
-                        if constexpr (VelocitySet::Q() == 27)
-                        {
-                            gGhost.ptr<5>()[idxPopZ<5, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<19>()];
-                            gGhost.ptr<5>()[idxPopZ<6, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<22>()];
-                            gGhost.ptr<5>()[idxPopZ<7, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<23>()];
-                            gGhost.ptr<5>()[idxPopZ<8, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<25>()];
-                        }
+                        gGhost.ptr<1>()[idxPopX<5, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<19>()];
+                        gGhost.ptr<1>()[idxPopX<6, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<21>()];
+                        gGhost.ptr<1>()[idxPopX<7, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<23>()];
+                        gGhost.ptr<1>()[idxPopX<8, VelocitySet::QF()>(threadIdx.y, threadIdx.z, blockIdx)] = pop[q_i<26>()];
+                    }
+                }
+
+                if (South(y))
+                { // s
+                    gGhost.ptr<2>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<4>()];
+                    gGhost.ptr<2>()[idxPopY<1, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<8>()];
+                    gGhost.ptr<2>()[idxPopY<2, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<12>()];
+                    gGhost.ptr<2>()[idxPopY<3, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<13>()];
+                    gGhost.ptr<2>()[idxPopY<4, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<18>()];
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        gGhost.ptr<2>()[idxPopY<5, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<20>()];
+                        gGhost.ptr<2>()[idxPopY<6, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<22>()];
+                        gGhost.ptr<2>()[idxPopY<7, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<23>()];
+                        gGhost.ptr<2>()[idxPopY<8, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<26>()];
+                    }
+                }
+                if (North(y))
+                { // n
+                    gGhost.ptr<3>()[idxPopY<0, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<3>()];
+                    gGhost.ptr<3>()[idxPopY<1, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<7>()];
+                    gGhost.ptr<3>()[idxPopY<2, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<11>()];
+                    gGhost.ptr<3>()[idxPopY<3, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<14>()];
+                    gGhost.ptr<3>()[idxPopY<4, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<17>()];
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        gGhost.ptr<3>()[idxPopY<5, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<19>()];
+                        gGhost.ptr<3>()[idxPopY<6, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<21>()];
+                        gGhost.ptr<3>()[idxPopY<7, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<24>()];
+                        gGhost.ptr<3>()[idxPopY<8, VelocitySet::QF()>(threadIdx.x, threadIdx.z, blockIdx)] = pop[q_i<25>()];
+                    }
+                }
+
+                if (Back(z))
+                { // b
+                    gGhost.ptr<4>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<6>()];
+                    gGhost.ptr<4>()[idxPopZ<1, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<10>()];
+                    gGhost.ptr<4>()[idxPopZ<2, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<12>()];
+                    gGhost.ptr<4>()[idxPopZ<3, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<15>()];
+                    gGhost.ptr<4>()[idxPopZ<4, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<17>()];
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        gGhost.ptr<4>()[idxPopZ<5, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<20>()];
+                        gGhost.ptr<4>()[idxPopZ<6, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<21>()];
+                        gGhost.ptr<4>()[idxPopZ<7, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<24>()];
+                        gGhost.ptr<4>()[idxPopZ<8, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<26>()];
+                    }
+                }
+                if (Front(z))
+                {
+                    gGhost.ptr<5>()[idxPopZ<0, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<5>()];
+                    gGhost.ptr<5>()[idxPopZ<1, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<9>()];
+                    gGhost.ptr<5>()[idxPopZ<2, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<11>()];
+                    gGhost.ptr<5>()[idxPopZ<3, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<16>()];
+                    gGhost.ptr<5>()[idxPopZ<4, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<18>()];
+                    if constexpr (VelocitySet::Q() == 27)
+                    {
+                        gGhost.ptr<5>()[idxPopZ<5, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<19>()];
+                        gGhost.ptr<5>()[idxPopZ<6, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<22>()];
+                        gGhost.ptr<5>()[idxPopZ<7, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<23>()];
+                        gGhost.ptr<5>()[idxPopZ<8, VelocitySet::QF()>(threadIdx.x, threadIdx.y, blockIdx)] = pop[q_i<25>()];
                     }
                 }
             }
@@ -950,59 +910,6 @@ namespace LBM
              **/
             haloFace<VelocitySet> fGhost_;
             haloFace<VelocitySet> gGhost_;
-
-            /**
-             * @brief Construct halo regions from hydrodynamic moments only
-             **/
-            __host__ [[nodiscard]] static inline haloFace<VelocitySet>
-            makeHydroHalo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
-            {
-                return haloFace<VelocitySet>(
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl),
-                    host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl),
-                    mesh);
-            }
-
-            /**
-             * @brief Construct halo regions from hydrodynamic moments + phase field
-             **/
-            __host__ [[nodiscard]] static inline haloFace<VelocitySet>
-            makePhaseHalo(const host::latticeMesh &mesh, const programControl &programCtrl) noexcept
-            {
-                auto rho = host::array<false, scalar_t, VelocitySet, time::instantaneous>("rho", mesh, programCtrl);
-                auto u = host::array<false, scalar_t, VelocitySet, time::instantaneous>("u", mesh, programCtrl);
-                auto v = host::array<false, scalar_t, VelocitySet, time::instantaneous>("v", mesh, programCtrl);
-                auto w = host::array<false, scalar_t, VelocitySet, time::instantaneous>("w", mesh, programCtrl);
-                auto m_xx = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xx", mesh, programCtrl);
-                auto m_xy = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xy", mesh, programCtrl);
-                auto m_xz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_xz", mesh, programCtrl);
-                auto m_yy = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yy", mesh, programCtrl);
-                auto m_yz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_yz", mesh, programCtrl);
-                auto m_zz = host::array<false, scalar_t, VelocitySet, time::instantaneous>("m_zz", mesh, programCtrl);
-                auto phi = host::array<false, scalar_t, D3Q7, time::instantaneous>("phi", mesh, programCtrl);
-
-                return haloFace<VelocitySet>(
-                    rho,
-                    u,
-                    v,
-                    w,
-                    m_xx,
-                    m_xy,
-                    m_xz,
-                    m_yy,
-                    m_yz,
-                    m_zz,
-                    mesh,
-                    &phi);
-            }
 
             /**
              * @brief Check if current thread is at western block boundary

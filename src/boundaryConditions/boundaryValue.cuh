@@ -86,11 +86,6 @@ namespace LBM
 
     private:
         /**
-         * @brief Compile-time multiphase trait
-         **/
-        static constexpr bool isMultiphase = VelocitySet::isPhaseField();
-
-        /**
          * @brief The underlying variable
          **/
         const scalar_t value;
@@ -165,17 +160,7 @@ namespace LBM
             // Try fixing its value
             if (string::isNumber(value_))
             {
-                const std::unordered_set<std::string> allowed = []
-                {
-                    if constexpr (isMultiphase)
-                    {
-                        return std::unordered_set<std::string>{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz", "phi"};
-                    }
-                    else
-                    {
-                        return std::unordered_set<std::string>{"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
-                    }
-                }();
+                const std::unordered_set<std::string> allowed = {"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
 
                 const bool isMember = allowed.find(fieldName) != allowed.end();
 
@@ -197,13 +182,6 @@ namespace LBM
                     {
                         return string::extractParameter<scalar_t>(regionFieldBlock, "value") * velocitySet::scale_ij<scalar_t>();
                     }
-                    if constexpr (isMultiphase)
-                    {
-                        if (fieldName == "phi")
-                        {
-                            return string::extractParameter<scalar_t>(regionFieldBlock, "value");
-                        }
-                    }
                 }
 
                 throw std::runtime_error("Invalid field name \" " + fieldName + "\" for equilibrium distribution");
@@ -211,14 +189,6 @@ namespace LBM
             // Otherwise, test to see if it is an equilibrium moment
             else if (value_ == "equilibrium")
             {
-                if constexpr (isMultiphase)
-                {
-                    if (fieldName == "phi")
-                    {
-                        throw std::runtime_error("phi cannot be initialized using equilibrium");
-                    }
-                }
-
                 // Check to see if the variable is one of the moments
                 const std::unordered_set<std::string> allowed = {"m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"};
                 const bool isMember = allowed.find(fieldName) != allowed.end();

@@ -159,7 +159,7 @@ namespace LBM
                     {
                         const cudaDeviceProp props = getDeviceProperties(programCtrl.deviceList()[0]);
                         const uint64_t totalMemTemp = static_cast<uint64_t>(props.totalGlobalMem);
-                        const uint64_t allocationSize = nPointsTemp * static_cast<uint64_t>(sizeof(scalar_t)) * static_cast<uint64_t>(programCtrl.isMultiphase() ? 11 : 10);
+                        const uint64_t allocationSize = nPointsTemp * static_cast<uint64_t>(sizeof(scalar_t)) * static_cast<uint64_t>(NUMBER_MOMENTS());
 
                         if (allocationSize >= totalMemTemp)
                         {
@@ -193,37 +193,6 @@ namespace LBM
                     copyToSymbol(device::omega, omegaTemp);
                     copyToSymbol(device::t_omegaVar, t_omegaVarTemp);
                     copyToSymbol(device::omegaVar_d2, omegaVar_d2Temp);
-
-                    if (programCtrl.isMultiphase())
-                    {
-                        const scalar_t tt_omegaVarTemp = static_cast<scalar_t>(1) - omegaTemp * static_cast<scalar_t>(0.5);
-                        const scalar_t tt_omegaVar_t3Temp = tt_omegaVarTemp * static_cast<scalar_t>(3);
-                        // Weber defined at programControl
-                        const scalar_t sigmaTemp = (programCtrl.u_inf() * programCtrl.u_inf() * programCtrl.L_char()) / programCtrl.We();
-                        const scalar_t gammaTemp = static_cast<scalar_t>(1);
-
-                        copyToSymbol(device::tt_omegaVar, tt_omegaVarTemp);
-                        copyToSymbol(device::tt_omegaVar_t3, tt_omegaVar_t3Temp);
-                        copyToSymbol(device::We, programCtrl.We());
-                        copyToSymbol(device::sigma, sigmaTemp);
-                        copyToSymbol(device::gamma, gammaTemp);
-
-                        // Debug multiphase device constant vars
-                        // scalar_t h_We = -1;
-                        // scalar_t h_sigma = -1;
-                        // scalar_t h_gamma = -1;
-
-                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_We, device::We, sizeof(scalar_t)));
-                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_sigma, device::sigma, sizeof(scalar_t)));
-                        // checkCudaErrors(cudaMemcpyFromSymbol(&h_gamma, device::gamma, sizeof(scalar_t)));
-
-                        // std::cout << "We (host)    = " << programCtrl.We() << '\n'
-                        //           << "sigma (host) = " << sigmaTemp << '\n'
-                        //           << "gamma (host) = " << gammaTemp << '\n'
-                        //           << "We (device)  = " << h_We << '\n'
-                        //           << "sigma (dev)  = " << h_sigma << '\n'
-                        //           << "gamma (dev)  = " << h_gamma << std::endl;
-                    }
                 }
 
                 // Allocate mesh symbols on the GPU

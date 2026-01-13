@@ -65,6 +65,7 @@ namespace LBM
 {
     /**
      * @class boundaryConditions
+     *
      * @brief Applies boundary conditions for turbulent jet simulations using moment representation
      *
      * This class implements the boundary condition treatment for the D3Q19 lattice
@@ -91,6 +92,12 @@ namespace LBM
          * for the D3Q19 lattice model. Currently, it handles both the inflow
          * (jet) boundary located at the BACK face of the domain and the outflow
          * boundary located at the FRONT face.
+         *
+         * This method implements the moment-based boundary condition treatment for
+         * the D3Q19 lattice model. It handles various boundary types including:
+         * - Static wall boundaries (all velocity components zero)
+         * - Moving lid boundaries (prescribed tangential velocity)
+         * - Corner and edge cases with specialized treatment
          *
          * The method uses the regularized LBM approach to reconstruct boundary
          * moments from available population information, ensuring mass conservation

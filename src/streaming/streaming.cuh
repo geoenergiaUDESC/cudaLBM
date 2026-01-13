@@ -153,45 +153,6 @@ namespace LBM
                 });
         }
 
-        template <const label_t N>
-        __device__ static inline void phase_pull(
-            thread::array<scalar_t, 7> &phase_pop,
-            const thread::array<scalar_t, N> &s_phase_pop) noexcept
-        {
-            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
-            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
-            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
-            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
-            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
-            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
-
-            phase_pop[q_i<1>()] = s_phase_pop[q_i<0 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, threadIdx.z)];
-            phase_pop[q_i<2>()] = s_phase_pop[q_i<1 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, threadIdx.z)];
-            phase_pop[q_i<3>()] = s_phase_pop[q_i<2 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, threadIdx.z)];
-            phase_pop[q_i<4>()] = s_phase_pop[q_i<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
-            phase_pop[q_i<5>()] = s_phase_pop[q_i<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
-            phase_pop[q_i<6>()] = s_phase_pop[q_i<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-        }
-
-        __device__ static inline void phase_pull(
-            thread::array<scalar_t, 7> &phase_pop,
-            const scalar_t *const ptrRestrict s_phase_pop) noexcept
-        {
-            const label_t xm1 = periodic_index<-1, block::nx()>(threadIdx.x);
-            const label_t xp1 = periodic_index<1, block::nx()>(threadIdx.x);
-            const label_t ym1 = periodic_index<-1, block::ny()>(threadIdx.y);
-            const label_t yp1 = periodic_index<1, block::ny()>(threadIdx.y);
-            const label_t zm1 = periodic_index<-1, block::nz()>(threadIdx.z);
-            const label_t zp1 = periodic_index<1, block::nz()>(threadIdx.z);
-
-            phase_pop[q_i<1>()] = s_phase_pop[q_i<0 * block::stride()>() + device::idxBlock(xm1, threadIdx.y, threadIdx.z)];
-            phase_pop[q_i<2>()] = s_phase_pop[q_i<1 * block::stride()>() + device::idxBlock(xp1, threadIdx.y, threadIdx.z)];
-            phase_pop[q_i<3>()] = s_phase_pop[q_i<2 * block::stride()>() + device::idxBlock(threadIdx.x, ym1, threadIdx.z)];
-            phase_pop[q_i<4>()] = s_phase_pop[q_i<3 * block::stride()>() + device::idxBlock(threadIdx.x, yp1, threadIdx.z)];
-            phase_pop[q_i<5>()] = s_phase_pop[q_i<4 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zm1)];
-            phase_pop[q_i<6>()] = s_phase_pop[q_i<5 * block::stride()>() + device::idxBlock(threadIdx.x, threadIdx.y, zp1)];
-        }
-
     private:
         /**
          * @brief Computes linear index for population data within a block

@@ -70,14 +70,12 @@ namespace LBM
             : input_(inputControl(argc, argv)),
               caseName_(string::extractParameter<std::string>(string::readFile("programControl"), "caseName")),
               Re_(initialiseConst<scalar_t>("Re")),
-              We_(string::extractParameter<bool>(string::readFile("programControl"), "multiphase") ? initialiseConst<scalar_t>("We") : static_cast<scalar_t>(0)),
               u_inf_(initialiseConst<scalar_t>("u_inf")),
               L_char_(initialiseConst<scalar_t>("L_char")),
               nTimeSteps_(string::extractParameter<label_t>(string::readFile("programControl"), "nTimeSteps")),
               saveInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "saveInterval")),
               infoInterval_(string::extractParameter<label_t>(string::readFile("programControl"), "infoInterval")),
-              latestTime_(fileIO::latestTime(caseName_)),
-              multiphase_(string::extractParameter<bool>(string::readFile("programControl"), "multiphase"))
+              latestTime_(fileIO::latestTime(caseName_))
         {
             static_assert((std::is_same_v<scalar_t, float>) | (std::is_same_v<scalar_t, double>), "Invalid floating point size: must be either 32 or 64 bit");
 
@@ -114,10 +112,6 @@ namespace LBM
             std::cout << deviceList()[deviceList().size() - 1] << "];" << std::endl;
             std::cout << "    caseName: " << caseName_ << ";" << std::endl;
             std::cout << "    Re = " << Re_ << ";" << std::endl;
-            if (multiphase_)
-            {
-                std::cout << "    We = " << We_ << ";" << std::endl;
-            }
             std::cout << "    nTimeSteps = " << nTimeSteps_ << ";" << std::endl;
             std::cout << "    saveInterval = " << saveInterval_ << ";" << std::endl;
             std::cout << "    infoInterval = " << infoInterval_ << ";" << std::endl;
@@ -160,15 +154,6 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr scalar_t Re() const noexcept
         {
             return Re_;
-        }
-
-        /**
-         * @brief Returns the Weber number
-         * @return The Weber number
-         **/
-        __device__ __host__ [[nodiscard]] inline constexpr scalar_t We() const noexcept
-        {
-            return We_;
         }
 
         /**
@@ -223,15 +208,6 @@ namespace LBM
         __device__ __host__ [[nodiscard]] inline constexpr label_t latestTime() const noexcept
         {
             return latestTime_;
-        }
-
-        /**
-         * @brief Returns multiphase or not
-         * @return Multiphase bool
-         **/
-        __device__ __host__ [[nodiscard]] inline constexpr bool isMultiphase() const noexcept
-        {
-            return multiphase_;
         }
 
         /**
@@ -297,11 +273,6 @@ namespace LBM
         const scalar_t Re_;
 
         /**
-         * @brief The Weber number
-         **/
-        const scalar_t We_;
-
-        /**
          * @brief The characteristic velocity
          **/
         const scalar_t u_inf_;
@@ -318,11 +289,6 @@ namespace LBM
         const label_t saveInterval_;
         const label_t infoInterval_;
         const label_t latestTime_;
-
-        /**
-         * @brief Whether the simulation is multiphase
-         **/
-        const bool multiphase_;
 
         /**
          * @brief Reads a variable from the caseInfo file into a parameter of type T

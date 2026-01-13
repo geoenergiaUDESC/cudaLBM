@@ -78,7 +78,7 @@ int main(const int argc, const char *const argv[])
     device::array<scalar_t, VelocitySet, time::instantaneous> myz("m_yz", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> mzz("m_zz", mesh, programCtrl);
 
-    const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs(
+    const device::ptrCollection<10, scalar_t> devPtrs(
         rho.ptr(),
         u.ptr(),
         v.ptr(),
@@ -115,7 +115,7 @@ int main(const int argc, const char *const argv[])
             fileIO::writeFile<time::instantaneous>(
                 programCtrl.caseName() + "_" + std::to_string(timeStep) + ".LBMBin",
                 mesh,
-                functionObjects::solutionVariableNames(false),
+                functionObjects::solutionVariableNames,
                 host::toHost(devPtrs, mesh),
                 timeStep);
 

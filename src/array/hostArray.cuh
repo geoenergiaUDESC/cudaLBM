@@ -253,11 +253,6 @@ namespace LBM
              **/
             const host::latticeMesh mesh_;
 
-            __host__ [[nodiscard]] static inline bool isAuxField(const std::string &n) noexcept
-            {
-                return (n == "normx" || n == "normy" || n == "normz" || n == "ind" || n == "ffx" || n == "ffy" || n == "ffz");
-            }
-
             /**
              * @brief Initialize array from file or initial conditions
              * @param[in] mesh Lattice mesh for dimensioning
@@ -268,19 +263,16 @@ namespace LBM
              **/
             __host__ [[nodiscard]] const std::vector<T> initialise_array(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
             {
-                if (isAuxField(fieldName))
-                {
-                    return std::vector<T>(mesh.nPoints(), T(0));
-                }
-
                 if (fileIO::hasIndexedFiles(programCtrl.caseName()))
                 {
                     const std::string fileName = programCtrl.caseName() + "_" + std::to_string(fileIO::latestTime(programCtrl.caseName())) + ".LBMBin";
 
                     return fileIO::readFieldByName<T>(fileName, fieldName);
                 }
-
-                return initialConditions(mesh, fieldName, programCtrl);
+                else
+                {
+                    return initialConditions(mesh, fieldName);
+                }
             }
 
             // Initialises the array from the caseName
@@ -298,7 +290,7 @@ namespace LBM
                 }
                 else
                 {
-                    // Should throw  If not found
+                    // Should throw if not found
                     return initialConditions(mesh, caseName);
                 }
             }
@@ -309,9 +301,8 @@ namespace LBM
              * @param[in] fieldName Name of field for boundary condition lookup
              * @return Initialized data vector with boundary conditions applied
              **/
-            __host__ [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName, const programControl &programCtrl)
+            __host__ [[nodiscard]] const std::vector<T> initialConditions(const host::latticeMesh &mesh, const std::string &fieldName)
             {
-                const bool isMultiphase = programCtrl.isMultiphase();
                 const boundaryFields<VelocitySet> bField(fieldName);
 
                 std::vector<T> field(mesh.nPoints(), 0);

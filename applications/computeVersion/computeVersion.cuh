@@ -61,7 +61,7 @@ namespace LBM
      * @brief Queries and returns the number of available CUDA devices.
      * @details Checks for CUDA devices and handles potential errors during device querying.
      * @return The number of CUDA devices available. Returns 0 if no devices are found.
-     * @tparam throws If true, the function may throw.  If not, the function returns 0 on error.
+     * @tparam throws If true, the function may throw. If not, the function returns 0 on error.
      * @throws std::runtime_error If CUDA device query fails or returns an invalid count.
      **/
     template <const bool throws>

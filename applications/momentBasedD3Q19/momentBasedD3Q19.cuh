@@ -94,7 +94,7 @@ namespace LBM
      * @param blockHalo Object containing pointers to the block halo faces used to exchange the population densities
      **/
     launchBoundsD3Q19 __global__ void momentBasedD3Q19(
-        const device::ptrCollection<NUMBER_MOMENTS(), scalar_t> devPtrs,
+        const device::ptrCollection<10, scalar_t> devPtrs,
         const device::ptrCollection<6, const scalar_t> fGhost,
         const device::ptrCollection<6, scalar_t> gGhost)
     {

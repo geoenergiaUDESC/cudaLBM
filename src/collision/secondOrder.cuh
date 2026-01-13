@@ -60,8 +60,9 @@ namespace LBM
      * @extends collision
      *
      * This class provides a specialized collision operator that handles
-     * second-order moment updates in the Lattice Boltzmann Method. It updates
-     * both diagonal and off-diagonal moments using relaxation parameters and velocity components.
+     * second-order moment updates in the Lattice Boltzmann Method. It assumes
+     * zero force terms and updates both diagonal and off-diagonal moments
+     * using relaxation parameters and velocity components.
      *
      * The collision operation follows the standard BGK approximation with
      * specialized treatment for second-order moments in the moment space.
@@ -89,7 +90,7 @@ namespace LBM
          * @note This implementation assumes zero force terms, so velocity updates are omitted
          * @note Uses device-level relaxation parameters (device::t_omegaVar, device::omegaVar_d2, device::omega)
          **/
-        __device__ static inline void collide(thread::array<scalar_t, 10> &moments) noexcept
+        __device__ static inline void collide(thread::array<scalar_t, NUMBER_MOMENTS()> &moments) noexcept
         {
             // Velocity updates are removed since force terms are zero
             // Diagonal moment updates (remove force terms)

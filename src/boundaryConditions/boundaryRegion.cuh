@@ -65,6 +65,7 @@ namespace LBM
     class boundaryRegion
     {
     public:
+        // Need to check that the length of fieldNames is 10
         __host__ [[nodiscard]] boundaryRegion(const std::string &regionName)
             : values_{
                   boundaryValue("rho", regionName),
@@ -76,11 +77,7 @@ namespace LBM
                   boundaryValue("m_xz", regionName),
                   boundaryValue("m_yy", regionName),
                   boundaryValue("m_yz", regionName),
-                  boundaryValue("m_zz", regionName),
-#if isMultiphase
-                  boundaryValue("phi", regionName)
-#endif
-              }
+                  boundaryValue("m_zz", regionName)}
         {
             if constexpr (verbose())
             {
@@ -133,10 +130,6 @@ namespace LBM
         {
             return values_[index::zz()]();
         }
-        __host__ [[nodiscard]] inline constexpr scalar_t phi() const noexcept
-        {
-            return values_[index::phi()]();
-        }
 
         /**
          * @brief Print all field values for this boundary region
@@ -144,27 +137,18 @@ namespace LBM
          **/
         void print() const noexcept
         {
-            for (std::size_t field = 0; field < N_FIELDS; field++)
+            const std::vector<std::string> regionNames({"rho", "u", "v", "w", "m_xx", "m_xy", "m_xz", "m_yy", "m_yz", "m_zz"});
+            for (std::size_t field = 0; field < regionNames.size(); field++)
             {
-                std::cout << index::name(field) << ": " << values_[field]() << std::endl;
+                std::cout << regionNames[field] << ": " << values_[field]() << std::endl;
             }
         }
 
     private:
         /**
-         * @brief Compile-time multiphase trait
-         **/
-        static constexpr bool isMultiphase = VelocitySet::isPhaseField();
-
-        /**
-         * @brief Conditional number of fields
-         **/
-        static constexpr label_t N_FIELDS = NUMBER_MOMENTS();
-
-        /**
          * @brief Array of boundary values for all fields
          **/
-        const boundaryValue<VelocitySet> values_[N_FIELDS];
+        const boundaryValue<VelocitySet> values_[10];
     };
 }
 

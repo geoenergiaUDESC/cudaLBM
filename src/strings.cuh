@@ -1,0 +1,804 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Functions employed throughout the source code to manipulate strings
+
+Namespace
+    LBM
+
+SourceFiles
+    strings.cuh
+
+\*---------------------------------------------------------------------------*/
+
+#include "LBMIncludes.cuh"
+#include "LBMTypedefs.cuh"
+
+#ifndef __MBLBM_STRINGS_CUH
+#define __MBLBM_STRINGS_CUH
+
+namespace LBM
+{
+    namespace string
+    {
+        /**
+         * @brief Left-side concatenates a string to each element of a vector of strings.
+         * @param[in] S The vector of strings to which the string will be concatenated.
+         * @param[in] s The string to concatenate to each element of S.
+         * @return A new vector of strings with s concatenated to each element of S.
+         * @note This function creates a new vector and does not modify the input vector S.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> catenate(const std::string &s, const std::vector<std::string> &S) noexcept
+        {
+            std::vector<std::string> S_new(S.size(), "");
+
+            for (std::size_t i = 0; i < S_new.size(); i++)
+            {
+                S_new[i] = s + S_new[i];
+            }
+
+            return S_new;
+        }
+
+        /**
+         * @brief Right-side concatenates a string to each element of a vector of strings.
+         * @param[in] S The vector of strings to which the string will be concatenated.
+         * @param[in] s The string to concatenate to each element of S.
+         * @return A new vector of strings with s concatenated to each element of S.
+         * @note This function creates a new vector and does not modify the input vector S.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> catenate(const std::vector<std::string> &S, const std::string &s) noexcept
+        {
+            std::vector<std::string> S_new(S.size(), "");
+
+            for (std::size_t i = 0; i < S_new.size(); i++)
+            {
+                S_new[i] = S[i] + s;
+            }
+
+            return S_new;
+        }
+
+        /**
+         * @brief Checks if a target string exists within a vector of strings.
+         * @param[in] vec The vector of strings to search.
+         * @param[in] target The string to search for.
+         * @return true if target is found in vec, false otherwise.
+         * @note Uses std::find for efficient searching.
+         **/
+        __host__ [[nodiscard]] inline bool containsString(const std::vector<std::string> &vec, const std::string &target) noexcept
+        {
+            return std::find(vec.begin(), vec.end(), target) != vec.end(); // was constexpr
+        }
+
+        /**
+         * @brief Finds the position of a char within a string
+         * @param[in] str The string to search
+         * @param[in] c The character to search for
+         * @return The position of c within str
+         **/
+        __host__ [[nodiscard]] inline std::size_t findCharPosition(const std::string &str, const char (&c)[2])
+        {
+            return str.find(c[0]); // was constexpr
+        }
+
+        /**
+         * @brief Concatenates a vector of strings into a single string with newline separators.
+         * @param[in] S The vector of strings to concatenate.
+         * @return A single string with each element of S separated by a newline character.
+         * @note This function is useful for creating multi-line strings from a list of lines.
+         **/
+        __host__ [[nodiscard]] const std::string catenate(const std::vector<std::string> &S) noexcept
+        {
+            std::string s;
+            for (std::size_t line = 0; line < S.size(); line++)
+            {
+                s = s + S[line] + "\n";
+            }
+            return s;
+        }
+
+        /**
+         * @brief Removes the first and last lines from a vector of strings.
+         * @param[in] lines The input vector of strings.
+         * @return A new vector of strings with the first and last lines removed.
+         * @throws std::runtime_error if the input vector has 2 or fewer lines.
+         * @note This function is useful for removing enclosing braces from blocks of text.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> eraseBraces(const std::vector<std::string> &lines) noexcept
+        {
+            // Check minimum size requirement
+            if (lines.size() < 3)
+            {
+                errorHandler(-1, "Lines must have at least 3 entries: opening bracket, content, and closing bracket. Problematic entry: " + catenate(lines));
+            }
+
+            // Check that first element is exactly "{"
+            if (lines.front() != "{")
+            {
+                errorHandler(-1, "First element must be opening brace '{'. Problematic entry: " + catenate(lines));
+            }
+
+            // Check that last element is exactly "};"
+            if (lines.back() != "};")
+            {
+                errorHandler(-1, "Last element must be closing brace with semicolon '};'. Problematic entry: " + catenate(lines));
+            }
+
+            // Create new vector without the braces
+            std::vector<std::string> newLines(lines.size() - 2);
+
+            for (std::size_t line = 1; line < lines.size() - 1; line++)
+            {
+                newLines[line - 1] = lines[line];
+            }
+
+            return newLines;
+        }
+
+        /**
+         * @brief Trims leading and trailing whitespace from a string.
+         * @param str The input string to trim.
+         * @return Trimmed string, or empty string if only whitespace.
+         * @note Handles space, tab, newline, carriage return, form feed, and vertical tab.
+         **/
+        template <const bool trimSemicolon>
+        __host__ [[nodiscard]] const std::string trim(const std::string &str)
+        {
+            const std::size_t start = str.find_first_not_of(" \t\n\r\f\v");
+
+            if (start == std::string::npos)
+            {
+                return "";
+            }
+
+            if constexpr (trimSemicolon)
+            {
+                return str.substr(start, str.find_last_not_of(" \t\n\r\f\v;") - start + 1);
+            }
+            else
+            {
+                return str.substr(start, str.find_last_not_of(" \t\n\r\f\v") - start + 1);
+            }
+        }
+
+        /**
+         * @brief Trims leading and trailing whitespace from each string in a vector.
+         * @param str The vector of strings to trim.
+         * @return A new vector with each string trimmed.
+         **/
+        template <const bool trimSemicolon>
+        __host__ [[nodiscard]] const std::vector<std::string> trim(const std::vector<std::string> &str)
+        {
+            std::vector<std::string> strTrimmed(str.size(), "");
+
+            for (std::size_t s = 0; s < str.size(); s++)
+            {
+                strTrimmed[s] = trim<trimSemicolon>(str[s]);
+            }
+
+            return strTrimmed;
+        }
+
+        /**
+         * @brief Removes C++-style comments from a string.
+         * @param str The input string to process.
+         * @return String with comments removed (everything after '//').
+         * @note Only handles single-line comments starting with '//'.
+         **/
+        __host__ [[nodiscard]] const std::string removeComments(const std::string &str)
+        {
+            const std::size_t commentPos = str.find("//");
+            if (commentPos != std::string::npos)
+            {
+                return str.substr(0, commentPos);
+            }
+            return str;
+        }
+
+        /**
+         * @brief Checks if a string contains only whitespace characters.
+         * @param str The string to check.
+         * @return true if string contains only whitespace, false otherwise.
+         * @note Uses std::isspace for whitespace detection.
+         **/
+        __host__ [[nodiscard]] bool isOnlyWhitespace(const std::string &str)
+        {
+            for (char c : str)
+            {
+                if (!std::isspace(static_cast<unsigned char>(c)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * @brief Finds the line number where a block declaration starts.
+         * @param lines Vector of strings representing the source lines.
+         * @param blockName The name of the block to find (e.g., "boundaryField").
+         * @param startLine Line number to start searching from (default: 0).
+         * @return Line number where the block declaration was found.
+         * @throws std::runtime_error if block is not found.
+         * @note Handles various declaration styles including braces and semicolons.
+         **/
+        __host__ [[nodiscard]] std::size_t findBlockLine(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
+        {
+            for (std::size_t i = startLine; i < lines.size(); ++i)
+            {
+                const std::string processedLine = removeComments(lines[i]);
+                const std::string trimmedLine = trim<false>(processedLine);
+
+                // Check if line starts with the block name
+                if (trimmedLine.compare(0, blockName.length(), blockName) == 0)
+                {
+                    // Extract the rest of the line after the block name
+                    const std::string rest = trim<false>(trimmedLine.substr(blockName.length()));
+
+                    // Check if the next token is empty or a brace
+                    if (rest.empty() || rest == "{" || rest[0] == '{')
+                    {
+                        return i;
+                    }
+
+                    // Check if the next token is a semicolon (for field declarations)
+                    if (rest[0] == ';')
+                    {
+                        return i;
+                    }
+
+                    // For cases like "internalField" which might be followed by other content
+                    std::istringstream iss(rest);
+                    std::string nextToken;
+                    iss >> nextToken;
+
+                    if (nextToken.empty() || nextToken == "{" || nextToken == ";")
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            throw std::runtime_error("Field block \"" + blockName + "\" not defined");
+        }
+
+        /**
+         * @brief Extracts a complete block (with braces) from source lines.
+         * @param lines Vector of strings representing the source lines.
+         * @param blockName The name of the block to extract.
+         * @param startLine Line number to start searching from (default: 0).
+         * @return Vector of strings containing the complete block including braces.
+         * @throws std::runtime_error for malformed blocks or unbalanced braces.
+         * @note Preserves original formatting including comments in the returned block.
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> extractBlock(const std::vector<std::string> &lines, const std::string &blockName, const std::size_t startLine = 0)
+        {
+            std::vector<std::string> result;
+
+            // Find the block line using the helper function
+            const std::size_t blockLine = findBlockLine(lines, blockName, startLine);
+
+            // Check for non-whitespace content between block declaration and opening brace
+            bool foundOpeningBrace = false;
+            int braceCount = 0;
+            std::size_t openingBraceLine = 0;
+
+            // First, check if the opening brace is on the same line as the block declaration
+            const std::string blockLineProcessed = removeComments(lines[blockLine]);
+            std::size_t openBracePos = blockLineProcessed.find('{');
+            if (openBracePos != std::string::npos)
+            {
+                // Opening brace is on the same line as block declaration
+                braceCount = 1;
+                result.push_back(lines[blockLine]);
+                foundOpeningBrace = true;
+                openingBraceLine = blockLine;
+            }
+            else
+            {
+                // Check subsequent lines for the opening brace
+                for (std::size_t i = blockLine + 1; i < lines.size(); ++i)
+                {
+                    const std::string processedLine = removeComments(lines[i]);
+                    const std::string trimmedLine = trim<false>(processedLine);
+
+                    // Check for closing brace before opening brace
+                    if (processedLine.find('}') != std::string::npos)
+                    {
+                        throw std::runtime_error("Found closing brace before opening brace for block '" + blockName + "'");
+                    }
+
+                    // Check for non-whitespace content
+                    if (!isOnlyWhitespace(trimmedLine) && trimmedLine.find('{') == std::string::npos)
+                    {
+                        throw std::runtime_error("Non-whitespace content found between block declaration and opening brace for block '" + blockName + "'");
+                    }
+
+                    // Check for opening brace
+                    openBracePos = processedLine.find('{');
+                    if (openBracePos != std::string::npos)
+                    {
+                        braceCount = 1;
+                        result.push_back(lines[i]);
+                        foundOpeningBrace = true;
+                        openingBraceLine = i;
+                        break;
+                    }
+
+                    // If we reach here, the line contains only whitespace or comments
+                    // We don't add these lines to the result yet
+                }
+            }
+
+            if (!foundOpeningBrace)
+            {
+                throw std::runtime_error("Opening brace not found for block '" + blockName + "'");
+            }
+
+            // Continue processing from the line after the opening brace
+            for (std::size_t i = openingBraceLine + 1; i < lines.size(); ++i)
+            {
+                // Process each line to count braces, but keep the original line in the result
+                const std::string processedLineInner = removeComments(lines[i]);
+                for (char c : processedLineInner)
+                {
+                    if (c == '{')
+                    {
+                        braceCount++;
+                    }
+                    else if (c == '}')
+                    {
+                        braceCount--;
+                    }
+                }
+                result.push_back(lines[i]);
+
+                if (braceCount == 0)
+                {
+                    return result;
+                }
+            }
+
+            // If we reach here, the braces are unbalanced
+            throw std::runtime_error("Unbalanced braces for block '" + blockName + "'");
+        }
+
+        /**
+         * @brief Extracts a field-specific block using a combined key-field identifier.
+         * @param lines Vector of strings representing the source lines.
+         * @param fieldName The field name (e.g., "p" for pressure).
+         * @param key The block type key (e.g., "internalField").
+         * @return Vector of strings containing the complete block.
+         * @note Convenience wrapper for extractBlock(lines, key + " " + fieldName).
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> extractBlock(const std::vector<std::string> &lines, const std::string &fieldName, const std::string &key)
+        {
+            return extractBlock(lines, key + " " + fieldName);
+        }
+
+        /**
+         * @brief Reads the caseInfo file in the current directory into a vector of strings
+         * @return A std::vector of std::string_view objects contained within the caseInfo file
+         * @note This function will cause the program to exit if caseInfo is not found in the launch directory
+         **/
+        __host__ [[nodiscard]] const std::vector<std::string> readFile(const std::string &fileName)
+        {
+            // Does the file even exist?
+            if (!std::filesystem::exists(fileName))
+            {
+                throw std::runtime_error(std::string(fileName) + std::string(" file not opened"));
+            }
+
+            // Read the caseInfo file contained within the directory
+            std::ifstream caseInfo(std::string(fileName).c_str());
+            std::vector<std::string> S;
+            std::string s;
+
+            // Count the number of lines
+            label_t nLines = 0;
+
+            // Count the number of lines
+            while (std::getline(caseInfo, s))
+            {
+                S.push_back(s);
+                nLines = nLines + 1;
+            }
+
+            S.resize(nLines);
+
+            return S;
+        }
+
+        /**
+         * @brief Checks that the input string is numeric.
+         * @param s The string_view object which is to be checked.
+         * @return True if s is a valid number, false otherwise.
+         * @note A valid number can optionally start with a '+' or '-' sign and may contain one decimal point.
+         **/
+        __host__ [[nodiscard]] bool isNumber(const std::string &s) noexcept
+        {
+            if (s.empty())
+            {
+                return false;
+            }
+
+            std::string::const_iterator it = s.begin();
+
+            // Check for optional sign
+            if (*it == '+' || *it == '-')
+            {
+                ++it;
+                // If string is just a sign, it's not a valid number
+                if (it == s.end())
+                {
+                    return false;
+                }
+            }
+
+            bool has_digits = false;
+            bool has_decimal = false;
+
+            // Process each character
+            while (it != s.end())
+            {
+                if (std::isdigit(*it))
+                {
+                    has_digits = true;
+                    ++it;
+                }
+                else if (*it == '.')
+                {
+                    // Only one decimal point allowed
+                    if (has_decimal)
+                    {
+                        return false;
+                    }
+                    has_decimal = true;
+                    ++it;
+                }
+                else
+                {
+                    // Invalid character found
+                    return false;
+                }
+            }
+
+            // Must have at least one digit and if there's a decimal point,
+            // there must be digits after it (handled by the iteration)
+            return has_digits;
+        }
+
+        /**
+         * @brief Determines whether or not the number string is all digits
+         * @param numStr The number string
+         * @return True if the string is all digits, false otherwise
+         **/
+        __host__ [[nodiscard]] inline bool isAllDigits(const std::string &numStr) noexcept
+        {
+            for (char c : numStr)
+            {
+                if (!std::isdigit(static_cast<unsigned char>(c)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /**
+         * @brief Splits the string_view object s according to the delimiter delim
+         * @param s The string_view object which is to be split
+         * @param delim The delimiter character by which s is split, e.g. a comma, space, etc
+         * @param removeWhitespace Controls the removal of whitespace; removes blank spaces from the return value if true (default true)
+         * @return A std::vector of std::string_view objects split from s by delim
+         * @note This function can be used to, for example, split a string by commas, spaces, etc
+         **/
+        template <const char delim>
+        __host__ [[nodiscard]] const std::vector<std::string> split(const std::string_view &s, const bool removeWhitespace = true) noexcept
+        {
+            std::vector<std::string> result;
+            const char *left = s.begin();
+            for (const char *it = left; it != s.end(); ++it)
+            {
+                if (*it == delim)
+                {
+                    result.emplace_back(&*left, it - left);
+                    left = it + 1;
+                }
+            }
+            if (left != s.end())
+            {
+                result.emplace_back(&*left, s.end() - left);
+            }
+
+            // Remove whitespace from the returned vector
+            if (removeWhitespace)
+            {
+                result.erase(std::remove(result.begin(), result.end(), ""), result.end());
+            }
+
+            return result;
+        }
+
+        __host__ [[nodiscard]] const std::string extractParameterLine(const std::vector<std::string> &S, const std::string &name)
+        {
+            for (const auto &line : S)
+            {
+                // Trim leading whitespace
+                const auto first = line.find_first_not_of(" \t");
+                if (first == std::string::npos)
+                {
+                    continue;
+                }
+
+                // Key must match at start of line
+                if (line.compare(first, name.size(), name) != 0)
+                {
+                    continue;
+                }
+
+                // Ensure key boundary
+                const auto afterKey = first + name.size();
+                if (afterKey < line.size() && !std::isspace(line[afterKey]))
+                {
+                    continue;
+                }
+
+                // Extract remainder
+                std::string value = line.substr(afterKey);
+
+                // Trim whitespace
+                value.erase(0, value.find_first_not_of(" \t"));
+                value.erase(value.find_last_not_of(" \t") + 1);
+
+                // Strip trailing semicolon
+                if (!value.empty() && value.back() == ';')
+                    value.pop_back();
+
+                if (value.empty())
+                {
+                    throw std::runtime_error("Parameter '" + name + "' has no value");
+                }
+
+                return value;
+            }
+
+            throw std::runtime_error("Parameter '" + name + "' not found");
+        }
+
+        /**
+         * @brief Searches for an entry corresponding to variableName within the vector of strings S
+         * @param T The type of variable returned
+         * @param S The vector of strings which is searched
+         * @param name The name of the variable which is to be found and returned as type T
+         * @return The value of the variable expressed as a type T
+         * @note This function can be used to, for example, read an entry of nx within caseInfo after caseInfo has been loaded into S
+         * @note The line containing the definition of variableName must separate variableName and its value with a space, for instance nx 128;
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] T extractParameter(const std::vector<std::string> &S, const std::string &name)
+        {
+            // First get the parameter line string
+            const std::string toReturn = extractParameterLine(S, name);
+
+            // Is it supposed a boolean?
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                if (toReturn == "true" || toReturn == "1")
+                {
+                    return true;
+                }
+                if (toReturn == "false" || toReturn == "0")
+                {
+                    return false;
+                }
+
+                throw std::runtime_error("Invalid boolean value for parameter '" + name + "': '" + toReturn + "'");
+            }
+            // Is it supposed an integral value?
+            else if constexpr (std::is_integral_v<T>)
+            {
+                if (!isNumber(toReturn))
+                {
+                    throw std::runtime_error("Invalid integer value for parameter '" + name + "': '" + toReturn + "'");
+                }
+
+                // Check if T is an unsigned integral type
+                if constexpr (std::is_unsigned_v<T>)
+                {
+                    return static_cast<T>(std::stoul(toReturn));
+                }
+                // T must be a signed integral type
+                else
+                {
+                    return static_cast<T>(std::stol(toReturn));
+                }
+            }
+            // Is it supposed a floating point value?
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                return static_cast<T>(std::stold(toReturn));
+            }
+            // Is it supposed a string?
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return toReturn;
+            }
+            else
+            {
+                static_assert(!sizeof(T), "Unsupported type in extractParameter(const std::vector<std::string> &S, const std::string &name)");
+            }
+        }
+
+        template <typename T>
+        __host__ [[nodiscard]] T extractParameter(const std::string &toReturn)
+        {
+            // Is it supposed a boolean?
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                if (toReturn == "true" || toReturn == "1")
+                {
+                    return true;
+                }
+                if (toReturn == "false" || toReturn == "0")
+                {
+                    return false;
+                }
+
+                throw std::runtime_error("Invalid boolean value: '" + toReturn + "'");
+            }
+            // Is it supposed an integral value?
+            else if constexpr (std::is_integral_v<T>)
+            {
+                if (!isNumber(toReturn))
+                {
+                    throw std::runtime_error("Invalid integer value: '" + toReturn + "'");
+                }
+
+                // Check if T is an unsigned integral type
+                if constexpr (std::is_unsigned_v<T>)
+                {
+                    return static_cast<T>(std::stoul(toReturn));
+                }
+                // T must be a signed integral type
+                else
+                {
+                    return static_cast<T>(std::stol(toReturn));
+                }
+            }
+            // Is it supposed a floating ponit value?
+            else if constexpr (std::is_floating_point_v<T>)
+            {
+                return static_cast<T>(std::stold(toReturn));
+            }
+            // Is it supposed a string?
+            else if constexpr (std::is_same_v<T, std::string>)
+            {
+                return toReturn;
+            }
+            else
+            {
+                static_assert(!sizeof(T), "Unsupported type in extractParameter(const std::string &toReturn)");
+            }
+        }
+
+        /**
+         * @brief Parses a name-value pair
+         * @param args The list of arguments to be searched
+         * @param name The argument to be searched for
+         * @return A std::string_view of the value argument corresponding to name
+         **/
+        __host__ [[nodiscard]] const std::string parseNameValuePair(const std::vector<std::string> &args, const std::string &name)
+        {
+            // Loop over the input arguments and search for name
+            for (label_t i = 0; i < args.size(); i++)
+            {
+                // The name argument exists, so handle it
+                if (args[i] == name)
+                {
+                    // First check to see that i + 1 is not out of bounds
+                    if (i + 1 < args.size())
+                    {
+                        return args[i + 1];
+                    }
+                    // Otherwise it is out of bounds: the supplied argument is the last argument and no value pair has been supplied
+                    else
+                    {
+                        throw std::runtime_error("Input argument " + std::string(name) + std::string(" has not been supplied with a value; the correct syntax is -GPU 0,1 for example"));
+                        return "";
+                    }
+                }
+            }
+            throw std::runtime_error("Input argument " + std::string(name) + std::string(" has not been supplied"));
+            return "";
+        }
+
+        /**
+         * @brief Parses the value of the argument following name
+         * @param argc First argument passed to main
+         * @param argv Second argument passed to main
+         * @return A vector of integral type T
+         * @note This function can be used to parse arguments passed to the executable on the command line such as -GPU 0,1
+         **/
+        template <typename T>
+        __host__ [[nodiscard]] const std::vector<T> parseValue(const std::vector<std::string> &args, const std::string &name)
+        {
+            const std::vector<std::string> s_v = string::split<","[0]>(parseNameValuePair(args, name), true);
+
+            std::vector<T> arr;
+            label_t arrLength = 0;
+
+            for (label_t i = 0; i < s_v.size(); i++)
+            {
+                // Should check here if the string converts to a negative number and exit
+                if constexpr (std::is_signed_v<T>)
+                {
+                    if (isNumber(s_v[i]))
+                    {
+                        arr.push_back(std::stoi(std::string(s_v[i])));
+                    }
+                    else
+                    {
+                        throw std::runtime_error(std::string(name) + std::string(" is not numeric"));
+                    }
+                }
+                else
+                {
+                    if (isNumber(s_v[i]))
+                    {
+                        arr.push_back(std::stoul(std::string(s_v[i])));
+                    }
+                    else
+                    {
+                        throw std::runtime_error(std::string("Value supplied to argument ") + std::string(name) + std::string(" is not numeric"));
+                    }
+                }
+                arrLength = arrLength + 1;
+            }
+
+            arr.resize(arrLength);
+
+            return arr;
+        }
+    }
+}
+
+#endif

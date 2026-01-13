@@ -1,0 +1,74 @@
+/*---------------------------------------------------------------------------*\
+|                                                                             |
+| cudaLBM: CUDA-based moment representation Lattice Boltzmann Method          |
+| Developed at UDESC - State University of Santa Catarina                     |
+| Website: https://www.udesc.br                                               |
+| Github: https://github.com/geoenergiaUDESC/cudaLBM                          |
+|                                                                             |
+\*---------------------------------------------------------------------------*/
+
+/*---------------------------------------------------------------------------*\
+
+Copyright (C) 2023 UDESC Geoenergia Lab
+Authors: Nathan Duggins (Geoenergia Lab, UDESC)
+
+This implementation is derived from concepts and algorithms developed in:
+  MR-LBM: Moment Representation Lattice Boltzmann Method
+  Copyright (C) 2021 CERNN
+  Developed at Universidade Federal do Paraná (UFPR)
+  Original authors: V. M. de Oliveira, M. A. de Souza, R. F. de Souza
+  GitHub: https://github.com/CERNN/MR-LBM
+  Licensed under GNU General Public License version 2
+
+License
+    This file is part of cudaLBM.
+
+    cudaLBM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Description
+    Post-processing utility to calculate derived fields from saved moment fields
+    Supported calculations: velocity magnitude, velocity divergence, vorticity,
+    vorticity magnitude, integrated vorticity
+
+Namespace
+    LBM
+
+SourceFiles
+    testExecutable.cu
+
+\*---------------------------------------------------------------------------*/
+
+#include "testExecutable.cuh"
+
+using namespace LBM;
+
+using VelocitySet = D3Q19;
+
+int main()
+{
+    const host::array<true, label_t, VelocitySet, time::instantaneous> test(8, 99);
+
+    for (label_t i = 0; i < test.nPoints(); i++)
+    {
+        std::cout << test[i] << std::endl;
+    }
+
+    // scalar_t *const test_ptr = allocateHost<scalar_t>(1024);
+
+    // cudaFreeHost(test_ptr);
+
+    // std::cout << "This executable is used for testing purposes only" << std::endl;
+
+    return 0;
+}

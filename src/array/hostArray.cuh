@@ -57,11 +57,103 @@ namespace LBM
         /**
          * @class array
          * @brief Templated RAII wrapper for host memory management with field initialization
+         * @brief Allocates pinned memory
+         * @tparam pinned Allocate pinned or unpinned host memory
          * @tparam T Data type of array elements
          * @tparam VelocitySet Velocity set configuration for LBM simulation
+         * @tparam TimeType Instantaneous or time-averaged field
+         **/
+        template <const bool pinned, typename T, class VelocitySet, const time::type TimeType>
+        class array;
+
+        /**
+         * @class array
+         * @brief Templated RAII wrapper for host memory management with field initialization
+         * @brief Allocates pinned memory
+         * @tparam T Data type of array elements
+         * @tparam VelocitySet Velocity set configuration for LBM simulation
+         * @tparam TimeType Instantaneous or time-averaged field
          **/
         template <typename T, class VelocitySet, const time::type TimeType>
-        class array
+        class array<true, T, VelocitySet, TimeType>
+        {
+        public:
+            __host__ [[nodiscard]] array(const label_t nPoints)
+                : ptr_(host::allocate<T>(nPoints, 0)),
+                  nPoints_(nPoints){};
+
+            __host__ [[nodiscard]] array(const label_t nPoints, const T val)
+                : ptr_(host::allocate<T>(nPoints, val)),
+                  nPoints_(nPoints){};
+
+            ~array()
+            {
+                if constexpr (verbose())
+                {
+                    std::cout << "Freeing ptr" << std::endl;
+                }
+                checkCudaErrors(cudaFreeHost(ptr_));
+                if constexpr (verbose())
+                {
+                    std::cout << "Freed ptr" << std::endl;
+                }
+            }
+
+            __host__ [[nodiscard]] inline constexpr T *operator()() const noexcept
+            {
+                return ptr_;
+            }
+
+            /**
+             * @brief Unified element access (compile-time or runtime)
+             * @tparam Index Type of index (integral type or std::integral_constant)
+             * @param idx Index value or compile-time index tag
+             * @return Reference to element at specified index
+             * @pre Index must be in range [0, N-1]
+             * @note Compile-time bounds checking for integral_constant types
+             * @note Runtime access for integral types (no bounds checking)
+             **/
+            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
+            {
+                // Runtime index
+                return ptr_[idx];
+            }
+
+            /**
+             * @brief Unified read-only element access (compile-time or runtime)
+             * @tparam Index Type of index (integral type or std::integral_constant)
+             * @param idx Index value or compile-time index tag
+             * @return Const reference to element at specified index
+             * @pre Index must be in range [0, N-1]
+             * @note Compile-time bounds checking for integral_constant types
+             * @note Runtime access for integral types (no bounds checking)
+             **/
+            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
+            {
+                return ptr_[idx];
+            }
+
+            __host__ [[nodiscard]] inline constexpr label_t nPoints() const noexcept
+            {
+                return nPoints_;
+            }
+
+        private:
+            T *const ptrRestrict ptr_;
+
+            const label_t nPoints_;
+        };
+
+        /**
+         * @class array
+         * @brief Templated RAII wrapper for host memory management with field initialization
+         * @brief Allocates unpinned memory
+         * @tparam T Data type of array elements
+         * @tparam VelocitySet Velocity set configuration for LBM simulation
+         * @tparam TimeType Instantaneous or time-averaged field
+         **/
+        template <typename T, class VelocitySet, const time::type TimeType>
+        class array<false, T, VelocitySet, TimeType>
         {
         public:
             /**
@@ -83,6 +175,35 @@ namespace LBM
              * @brief Destructor for the host array class
              **/
             ~array() {};
+
+            /**
+             * @brief Unified element access (compile-time or runtime)
+             * @tparam Index Type of index (integral type or std::integral_constant)
+             * @param idx Index value or compile-time index tag
+             * @return Reference to element at specified index
+             * @pre Index must be in range [0, N-1]
+             * @note Compile-time bounds checking for integral_constant types
+             * @note Runtime access for integral types (no bounds checking)
+             **/
+            __host__ [[nodiscard]] inline constexpr T &operator[](const label_t idx) __restrict__ noexcept
+            {
+                // Runtime index
+                return arr_[idx];
+            }
+
+            /**
+             * @brief Unified read-only element access (compile-time or runtime)
+             * @tparam Index Type of index (integral type or std::integral_constant)
+             * @param idx Index value or compile-time index tag
+             * @return Const reference to element at specified index
+             * @pre Index must be in range [0, N-1]
+             * @note Compile-time bounds checking for integral_constant types
+             * @note Runtime access for integral types (no bounds checking)
+             **/
+            __host__ [[nodiscard]] inline constexpr const T &operator[](const label_t idx) __restrict__ const noexcept
+            {
+                return arr_[idx];
+            }
 
             /**
              * @brief Get read-only access to underlying data

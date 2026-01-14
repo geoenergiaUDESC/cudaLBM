@@ -65,7 +65,7 @@ namespace LBM
              * @param[in] mesh Lattice mesh defining array dimensions
              * @post Device memory is allocated and initialized with host data
              **/
-            __host__ [[nodiscard]] array(const host::array<T, VelocitySet, TimeType> &hostArray)
+            __host__ [[nodiscard]] array(const host::array<false, T, VelocitySet, TimeType> &hostArray)
                 : ptr_(device::allocateArray<T>(hostArray.arr())),
                   name_(hostArray.name()),
                   mesh_(hostArray.mesh()){};
@@ -81,7 +81,7 @@ namespace LBM
                 const std::string &name,
                 const host::latticeMesh &mesh,
                 const programControl &programCtrl)
-                : ptr_(toDevice(host::array<T, VelocitySet, TimeType>(name, mesh, programCtrl))),
+                : ptr_(toDevice(host::array<false, T, VelocitySet, TimeType>(name, mesh, programCtrl))),
                   name_(name),
                   mesh_(mesh){};
 
@@ -200,7 +200,7 @@ namespace LBM
              * @param[in] hostArray The host::array to be copied to the device
              * @return A pointer to the copied data
              **/
-            __host__ [[nodiscard]] T *toDevice(const host::array<T, VelocitySet, TimeType> &hostArray)
+            __host__ [[nodiscard]] T *toDevice(const host::array<false, T, VelocitySet, TimeType> &hostArray)
             {
                 return device::allocateArray<T>(hostArray.arr());
             }

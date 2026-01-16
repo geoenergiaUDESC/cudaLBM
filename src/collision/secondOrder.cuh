@@ -153,8 +153,6 @@ namespace LBM
             moments[m_i<2>()] = device::t_omegaVar * (moments[m_i<2>()] - static_cast<scalar_t>(1.5) * invRho * ffy) + device::omega * moments[m_i<2>()] + device::tt_omegaVar_t3 * invRho * ffy;
             moments[m_i<3>()] = device::t_omegaVar * (moments[m_i<3>()] - static_cast<scalar_t>(1.5) * invRho * ffz) + device::omega * moments[m_i<3>()] + device::tt_omegaVar_t3 * invRho * ffz;
 
-            const scalar_t invRho_t15 = static_cast<scalar_t>(3) * invRho * static_cast<scalar_t>(0.5);
-
             // Diagonal moment updates
             moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * ux_eq * ux_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffx * ux_eq + ffx * ux_eq);
             moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * uy_eq * uy_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffy * uy_eq + ffy * uy_eq);

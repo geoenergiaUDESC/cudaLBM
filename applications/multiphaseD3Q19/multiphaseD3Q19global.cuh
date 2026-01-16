@@ -319,6 +319,8 @@ namespace LBM
         normz[idx] = normz_;
     }
 
+    // TODO: interpolate density
+
     /**
      * @brief Performs the collision step of the lattice Boltzmann method using the multiphase moment representation (D3Q19 hydrodynamics + D3Q7 phase field)
      * @param devPtrs Collection of 11 pointers to device arrays on the GPU
@@ -445,11 +447,16 @@ namespace LBM
                 moments[moment] = devPtrs.ptr<moment>()[idx];
             });
 
+        // Perform velocity half-step
+        moments[m_i<1>()] += 0.5 * ffx_ / rho_;
+        moments[m_i<2>()] += 0.5 * ffy_ / rho_;
+        moments[m_i<3>()] += 0.5 * ffz_ / rho_;
+
         // Scale the moments correctly
         velocitySet::scale(moments);
 
-        // Collide - TODO: pressure-based collision
-        Collision::collide_pressure(moments, ffx_, ffy_, ffz_);
+        // Collide
+        Collision::collide_pressure(moments, ffx_, ffy_, ffz_, rho_);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;

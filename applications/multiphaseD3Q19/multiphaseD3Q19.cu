@@ -47,10 +47,10 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#define MULTIPHASE_GLOBAL
+// #define MULTIPHASE_GLOBAL
 
 #if defined(MULTIPHASE_GLOBAL)
-#include "multiphaseD3Q19global.cuh" // Uses four extra global pointers
+#include "multiphaseD3Q19global.cuh" // Uses four extra global pointers. Currently being ported to pressure-based
 #else
 #include "multiphaseD3Q19shared.cuh" // Reduced global memory footprint
 #endif
@@ -75,7 +75,7 @@ int main(const int argc, const char *const argv[])
     // Remember to compile host code with -fsanitize=address to catch dangling reference; device::array has a possible candidate at const std::string &name_;
 
     // Allocate the arrays on the device
-    device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl);
+    device::array<scalar_t, VelocitySet, time::instantaneous> rho("rho", mesh, programCtrl); // This represents pressure but is kept as rho for compatibility
     device::array<scalar_t, VelocitySet, time::instantaneous> u("u", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> v("v", mesh, programCtrl);
     device::array<scalar_t, VelocitySet, time::instantaneous> w("w", mesh, programCtrl);

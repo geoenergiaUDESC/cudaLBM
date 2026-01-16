@@ -119,7 +119,7 @@ namespace LBM
         }
 
         /**
-         * @brief Get unscaling factor for phase field reconstruction
+         * @brief Get conversion scale factor for phase field reconstruction
          **/
         template <typename T>
         __device__ __host__ [[nodiscard]] static inline consteval T unscale_i() noexcept
@@ -450,6 +450,27 @@ namespace LBM
             mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop) * inv_rho) - cs2<scalar_t>();
         }
 
+        template <class VelocitySet, class BoundaryNormal>
+        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 10> &mom, const BoundaryNormal &boundaryNormal) noexcept
+        {
+            // Density
+            mom[m_i<0>()] = calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+            const scalar_t inv_rho = static_cast<scalar_t>(1) / mom[m_i<0>()];
+
+            // Velocity
+            mom[m_i<1>()] = calculate_moment<VelocitySet, X, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<2>()] = calculate_moment<VelocitySet, Y, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<3>()] = calculate_moment<VelocitySet, Z, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
+
+            // Second order moments
+            mom[m_i<4>()] = (calculate_moment<VelocitySet, X, X>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            mom[m_i<5>()] = calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<6>()] = calculate_moment<VelocitySet, X, Z>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<7>()] = (calculate_moment<VelocitySet, Y, Y>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            mom[m_i<8>()] = calculate_moment<VelocitySet, Y, Z>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+        }
+
         template <class VelocitySet>
         __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 11> &mom) noexcept
         {
@@ -472,7 +493,7 @@ namespace LBM
         }
 
         template <class VelocitySet, class BoundaryNormal>
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 10> &mom, const BoundaryNormal &boundaryNormal) noexcept
+        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 11> &mom, const BoundaryNormal &boundaryNormal) noexcept
         {
             // Density
             mom[m_i<0>()] = calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
@@ -492,25 +513,46 @@ namespace LBM
             mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
         }
 
-        template <class VelocitySet, class BoundaryNormal>
-        __device__ __host__ static inline void calculate_moments(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 11> &mom, const BoundaryNormal &boundaryNormal) noexcept
+        // ===================================================== PRESSURE ===================================================== //
+
+        template <class VelocitySet>
+        __device__ __host__ static inline void calculate_moments_pressure(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 11> &mom) noexcept
         {
-            // Density
-            mom[m_i<0>()] = calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
-            const scalar_t inv_rho = static_cast<scalar_t>(1) / mom[m_i<0>()];
+            // Pressure
+            mom[m_i<0>()] = calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop);
 
             // Velocity
-            mom[m_i<1>()] = calculate_moment<VelocitySet, X, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
-            mom[m_i<2>()] = calculate_moment<VelocitySet, Y, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
-            mom[m_i<3>()] = calculate_moment<VelocitySet, Z, NO_DIRECTION>(pop, boundaryNormal) * inv_rho;
+            mom[m_i<1>()] = calculate_moment<VelocitySet, X, NO_DIRECTION>(pop);
+            mom[m_i<2>()] = calculate_moment<VelocitySet, Y, NO_DIRECTION>(pop);
+            mom[m_i<3>()] = calculate_moment<VelocitySet, Z, NO_DIRECTION>(pop);
 
             // Second order moments
-            mom[m_i<4>()] = (calculate_moment<VelocitySet, X, X>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
-            mom[m_i<5>()] = calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal) * inv_rho;
-            mom[m_i<6>()] = calculate_moment<VelocitySet, X, Z>(pop, boundaryNormal) * inv_rho;
-            mom[m_i<7>()] = (calculate_moment<VelocitySet, Y, Y>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
-            mom[m_i<8>()] = calculate_moment<VelocitySet, Y, Z>(pop, boundaryNormal) * inv_rho;
-            mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop, boundaryNormal) * inv_rho) - cs2<scalar_t>();
+            mom[m_i<4>()] = (calculate_moment<VelocitySet, X, X>(pop)) - cs2<scalar_t>() * mom[m_i<0>()];
+            mom[m_i<5>()] = calculate_moment<VelocitySet, X, Y>(pop);
+            mom[m_i<6>()] = calculate_moment<VelocitySet, X, Z>(pop);
+            mom[m_i<7>()] = (calculate_moment<VelocitySet, Y, Y>(pop)) - cs2<scalar_t>() * mom[m_i<0>()];
+            mom[m_i<8>()] = calculate_moment<VelocitySet, Y, Z>(pop);
+            mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop)) - cs2<scalar_t>() * mom[m_i<0>()];
+        }
+
+        template <class VelocitySet, class BoundaryNormal>
+        __device__ __host__ static inline void calculate_moments_pressure(const thread::array<scalar_t, VelocitySet::Q()> &pop, thread::array<scalar_t, 11> &mom, const BoundaryNormal &boundaryNormal) noexcept
+        {
+            // Pressure
+            mom[m_i<0>()] = calculate_moment<VelocitySet, NO_DIRECTION, NO_DIRECTION>(pop, boundaryNormal);
+
+            // Velocity
+            mom[m_i<1>()] = calculate_moment<VelocitySet, X, NO_DIRECTION>(pop, boundaryNormal);
+            mom[m_i<2>()] = calculate_moment<VelocitySet, Y, NO_DIRECTION>(pop, boundaryNormal);
+            mom[m_i<3>()] = calculate_moment<VelocitySet, Z, NO_DIRECTION>(pop, boundaryNormal);
+
+            // Second order moments
+            mom[m_i<4>()] = (calculate_moment<VelocitySet, X, X>(pop, boundaryNormal)) - cs2<scalar_t>() * mom[m_i<0>()];
+            mom[m_i<5>()] = calculate_moment<VelocitySet, X, Y>(pop, boundaryNormal);
+            mom[m_i<6>()] = calculate_moment<VelocitySet, X, Z>(pop, boundaryNormal);
+            mom[m_i<7>()] = (calculate_moment<VelocitySet, Y, Y>(pop, boundaryNormal)) - cs2<scalar_t>() * mom[m_i<0>()];
+            mom[m_i<8>()] = calculate_moment<VelocitySet, Y, Z>(pop, boundaryNormal);
+            mom[m_i<9>()] = (calculate_moment<VelocitySet, Z, Z>(pop, boundaryNormal)) - cs2<scalar_t>() * mom[m_i<0>()];
         }
     };
 }

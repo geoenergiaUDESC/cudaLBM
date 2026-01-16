@@ -145,20 +145,13 @@ namespace LBM
             {
                 const label_t ID = tid * m_i<NUMBER_MOMENTS<true>() + 1>() + m_i<moment>();
                 shared_buffer[ID] = devPtrs.ptr<moment>()[idx];
-                if constexpr (moment == index::rho())
-                {
-                    moments[moment] = shared_buffer[ID] + rho0<scalar_t>();
-                }
-                else
-                {
-                    moments[moment] = shared_buffer[ID];
-                }
+                moments[moment] = shared_buffer[ID];
             });
 
         __syncthreads();
 
         // Reconstruct the populations from the moments
-        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct(moments);
+        thread::array<scalar_t, VelocitySet::Q()> pop = VelocitySet::reconstruct_pressure(moments);
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g = PhaseVelocitySet::reconstruct(moments);
 
         // Gather current phase field state
@@ -187,7 +180,7 @@ namespace LBM
         PhaseHalo::load(pop_g, ghostPhase);
 
         // Compute post-stream moments
-        velocitySet::calculate_moments<VelocitySet>(pop, moments);
+        velocitySet::calculate_moments_pressure<VelocitySet>(pop, moments);
         PhaseVelocitySet::calculate_phi(pop_g, moments);
         {
             // Update the shared buffer with the refreshed moments
@@ -201,18 +194,17 @@ namespace LBM
 
         __syncthreads();
 
-        // Calculate the moments at the boundary
+        // Calculate the moments at the boundary - TODO: pressure-based boundary conditions
         {
             const normalVector boundaryNormal;
 
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculate_moments<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
+                boundaryConditions::calculate_moments_pressure<VelocitySet, PhaseVelocitySet>(pop, moments, boundaryNormal, shared_buffer);
             }
         }
 
         // Coalesced write to global memory
-        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
@@ -450,26 +442,19 @@ namespace LBM
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {
-                if constexpr (moment == index::rho())
-                {
-                    moments[moment] = devPtrs.ptr<moment>()[idx] + rho0<scalar_t>();
-                }
-                else
-                {
-                    moments[moment] = devPtrs.ptr<moment>()[idx];
-                }
+                moments[moment] = devPtrs.ptr<moment>()[idx];
             });
 
         // Scale the moments correctly
         velocitySet::scale(moments);
 
-        // Collide
-        Collision::collide(moments, ffx_, ffy_, ffz_);
+        // Collide - TODO: pressure-based collision
+        Collision::collide_pressure(moments, ffx_, ffy_, ffz_);
 
         // Calculate post collision populations
         thread::array<scalar_t, VelocitySet::Q()> pop;
         thread::array<scalar_t, PhaseVelocitySet::Q()> pop_g;
-        VelocitySet::reconstruct(pop, moments);
+        VelocitySet::reconstruct_pressure(pop, moments);
         PhaseVelocitySet::reconstruct(pop_g, moments);
 
         // Gather current phase field state
@@ -479,7 +464,6 @@ namespace LBM
         PhaseVelocitySet::sharpen(pop_g, phi_, normx_, normy_, normz_);
 
         // Coalesced write to global memory
-        moments[m_i<0>()] = moments[m_i<0>()] - rho0<scalar_t>();
         device::constexpr_for<0, NUMBER_MOMENTS<true>()>(
             [&](const auto moment)
             {

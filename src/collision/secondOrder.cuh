@@ -139,6 +139,33 @@ namespace LBM
             moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * (moments[m_i<2>()]) * (moments[m_i<3>()]) + device::tt_omegaVar_t3 * invRho * (ffy * moments[m_i<3>()] + ffz * moments[m_i<2>()]); // myz
         }
 
+        __device__ static inline void collide_pressure(thread::array<scalar_t, 11> &moments, const scalar_t ffx, const scalar_t ffy, const scalar_t ffz, const scalar_t rho) noexcept
+        {
+            const scalar_t invRho = static_cast<scalar_t>(1) / rho;
+
+            // Get pre-update velocities (half-step)
+            const scalar_t ux_eq = moments[m_i<1>()];
+            const scalar_t uy_eq = moments[m_i<2>()];
+            const scalar_t uz_eq = moments[m_i<3>()];
+
+            // Velocity updates
+            moments[m_i<1>()] = device::t_omegaVar * (moments[m_i<1>()] - static_cast<scalar_t>(1.5) * invRho * ffx) + device::omega * moments[m_i<1>()] + device::tt_omegaVar_t3 * invRho * ffx;
+            moments[m_i<2>()] = device::t_omegaVar * (moments[m_i<2>()] - static_cast<scalar_t>(1.5) * invRho * ffy) + device::omega * moments[m_i<2>()] + device::tt_omegaVar_t3 * invRho * ffy;
+            moments[m_i<3>()] = device::t_omegaVar * (moments[m_i<3>()] - static_cast<scalar_t>(1.5) * invRho * ffz) + device::omega * moments[m_i<3>()] + device::tt_omegaVar_t3 * invRho * ffz;
+
+            const scalar_t invRho_t15 = static_cast<scalar_t>(3) * invRho * static_cast<scalar_t>(0.5);
+
+            // Diagonal moment updates
+            moments[m_i<4>()] = device::t_omegaVar * moments[m_i<4>()] + device::omegaVar_d2 * ux_eq * ux_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffx * ux_eq + ffx * ux_eq);
+            moments[m_i<7>()] = device::t_omegaVar * moments[m_i<7>()] + device::omegaVar_d2 * uy_eq * uy_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffy * uy_eq + ffy * uy_eq);
+            moments[m_i<9>()] = device::t_omegaVar * moments[m_i<9>()] + device::omegaVar_d2 * uz_eq * uz_eq + static_cast<scalar_t>(1.5) * device::tt_omegaVar * invRho * (ffz * uz_eq + ffz * uz_eq);
+
+            // Off-diagonal moment updates
+            moments[m_i<5>()] = device::t_omegaVar * moments[m_i<5>()] + device::omega * ux_eq * uy_eq + device::tt_omegaVar_t3 * invRho * (ffx * uy_eq + ffy * ux_eq); // mxy
+            moments[m_i<6>()] = device::t_omegaVar * moments[m_i<6>()] + device::omega * ux_eq * uz_eq + device::tt_omegaVar_t3 * invRho * (ffx * uz_eq + ffz * ux_eq); // mxz
+            moments[m_i<8>()] = device::t_omegaVar * moments[m_i<8>()] + device::omega * uy_eq * uz_eq + device::tt_omegaVar_t3 * invRho * (ffy * uz_eq + ffz * uy_eq); // myz
+        }
+
     private:
     };
 }

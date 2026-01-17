@@ -263,6 +263,8 @@ namespace LBM
         __device__ __constant__ scalar_t U_Front[3];
         __device__ __constant__ scalar_t U_Back[3];
 
+        __device__ __constant__ scalar_t L_char;
+
         __device__ __constant__ scalar_t omega;
         __device__ __constant__ scalar_t t_omegaVar;
         __device__ __constant__ scalar_t omegaVar_d2;

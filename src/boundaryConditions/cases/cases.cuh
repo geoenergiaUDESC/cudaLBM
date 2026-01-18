@@ -43,26 +43,30 @@ Namespace
     LBM
 
 SourceFiles
-    boundaryConditions.cuh
+    cases.cuh
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef __MBLBM_BOUNDARYCONDITIONS_CUH
-#define __MBLBM_BOUNDARYCONDITIONS_CUH
+#ifndef __MBLBM_CASES_CUH
+#define __MBLBM_CASES_CUH
 
-#include "../LBMIncludes.cuh"
-#include "../LBMTypedefs.cuh"
-#include "../array/threadArray.cuh"
-#include "normalVector.cuh"
-#include "boundaryValue.cuh"
-#include "boundaryRegion.cuh"
-#include "boundaryFields.cuh"
+// #define JETFLOW
+#define LIDDRIVENCAVITY
+
+#include "jetFlow/jetFlow.cuh"
+#include "lidDrivenCavity/lidDrivenCavity.cuh"
 
 namespace LBM
 {
 
-}
+#ifdef JETFLOW
+    using BoundaryConditions = jetFlowBoundaryConditions;
+#endif
 
-#include "cases/cases.cuh"
+#ifdef LIDDRIVENCAVITY
+    using BoundaryConditions = lidDrivenCavityBoundaryConditions;
+#endif
+
+}
 
 #endif

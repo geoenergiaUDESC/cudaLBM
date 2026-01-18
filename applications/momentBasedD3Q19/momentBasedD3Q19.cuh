@@ -59,6 +59,7 @@ SourceFiles
 #include "../../src/runTimeIO/runTimeIO.cuh"
 #include "../../src/functionObjects/objectRegistry.cuh"
 #include "../../src/array/array.cuh"
+#include "../../src/boundaryConditions/boundaryConditions.cuh"
 
 namespace LBM
 {
@@ -157,7 +158,7 @@ namespace LBM
 
             if (boundaryNormal.isBoundary())
             {
-                boundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal);
+                BoundaryConditions::calculate_moments<VelocitySet>(pop, moments, boundaryNormal, &(shared_buffer[0]));
             }
             else
             {

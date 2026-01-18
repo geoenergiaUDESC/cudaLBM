@@ -58,7 +58,11 @@ SourceFiles
 #include "../latticeMesh/latticeMesh.cuh"
 #include "../fileIO/fileIO.cuh"
 #include "../velocitySet/velocitySet.cuh"
-#include "../boundaryConditions/boundaryConditions.cuh"
+
+#include "../boundaryConditions/normalVector.cuh"
+#include "../boundaryConditions/boundaryValue.cuh"
+#include "../boundaryConditions/boundaryRegion.cuh"
+#include "../boundaryConditions/boundaryFields.cuh"
 
 namespace LBM
 {
